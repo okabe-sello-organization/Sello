@@ -191,9 +191,8 @@ private fun Total(
         }
         val from = dates.shortDay(total.valuedFrom, state.today)
         val to = dates.shortDay(total.valuedTo, state.today)
-        // A line that cannot open is as tall as its text; the foot spaces it out itself,
-        // 32 dp a line with the gap above it, as the foot was before it took Footnote.
-        val quiet = Modifier.heightIn(min = 32.dp).padding(top = 6.dp)
+        // A line that cannot open is as tall as its text; the foot spaces it out itself.
+        val quiet = Modifier.heightIn(min = QuietLineHeight).padding(top = QuietLineGap)
         Footnote(
             if (from == to) {
                 bold(stringResource(R.string.inversiones_valued_on, from), from)
@@ -397,5 +396,15 @@ private fun bold(text: String, vararg parts: String): AnnotatedString = buildAnn
         }
     append(text.substring(at))
 }
+
+/**
+ * A foot line that cannot open: at least this tall, with [QuietLineGap] above its words.
+ * One-offs of this foot, kept from before it took Footnote (SELLO-191), so the slip's
+ * height and everything under it stay where they were.
+ */
+private val QuietLineHeight = 32.dp
+
+/** The gap above a foot line's words, inside [QuietLineHeight]. */
+private val QuietLineGap = 6.dp
 
 const val INVERSIONES_LIST_TAG = "inversiones.list"

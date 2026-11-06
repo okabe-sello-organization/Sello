@@ -188,7 +188,7 @@
       <h3>Amounts</h3>
       <p>Amounts are drawn by <a href="components.html#c-MoneyText"><code>MoneyText</code></a> with its own
         <code>MoneyStyle</code> sizes: Hero 60 sp, Total 44 sp, Card 32 sp, Title 19 sp, Line 14 sp
-        (<code>MoneyText.kt:48</code>), and by <a href="components.html#c-FittedMoneyText"><code>FittedMoneyText</code></a>,
+        (<code>MoneyText.kt:50</code>), and by <a href="components.html#c-FittedMoneyText"><code>FittedMoneyText</code></a>,
         which steps the size down to fit.</p>
       <p>The <code>SelloType</code> styles after the stamps (<code>Type.kt:83</code>, read through
         <code>SelloTheme.type</code>) are the combinations of a role with another size or weight that several
@@ -270,10 +270,10 @@
 
     <section id="spacing">
       <h2>Spacing</h2>
-      <p>The code defines spacing tokens: <code>SelloSpacing</code> (<code>SelloShapes.kt:28</code>), "the 4dp
+      <p>The code defines spacing tokens: <code>SelloSpacing</code> (<code>SelloShapes.kt:32</code>), "the 4dp
         grid and the fixed distances the reference names", read through <code>SelloTheme.spacing</code>.
         <code>SelloTheme</code> does not provide its own instance, so the defaults below are always in use.</p>
-      <div class="table-wrap"><table><thead><tr><th>Token</th><th>Value</th><th>Sample</th></tr></thead><tbody><tr><td><code>xs</code><br><span class="muted">SelloShapes.kt:29</span></td><td>4 dp</td><td><span style="display:inline-block;height:12px;width:4px;background:var(--brand);border-radius:2px"></span></td></tr>
+      <div class="table-wrap"><table><thead><tr><th>Token</th><th>Value</th><th>Sample</th></tr></thead><tbody><tr><td><code>xs</code><br><span class="muted">SelloShapes.kt:33</span></td><td>4 dp</td><td><span style="display:inline-block;height:12px;width:4px;background:var(--brand);border-radius:2px"></span></td></tr>
 <tr><td><code>sm</code><br><span class="muted">SelloShapes.kt:30</span></td><td>8 dp</td><td><span style="display:inline-block;height:12px;width:8px;background:var(--brand);border-radius:2px"></span></td></tr>
 <tr><td><code>md</code><br><span class="muted">SelloShapes.kt:31</span></td><td>12 dp</td><td><span style="display:inline-block;height:12px;width:12px;background:var(--brand);border-radius:2px"></span></td></tr>
 <tr><td><code>lg</code><br><span class="muted">SelloShapes.kt:32</span></td><td>16 dp</td><td><span style="display:inline-block;height:12px;width:16px;background:var(--brand);border-radius:2px"></span></td></tr>
@@ -314,7 +314,7 @@
         </table>
       </div>
       <p>Category cells per row (<code>categoryColumns</code>, <code>WindowLayout.kt:55</code>): two, three
-        once the column is 560 dp wide. The rail is 80 dp wide (<code>Navigation.kt:171</code>).
+        once the column is 560 dp wide. The rail is 80 dp wide (<code>Navigation.kt:170</code>).
         The tab bar takes two to four destinations (<code>SelloNavigationBar</code> requires it).</p>
     </section>
 

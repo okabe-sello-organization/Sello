@@ -133,7 +133,8 @@ This summary is refreshed when an epic closes and adds no verification claims.
   tokens for type, spacing, shape and alpha, and every colour comes from the theme (a
   `scrim` role; unused category colours and `dividend` deleted). For the person: turning
   carry on or off in Editar categoría waits for Guardar, Retirar has its own icon, and
-  the same thing looks alike everywhere. The tag `design-system-v1` marks the result.
+  the same thing looks alike everywhere. Once SELLO-191's pull request merges, its merge
+  commit on `main` is tagged `design-system-v1`, a marker of this design, not a release.
 - No network permission or OS backup; every build checks its manifests, release
   libraries and APK against [MVP data handling](../privacy/mvp-data-handling.md). The
   only provider that grants access is the export one, limited to `cache/exports/`.
@@ -156,7 +157,8 @@ What each ticket changed is in its pull request, linked from the ticket file
 - The candidate waits on the owner, as the [candidate checklist](../release/candidate-checklist.md)
   lists: `scripts/check --release` with the owner's key (the signed APK and its facts),
   the walk on the owner's phone, and the go/no-go. Distributing it is a separate,
-  owner-authorized action. Nothing was published, signed with the owner's key or tagged.
+  owner-authorized action. No release was published, signed with the owner's key or
+  tagged; the only tag, `design-system-v1`, marks E32's design, not a release.
 - No ticket is open. Dropped on 2026-10-29: SELLO-043 (carryover release), SELLO-113
   (the `0.2.0` release) and E14 with SELLO-074 (manual TalkBack, Switch Access and
   keyboard walks). The automated accessibility checks from SELLO-033 stay.

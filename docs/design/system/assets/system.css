@@ -137,6 +137,13 @@ main,
   letter-spacing: -0.02em;
 }
 
+/* findings.html: the one sentence that says nothing is open. */
+.none-open {
+  margin: 12px 0 20px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
 .page-header .lede {
   margin: 0;
   max-width: 760px;

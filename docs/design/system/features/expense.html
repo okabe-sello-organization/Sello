@@ -28,12 +28,12 @@
     <section id="entry-points">
       <h2>Entry points</h2>
       <ul>
-        <li>The dock's "Anotar" on the tabs: <code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:261</code>
+        <li>The dock's "Anotar" on the tabs: <code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:264</code>
           sends <code>StartEntry</code>; the shell then opens <code>ExpenseEntryRoute</code> at
           <code>app/src/main/java/com/software/sello/navigation/SelloApp.kt:175</code>. With no category yet, the
           category editor opens first (<code>SelloApp.kt:165</code>).</li>
         <li>A category's own screen, which starts the expense in that category:
-          <code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:194</code>,
+          <code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:197</code>,
           <code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:323</code>,
           <code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:162</code>,
           <code>app/src/main/java/com/software/sello/navigation/ResumenDestinations.kt:80</code> and
@@ -46,7 +46,7 @@
         <li>"+" on Pagos e ingresos fijos, opening with Se repite's sheet:
           <code>app/src/main/java/com/software/sello/navigation/RecurrenceDestinations.kt:57</code>.</li>
         <li>The "Gasto" side of the kind switch on Anotar ingreso:
-          <code>app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:185</code>, hosted by
+          <code>app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:190</code>, hosted by
           <code>EntryDestination</code> at <code>app/src/main/java/com/software/sello/navigation/ExpenseDestinations.kt:85</code>.</li>
         <li>Correcting (<code>ExpenseEditRoute</code>): a Recibo row
           (<code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:103</code>), a category's
@@ -87,29 +87,29 @@
 
       <h3>Layout</h3>
       <p>The whole form is an <a href="../components.html#c-EntryLayout"><code>EntryLayout</code></a>
-        (<code>ExpenseEntryScreen.kt:231</code>): the amount, the button and the pad hold still and only the choices
+        (<code>ExpenseEntryScreen.kt:239</code>): the amount, the button and the pad hold still and only the choices
         scroll; a wide or short window puts the button and pad beside the rest.</p>
       <ol>
         <li>Top bar (<a href="../components.html#c-SelloScaffold"><code>SelloScaffold</code></a>) on the brand band:
           an X, the title "Anotar" or "Editar gasto", and when correcting a text button "Borrar" on the band.</li>
         <li>Header: a <a href="../components.html#c-SegmentedSwitch"><code>SegmentedSwitch</code></a> "Gasto | Ingreso",
-          only for a new expense opened from a place that offers income (<code>:235</code>).</li>
+          only for a new expense opened from a place that offers income (<code>:243</code>).</li>
         <li>The amount slip, <a href="../components.html#c-EntryAmountSlip"><code>EntryAmountSlip</code></a>:
           "Gasto en pesos", a <a href="../components.html#c-FieldPill"><code>FieldPill</code></a> with the day, the
-          chosen category's icon, the amount and a paste button (<code>:379</code>). The brand band runs down to its middle.</li>
+          chosen category's icon, the amount and a paste button (<code>:373</code>). The brand band runs down to its middle.</li>
         <li><a href="../components.html#c-MoreSlip"><code>MoreSlip</code></a> "Otro gasto", tucked under the amount,
-          when Anotar varios can be reached and the expense is new (<code>:251</code>).</li>
-        <li>Choices, scrolling (<code>:421</code>): a stale notice if any; category
+          when Anotar varios can be reached and the expense is new (<code>:259</code>).</li>
+        <li>Choices, scrolling (<code>:415</code>): a stale notice if any; category
           <a href="../components.html#c-SelloChip"><code>SelloChip</code></a>s in
           <a href="../components.html#c-ChipRows"><code>ChipRows</code></a>, the chosen one first
           (<a href="../components.html#c-rememberSelectedFirst"><code>rememberSelectedFirst</code></a>), ending with an
           <a href="../components.html#c-AddChip"><code>AddChip</code></a> "Nueva" for a new expense; the note's
           <a href="../components.html#c-EntryLine"><code>EntryLine</code></a>; Se repite's row (new expense only); the
           past-month hint; the past-expense announcement.</li>
-        <li>Action (<code>:561</code>): what is missing or went wrong as
+        <li>Action (<code>:555</code>): what is missing or went wrong as
           <a href="../components.html#c-FieldMessageText"><code>FieldMessageText</code></a>, then one full-width
           <a href="../components.html#c-SelloButton"><code>SelloButton</code></a>.</li>
-        <li><a href="../components.html#c-AmountKeypad"><code>AmountKeypad</code></a>, <code>compact</code> (<code>:277</code>).</li>
+        <li><a href="../components.html#c-AmountKeypad"><code>AmountKeypad</code></a>, <code>compact</code> (<code>:285</code>).</li>
       </ol>
 
       <h3>States</h3>
@@ -118,35 +118,35 @@
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
             <tr><td>Loading</td><td>One <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a> under the bar; no form yet.</td>
-              <td><code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:213</code></td><td><code>expense-entry-loading</code></td></tr>
+              <td><code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:216</code></td><td><code>expense-entry-loading</code></td></tr>
             <tr><td>Error (nothing ever read)</td><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> LoadFailed "No se pudo cargar" with "No pudimos leer tus categorías." (or "No pudimos leer este gasto." when correcting) and "Reintentar".</td>
-              <td><code>ExpenseEntryScreen.kt:215</code></td><td><code>expense-entry-failed</code></td></tr>
+              <td><code>ExpenseEntryScreen.kt:220</code></td><td><code>expense-entry-failed</code></td></tr>
             <tr><td>Empty</td><td>Does not exist on the form: with no category the shell opens the category editor first.</td>
               <td><code>app/src/main/java/com/software/sello/navigation/SelloApp.kt:165</code></td><td>—</td></tr>
             <tr><td>Ready</td><td>Amount, chips, note line, "Anotar gasto" enabled once an amount and a category are there.</td>
-              <td><code>ExpenseEntryScreen.kt:231</code></td><td>expense-entry</td></tr>
+              <td><code>ExpenseEntryScreen.kt:239</code></td><td>expense-entry</td></tr>
             <tr><td>Missing</td><td>A hint above the button: "Elige una categoría.", "Corrige la nota.", the Se repite end problem, or "Aún no cambiaste nada." when correcting. A missing amount is not said: the slip shows "Sin monto" and the button is off.</td>
-              <td><code>ExpenseEntryScreen.kt:546</code></td><td><code>expense-entry-missing</code></td></tr>
+              <td><code>ExpenseEntryScreen.kt:540</code></td><td><code>expense-entry-missing</code></td></tr>
             <tr><td>Amount refused</td><td>The slip's label is replaced by the reason ("Eso no es un monto…", "El monto debe ser mayor que cero.", "El monto es mayor que el máximo…") and the pasted text stays as it was; "Máximo 12 dígitos" with a shake when a key is refused.</td>
-              <td><code>ExpenseEntryScreen.kt:390</code></td><td><code>expense-entry-amount-refused</code></td></tr>
+              <td><code>ExpenseEntryScreen.kt:384</code></td><td><code>expense-entry-amount-refused</code></td></tr>
             <tr><td>Stale</td><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> Older "No pudimos actualizar. Esto es lo último que se leyó y puede no estar al día." with "Reintentar" above the chips; the draft stays.</td>
-              <td><code>ExpenseEntryScreen.kt:432</code></td><td>expense-entry-stale</td></tr>
+              <td><code>ExpenseEntryScreen.kt:426</code></td><td>expense-entry-stale</td></tr>
             <tr><td>Busy</td><td>The button reads "Guardando…" with its spinner; chips, pill, note, switch and pad are off. The X stays enabled but Back is ignored.</td>
-              <td><code>ExpenseEntryScreen.kt:589</code>, <code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryViewModel.kt:486</code></td><td><code>expense-entry-busy</code></td></tr>
+              <td><code>ExpenseEntryScreen.kt:583</code>, <code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryViewModel.kt:486</code></td><td><code>expense-entry-busy</code></td></tr>
             <tr><td>Unknown outcome (save)</td><td>Warning "Aún no sabemos si se guardó. Compruébalo antes de volver a anotar." and the only button "Comprobar si se guardó"; the draft is frozen.</td>
-              <td><code>ExpenseEntryScreen.kt:570</code></td><td><code>expense-entry-unknown</code></td></tr>
+              <td><code>ExpenseEntryScreen.kt:564</code></td><td><code>expense-entry-unknown</code></td></tr>
             <tr><td>Unknown outcome (deletion)</td><td>Warning "Aún no sabemos si se borró…" and "Comprobar si se borró"; "Borrar" is off.</td>
-              <td><code>ExpenseEntryScreen.kt:573</code></td><td>expense-entry-delete-unknown</td></tr>
+              <td><code>ExpenseEntryScreen.kt:567</code></td><td>expense-entry-delete-unknown</td></tr>
             <tr><td>Refused</td><td>An error message above the button, the draft kept: "No se guardó. Tu borrador sigue aquí.", "Esa categoría ya no acepta gastos…", "La fecha no puede ser posterior a hoy…", "Tus datos cambiaron mientras tanto…", "No se guardó: con este cambio Sello no podría calcular lo que sobra o falta…". When correcting, each says "El gasto quedó como estaba". "Este gasto ya no existe…" and "Este gasto cambió mientras lo corregías…" freeze the form.</td>
-              <td><code>ExpenseEntryScreen.kt:743</code></td><td><code>expense-entry-refused</code></td></tr>
+              <td><code>ExpenseEntryScreen.kt:707</code></td><td><code>expense-entry-refused</code></td></tr>
             <tr><td>Following saved, this not</td><td>Under the error: "Los siguientes ya cambiaron; este todavía no. Vuelve a guardar."</td>
-              <td><code>ExpenseEntryScreen.kt:542</code></td><td><code>expense-entry-following-saved</code></td></tr>
+              <td><code>ExpenseEntryScreen.kt:536</code></td><td><code>expense-entry-following-saved</code></td></tr>
             <tr><td>Past months (correcting)</td><td>A hint: "Corregir este gasto cambia las cifras de septiembre." and, once, the notice "Puedes corregir un gasto de meses anteriores." with "Entendido".</td>
-              <td><code>ExpenseEntryScreen.kt:489</code>, <code>:504</code></td><td><code>expense-entry-past-month</code></td></tr>
+              <td><code>ExpenseEntryScreen.kt:483</code>, <code>:498</code></td><td><code>expense-entry-past-month</code></td></tr>
             <tr><td>Restored draft</td><td>After process death the draft, the open composer and Se repite come back from <code>SavedStateHandle</code>; "today" stays the day it was started; a save in flight is asked about, never sent again.</td>
               <td><code>ExpenseEntryViewModel.kt:198</code>, <code>:271</code></td><td>Drawn as the filled form, so not captured again: <code>expense-entry</code></td></tr>
             <tr><td>Saved</td><td>The form closes with a long-press haptic, once per recorded expense; the caller shows the notice.</td>
-              <td><code>ExpenseEntryScreen.kt:137</code></td><td>—</td></tr>
+              <td><code>ExpenseEntryScreen.kt:142</code></td><td>—</td></tr>
           </tbody>
         </table>
       </div>
@@ -158,7 +158,7 @@
         <li>"Ingreso" on the switch: swaps to <a href="income.html">Anotar ingreso</a> in place.</li>
         <li>Date pill: <code>OpenDatePicker</code>. Paste button: <code>Paste</code> with the clipboard text untouched.</li>
         <li>"Otro gasto": <code>Several</code>, which opens <a href="bulk.html">Anotar varios</a> with what is typed as line one.</li>
-        <li>A category chip: <code>CategoryPicked</code>. "Nueva": the category editor; the new category comes back chosen (<code>ExpenseEntryScreen.kt:126</code>).</li>
+        <li>A category chip: <code>CategoryPicked</code>. "Nueva": the category editor; the new category comes back chosen (<code>ExpenseEntryScreen.kt:131</code>).</li>
         <li>The note line ("Agregar nota" / the note, "Editar"): <code>OpenNote</code>.</li>
         <li>Se repite's row: <code>Repeat(…)</code>, opening the recurrence sheet.</li>
         <li>The button: <code>Submit</code>, or <code>Retry</code> when the outcome is unknown.</li>
@@ -183,7 +183,7 @@
 
       <figure data-shot="expense-entry-discard" data-module="app" data-caption="The discard dialog"></figure>
       <p>The shared <a href="../components.html#c-MovementDiscardSlip"><code>MovementDiscardSlip</code></a>, so
-        "Descartar" is loss red like every other discard (<code>ExpenseEntryScreen.kt:297</code>), with this form's own
+        "Descartar" is loss red like every other discard (<code>ExpenseEntryScreen.kt:300</code>), with this form's own
         words and keep label. New: "¿Descartar este gasto?" /
         "Lo que escribiste no se guardará." / "Seguir anotando". Correcting: "¿Descartar los cambios?" /
         "El gasto queda como estaba." / "Seguir editando". "Descartar" sends <code>DiscardConfirmed</code>, the other
@@ -195,7 +195,7 @@
 
       <figure data-shot="expense-entry-date-picker" data-module="app" data-caption="The date picker (Material's picker: the JVM screen runs in English, and draws it with square corners and no scrim)"></figure>
       <p>Material <code>DatePickerDialog</code> with a <a href="../components.html#c-SelloButton"><code>SelloButton</code></a>
-        "Aceptar" (<code>expense_entry_date_confirm</code>) (<code>ExpenseEntryScreen.kt:673</code>). Days after today
+        "Aceptar" (<code>expense_entry_date_confirm</code>) (<code>ExpenseEntryScreen.kt:666</code>). Days after today
         cannot be picked; while Se repite is on, only today or later. Whole days in UTC, no time or zone. Dismiss sends
         <code>CloseDatePicker</code>. Screenshot: <code>expense-entry-date-picker</code>.</p>
     </section>
@@ -205,7 +205,7 @@
 
       <figure data-shot="expense-entry-note" data-module="app" data-caption="The note composer"></figure>
       <p><a href="../components.html#c-NoteComposer"><code>NoteComposer</code></a> docked above the keyboard
-        (<code>ExpenseEntryScreen.kt:626</code>). Its context line reads "Gasto en <b>Alimentación</b> · <b>48.700</b>"
+        (<code>ExpenseEntryScreen.kt:620</code>). Its context line reads "Gasto en <b>Alimentación</b> · <b>48.700</b>"
         with the category icon (or a receipt icon), a counter "%1$d/%2$d" up to 60, the hint "Opcional", and
         "Listo" / "Cancelar". Over 60 characters it says "Máximo 60 caracteres. Tu texto sigue aquí." and cannot finish;
         a line break gives "La nota no puede tener saltos de línea." Screenshot: <code>expense-entry-note</code>.</p>
@@ -219,15 +219,15 @@
       <figure data-shot="expense-entry-following-busy" data-module="app" data-caption="The following-payments question while saving"></figure>
       <ul>
         <li>Carry correction: a <a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a> holding
-          <code>CarryCorrectionContent</code> (<code>design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:164</code>),
+          <code>CarryCorrectionContent</code> (<code>design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:165</code>),
           titled "¿Anotar este gasto?" / "¿Guardar el cambio?", confirm "Anotar" / "Guardar", busy while saving
-          (<code>ExpenseEntryScreen.kt:329</code>). It lists the later months the save changes before anything is saved.</li>
-        <li>Se repite: <code>RepeatChoiceSheet</code> (<code>design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:132</code>),
+          (<code>ExpenseEntryScreen.kt:334</code>). It lists the later months the save changes before anything is saved.</li>
+        <li>Se repite: <code>RepeatChoiceSheet</code> (<code>design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:122</code>),
           drawn on <a href="../components.html#c-SelloSheet"><code>SelloSheet</code></a>; Back closes it and keeps the
-          choice (<code>ExpenseEntryScreen.kt:150</code>). See the Recurrence page.</li>
-        <li>Following payments: <code>FollowingChoice</code> (<code>component/RepeatParts.kt:278</code>) asks "¿Cambiar también los siguientes?"
+          choice (<code>ExpenseEntryScreen.kt:155</code>). See the Recurrence page.</li>
+        <li>Following payments: <code>FollowingChoice</code> (<code>component/RepeatParts.kt:234</code>) asks "¿Cambiar también los siguientes?"
           with "Solo este", "Este y los siguientes", "Volver a editar" when a scheduled expense is corrected
-          (<code>ExpenseEntryScreen.kt:351</code>).</li>
+          (<code>ExpenseEntryScreen.kt:356</code>).</li>
       </ul>
       <p>Screenshots: <code>expense-entry-correction</code>, <code>expense-entry-following</code>, <code>expense-entry-following-busy</code>.</p>
     </section>
@@ -272,9 +272,9 @@
               <td>Past-expense announcement, inline in the choices</td><td>Said once; "Entendido" remembers it</td></tr>
             <tr><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> Older</td><td><code>:design-system</code> <code>Status.kt</code></td>
               <td>Above the chips when a refresh failed</td><td>Older data said, never passed off as fresh</td></tr>
-            <tr><td><a href="../components.html#c-RepeatRow"><code>RepeatRow</code></a>, <a href="../components.html#c-RepeatChoiceSheet"><code>RepeatChoiceSheet</code></a>, <a href="../components.html#c-FollowingChoice"><code>FollowingChoice</code></a></td><td><code>design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:73</code></td>
+            <tr><td><a href="../components.html#c-RepeatRow"><code>RepeatRow</code></a>, <a href="../components.html#c-RepeatChoiceSheet"><code>RepeatChoiceSheet</code></a>, <a href="../components.html#c-FollowingChoice"><code>FollowingChoice</code></a></td><td><code>design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:63</code></td>
               <td><code>income = false</code></td><td>Shared with Anotar ingreso and the schedules</td></tr>
-            <tr><td><a href="../components.html#c-CarryCorrectionContent"><code>CarryCorrectionContent</code></a></td><td><code>design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:164</code></td>
+            <tr><td><a href="../components.html#c-CarryCorrectionContent"><code>CarryCorrectionContent</code></a></td><td><code>design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:165</code></td>
               <td>Inside the correction ConfirmSlip</td><td>Lists the later months a save changes</td></tr>
             <tr><td><a href="../components.html#c-MovementPane"><code>MovementPane</code></a>, <a href="../components.html#c-MovementCloseButton"><code>MovementCloseButton</code></a>, <a href="../components.html#c-MovementNoteLine"><code>MovementNoteLine</code></a></td><td><code>:design-system</code> <code>Movement.kt</code></td>
               <td>The loading and failed pane, the X, the note line</td><td>Drawn as on every entry and movement form</td></tr>

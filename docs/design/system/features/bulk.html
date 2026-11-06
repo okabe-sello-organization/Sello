@@ -29,10 +29,10 @@
       <h2>Entry points</h2>
       <ul>
         <li>"Otro gasto" on <a href="expense.html">Anotar</a>, with what is typed as line one:
-          <code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:255</code>, routed at
+          <code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:263</code>, routed at
           <code>app/src/main/java/com/software/sello/navigation/ExpenseDestinations.kt:127</code>.</li>
         <li>"Otro ingreso" on <a href="income.html">Anotar ingreso</a>, with source, Otro's name, amount, note and date:
-          <code>app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:198</code>, routed at
+          <code>app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:203</code>, routed at
           <code>app/src/main/java/com/software/sello/navigation/ExpenseDestinations.kt:130</code>. Both replace the form
           they came from (<code>popUpTo … inclusive</code>, <code>ExpenseDestinations.kt:49</code>).</li>
         <li>A category's screen, with the category as every new line's start:
@@ -82,27 +82,27 @@
 
       <h3>Layout</h3>
       <p>A plain <code>Column</code> spaced by a hard-coded <code>8.dp</code>
-        (<code>app/src/main/java/com/software/sello/feature/bulk/BulkEntryScreen.kt:135</code>), not
+        (<code>app/src/main/java/com/software/sello/feature/bulk/BulkEntryScreen.kt:139</code>), not
         <a href="../components.html#c-EntryLayout"><code>EntryLayout</code></a>: the receipt takes the free height and
         scrolls its lines inside; the choices, the action and the pad stay put below it.</p>
       <ol>
         <li>Top bar (<a href="../components.html#c-SelloScaffold"><code>SelloScaffold</code></a>) with no band: X,
-          "Varios gastos" or "Varios ingresos". The removal notice uses the scaffold's notice slot (<code>:120</code>).</li>
+          "Varios gastos" or "Varios ingresos". The removal notice uses the scaffold's notice slot (<code>:124</code>).</li>
         <li><a href="../components.html#c-BulkReceipt"><code>BulkReceipt</code></a>, at least 160 dp tall
-          (<code>:263</code>): the caption ("Anotar varios" and "3 renglones", or a problem), the date
+          (<code>:267</code>): the caption ("Anotar varios" and "3 renglones", or a problem), the date
           <a href="../components.html#c-FieldPill"><code>FieldPill</code></a> as <code>headerEnd</code>, the lines, a
           tear line, "Otro renglón" and "Total". Expense lines show the category circle, name and note; income lines a
           green "+" mark, the source (or Otro's name with "Otro" under it) and a plus amount in gain green.</li>
-        <li>Choices (<code>:298</code>): an <a href="../components.html#c-EntryHeading"><code>EntryHeading</code></a>
+        <li>Choices (<code>:302</code>): an <a href="../components.html#c-EntryHeading"><code>EntryHeading</code></a>
           "Categoría · renglón 3" (or "Origen · renglón 3"; without the line number for a one-line receipt); a stale
           notice; the highlighted line's chips in <a href="../components.html#c-ChipRows"><code>ChipRows</code></a>,
           its choice first; for "Otro" an <a href="../components.html#c-EntryLine"><code>EntryLine</code></a>
           "¿De dónde vino?" with "Cambiar"; the note's EntryLine.</li>
-        <li>Action (<code>:412</code>): "Máximo 12 dígitos" as a hint, or the error, then a full-width
+        <li>Action (<code>:416</code>): "Máximo 12 dígitos" as a hint, or the error, then a full-width
           <a href="../components.html#c-SelloButton"><code>SelloButton</code></a> "+ Anotar 3 gastos" /
           "+ Anotar 3 ingresos" in gain green, the kind's tone (the check-again button too).</li>
         <li><a href="../components.html#c-AmountKeypad"><code>AmountKeypad</code></a>, <code>compact</code>, typing into
-          the highlighted line (<code>:142</code>).</li>
+          the highlighted line (<code>:146</code>).</li>
       </ol>
 
       <h3>States</h3>
@@ -112,29 +112,29 @@
           <tbody>
             <tr><td>Loading</td><td>Receipt, note, button and pad are there; a two-line
               <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a> in place of the chips.</td>
-              <td><code>app/src/main/java/com/software/sello/feature/bulk/BulkEntryScreen.kt:342</code></td><td><code>bulk-expenses-loading</code></td></tr>
+              <td><code>app/src/main/java/com/software/sello/feature/bulk/BulkEntryScreen.kt:349</code></td><td><code>bulk-expenses-loading</code></td></tr>
             <tr><td>Error (nothing ever read)</td><td>The lines stay; in place of the chips an error message "No pudimos leer tus categorías. Tus renglones siguen aquí." (incomes: "No pudimos leer tus datos…") and an Outlined "Reintentar"; the button is off.</td>
-              <td><code>BulkEntryScreen.kt:322</code></td><td>bulk-expenses-failed-read</td></tr>
+              <td><code>BulkEntryScreen.kt:329</code></td><td>bulk-expenses-failed-read</td></tr>
             <tr><td>Empty</td><td>Does not exist: the receipt always has at least one line.</td>
               <td><code>app/src/main/java/com/software/sello/feature/bulk/BulkEntryState.kt:91</code></td><td>—</td></tr>
             <tr><td>Ready</td><td>Lines with amounts and choices; "+ Anotar 3 gastos" enabled.</td>
-              <td><code>BulkEntryScreen.kt:440</code></td><td>bulk-expenses-three-lines, bulk-incomes-three-lines</td></tr>
+              <td><code>BulkEntryScreen.kt:447</code></td><td>bulk-expenses-three-lines, bulk-incomes-three-lines</td></tr>
             <tr><td>Missing choice</td><td>The caption turns to a problem, "Falta 1 categoría" / "Faltan 2 orígenes"; the line says "Elige una categoría", "Elige un origen" or "Escribe el nombre del origen"; the button is off.</td>
-              <td><code>BulkEntryScreen.kt:240</code>, <code>:601</code></td><td>bulk-expenses-missing-category, bulk-incomes-missing-source</td></tr>
+              <td><code>BulkEntryScreen.kt:244</code>, <code>:582</code></td><td>bulk-expenses-missing-category, bulk-incomes-missing-source</td></tr>
             <tr><td>Line limit</td><td>Caption "Máximo 30 por recibo"; "Otro renglón" is off.</td>
-              <td><code>BulkEntryScreen.kt:235</code></td><td>bulk-expenses-thirty-lines</td></tr>
+              <td><code>BulkEntryScreen.kt:239</code></td><td>bulk-expenses-thirty-lines</td></tr>
             <tr><td>Digit limit</td><td>"Máximo 12 dígitos" as a hint above the button.</td>
-              <td><code>BulkEntryScreen.kt:415</code></td><td><code>bulk-expenses-digit-limit</code></td></tr>
+              <td><code>BulkEntryScreen.kt:419</code></td><td><code>bulk-expenses-digit-limit</code></td></tr>
             <tr><td>Stale</td><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> Older "No pudimos actualizar…" and "Reintentar" under the heading; the lines stay.</td>
-              <td><code>BulkEntryScreen.kt:314</code></td><td>bulk-expenses-stale</td></tr>
+              <td><code>BulkEntryScreen.kt:318</code></td><td>bulk-expenses-stale</td></tr>
             <tr><td>Busy</td><td>"Guardando…" with spinner, no "+"; the X, lines, chips and pad are off.</td>
-              <td><code>BulkEntryScreen.kt:116</code>, <code>:441</code></td><td>bulk-expenses-saving</td></tr>
+              <td><code>BulkEntryScreen.kt:122</code>, <code>:448</code></td><td>bulk-expenses-saving</td></tr>
             <tr><td>Unknown outcome</td><td>Warning "Aún no sabemos si se guardó. Compruébalo antes de volver a anotar." and the only button "Comprobar si se guardó"; nothing can change; Back is ignored.</td>
-              <td><code>BulkEntryScreen.kt:432</code>, <code>app/src/main/java/com/software/sello/feature/bulk/BulkEntryViewModel.kt:420</code></td><td>bulk-expenses-unknown, bulk-incomes-unknown</td></tr>
+              <td><code>BulkEntryScreen.kt:438</code>, <code>app/src/main/java/com/software/sello/feature/bulk/BulkEntryViewModel.kt:420</code></td><td>bulk-expenses-unknown, bulk-incomes-unknown</td></tr>
             <tr><td>Refused</td><td>Whole receipt: "No se guardó. Tu borrador sigue aquí.", "La fecha no puede ser posterior a hoy. No se anotó nada.", "Tus datos cambiaron mientras tanto. No se anotó nada; inténtalo de nuevo.", the carry message. Per line: "Esta categoría está archivada", "Esta categoría ya no existe", "El total del mes no admite este monto", with the caption "Revisa 1 renglón".</td>
-              <td><code>BulkEntryScreen.kt:610</code>, <code>:248</code></td><td>bulk-expenses-refused</td></tr>
+              <td><code>BulkEntryScreen.kt:591</code>, <code>:252</code></td><td>bulk-expenses-refused</td></tr>
             <tr><td>Line removed</td><td><a href="../components.html#c-SelloNotice"><code>SelloNotice</code></a> "Quitaste el renglón de Salud" with "Deshacer", for 6 seconds.</td>
-              <td><code>BulkEntryScreen.kt:120</code>, <code>:84</code></td><td><code>bulk-expenses-removed</code></td></tr>
+              <td><code>BulkEntryScreen.kt:124</code>, <code>:90</code></td><td><code>bulk-expenses-removed</code></td></tr>
             <tr><td>Restored draft</td><td>Lines, highlighted line, date, kind and a save in flight come back from <code>SavedStateHandle</code>; a pending save is asked about, never sent again; "today" stays the day it opened.</td>
               <td><code>BulkEntryViewModel.kt:188</code>, <code>:254</code></td><td>Drawn as the filled form, so not captured again: <code>bulk-expenses-three-lines</code></td></tr>
             <tr><td>Saved</td><td>The correction notice says "3 gastos anotados: 126.000" (<code>notice_expenses_recorded</code>) and the sheet closes; no haptic.</td>
@@ -173,7 +173,7 @@
               data-caption="Naming Otro on line 3: the composer docked above the keyboard"></figure>
       <figure data-shot="bulk-expenses-note" data-module="app" data-caption="The note composer"></figure>
       <p>One <a href="../components.html#c-NoteComposer"><code>NoteComposer</code></a> for the highlighted line
-        (<code>BulkEntryScreen.kt:466</code>, <code>:520</code>). The note's context reads "Renglón 3 · <b>Comida</b> ·
+        (<code>BulkEntryScreen.kt:474</code>, <code>:528</code>). The note's context reads "Renglón 3 · <b>Comida</b> ·
         <b>32.500</b>" (60 characters, hint "Opcional"); Otro's reads "Renglón 3 · Origen <b>Otro</b> · nombre"
         (24 characters, hint "Escribe el nombre de la fuente", and "Escribe el nombre de la fuente." when emptied).
         "Listo" / "Cancelar".</p>
@@ -189,10 +189,10 @@
       <ul>
         <li>Discard: <a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a>, destructive (loss red
           "Descartar"), title "¿Descartar 3 renglones?", "Se borra lo que escribiste en este recibo. Esto no se puede
-          deshacer.", keep "Seguir anotando" (<code>BulkEntryScreen.kt:153</code>). Only when a line has something typed.</li>
+          deshacer.", keep "Seguir anotando" (<code>BulkEntryScreen.kt:157</code>). Only when a line has something typed.</li>
         <li>Carry correction: ConfirmSlip "¿Anotar estos gastos?" with <code>CarryCorrectionContent</code> and "Anotar",
-          busy while saving (<code>BulkEntryScreen.kt:169</code>). Expenses only.</li>
-        <li>Date: Material date picker with "Aceptar", no day after today (<code>BulkEntryScreen.kt:566</code>).</li>
+          busy while saving (<code>BulkEntryScreen.kt:173</code>). Expenses only.</li>
+        <li>Date: Material date picker with "Aceptar", no day after today (<code>BulkEntryScreen.kt:573</code>).</li>
       </ul>
       <p>Screenshots: <code>bulk-expenses-discard</code>, <code>bulk-expenses-date-picker</code>, <code>carry-bulk</code>, <code>carry-bulk-busy</code>.</p>
     </section>
@@ -229,7 +229,7 @@
               <td><code>compact</code></td><td>Types into the highlighted line</td></tr>
             <tr><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> Older</td><td><code>:design-system</code> <code>Status.kt</code></td>
               <td>Under the heading</td><td>Older categories said; the lines stay</td></tr>
-            <tr><td><a href="../components.html#c-CarryCorrectionContent"><code>CarryCorrectionContent</code></a></td><td><code>design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:164</code></td>
+            <tr><td><a href="../components.html#c-CarryCorrectionContent"><code>CarryCorrectionContent</code></a></td><td><code>design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:165</code></td>
               <td>In the correction slip</td><td>Lists the later months the receipt changes</td></tr>
             <tr><td><a href="../components.html#c-MovementDatePicker"><code>MovementDatePicker</code></a></td><td><code>:design-system</code> <code>Movement.kt</code></td>
               <td>Material date picker, <code>last</code> = today</td><td>One date per receipt</td></tr>
@@ -242,13 +242,13 @@
       <h2>Feature-local parts that look like shared ones</h2>
       <ul>
         <li>The read-failure pair, an error <code>FieldMessageText</code> plus an Outlined "Reintentar"
-          (<code>BulkEntryScreen.kt:322</code>), rebuilds what a <a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> LoadFailed
+          (<code>BulkEntryScreen.kt:329</code>), rebuilds what a <a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> LoadFailed
           draws; the goal receipt uses that StatusSlip for the same case
-          (<code>app/src/main/java/com/software/sello/feature/goals/GoalBulkScreen.kt:93</code>). See bulk-expenses-failed-read.</li>
+          (<code>app/src/main/java/com/software/sello/feature/goals/GoalBulkScreen.kt:96</code>). See bulk-expenses-failed-read.</li>
         <li>The removal notice sits in the scaffold's notice slot for 6 s; the goal and investment receipts lay the same
           <a href="../components.html#c-SelloNotice"><code>SelloNotice</code></a> over their chips for 4 s with
-          <code>confirmation = true</code> (<code>GoalBulkScreen.kt:110</code>,
-          <code>app/src/main/java/com/software/sello/feature/investments/InvestmentMovementsScreen.kt:444</code>).</li>
+          <code>confirmation = true</code> (<code>GoalBulkScreen.kt:115</code>,
+          <code>app/src/main/java/com/software/sello/feature/investments/InvestmentMovementsScreen.kt:449</code>).</li>
       </ul>
     </section>
 

@@ -221,7 +221,7 @@
 <dl>
 <dt>Purpose</dt><dd>The only way an amount is drawn: tabular figures, a raised currency code, tightened thousands points and a true minus. A figure too wide for its place wraps between groups, never clips; Hero first steps down to Total.</dd>
 <dt>Variants</dt><dd><code>style</code>: <code>MoneyStyle.Hero</code> 60 sp, <code>Total</code> 44, <code>Card</code> 32, <code>Title</code> 19, <code>Line</code> 14 (drops the currency code). <code>MoneyTextValue.sign</code>: <code>None</code>, <code>Plus</code>, <code>Minus</code>.</dd>
-<dt>Signed text</dt><dd><code>MoneyTextValue.signedText(showPlus = true)</code> (<code>component/MoneyText.kt:151</code>) writes an amount inside a sentence with the same sign rule: "+80.000", "&minus;150.000" with a true minus (U+2212), "937.200"; no currency code. With <code>showPlus = false</code> a gain is written bare and only a negative figure keeps its sign, for a sentence that states a limit or a balance rather than a change. Screens use it instead of writing their own sign helper.</dd>
+<dt>Signed text</dt><dd><code>MoneyTextValue.signedText(showPlus = true)</code> (<code>component/MoneyText.kt:161</code>) writes an amount inside a sentence with the same sign rule: "+80.000", "&minus;150.000" with a true minus (U+2212), "937.200"; no currency code. With <code>showPlus = false</code> a gain is written bare and only a negative figure keeps its sign, for a sentence that states a limit or a balance rather than a change. Screens use it instead of writing their own sign helper.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/category.html">category · 2</a> <a class="tag" href="features/goals.html">goals · 2</a> <a class="tag" href="features/income.html">income · 8</a> <a class="tag" href="features/investments.html">investments · 12</a> <a class="tag" href="features/recibo.html">recibo · 25</a> <a class="tag" href="features/recurrence.html">recurrence · 3</a> <a class="tag" href="features/resumen.html">resumen · 10</a> <span class="muted">Inside the design system: <code>BulkReceipt.kt</code>, <code>Carry.kt</code>, <code>Goals.kt</code>, <code>Paper.kt</code>, <code>Plan.kt</code>, <code>Recurrence.kt</code>.</span></dd>
 </dl>
 <pre><code>fun MoneyText(
@@ -257,7 +257,7 @@
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-LeaderLine">
-<h3><code>LeaderLine</code> <span class="src"><code>component/Lines.kt:46</code>, <code>component/Lines.kt:115</code></span></h3>
+<h3><code>LeaderLine</code> <span class="src"><code>component/Lines.kt:46</code>, <code>component/Lines.kt:114</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>A receipt line: label, dotted leader, value. For two to six facts. Read as one node, "label, value". Put a <code>MoneyText</code> in <code>value</code> for amounts. A <code>LineEmphasis.Soft</code> line draws its label and, by default, its value in the soft ink; a <code>LineEmphasis.Strong</code> one sets its label in black weight, and the value should match.<br>A <code>LeaderLine</code> whose value is plain text, such as a date or a count.</dd>
 <dt>Variants</dt><dd>Two overloads: a composable <code>value</code> (put a <code>MoneyText</code> there) or a plain <code>String</code> value. <code>emphasis</code>: <code>LineEmphasis.Normal</code>, <code>Soft</code>, <code>Strong</code>; optional <code>icon</code>, <code>caption</code>, <code>onClick</code>.</dd>
@@ -937,7 +937,7 @@ fun MoreMenuDropdown(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-ConfirmSlip">
-<h3><code>ConfirmSlip</code> <span class="src"><code>component/Feedback.kt:206</code>, <code>component/Feedback.kt:152</code></span></h3>
+<h3><code>ConfirmSlip</code> <span class="src"><code>component/Feedback.kt:206</code>, <code>component/Feedback.kt:243</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>A confirmation for something that cannot be undone. <code>message</code> says what is affected and how much, with the consequence in bold. Back and a tap outside cancel. While <code>busy</code> the action shows a spinner and nothing can be pressed or dismissed, so the action is requested once. The two buttons share the width; when a word of a label would not fit they go one above the other, the action on top. A slip whose labels are long can narrow <code>buttonPadding</code> so each stays on one line.<br><code>ConfirmSlip</code> with any <code>content</code> under the title, such as points to read before saving a file. The content scrolls when the slip would not fit; the buttons stay in view and go one above the other, the action on top, when a label would not fit. The action stays off until <code>confirmEnabled</code>, such as until a word that confirms it is typed.</dd>
 <dt>Frame</dt><dd>A <code>DialogSlip</code> whose button area is a <code>ButtonPair</code>: outlined <code>dismissLabel</code> and the action, in loss ink when <code>destructive</code>; 1:1 with a <code>message</code>, 1:2 with <code>content</code>.</dd>
@@ -975,7 +975,7 @@ fun ConfirmSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-ChoiceSlip">
-<h3><code>ChoiceSlip</code> <span class="src"><code>component/Feedback.kt:302</code>, <code>component/Feedback.kt:264</code></span></h3>
+<h3><code>ChoiceSlip</code> <span class="src"><code>component/Feedback.kt:302</code>, <code>component/Feedback.kt:333</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>A question with two answers, neither of them destructive, such as whether a change applies to the next ones too: <code>firstLabel</code> outlined, <code>secondLabel</code> filled, and <code>backLabel</code> under them to go back without answering. The slip is <code>DialogSlip</code>. Back and a tap outside are <code>onBack</code>. The answers stand one above the other, the filled one on top, when they do not fit side by side. While <code>busy</code> the answer given shows a spinner and nothing can be pressed or dismissed, so it is requested once.<br><code>ChoiceSlip</code> with any <code>content</code> under the title, such as a choice of format and the points to read before acting. The content scrolls when the slip would not fit; the answers stay in view.</dd>
 <dt>Variants</dt><dd>Two overloads: a <code>message</code> or any scrolling <code>content</code>. First answer outlined, second filled, back as text. <code>busy</code>.</dd>
@@ -1762,7 +1762,7 @@ fun StatusSlip(
 
 </article>
 <article class="component" id="c-painter">
-<h3><code>painter()</code> <span class="src"><code>icon/SelloIcon.kt:92</code></span></h3>
+<h3><code>painter()</code> <span class="src"><code>icon/SelloIcon.kt:93</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>No KDoc. Resolves a <code>SelloIcon</code> to its filled drawing, or its outlined one when <code>filled</code> is false and one exists.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 2</a> <a class="tag" href="features/bulk.html">bulk · 1</a> <a class="tag" href="features/category.html">category · 5</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 16</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 7</a> <a class="tag" href="features/shell.html">shell · 9</a> <a class="tag" href="features/recibo.html">recibo · 8</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a> <a class="tag" href="features/resumen.html">resumen · 1</a> <span class="muted">Inside the design system: <code>Carry.kt</code>, <code>Movement.kt</code>, <code>RepeatParts.kt</code>.</span></dd>
