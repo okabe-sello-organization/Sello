@@ -894,6 +894,25 @@ class GoalsViewModelTest {
     }
 
     @Test
+    fun metasCountsEachRefusalSoARepeatIsToldApart() = runTest {
+        reads.board.value = board(summary(viajeId, 3_060_000, 3_000_000))
+        val model = metas()
+        watch(model)
+        repeat(2) {
+            commands.queue += CommandOutcome.Rejected(CommandRejection.VersionConflict(5))
+        }
+
+        model.onAction(MetasAction.MarkComplete(viajeId))
+        val first = model.state.value as MetasState.Ready
+        model.onAction(MetasAction.MarkComplete(viajeId))
+        val second = model.state.value as MetasState.Ready
+
+        assertEquals(2, commands.sent.size)
+        assertEquals(first.completion, second.completion)
+        assertEquals(1 to 2, first.completionFailures to second.completionFailures)
+    }
+
+    @Test
     fun aCompletionCancelledMidSendKeepsItsOperationToBeAskedAboutNotSentAgain() = runTest {
         reads.board.value = board(summary(viajeId, 3_060_000, 3_000_000))
         val saved = SavedStateHandle()

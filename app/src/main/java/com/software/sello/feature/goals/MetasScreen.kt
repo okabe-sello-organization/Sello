@@ -79,9 +79,12 @@ fun MetasScreen(
     ) { mutableListOf<String>().toMutableStateList() }
     val list = rememberLazyListState()
     // A completion that did not finish is said first in the list; bring it into view, since
-    // the button pressed may be scrolled well below it.
-    val failed = ((state as? MetasState.Ready)?.completion as? CompletionState.Failed)?.error
-    LaunchedEffect(failed) { if (failed != null) list.animateScrollToItem(0) }
+    // the button pressed may be scrolled well below it. Keyed on the failure's count, so a
+    // refusal that repeats the one on screen scrolls too.
+    val failure = (state as? MetasState.Ready)
+        ?.takeIf { it.completion is CompletionState.Failed }
+        ?.completionFailures
+    LaunchedEffect(failure) { if (failure != null) list.animateScrollToItem(0) }
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag(METAS_LIST_TAG),
         state = list,
@@ -119,7 +122,8 @@ fun MetasScreen(
                 // A Marcar como lograda that did not finish, said as the goal's own page
                 // says it: Reintentar after a refusal, Comprobar si se guardó when unknown.
                 (state.completion as? CompletionState.Failed)?.let { failed ->
-                    item(key = METAS_COMPLETION_PROBLEM_TAG) {
+                    // Drawn anew for each failure, so its title is announced again.
+                    item(key = "$METAS_COMPLETION_PROBLEM_TAG.${state.completionFailures}") {
                         GoalSaveProblem(
                             failed.error,
                             { onAction(MetasAction.Retry) },

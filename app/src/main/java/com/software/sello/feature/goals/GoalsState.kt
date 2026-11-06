@@ -27,7 +27,12 @@ sealed interface MetasState {
         val today: LocalDate,
         val stale: Boolean = false,
         /** Marcar como lograda in progress, or its big moment on screen. */
-        val completion: CompletionState = CompletionState.Idle
+        val completion: CompletionState = CompletionState.Idle,
+        /**
+         * How many completions ended in [CompletionState.Failed] so far, so a refusal that
+         * repeats the one on screen is still brought into view.
+         */
+        val completionFailures: Int = 0
     ) : MetasState {
         val empty: Boolean get() = goals.isEmpty() && completed.isEmpty()
     }

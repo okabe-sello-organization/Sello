@@ -36,36 +36,31 @@ internal fun GoalSaveProblem(
     val unknown = error == GoalDetailError.Unknown
     Slip(modifier.fillMaxWidth(), pinked = false) {
         Column(verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)) {
-            // Read aloud when it appears, as a StatusSlip is; the button is not.
-            Column(
-                Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
-            ) {
-                Text(
+            Text(
+                stringResource(
+                    if (unknown) {
+                        R.string.goal_save_unknown_title
+                    } else {
+                        R.string.goal_save_failed_title
+                    }
+                ),
+                // Read aloud when it appears, as a StatusSlip's text; the line under it is
+                // a FieldMessageText, read aloud on its own.
+                Modifier.semantics {
+                    heading()
+                    liveRegion = LiveRegionMode.Polite
+                },
+                style = MaterialTheme.typography.titleMedium,
+                color = SelloTheme.colors.ink
+            )
+            FieldMessageText(
+                FieldMessage(
                     stringResource(
-                        if (unknown) {
-                            R.string.goal_save_unknown_title
-                        } else {
-                            R.string.goal_save_failed_title
-                        }
+                        if (unknown) R.string.goal_error_unknown else R.string.goal_error_not_saved
                     ),
-                    Modifier.semantics { heading() },
-                    style = MaterialTheme.typography.titleMedium,
-                    color = SelloTheme.colors.ink
+                    if (unknown) FieldTone.Warning else FieldTone.Error
                 )
-                FieldMessageText(
-                    FieldMessage(
-                        stringResource(
-                            if (unknown) {
-                                R.string.goal_error_unknown
-                            } else {
-                                R.string.goal_error_not_saved
-                            }
-                        ),
-                        if (unknown) FieldTone.Warning else FieldTone.Error
-                    )
-                )
-            }
+            )
             SelloButton(
                 stringResource(
                     if (unknown) R.string.expense_entry_check_again else R.string.goal_error_retry
