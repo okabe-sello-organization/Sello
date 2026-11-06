@@ -27,6 +27,7 @@ import com.software.sello.feature.goals.GoalDetailError
 import com.software.sello.feature.goals.ReciboGoal
 import com.software.sello.feature.goals.ReciboGoalPill
 import com.software.sello.feature.goals.ReciboGoalState
+import com.software.sello.feature.goals.ReciboReachedGoal
 import com.software.sello.navigation.CategoryEditAction
 import com.software.sello.navigation.CorrectionNoticeBar
 import com.software.sello.navigation.ShellDetail
@@ -348,6 +349,16 @@ class ReciboScreenshotTest {
 
     private val marking =
         ReciboGoalState.Shown(listOf(celular), null, CompletionState.Busy, stale = false)
+
+    /** Celular nuevo reached 100 % elsewhere: the green row offers Marcar como lograda. */
+    private val reached = ReciboGoalState.Shown(
+        listOf(viaje),
+        ReciboReachedGoal("celular", "Celular nuevo", "phone_iphone")
+    )
+
+    @Test fun goalsReachedLight() = shot("goals-reached", overspent, Look(), reached)
+
+    @Test fun goalsReachedDark() = shot("goals-reached", overspent, Look(dark = true), reached)
 
     @Test fun goalsBusyLight() = shot("goals-busy", overspent, Look(), marking)
 
