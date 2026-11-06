@@ -681,7 +681,8 @@
     <string name="income_changed">Este ingreso cambió mientras lo corregías. Sal y vuelve a abrirlo.</string>
     <string name="income_discard_title">¿Descartar lo que escribiste?</string>
     <string name="income_history_guidance">Puedes corregir ingresos de meses anteriores. Su fecha determina el mes que cambia; no cambia tus gastos ni tus límites.</string>
-    <string name="income_past_months">Esta corrección afecta los ingresos de %1$s.</string>
+    <string name="income_past_month">Esta corrección afecta los ingresos de %1$s.</string>
+    <string name="income_past_months">Esta corrección afecta los ingresos de %1$s y de %2$s.</string>
     <string name="income_history_title">Ingresos</string>
     <string name="income_record_several">Anotar varios</string>
     <string name="income_history_title_month">Ingresos de %1$s</string>

@@ -353,11 +353,11 @@ private fun IncomeChoices(state: IncomeFormState, onAction: (IncomeFormAction) -
         color = SelloTheme.colors.inkSoft
     )
     if (state.pastMonths.isNotEmpty()) {
-        val months = monthNames()
+        val named = state.pastMonths.map(monthNames()::inSentence)
         Text(
             stringResource(
-                R.string.income_past_months,
-                state.pastMonths.joinToString { months.title(it) }
+                if (named.size > 1) R.string.income_past_months else R.string.income_past_month,
+                *named.toTypedArray()
             ),
             modifier = Modifier.testTag("income.pastMonths")
         )
