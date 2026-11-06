@@ -26,6 +26,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.height
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.designsystem.component.LeaderLine
+import com.software.sello.designsystem.component.MoreMenuItem
+import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
 import kotlinx.coroutines.test.StandardTestDispatcher
 import org.junit.Assert.assertEquals
@@ -52,11 +54,18 @@ class ActionRowTest {
                     ActionRow(
                         onClick = { done += "open" },
                         actions = listOf(
-                            LineAction("Editar") { done += "edit" },
-                            LineAction("Borrar") { done += "delete" }
+                            MoreMenuItem("Editar", SelloIcon.EditNote, { done += "edit" }),
+                            MoreMenuItem("Borrar", SelloIcon.Delete, {
+                                done += "delete"
+                            }, loss = true)
                         ),
                         modifier = Modifier.testTag("line"),
-                        swipeAway = LineAction("Borrar") { done += "swiped" }.takeIf { swipe }
+                        swipeAway = MoreMenuItem(
+                            "Borrar",
+                            SelloIcon.Delete,
+                            { done += "swiped" },
+                            loss = true
+                        ).takeIf { swipe }
                     ) { pressable ->
                         LeaderLine("Pan", modifier = pressable, caption = "Hoy, 22 oct") {
                             Text("48.700")

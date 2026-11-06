@@ -134,17 +134,8 @@ fun StartupFailureScreen(
 @Composable
 private fun Explanation(state: StartupFailureState, onAction: (StartupFailureAction) -> Unit) {
     Slip(modifier = Modifier.fillMaxWidth().testTag(STARTUP_FAILURE_TAG)) {
-        Text(
-            text = stringResource(R.string.startup_failure_title),
-            style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.semantics { heading() }
-        )
-        Spacer(Modifier.height(SelloTheme.spacing.xs))
-        Text(
-            text = stringResource(R.string.startup_failure_body),
-            style = MaterialTheme.typography.bodyLarge,
-            color = SelloTheme.colors.inkSoft
-        )
+        RestoreHeading(stringResource(R.string.startup_failure_title))
+        RestoreBody(stringResource(R.string.startup_failure_body))
         if (state.stillFailing) {
             Spacer(Modifier.height(SelloTheme.spacing.sm))
             FieldMessageText(
@@ -312,22 +303,10 @@ private fun Warning(state: StartupFailureState, onAction: (StartupFailureAction)
             .bringIntoViewRequester(place)
             .testTag(STARTUP_WARNING_TAG)
     ) {
-        Text(
-            text = stringResource(R.string.startup_start_over_title),
-            style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.semantics { heading() }
-        )
-        Spacer(Modifier.height(SelloTheme.spacing.xs))
-        Text(
-            text = stringResource(R.string.startup_start_over_body),
-            style = MaterialTheme.typography.bodyLarge
-        )
-        Spacer(Modifier.height(SelloTheme.spacing.sm))
-        Text(
-            text = stringResource(R.string.startup_failure_newer_hint),
-            style = MaterialTheme.typography.bodyLarge,
-            color = SelloTheme.colors.inkSoft
-        )
+        RestoreHeading(stringResource(R.string.startup_start_over_title))
+        // The warning of the step that deletes data keeps full ink.
+        RestoreBody(stringResource(R.string.startup_start_over_body), soft = false)
+        RestoreBody(stringResource(R.string.startup_failure_newer_hint))
         Spacer(Modifier.height(SelloTheme.spacing.md))
         FormField(
             label = stringResource(R.string.startup_start_over_word),
@@ -341,21 +320,28 @@ private fun Warning(state: StartupFailureState, onAction: (StartupFailureAction)
             )
         )
         Spacer(Modifier.height(SelloTheme.spacing.lg))
-        Row(horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md)) {
-            SelloButton(
-                text = stringResource(R.string.startup_start_over_cancel),
-                onClick = { onAction(StartupFailureAction.Cancel) },
-                modifier = Modifier.weight(1f).testTag(STARTUP_CANCEL_TAG),
-                kind = ButtonKind.Outlined
-            )
-            SelloButton(
-                text = stringResource(R.string.startup_start_over_confirm),
-                onClick = { onAction(StartupFailureAction.Confirm) },
-                modifier = Modifier.weight(1f).testTag(STARTUP_CONFIRM_TAG),
-                tone = ButtonTone.Loss,
-                enabled = state.canConfirm
-            )
-        }
+        ButtonPair(
+            1f,
+            1f,
+            gap = SelloTheme.spacing.md,
+            first = {
+                SelloButton(
+                    text = stringResource(R.string.startup_start_over_cancel),
+                    onClick = { onAction(StartupFailureAction.Cancel) },
+                    modifier = Modifier.testTag(STARTUP_CANCEL_TAG),
+                    kind = ButtonKind.Outlined
+                )
+            },
+            second = {
+                SelloButton(
+                    text = stringResource(R.string.startup_start_over_confirm),
+                    onClick = { onAction(StartupFailureAction.Confirm) },
+                    modifier = Modifier.testTag(STARTUP_CONFIRM_TAG),
+                    tone = ButtonTone.Loss,
+                    enabled = state.canConfirm
+                )
+            }
+        )
     }
 }
 

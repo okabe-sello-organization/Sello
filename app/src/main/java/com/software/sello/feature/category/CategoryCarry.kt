@@ -20,6 +20,7 @@ import com.software.sello.designsystem.component.ConfirmSlip
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.component.TearLine
+import com.software.sello.designsystem.component.signedText
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.carry.CarryCorrectionContent
 import com.software.sello.presentation.carry.CarryCorrectionList
@@ -112,16 +113,6 @@ sealed interface CarryQuestion {
     ) : CarryQuestion
 }
 
-private fun MoneyTextValue.text() = (
-    if (sign == MoneySign.Minus) {
-        "−"
-    } else if (sign == MoneySign.Plus) {
-        "+"
-    } else {
-        ""
-    }
-    ) + digits
-
 /**
  * The carry switch at the foot of the Límite mensual slip, under a tear line: the setting,
  * what it carries this month and what it said last. Flipping it asks first when there is
@@ -166,7 +157,7 @@ internal fun CarrySwitch(state: CategoryEditorState, onAction: (CategoryEditorAc
                     stringResource(
                         R.string.carry_on_summary,
                         dates.monthYear(card.since),
-                        card.carry.text(),
+                        card.carry.signedText(),
                         card.capacity.digits
                     )
                 } else {
@@ -215,7 +206,7 @@ private fun pendingText(pending: CarryPending): String {
             monthNames().inSentence(pending.month)
         )
 
-        forgets != null -> stringResource(R.string.carry_pending_off_forgets, forgets.text())
+        forgets != null -> stringResource(R.string.carry_pending_off_forgets, forgets.signedText())
 
         else -> stringResource(R.string.carry_pending_off)
     }
@@ -342,7 +333,7 @@ internal fun CarryQuestionSlip(
             ) {
                 figures.changedFrom?.let {
                     Text(
-                        stringResource(R.string.carry_drop_changed, it.text()),
+                        stringResource(R.string.carry_drop_changed, it.signedText()),
                         style = MaterialTheme.typography.bodyMedium,
                         color = SelloTheme.colors.semantic.warn,
                         modifier = Modifier.padding(bottom = 8.dp).testTag(EDITOR_CARRY_CHANGED_TAG)
@@ -386,7 +377,7 @@ internal fun CarryQuestionSlip(
                     if (!unlimited) {
                         val base = stringResource(R.string.carry_base)
                         val same =
-                            stringResource(R.string.carry_drop_base_same, figures.base.text())
+                            stringResource(R.string.carry_drop_base_same, figures.base.signedText())
                         ChangeRow(base, same, "$base: ${figures.base.spoken}")
                     }
                 }
@@ -409,8 +400,8 @@ internal fun CarryQuestionSlip(
                 stringResource(
                     R.string.carry_correct_limit_what,
                     dates.monthYear(question.month),
-                    question.before.text(),
-                    question.after.text()
+                    question.before.signedText(),
+                    question.after.signedText()
                 )
             } else {
                 null
@@ -427,7 +418,11 @@ private fun BeforeAfter(
     after: MoneyTextValue?,
     none: String
 ) {
-    val value = stringResource(R.string.carry_list_change, before.text(), after?.text() ?: none)
+    val value = stringResource(
+        R.string.carry_list_change,
+        before.signedText(),
+        after?.signedText() ?: none
+    )
     ChangeRow(
         label,
         value,

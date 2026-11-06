@@ -58,12 +58,14 @@ import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.StatusAction
 import com.software.sello.designsystem.component.StatusKind
 import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.signedText
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.carry.CarryCorrectionContent
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.count.countText
+import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.month.monthNames
 import java.time.YearMonth
 
@@ -348,8 +350,8 @@ private fun MoveRows(name: String, facts: MoveFacts) {
             spent,
             stringResource(
                 R.string.category_delete_change,
-                facts.targetSpent.shown(),
-                facts.targetSpentAfter.shown()
+                facts.targetSpent.signedText(showPlus = false),
+                facts.targetSpentAfter.signedText(showPlus = false)
             ),
             stringResource(
                 R.string.category_delete_change_spoken,
@@ -360,7 +362,8 @@ private fun MoveRows(name: String, facts: MoveFacts) {
         )
         facts.sourceLimit?.let { limit ->
             val label = stringResource(R.string.category_delete_row_source_limit, name, month)
-            val value = stringResource(R.string.category_delete_goes, limit.shown())
+            val value =
+                stringResource(R.string.category_delete_goes, limit.shown())
             val spoken = stringResource(R.string.category_delete_goes, limit.spoken())
             ChangeRow(
                 label,
@@ -370,7 +373,8 @@ private fun MoveRows(name: String, facts: MoveFacts) {
         }
         facts.targetLimit?.let { limit ->
             val label = stringResource(R.string.category_delete_row_target_limit, facts.target)
-            val value = stringResource(R.string.category_delete_stays, limit.shown())
+            val value =
+                stringResource(R.string.category_delete_stays, limit.shown())
             val spoken = stringResource(R.string.category_delete_stays, limit.spoken())
             ChangeRow(
                 label,
@@ -398,7 +402,7 @@ private fun AllContent(
                 ?: expenses
             ChangeRow(
                 label,
-                counts.total.shown(),
+                counts.total.signedText(showPlus = false),
                 stringResource(R.string.category_delete_row_spoken, label, counts.total.spoken)
             )
         }
@@ -472,7 +476,7 @@ private fun ProblemSlip(
                 (before.expenses != now.expenses || before.total != now.total)
             ) {
                 val count = expensesText(now.expenses)
-                val total = now.total.shown()
+                val total = now.total.signedText(showPlus = false)
                 bold(
                     pluralStringResource(
                         R.plurals.category_delete_changed_counts,
@@ -481,7 +485,7 @@ private fun ProblemSlip(
                         countText(now.expenses),
                         total,
                         countText(before.expenses),
-                        before.total.shown()
+                        before.total.signedText(showPlus = false)
                     ) + " " + review,
                     count,
                     total
@@ -624,7 +628,7 @@ private fun Caption(text: String, top: Dp = 0.dp) {
 private fun holds(name: String, counts: RemovalCounts): AnnotatedString {
     val expenses = expensesText(counts.expenses)
     val schedules = schedulesText(counts.schedules)
-    val total = counts.total.shown()
+    val total = counts.total.signedText(showPlus = false)
     val range = longRange(counts.firstMonth, counts.lastMonth).orEmpty()
     val sentence = when {
         counts.expenses > 0 && counts.schedules > 0 -> stringResource(
@@ -783,14 +787,10 @@ private fun longRange(first: YearMonth?, last: YearMonth?): String? {
 @Composable
 private fun shortRange(first: YearMonth?, last: YearMonth?): String? {
     if (first == null || last == null) return null
-    val names = stringArrayResource(R.array.month_names_abbreviated)
-    fun name(month: YearMonth) = names[month.monthValue - 1]
+    val dates = dateLabels()
+    fun name(month: YearMonth) = dates.month(month)
     return when {
-        first == last -> stringResource(
-            R.string.category_delete_short_month,
-            name(first),
-            first.year
-        )
+        first == last -> dates.monthYear(first)
 
         first.year == last.year -> stringResource(
             R.string.category_delete_short_range,
@@ -817,7 +817,7 @@ private fun withUndoable(text: String): AnnotatedString {
 
 @Composable
 private fun RemovalLimit.shown(): String = when (this) {
-    is RemovalLimit.Finite -> amount.shown()
+    is RemovalLimit.Finite -> amount.signedText(showPlus = false)
     RemovalLimit.Unlimited -> stringResource(R.string.category_editor_unlimited)
 }
 
@@ -826,9 +826,6 @@ private fun RemovalLimit.spoken(): String = when (this) {
     is RemovalLimit.Finite -> amount.spoken
     RemovalLimit.Unlimited -> stringResource(R.string.category_editor_unlimited)
 }
-
-/** An amount as a row writes it, with its true minus when it is below zero. */
-private fun MoneyTextValue.shown() = (if (sign == MoneySign.Minus) "−" else "") + digits
 
 /** [text] with each of [parts] in bold, in order, as the design writes the counts. */
 private fun bold(text: String, vararg parts: String): AnnotatedString = buildAnnotatedString {

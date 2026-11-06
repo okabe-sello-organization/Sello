@@ -32,1206 +32,7 @@ window.SELLO_FINDINGS = {
   "notListed": "Color.Unspecified (it means \"inherit LocalContentColor\") and colours blended between two theme roles in animations (CelebrationOverlay.kt:271, Goals.kt:251), which follow the theme."
  },
  "misuse": [],
- "copies": [
-  {
-   "id": "C01",
-   "component": "MovementDatePicker",
-   "ref": "components.html#c-MovementDatePicker",
-   "shared": "design-system/src/main/java/com/software/sello/designsystem/component/Movement.kt:146",
-   "copies": [
-    {
-     "id": "C01-1",
-     "file": "app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:673",
-     "area": "expense",
-     "features": [
-      "expense"
-     ],
-     "differs": "DayPicker: the same DatePickerDialog with an Aceptar SelloButton; the allowed range flips to today-or-later while Se repite is on, and the confirm carries a test tag.",
-     "identical": false,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "expense-entry-date-picker-cobalto-light-font1.0.png"
-      }
-     ]
-    },
-    {
-     "id": "C01-2",
-     "file": "app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:498",
-     "area": "income",
-     "features": [
-      "income"
-     ],
-     "differs": "IncomeDatePicker: the same dialog; like the expense copy, the range flips to today-or-later while Se repite is on.",
-     "identical": false,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "income-form-date-picker-cobalto-light-font1.0.png"
-      }
-     ]
-    },
-    {
-     "id": "C01-3",
-     "file": "app/src/main/java/com/software/sello/feature/bulk/BulkEntryScreen.kt:566",
-     "area": "bulk",
-     "features": [
-      "bulk"
-     ],
-     "differs": "DayPicker: identical range (no day after today); only adds a test tag on Aceptar.",
-     "identical": true,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "bulk-expenses-date-picker-claro.png"
-      }
-     ]
-    },
-    {
-     "id": "C01-4",
-     "file": "app/src/main/java/com/software/sello/feature/investments/InvestmentEditorScreen.kt:738",
-     "area": "investments",
-     "features": [
-      "investments"
-     ],
-     "differs": "FormDatePicker: identical range (no day after today); opens on the value date or the rate date.",
-     "identical": true,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "investment-editor-date-picker-cobalto-light-font1.0.png"
-      }
-     ]
-    },
-    {
-     "id": "C01-5",
-     "file": "app/src/main/java/com/software/sello/feature/investments/UsdRateEntryScreen.kt:220",
-     "area": "investments",
-     "features": [
-      "investments"
-     ],
-     "differs": "RateDatePicker: identical (no day after today).",
-     "identical": true,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": []
-    },
-    {
-     "id": "C01-6",
-     "file": "app/src/main/java/com/software/sello/feature/recurrence/ScheduleEditorScreen.kt:450",
-     "area": "recurrence",
-     "features": [
-      "recurrence"
-     ],
-     "differs": "StartPicker: the same dialog with the opposite range, from tomorrow on.",
-     "identical": false,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "schedule-editor-start-picker-cobalto-light-font1.0.png"
-      }
-     ]
-    },
-    {
-     "id": "C01-7",
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:243",
-     "area": "design-system:RepeatParts",
-     "features": [
-      "recurrence"
-     ],
-     "differs": "EndPicker (shared repeat sheet): the same dialog with the range on or after the start day; test tag on Aceptar.",
-     "identical": false,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "schedule-editor-repeat-end-picker-cobalto-light-font1.0.png"
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "id": "C02",
-   "component": "MovementCloseButton",
-   "ref": "components.html#c-MovementCloseButton",
-   "shared": "design-system/src/main/java/com/software/sello/designsystem/component/Movement.kt:39",
-   "copies": [
-    {
-     "id": "C02-1",
-     "file": "app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:190",
-     "area": "expense",
-     "features": [
-      "expense"
-     ],
-     "differs": "identical (IconButton, SelloIcon.Close, expense_entry_close).",
-     "identical": true,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "expense-entry-cobalto-light-font1.0.png"
-      }
-     ]
-    },
-    {
-     "id": "C02-2",
-     "file": "app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:142",
-     "area": "income",
-     "features": [
-      "income"
-     ],
-     "differs": "identical.",
-     "identical": true,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "income-form-cobalto-light-font1.0.png"
-      }
-     ]
-    },
-    {
-     "id": "C02-3",
-     "file": "app/src/main/java/com/software/sello/feature/bulk/BulkEntryScreen.kt:116",
-     "area": "bulk",
-     "features": [
-      "bulk"
-     ],
-     "differs": "adds enabled = !state.busy (MovementCloseButton has no enabled parameter).",
-     "identical": false,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "bulk-expenses-three-lines-claro.png"
-      }
-     ]
-    },
-    {
-     "id": "C02-4",
-     "file": "app/src/main/java/com/software/sello/feature/investments/UsdRateEntryScreen.kt:72",
-     "area": "investments",
-     "features": [
-      "investments"
-     ],
-     "differs": "identical plus a test tag.",
-     "identical": true,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "usd-rate-entry-ready-cobalto-light-font1.0.png"
-      }
-     ]
-    },
-    {
-     "id": "C02-5",
-     "file": "app/src/main/java/com/software/sello/feature/recurrence/ScheduleEditorScreen.kt:105",
-     "area": "recurrence",
-     "features": [
-      "recurrence"
-     ],
-     "differs": "identical.",
-     "identical": true,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "schedule-editor-cobalto-light-font1.0.png"
-      }
-     ]
-    },
-    {
-     "id": "C02-6",
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalEditorScreen.kt:111",
-     "area": "goals",
-     "features": [
-      "goals"
-     ],
-     "differs": "its own string goal_editor_close (same text, Cerrar) and a test tag.",
-     "identical": false,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "goal-editor-cobalto-light-font1.0.png"
-      }
-     ]
-    },
-    {
-     "id": "C02-7",
-     "file": "app/src/main/java/com/software/sello/feature/investments/InvestmentEditorScreen.kt:143",
-     "area": "investments",
-     "features": [
-      "investments"
-     ],
-     "differs": "identical plus a test tag.",
-     "identical": true,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "investment-editor-cobalto-light-font1.0.png"
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "id": "C03",
-   "component": "MovementPane",
-   "ref": "components.html#c-MovementPane",
-   "shared": "design-system/src/main/java/com/software/sello/designsystem/component/Movement.kt:47",
-   "copies": [
-    {
-     "id": "C03-1",
-     "file": "app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:250",
-     "area": "income",
-     "features": [
-      "income"
-     ],
-     "differs": "IncomePane: identical, line for line.",
-     "identical": true,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "income-form-loading-cobalto-light-font1.0.png"
-      }
-     ]
-    },
-    {
-     "id": "C03-2",
-     "file": "app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:363",
-     "area": "expense",
-     "features": [
-      "expense"
-     ],
-     "differs": "Pane: the same scrolling loading/failed column, but spacing.md between items, no inner spacing.lg padding, and the scaffold padding applied inside the scroll.",
-     "identical": false,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "expense-entry-loading-cobalto-light-font1.0.png"
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "id": "C04",
-   "component": "MovementNoteLine",
-   "ref": "components.html#c-MovementNoteLine",
-   "shared": "design-system/src/main/java/com/software/sello/designsystem/component/Movement.kt:60",
-   "copies": [
-    {
-     "id": "C04-1",
-     "file": "app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:464",
-     "area": "expense",
-     "features": [
-      "expense"
-     ],
-     "differs": "identical EntryLine (EditNote icon, expense_entry_add_note, expense_entry_edit_note, placeholder when blank) plus a test tag.",
-     "identical": true,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "expense-entry-cobalto-light-font1.0.png"
-      }
-     ]
-    },
-    {
-     "id": "C04-2",
-     "file": "app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:332",
-     "area": "income",
-     "features": [
-      "income"
-     ],
-     "differs": "identical plus a test tag.",
-     "identical": true,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "income-form-cobalto-light-font1.0.png"
-      }
-     ]
-    },
-    {
-     "id": "C04-3",
-     "file": "app/src/main/java/com/software/sello/feature/bulk/BulkEntryScreen.kt:398",
-     "area": "bulk",
-     "features": [
-      "bulk"
-     ],
-     "differs": "identical plus a test tag.",
-     "identical": true,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "bulk-expenses-three-lines-claro.png"
-      }
-     ]
-    },
-    {
-     "id": "C04-4",
-     "file": "app/src/main/java/com/software/sello/feature/recurrence/ScheduleEditorScreen.kt:290",
-     "area": "recurrence",
-     "features": [
-      "recurrence"
-     ],
-     "differs": "identical.",
-     "identical": true,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "schedule-editor-cobalto-light-font1.0.png"
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "id": "C08",
-   "component": "MoreMenu",
-   "ref": "components.html#c-MoreMenu",
-   "shared": "design-system/src/main/java/com/software/sello/designsystem/component/MoreMenu.kt:41",
-   "copies": [
-    {
-     "id": "C08-1",
-     "file": "app/src/main/java/com/software/sello/feature/recibo/ReciboComponents.kt:256",
-     "area": "recibo",
-     "features": [
-      "recibo"
-     ],
-     "differs": "LineActionMenu (long press on a Recibo cell, ReciboComponents.kt:128, and on expense lines, :250): the same DropdownMenu on paper with bodyLarge items that close then run, but no icons, no loss ink (Borrar is drawn in plain ink like Editar) and no disabled state; opened by long press instead of the ⋮.",
-     "identical": false,
-     "drift": "Borrar is drawn in plain ink, not the menu's loss ink.",
-     "unsure": false,
-     "doubt": null,
-     "shots": []
-    },
-    {
-     "id": "C08-2",
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:485",
-     "area": "bulk",
-     "features": [
-      "bulk"
-     ],
-     "differs": "BulkReceipt line menu: the same DropdownMenu with one Quitar item in plain ink, no icon; opened by long press. It removes a typed line, not a record.",
-     "identical": false,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": []
-    }
-   ]
-  },
-  {
-   "id": "C10",
-   "component": "ButtonPair",
-   "ref": "components.html#c-ButtonPair",
-   "shared": "design-system/src/main/java/com/software/sello/designsystem/component/Recurrence.kt:238",
-   "copies": [
-    {
-     "id": "C10-1",
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalStarSheet.kt:99",
-     "area": "goals",
-     "features": [
-      "goals"
-     ],
-     "differs": "replace sheet: a Row spaced 10 dp with outlined Cancelar at weight 1 and a filled action at weight 2 (RepeatSheetActions' 1:2 split); never stacks when a label does not fit, and the action shows only on retry.",
-     "identical": false,
-     "drift": "Never stacks when a label does not fit, unlike ButtonPair.",
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "goal-replace-refused-claro.png"
-      }
-     ]
-    },
-    {
-     "id": "C10-2",
-     "file": "app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:325",
-     "area": "startup",
-     "features": [
-      "startup"
-     ],
-     "differs": "Empezar de cero: a Row spaced spacing.md with outlined Cancelar and the loss action at 1:1; never stacks.",
-     "identical": false,
-     "drift": "Never stacks when a label does not fit, unlike ButtonPair.",
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "startup-failure-start-over-cobalto-light-font1.0.png"
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "id": "C11",
-   "component": "SelloButton(kind = Filled)",
-   "ref": "components.html#c-SelloButton",
-   "shared": "design-system/src/main/java/com/software/sello/designsystem/component/SelloButton.kt:42",
-   "copies": [
-    {
-     "id": "C11-1",
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:202",
-     "area": "goals",
-     "features": [
-      "goals"
-     ],
-     "differs": "ReachedRow's Marcar como lograda: a gain-filled pill Box, 44 dp, bodySmall W800 label; while busy it fades to 0.6 with no spinner (SelloButton stays at full strength with a spinner).",
-     "identical": false,
-     "drift": "Busy fades the button instead of showing SelloButton's spinner.",
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "recibo-goals-five-reached-cobalto-light-font1.0.png"
-      }
-     ]
-    },
-    {
-     "id": "C11-2",
-     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:460",
-     "area": "goals",
-     "features": [
-      "goals"
-     ],
-     "differs": "celebration Listo: a button-shaped Box 56 dp with onGain fill and gain titleMedium W800 text; no tone gives these inverted colours; no disabled or loading look.",
-     "identical": false,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": []
-    }
-   ]
-  },
-  {
-   "id": "C12",
-   "component": "SelloButton(kind = Text)",
-   "ref": "components.html#c-SelloButton",
-   "shared": "design-system/src/main/java/com/software/sello/designsystem/component/SelloButton.kt:42",
-   "copies": [
-    {
-     "id": "C12-1",
-     "file": "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:267",
-     "area": "recibo",
-     "features": [
-      "recibo"
-     ],
-     "differs": "AdjustBudgetLink (also used on CategoryDetailScreen.kt:321): a clickable Row with bodyLarge W800 brand text and a trailing 20 dp chevron; no button shape, ripple bounds, disabled or loading state.",
-     "identical": false,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "recibo-cobalto-light-font1.0.png"
-      }
-     ]
-    },
-    {
-     "id": "C12-2",
-     "file": "app/src/main/java/com/software/sello/feature/backup/TusDatos.kt:286",
-     "area": "settings",
-     "features": [
-      "settings"
-     ],
-     "differs": "Ver qué contiene: a clickable Row with labelLarge brand text and an 18 dp brand chevron.",
-     "identical": false,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "settings-loaded-cobalto-light-font1.0.png"
-      }
-     ]
-    },
-    {
-     "id": "C12-3",
-     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:476",
-     "area": "goals",
-     "features": [
-      "goals"
-     ],
-     "differs": "Ver mi meta: a clickable Row with bodyMedium W800 onGain text and an 18 dp chevron, on the green flood.",
-     "identical": false,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": []
-    }
-   ]
-  },
-  {
-   "id": "C13",
-   "component": "AnswerSlip",
-   "ref": "components.html#c-AnswerSlip",
-   "shared": "design-system/src/main/java/com/software/sello/designsystem/component/Paper.kt:534",
-   "copies": [
-    {
-     "id": "C13-1",
-     "file": "app/src/main/java/com/software/sello/feature/resumen/SummaryComponents.kt:53",
-     "area": "resumen",
-     "features": [
-      "resumen"
-     ],
-     "differs": "ComparisonSlip: the question in bodyLarge W600 inkSoft with 6 dp under it, then FittedMoneyText in default ink; no stamp, no single spoken description; the explanation, rate and bars would fit AnswerSlip's detail slot.",
-     "identical": false,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "resumen-cobalto-light-font1.0.png"
-      }
-     ]
-    },
-    {
-     "id": "C13-2",
-     "file": "app/src/main/java/com/software/sello/feature/recibo/CategoryDetailScreen.kt:213",
-     "area": "recibo",
-     "features": [
-      "recibo"
-     ],
-     "differs": "HeaderSlip: headline in bodyLarge inkSoft with a Stamp at its default angle and 6 dp padding (AnswerSlip: −5°, 8 dp), then FittedMoneyText from 44 sp beside a 56 dp CategoryCircle, read as one description; a name row with edit sits above.",
-     "identical": false,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "category-detail-cobalto-light-font1.0.png"
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "id": "C14",
-   "component": "Footnote",
-   "ref": "components.html#c-Footnote",
-   "shared": "design-system/src/main/java/com/software/sello/designsystem/component/Paper.kt:583",
-   "copies": [
-    {
-     "id": "C14-1",
-     "file": "app/src/main/java/com/software/sello/feature/investments/InversionesScreen.kt:400",
-     "area": "investments",
-     "features": [
-      "investments"
-     ],
-     "differs": "QuietLine: the same icon-and-bodySmall-inkSoft line without the click and chevron, the icon in inkSoft instead of brand, min 32 dp with 6 dp on top (Footnote 48 dp). The rate line switches between QuietLine (:198) and Footnote (:200) depending on whether it can open.",
-     "identical": false,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "inversiones-foot-cobalto-light-font1.0.png"
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "id": "C15",
-   "component": "FieldMessageText",
-   "ref": "components.html#c-FieldMessageText",
-   "shared": "design-system/src/main/java/com/software/sello/designsystem/component/FieldMessage.kt:46",
-   "copies": [
-    {
-     "id": "C15-1",
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalStarSheet.kt:196",
-     "area": "goals",
-     "features": [
-      "goals"
-     ],
-     "differs": "SheetError: FieldTone's mapping by hand (warn for unknown, loss for refused), the Error icon and a polite live region, but on a warnSoft/lossSoft 12 dp banner with a 20 dp icon and bodyMedium ink text with a bold lead.",
-     "identical": false,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "goal-replace-refused-claro.png"
-      }
-     ]
-    },
-    {
-     "id": "C15-2",
-     "file": "app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:458",
-     "area": "recibo",
-     "features": [
-      "recibo"
-     ],
-     "differs": "limit sheet's save error: warn ink for unknown, loss otherwise, bodyMedium, no icon and no live region.",
-     "identical": false,
-     "drift": "No icon and no live region, unlike FieldMessageText.",
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "limit-sheet-unknown-claro.png"
-      },
-      {
-       "module": "app",
-       "file": "limit-sheet-refused-claro.png"
-      }
-     ]
-    },
-    {
-     "id": "C15-3",
-     "file": "app/src/main/java/com/software/sello/feature/recibo/CategoryDetailScreen.kt:524",
-     "area": "recibo",
-     "features": [
-      "recibo"
-     ],
-     "differs": "delete problem under the list: warn ink for unknown, loss otherwise, bodyMedium with a live region, no icon.",
-     "identical": false,
-     "drift": null,
-     "unsure": true,
-     "doubt": "FieldMessageText's KDoc is about a control's own value and the entry's save message; this one reports a delete from a list.",
-     "shots": [
-      {
-       "module": "app",
-       "file": "category-detail-delete-unknown-claro.png"
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "id": "C16",
-   "component": "CarryBreakdown (CarryBreakdownSection)",
-   "ref": "components.html#c-CarryBreakdown",
-   "shared": "app/src/main/java/com/software/sello/presentation/carry/Carry.kt:106",
-   "copies": [
-    {
-     "id": "C16-1",
-     "file": "app/src/main/java/com/software/sello/feature/recibo/CategoryInsightSections.kt:322",
-     "area": "recibo",
-     "features": [
-      "recibo"
-     ],
-     "differs": "history selection: Límite base, the carry and Límite del mes written as three LeaderLines by hand; the capacity is not Strong, a negative carry is not in loss ink, the weights are default (CarryBreakdown: W700/W900) and the carry has no words caption.",
-     "identical": false,
-     "drift": "A negative carry is not in loss ink and the capacity is not strong.",
-     "unsure": false,
-     "doubt": null,
-     "shots": []
-    }
-   ]
-  },
-  {
-   "id": "C17",
-   "component": "MilestoneRow",
-   "ref": "components.html#c-MilestoneRow",
-   "shared": "design-system/src/main/java/com/software/sello/designsystem/component/Goals.kt:341",
-   "copies": [
-    {
-     "id": "C17-1",
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:316",
-     "area": "goals",
-     "features": [
-      "goals"
-     ],
-     "differs": "GoalCard: a Row with SpaceBetween over MilestonePlace; no scroll, no landing or relight stagger, and the stamps spread to the card's edges (MilestoneRow's evenly centres each in an equal share).",
-     "identical": false,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "metas-cobalto-light-font1.0.png"
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "id": "C18",
-   "component": "Modifier.dashedOutline",
-   "ref": null,
-   "shared": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:46",
-   "copies": [
-    {
-     "id": "C18-1",
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/IconPicker.kt:79",
-     "area": "category, goals, investments (IconPickerCircle)",
-     "features": [
-      "goals",
-      "investments",
-      "category"
-     ],
-     "differs": "the empty icon ring drawn with drawCircle, 2.5 dp, the same 5/4 dp dashes.",
-     "identical": false,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "category-editor-new-cobalto-light-font1.0.png"
-      }
-     ]
-    },
-    {
-     "id": "C18-2",
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/IconChoiceGrid.kt:132",
-     "area": "category (icon sheet)",
-     "features": [
-      "category"
-     ],
-     "differs": "private dashedBorder for an icon in use: follows any shape, 1.5 dp, 4/3 dp dashes.",
-     "identical": false,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "category-editor-icon-sheet-cobalto-light-font1.0.png"
-      }
-     ]
-    },
-    {
-     "id": "C18-3",
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Goals.kt:288",
-     "area": "goals (MilestonePlace)",
-     "features": [
-      "goals"
-     ],
-     "differs": "an unearned stamp's ring: drawCircle with 4/3 dp dashes.",
-     "identical": false,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "metas-cobalto-light-font1.0.png"
-      }
-     ]
-    },
-    {
-     "id": "C18-4",
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:576",
-     "area": "bulk (BulkReceipt)",
-     "features": [
-      "bulk"
-     ],
-     "differs": "a line mark with no icon yet: a 2 dp dashed circle with 4/3 dp dashes, loss ink when missing.",
-     "identical": false,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "design-system",
-       "file": "bulk-receipt-missing-category-claro.png"
-      }
-     ]
-    },
-    {
-     "id": "C18-5",
-     "file": "app/src/main/java/com/software/sello/feature/investments/InvestmentComponents.kt:179",
-     "area": "investments",
-     "features": [
-      "investments"
-     ],
-     "differs": "InvestmentRow's circle with no value: a 2 dp dashed circle with 4/3 dp dashes in outline ink.",
-     "identical": false,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": []
-    }
-   ]
-  },
-  {
-   "id": "C19",
-   "component": "MonthNames",
-   "ref": null,
-   "shared": "app/src/main/java/com/software/sello/presentation/month/MonthNames.kt:30",
-   "copies": [
-    {
-     "id": "C19-1",
-     "file": "app/src/main/java/com/software/sello/feature/resumen/ResumenRenderModel.kt:192",
-     "area": "resumen",
-     "features": [
-      "resumen"
-     ],
-     "differs": "monthName/monthTitle use java.time's LLLL in es-CO (formatter at :211) instead of the month_names array; same words today, but they skip the resources (MonthNames has no Resources factory for a render model, as DateLabels has).",
-     "identical": false,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "resumen-cobalto-light-font1.0.png"
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "id": "C20",
-   "component": "DateLabels.month",
-   "ref": null,
-   "shared": "app/src/main/java/com/software/sello/presentation/date/DateLabels.kt:51",
-   "copies": [
-    {
-     "id": "C20-1",
-     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:813",
-     "area": "category",
-     "features": [
-      "category"
-     ],
-     "differs": "shortRange reads month_names_abbreviated itself to write the short month ('oct 2026'), which DateLabels.month/monthYear already give.",
-     "identical": false,
-     "drift": null,
-     "unsure": true,
-     "doubt": "not checked that the count shot shows the short range.",
-     "shots": [
-      {
-       "module": "app",
-       "file": "category-removal-count-cobalto-light-font1.0.png"
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "id": "C21",
-   "component": "MoneyTextValue.text() (recibo, true minus only)",
-   "ref": null,
-   "shared": "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:610",
-   "copies": [
-    {
-     "id": "C21-1",
-     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:831",
-     "area": "category",
-     "features": [
-      "category"
-     ],
-     "differs": "shown(): identical body.",
-     "identical": true,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": []
-    }
-   ]
-  },
-  {
-   "id": "C22",
-   "component": "MoneyText sign rule (signText, + and true minus)",
-   "ref": "components.html#c-MoneyText",
-   "shared": "design-system/src/main/java/com/software/sello/designsystem/component/MoneyText.kt:138",
-   "copies": [
-    {
-     "id": "C22-1",
-     "file": "app/src/main/java/com/software/sello/presentation/carry/Carry.kt:294",
-     "area": "recibo, resumen (carry)",
-     "features": [
-      "recibo",
-      "resumen"
-     ],
-     "differs": "text(): identical +/−/none body.",
-     "identical": true,
-     "drift": null,
-     "unsure": true,
-     "doubt": "signText is private to MoneyText.kt and :app has no shared signed-text helper, so these copy each other rather than skip a reference that exists.",
-     "shots": []
-    },
-    {
-     "id": "C22-2",
-     "file": "app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:591",
-     "area": "recibo",
-     "features": [
-      "recibo"
-     ],
-     "differs": "signedText(): identical body; the same file also uses recibo's minus-only text().",
-     "identical": true,
-     "drift": null,
-     "unsure": true,
-     "doubt": "as above.",
-     "shots": []
-    },
-    {
-     "id": "C22-3",
-     "file": "app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:503",
-     "area": "shell",
-     "features": [
-      "shell"
-     ],
-     "differs": "signedDigits(): identical body.",
-     "identical": true,
-     "drift": null,
-     "unsure": true,
-     "doubt": "as above.",
-     "shots": []
-    },
-    {
-     "id": "C22-4",
-     "file": "app/src/main/java/com/software/sello/feature/investments/InversionesScreen.kt:373",
-     "area": "investments",
-     "features": [
-      "investments"
-     ],
-     "differs": "signed(): identical body.",
-     "identical": true,
-     "drift": null,
-     "unsure": true,
-     "doubt": "as above.",
-     "shots": []
-    },
-    {
-     "id": "C22-5",
-     "file": "app/src/main/java/com/software/sello/feature/category/CategoryCarry.kt:118",
-     "area": "category",
-     "features": [
-      "category"
-     ],
-     "differs": "text(): the same rule as an if/else chain.",
-     "identical": false,
-     "drift": null,
-     "unsure": true,
-     "doubt": "as above.",
-     "shots": [
-      {
-       "module": "app",
-       "file": "carry-drop-cobalto-light-font1.0.png"
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "id": "C23",
-   "component": "RestoreHeading",
-   "ref": "components.html#c-RestoreHeading",
-   "shared": "design-system/src/main/java/com/software/sello/designsystem/component/Restore.kt:28",
-   "copies": [
-    {
-     "id": "C23-1",
-     "file": "app/src/main/java/com/software/sello/feature/backup/BackupScreen.kt:143",
-     "area": "backup",
-     "features": [
-      "backup"
-     ],
-     "differs": "Último respaldo: identical Text (headlineSmall, heading) inline.",
-     "identical": true,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "backup-ready-cobalto-light-font1.0.png"
-      }
-     ]
-    },
-    {
-     "id": "C23-2",
-     "file": "app/src/main/java/com/software/sello/feature/backup/BackupScreen.kt:214",
-     "area": "backup",
-     "features": [
-      "backup"
-     ],
-     "differs": "Antes de guardar (disclosure): identical inline.",
-     "identical": true,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "backup-ready-cobalto-light-font1.0.png"
-      }
-     ]
-    },
-    {
-     "id": "C23-3",
-     "file": "app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:134",
-     "area": "startup",
-     "features": [
-      "startup"
-     ],
-     "differs": "the failure title: identical inline, followed by Spacer(xs) and a bodyLarge inkSoft Text, which is RestoreBody by hand.",
-     "identical": true,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "startup-failure-cobalto-light-font1.0.png"
-      }
-     ]
-    },
-    {
-     "id": "C23-4",
-     "file": "app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:296",
-     "area": "startup",
-     "features": [
-      "startup"
-     ],
-     "differs": "Empezar de cero title: identical inline, with RestoreBody by hand under it.",
-     "identical": true,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "startup-failure-start-over-cobalto-light-font1.0.png"
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "id": "C24",
-   "component": "SectionTitle (Configuración)",
-   "ref": null,
-   "shared": "app/src/main/java/com/software/sello/feature/settings/SettingsScreen.kt:325",
-   "copies": [
-    {
-     "id": "C24-1",
-     "file": "app/src/main/java/com/software/sello/feature/backup/TusDatos.kt:119",
-     "area": "settings",
-     "features": [
-      "settings"
-     ],
-     "differs": "Tus datos' section title: identical inline (titleMedium, spacing.sm under it, heading) on the same screen; SectionTitle is private to SettingsScreen.kt.",
-     "identical": true,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "settings-loaded-cobalto-light-font1.0.png"
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "id": "C25",
-   "component": "EntryHeading",
-   "ref": "components.html#c-EntryHeading",
-   "shared": "design-system/src/main/java/com/software/sello/designsystem/component/EntryHeading.kt:19",
-   "copies": [
-    {
-     "id": "C25-1",
-     "file": "app/src/main/java/com/software/sello/feature/recibo/CategoryFixedPayments.kt:163",
-     "area": "recibo",
-     "features": [
-      "recibo"
-     ],
-     "differs": "Group: an uppercase labelMedium W800 inkSoft heading without EntryHeading's 0.05 em letter spacing.",
-     "identical": false,
-     "drift": null,
-     "unsure": true,
-     "doubt": "EntryHeading's KDoc names form sections; this heads a list group.",
-     "shots": [
-      {
-       "module": "app",
-       "file": "category-fixed-coming-cobalto-light-font1.0.png"
-      }
-     ]
-    },
-    {
-     "id": "C25-2",
-     "file": "app/src/main/java/com/software/sello/feature/recurrence/SchedulesScreen.kt:319",
-     "area": "recurrence",
-     "features": [
-      "recurrence"
-     ],
-     "differs": "group heading: the same inline Text as the fixed-payments Group.",
-     "identical": false,
-     "drift": null,
-     "unsure": true,
-     "doubt": "as above.",
-     "shots": [
-      {
-       "module": "app",
-       "file": "schedules-cobalto-light-font1.0.png"
-      }
-     ]
-    }
-   ]
-  }
- ],
+ "copies": [],
  "hardcoded": [
   {
    "id": "H01",
@@ -1274,7 +75,7 @@ window.SELLO_FINDINGS = {
      "note": "PastMonthRibbon: PastMonthRibbon 'return to this month' pill fill in Claro (Oscuro uses colors.paper)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:501",
+     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:485",
      "area": "goals",
      "features": [
       "goals"
@@ -1629,13 +430,13 @@ window.SELLO_FINDINGS = {
      "note": "ChipFlow: ChipFlow single-line trailing fade mask"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:626",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:599",
      "area": "design-system:BulkReceipt",
      "features": [],
      "note": "Modifier.fadeEdges: fadeEdges top mask"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:634",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:607",
      "area": "design-system:BulkReceipt",
      "features": [],
      "note": "Modifier.fadeEdges: fadeEdges bottom mask"
@@ -1670,13 +471,13 @@ window.SELLO_FINDINGS = {
      "note": "NoteComposer: NoteComposer: no border unless error (loss)"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/SelloButton.kt:56",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/SelloButton.kt:66",
      "area": "design-system:SelloButton",
      "features": [],
      "note": "SelloButton: Outlined/Text button container"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalStarSheet.kt:169",
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalStarSheet.kt:174",
      "area": "goals",
      "features": [
       "goals"
@@ -1684,7 +485,7 @@ window.SELLO_FINDINGS = {
      "note": "ChoiceRow: ChoiceRow: unpicked row has no fill"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:367",
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:393",
      "area": "goals",
      "features": [
       "goals"
@@ -1692,7 +493,7 @@ window.SELLO_FINDINGS = {
      "note": "GoalPinPill: GoalPinPill: unselected has no fill"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:368",
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:394",
      "area": "goals",
      "features": [
       "goals"
@@ -2203,7 +1004,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:433",
+     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:437",
      "area": "goals",
      "features": [
       "goals"
@@ -2241,7 +1042,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:374",
+     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:378",
      "area": "goals",
      "features": [
       "goals"
@@ -2249,7 +1050,7 @@ window.SELLO_FINDINGS = {
      "note": "Plate: style = stencil.copy(fontSize = 15.sp, letterSpacing = 0.14.em),"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/SelloButton.kt:93",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/SelloButton.kt:112",
      "area": "design-system:SelloButton",
      "features": [],
      "note": "SelloButton: MaterialTheme.typography.labelLarge.copy(fontSize = 15.sp)"
@@ -2266,7 +1067,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:389",
+     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:393",
      "area": "goals",
      "features": [
       "goals"
@@ -2285,7 +1086,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/investments/InvestmentComponents.kt:98",
+     "file": "app/src/main/java/com/software/sello/feature/investments/InvestmentComponents.kt:99",
      "area": "investments",
      "features": [
       "investments"
@@ -2373,7 +1174,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:347",
+     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:351",
      "area": "goals",
      "features": [
       "goals"
@@ -2392,7 +1193,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:348",
+     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:352",
      "area": "goals",
      "features": [
       "goals"
@@ -2411,7 +1212,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:323",
+     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:327",
      "area": "goals",
      "features": [
       "goals"
@@ -2419,7 +1220,7 @@ window.SELLO_FINDINGS = {
      "note": "Title: fontSize = 48.sp,"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:349",
+     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:353",
      "area": "goals",
      "features": [
       "goals"
@@ -2455,7 +1256,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:390",
+     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:394",
      "area": "goals",
      "features": [
       "goals"
@@ -2510,7 +1311,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:324",
+     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:328",
      "area": "goals",
      "features": [
       "goals"
@@ -2554,7 +1355,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:426",
+     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:430",
      "area": "goals",
      "features": [
       "goals"
@@ -2573,7 +1374,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:326",
+     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:330",
      "area": "goals",
      "features": [
       "goals"
@@ -2592,7 +1393,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:279",
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:306",
      "area": "goals",
      "features": [
       "goals"
@@ -2686,7 +1487,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:433",
+     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:437",
      "area": "goals",
      "features": [
       "goals"
@@ -2705,7 +1506,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:374",
+     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:378",
      "area": "goals",
      "features": [
       "goals"
@@ -2724,7 +1525,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/recibo/CategoryInsightSections.kt:346",
+     "file": "app/src/main/java/com/software/sello/feature/recibo/CategoryInsightSections.kt:349",
      "area": "recibo",
      "features": [
       "recibo"
@@ -2743,7 +1544,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/resumen/SummaryComponents.kt:90",
+     "file": "app/src/main/java/com/software/sello/feature/resumen/SummaryComponents.kt:92",
      "area": "resumen",
      "features": [
       "resumen"
@@ -2776,7 +1577,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/recibo/ReciboComponents.kt:141",
+     "file": "app/src/main/java/com/software/sello/feature/recibo/ReciboComponents.kt:143",
      "area": "recibo",
      "features": [
       "recibo"
@@ -2790,14 +1591,6 @@ window.SELLO_FINDINGS = {
       "resumen"
      ],
      "note": "ResumenHeading: fontWeight = FontWeight.W600,"
-    },
-    {
-     "file": "app/src/main/java/com/software/sello/feature/resumen/SummaryComponents.kt:68",
-     "area": "resumen",
-     "features": [
-      "resumen"
-     ],
-     "note": "ComparisonSlip: fontWeight = FontWeight.W600,"
     },
     {
      "file": "app/src/main/java/com/software/sello/feature/settings/SettingsComponents.kt:79",
@@ -2816,13 +1609,13 @@ window.SELLO_FINDINGS = {
      "note": "MonthBar: style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.W600),"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:311",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:309",
      "area": "design-system:BulkReceipt",
      "features": [],
      "note": "ReceiptFoot: fontWeight = FontWeight.W600,"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:521",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:506",
      "area": "design-system:BulkReceipt",
      "features": [],
      "note": "LineContent: fontWeight = if (line.titleSoft) FontWeight.W600 else FontWeight.W800,"
@@ -2917,7 +1710,7 @@ window.SELLO_FINDINGS = {
      "note": "LimitTotalLine: textStyle = style.copy(fontWeight = FontWeight.W700),"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:174",
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:180",
      "area": "goals",
      "features": [
       "goals"
@@ -2957,7 +1750,7 @@ window.SELLO_FINDINGS = {
      "note": "ExpenseStubLine: style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.W700),"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/recibo/MonthCarrySum.kt:61",
+     "file": "app/src/main/java/com/software/sello/feature/recibo/MonthCarrySum.kt:62",
      "area": "recibo",
      "features": [
       "recibo"
@@ -2965,7 +1758,7 @@ window.SELLO_FINDINGS = {
      "note": "MonthCarrySum: MoneyText(spent, color = colors.ink, fontWeight = FontWeight.W700)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/recibo/ReciboComponents.kt:317",
+     "file": "app/src/main/java/com/software/sello/feature/recibo/ReciboComponents.kt:295",
      "area": "recibo",
      "features": [
       "recibo"
@@ -2973,7 +1766,7 @@ window.SELLO_FINDINGS = {
      "note": "SwipeAway: style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.W700),"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/recibo/ReciboComponents.kt:396",
+     "file": "app/src/main/java/com/software/sello/feature/recibo/ReciboComponents.kt:374",
      "area": "recibo",
      "features": [
       "recibo"
@@ -2981,7 +1774,7 @@ window.SELLO_FINDINGS = {
      "note": "LimitRow: Text(name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.W700)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:341",
+     "file": "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:340",
      "area": "recibo",
      "features": [
       "recibo"
@@ -2989,7 +1782,7 @@ window.SELLO_FINDINGS = {
      "note": "ClosedMonthInvitation: fontWeight = FontWeight.W700,"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/recurrence/SchedulesScreen.kt:191",
+     "file": "app/src/main/java/com/software/sello/feature/recurrence/SchedulesScreen.kt:192",
      "area": "recurrence",
      "features": [
       "recurrence"
@@ -2997,7 +1790,7 @@ window.SELLO_FINDINGS = {
      "note": "SummaryTitle: style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.W700),"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/recurrence/SchedulesScreen.kt:292",
+     "file": "app/src/main/java/com/software/sello/feature/recurrence/SchedulesScreen.kt:293",
      "area": "recurrence",
      "features": [
       "recurrence"
@@ -3005,7 +1798,7 @@ window.SELLO_FINDINGS = {
      "note": "Part: textStyle = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.W700)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/resumen/SummaryComponents.kt:82",
+     "file": "app/src/main/java/com/software/sello/feature/resumen/SummaryComponents.kt:84",
      "area": "resumen",
      "features": [
       "resumen"
@@ -3013,7 +1806,7 @@ window.SELLO_FINDINGS = {
      "note": "ComparisonSlip: fontWeight = FontWeight.W700,"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/resumen/SummaryComponents.kt:174",
+     "file": "app/src/main/java/com/software/sello/feature/resumen/SummaryComponents.kt:176",
      "area": "resumen",
      "features": [
       "resumen"
@@ -3029,7 +1822,7 @@ window.SELLO_FINDINGS = {
      "note": "InkSwatches: fontWeight = if (chosen) FontWeight.W700 else FontWeight.W600"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:360",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:312",
      "area": "design-system:RepeatParts",
      "features": [
       "recurrence"
@@ -3037,7 +1830,7 @@ window.SELLO_FINDINGS = {
      "note": "DayGrid: fontWeight = FontWeight.W700"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:412",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:364",
      "area": "design-system:RepeatParts",
      "features": [
       "recurrence"
@@ -3045,13 +1838,13 @@ window.SELLO_FINDINGS = {
      "note": "IntervalStepper: style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.W700),"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:272",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:270",
      "area": "design-system:BulkReceipt",
      "features": [],
      "note": "ReceiptHeader: fontWeight = FontWeight.W700,"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:531",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:516",
      "area": "design-system:BulkReceipt",
      "features": [],
      "note": "LineContent: fontWeight = if (line.reason != null) FontWeight.W700 else null,"
@@ -3154,7 +1947,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/bulk/BulkEntryScreen.kt:470",
+     "file": "app/src/main/java/com/software/sello/feature/bulk/BulkEntryScreen.kt:468",
      "area": "bulk",
      "features": [
       "bulk"
@@ -3162,7 +1955,7 @@ window.SELLO_FINDINGS = {
      "note": "NoteSheet: val facts = SpanStyle(color = SelloTheme.colors.ink, fontWeight = FontWeight.Bold)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/bulk/BulkEntryScreen.kt:526",
+     "file": "app/src/main/java/com/software/sello/feature/bulk/BulkEntryScreen.kt:524",
      "area": "bulk",
      "features": [
       "bulk"
@@ -3170,7 +1963,7 @@ window.SELLO_FINDINGS = {
      "note": "SourceNameSheet: val facts = SpanStyle(color = SelloTheme.colors.ink, fontWeight = FontWeight.Bold)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:632",
+     "file": "app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:622",
      "area": "expense",
      "features": [
       "expense"
@@ -3178,7 +1971,7 @@ window.SELLO_FINDINGS = {
      "note": "NoteSheet: val facts = SpanStyle(color = SelloTheme.colors.ink, fontWeight = FontWeight.Bold)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:450",
+     "file": "app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:440",
      "area": "income",
      "features": [
       "income"
@@ -3186,13 +1979,13 @@ window.SELLO_FINDINGS = {
      "note": "IncomeComposerSheet: val facts = SpanStyle(color = SelloTheme.colors.ink, fontWeight = FontWeight.Bold)"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Movement.kt:120",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Movement.kt:121",
      "area": "design-system:Movement",
      "features": [],
      "note": "MovementNoteComposer: val facts = SpanStyle(color = SelloTheme.colors.ink, fontWeight = FontWeight.Bold)"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:292",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:249",
      "area": "design-system:RepeatParts",
      "features": [
       "recurrence"
@@ -3211,7 +2004,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:232",
+     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:234",
      "area": "category",
      "features": [
       "category"
@@ -3219,7 +2012,7 @@ window.SELLO_FINDINGS = {
      "note": "ChooseSlip: SpanStyle(color = SelloTheme.colors.brand, fontWeight = FontWeight.W800)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:342",
+     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:344",
      "area": "category",
      "features": [
       "category"
@@ -3227,7 +2020,7 @@ window.SELLO_FINDINGS = {
      "note": "TargetRow: style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.W800),"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:347",
+     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:349",
      "area": "category",
      "features": [
       "category"
@@ -3235,7 +2028,7 @@ window.SELLO_FINDINGS = {
      "note": "TargetRow: textStyle = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.W800)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:617",
+     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:621",
      "area": "category",
      "features": [
       "category"
@@ -3243,7 +2036,7 @@ window.SELLO_FINDINGS = {
      "note": "ChoiceRow: style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.W800),"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:840",
+     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:837",
      "area": "category",
      "features": [
       "category"
@@ -3251,7 +2044,7 @@ window.SELLO_FINDINGS = {
      "note": "bold: withStyle(SpanStyle(fontWeight = FontWeight.W800)) { append(part) }"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:386",
+     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:390",
      "area": "goals",
      "features": [
       "goals"
@@ -3259,23 +2052,7 @@ window.SELLO_FINDINGS = {
      "note": "Plate: fontWeight = FontWeight.W800,"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:472",
-     "area": "goals",
-     "features": [
-      "goals"
-     ],
-     "note": "Actions: fontWeight = FontWeight.W800,"
-    },
-    {
-     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:488",
-     "area": "goals",
-     "features": [
-      "goals"
-     ],
-     "note": "Actions: fontWeight = FontWeight.W800,"
-    },
-    {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:125",
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:131",
      "area": "goals",
      "features": [
       "goals"
@@ -3283,7 +2060,7 @@ window.SELLO_FINDINGS = {
      "note": "GoalPill: fontWeight = FontWeight.W800,"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:173",
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:179",
      "area": "goals",
      "features": [
       "goals"
@@ -3291,15 +2068,7 @@ window.SELLO_FINDINGS = {
      "note": "ReachedRow: val nameStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.W800)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:175",
-     "area": "goals",
-     "features": [
-      "goals"
-     ],
-     "note": "ReachedRow: val actionStyle = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.W800)"
-    },
-    {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:272",
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:299",
      "area": "goals",
      "features": [
       "goals"
@@ -3307,7 +2076,7 @@ window.SELLO_FINDINGS = {
      "note": "GoalCard: style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.W800)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:343",
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:369",
      "area": "goals",
      "features": [
       "goals"
@@ -3315,7 +2084,7 @@ window.SELLO_FINDINGS = {
      "note": "CompletedGoalRow: Text(name, fontWeight = FontWeight.W800, style = MaterialTheme.typography.bodyLarge)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:382",
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:408",
      "area": "goals",
      "features": [
       "goals"
@@ -3363,20 +2132,12 @@ window.SELLO_FINDINGS = {
      "note": "Choices: SpanStyle(fontWeight = FontWeight.W800),"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalStarSheet.kt:79",
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalStarSheet.kt:83",
      "area": "goals",
      "features": [
       "goals"
      ],
      "note": "ReplaceStarSheet: addStyle(SpanStyle(fontWeight = FontWeight.W800), at, at + goal.length)"
-    },
-    {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalStarSheet.kt:182",
-     "area": "goals",
-     "features": [
-      "goals"
-     ],
-     "note": "ChoiceRow: style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.W800),"
     },
     {
      "file": "app/src/main/java/com/software/sello/feature/goals/GoalStarSheet.kt:187",
@@ -3387,15 +2148,15 @@ window.SELLO_FINDINGS = {
      "note": "ChoiceRow: style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.W800),"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalStarSheet.kt:225",
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalStarSheet.kt:192",
      "area": "goals",
      "features": [
       "goals"
      ],
-     "note": "SheetError: withStyle(SpanStyle(fontWeight = FontWeight.W800)) { append(lead) }"
+     "note": "ChoiceRow: style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.W800),"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/investments/InversionesScreen.kt:392",
+     "file": "app/src/main/java/com/software/sello/feature/investments/InversionesScreen.kt:384",
      "area": "investments",
      "features": [
       "investments"
@@ -3403,7 +2164,7 @@ window.SELLO_FINDINGS = {
      "note": "bold: withStyle(SpanStyle(fontWeight = FontWeight.W800)) { append(part) }"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/investments/InvestmentComponents.kt:107",
+     "file": "app/src/main/java/com/software/sello/feature/investments/InvestmentComponents.kt:108",
      "area": "investments",
      "features": [
       "investments"
@@ -3411,7 +2172,7 @@ window.SELLO_FINDINGS = {
      "note": "PerformanceLine: style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.W800)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/investments/InvestmentComponents.kt:199",
+     "file": "app/src/main/java/com/software/sello/feature/investments/InvestmentComponents.kt:188",
      "area": "investments",
      "features": [
       "investments"
@@ -3419,7 +2180,7 @@ window.SELLO_FINDINGS = {
      "note": "InvestmentRow: Text(name, fontWeight = FontWeight.W800, style = MaterialTheme.typography.bodyLarge)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/investments/InvestmentComponents.kt:208",
+     "file": "app/src/main/java/com/software/sello/feature/investments/InvestmentComponents.kt:197",
      "area": "investments",
      "features": [
       "investments"
@@ -3427,7 +2188,7 @@ window.SELLO_FINDINGS = {
      "note": "InvestmentRow: Text(missingLabel, fontWeight = FontWeight.W800, color = colors.inkSoft)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/investments/InvestmentComponents.kt:214",
+     "file": "app/src/main/java/com/software/sello/feature/investments/InvestmentComponents.kt:203",
      "area": "investments",
      "features": [
       "investments"
@@ -3435,7 +2196,7 @@ window.SELLO_FINDINGS = {
      "note": "InvestmentRow: fontWeight = FontWeight.W800"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/investments/InvestmentComponents.kt:237",
+     "file": "app/src/main/java/com/software/sello/feature/investments/InvestmentComponents.kt:226",
      "area": "investments",
      "features": [
       "investments"
@@ -3443,7 +2204,7 @@ window.SELLO_FINDINGS = {
      "note": "InvestmentRow: fontWeight = FontWeight.W800,"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/investments/InvestmentComponents.kt:400",
+     "file": "app/src/main/java/com/software/sello/feature/investments/InvestmentComponents.kt:389",
      "area": "investments",
      "features": [
       "investments"
@@ -3507,15 +2268,7 @@ window.SELLO_FINDINGS = {
      "note": "Fact: val bold = SpanStyle(color = SelloTheme.colors.ink, fontWeight = FontWeight.W800)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/recibo/CategoryFixedPayments.kt:166",
-     "area": "recibo",
-     "features": [
-      "recibo"
-     ],
-     "note": "Group: style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.W800),"
-    },
-    {
-     "file": "app/src/main/java/com/software/sello/feature/recibo/MonthCarrySum.kt:99",
+     "file": "app/src/main/java/com/software/sello/feature/recibo/MonthCarrySum.kt:100",
      "area": "recibo",
      "features": [
       "recibo"
@@ -3523,7 +2276,7 @@ window.SELLO_FINDINGS = {
      "note": "CarrySumCaption: withStyle(SpanStyle(color = ink, fontWeight = FontWeight.W800)) {"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/recibo/ReciboComponents.kt:148",
+     "file": "app/src/main/java/com/software/sello/feature/recibo/ReciboComponents.kt:150",
      "area": "recibo",
      "features": [
       "recibo"
@@ -3531,7 +2284,7 @@ window.SELLO_FINDINGS = {
      "note": "CategoryCell: fontWeight = FontWeight.W800,"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/recibo/ReciboComponents.kt:164",
+     "file": "app/src/main/java/com/software/sello/feature/recibo/ReciboComponents.kt:166",
      "area": "recibo",
      "features": [
       "recibo"
@@ -3539,7 +2292,7 @@ window.SELLO_FINDINGS = {
      "note": "CategoryCell: fontWeight = FontWeight.W800,"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/recibo/ReciboComponents.kt:403",
+     "file": "app/src/main/java/com/software/sello/feature/recibo/ReciboComponents.kt:381",
      "area": "recibo",
      "features": [
       "recibo"
@@ -3547,28 +2300,12 @@ window.SELLO_FINDINGS = {
      "note": "LimitRow: fontWeight = FontWeight.W800"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:252",
+     "file": "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:257",
      "area": "recibo",
      "features": [
       "recibo"
      ],
      "note": "ReservedFootnote: withStyle(SpanStyle(fontWeight = FontWeight.W800, color = SelloTheme.colors.ink)) {"
-    },
-    {
-     "file": "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:290",
-     "area": "recibo",
-     "features": [
-      "recibo"
-     ],
-     "note": "AdjustBudgetLink: fontWeight = FontWeight.W800,"
-    },
-    {
-     "file": "app/src/main/java/com/software/sello/feature/recurrence/SchedulesScreen.kt:345",
-     "area": "recurrence",
-     "features": [
-      "recurrence"
-     ],
-     "note": "Groups: style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.W800),"
     },
     {
      "file": "app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:172",
@@ -3587,7 +2324,7 @@ window.SELLO_FINDINGS = {
      "note": "Weekdays: fontWeight = FontWeight.W800,"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/resumen/SummaryComponents.kt:114",
+     "file": "app/src/main/java/com/software/sello/feature/resumen/SummaryComponents.kt:116",
      "area": "resumen",
      "features": [
       "resumen"
@@ -3627,7 +2364,7 @@ window.SELLO_FINDINGS = {
      "note": "PastMonthNotice: addStyle(SpanStyle(fontWeight = FontWeight.W800), start, start + viewed.length)"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:232",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:223",
      "area": "design-system:RepeatParts",
      "features": [
       "recurrence"
@@ -3635,31 +2372,31 @@ window.SELLO_FINDINGS = {
      "note": "Label: style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.W800),"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:243",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:241",
      "area": "design-system:BulkReceipt",
      "features": [],
      "note": "ReceiptHeader: fontWeight = FontWeight.W800,"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:412",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:410",
      "area": "design-system:BulkReceipt",
      "features": [],
      "note": "BulkLineRow: fontWeight = FontWeight.W800,"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:521",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:506",
      "area": "design-system:BulkReceipt",
      "features": [],
      "note": "LineContent: fontWeight = if (line.titleSoft) FontWeight.W600 else FontWeight.W800,"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:543",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:528",
      "area": "design-system:BulkReceipt",
      "features": [],
      "note": "LineContent: fontWeight = FontWeight.W800,"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:549",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:534",
      "area": "design-system:BulkReceipt",
      "features": [],
      "note": "LineContent: fontWeight = FontWeight.W800,"
@@ -3719,7 +2456,7 @@ window.SELLO_FINDINGS = {
      "note": "MovementMonthLine: fontWeight = FontWeight.W800,"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Goals.kt:450",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Goals.kt:444",
      "area": "design-system:Goals",
      "features": [
       "goals"
@@ -3727,7 +2464,7 @@ window.SELLO_FINDINGS = {
      "note": "StampTicket: Text(title, fontWeight = FontWeight.W800)"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/IconPicker.kt:113",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/IconPicker.kt:116",
      "area": "design-system:IconPicker",
      "features": [],
      "note": "IconPickerCircle: style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.W800),"
@@ -3783,6 +2520,22 @@ window.SELLO_FINDINGS = {
      "area": "design-system:SummaryCharts",
      "features": [],
      "note": "SplitBar: val labelStyle = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.W800)"
+    },
+    {
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:182",
+     "area": "goals",
+     "features": [
+      "goals"
+     ],
+     "note": "ReachedRow: val actionStyle = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.W800) (measures SelloButton(compact)'s label)"
+    },
+    {
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/SelloButton.kt:109",
+     "area": "design-system:SelloButton",
+     "features": [
+      "goals"
+     ],
+     "note": "SelloButton: compact -> MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.W800)"
     }
    ]
   },
@@ -3796,7 +2549,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:325",
+     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:329",
      "area": "goals",
      "features": [
       "goals"
@@ -3804,7 +2557,7 @@ window.SELLO_FINDINGS = {
      "note": "Title: fontWeight = FontWeight.W900,"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:425",
+     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:429",
      "area": "goals",
      "features": [
       "goals"
@@ -3812,7 +2565,7 @@ window.SELLO_FINDINGS = {
      "note": "Plate: fontWeight = FontWeight.W900,"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:133",
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:139",
      "area": "goals",
      "features": [
       "goals"
@@ -3820,7 +2573,7 @@ window.SELLO_FINDINGS = {
      "note": "GoalPill: style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.W900)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:278",
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:305",
      "area": "goals",
      "features": [
       "goals"
@@ -3844,7 +2597,7 @@ window.SELLO_FINDINGS = {
      "note": "MonthPlan: fontWeight = FontWeight.W900"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/investments/InvestmentComponents.kt:99",
+     "file": "app/src/main/java/com/software/sello/feature/investments/InvestmentComponents.kt:100",
      "area": "investments",
      "features": [
       "investments"
@@ -3860,7 +2613,7 @@ window.SELLO_FINDINGS = {
      "note": "ExpenseStubLine: fontWeight = FontWeight.W900,"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/recibo/MonthCarrySum.kt:55",
+     "file": "app/src/main/java/com/software/sello/feature/recibo/MonthCarrySum.kt:56",
      "area": "recibo",
      "features": [
       "recibo"
@@ -3884,19 +2637,19 @@ window.SELLO_FINDINGS = {
      "note": "ChartSlips: fontWeight = FontWeight.W900"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:318",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:316",
      "area": "design-system:BulkReceipt",
      "features": [],
      "note": "ReceiptFoot: fontWeight = FontWeight.W900,"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:325",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:323",
      "area": "design-system:BulkReceipt",
      "features": [],
      "note": "ReceiptFoot: fontWeight = FontWeight.W900,"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:583",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:556",
      "area": "design-system:BulkReceipt",
      "features": [],
      "note": "LineMark: Text(\"?\", fontWeight = FontWeight.W900, color = ink)"
@@ -3925,7 +2678,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:495",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:447",
      "area": "design-system:RepeatParts",
      "features": [
       "recurrence"
@@ -3933,7 +2686,7 @@ window.SELLO_FINDINGS = {
      "note": "file-level constant: StepShape: repeat step buttons (used :469)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalStarSheet.kt:170",
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalStarSheet.kt:175",
      "area": "goals",
      "features": [
       "goals"
@@ -3941,15 +2694,7 @@ window.SELLO_FINDINGS = {
      "note": "ChoiceRow: ChoiceRow: picked-row fill"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalStarSheet.kt:210",
-     "area": "goals",
-     "features": [
-      "goals"
-     ],
-     "note": "SheetError: SheetError box"
-    },
-    {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:648",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:621",
      "area": "design-system:BulkReceipt",
      "features": [],
      "note": "file-level constant: LineShape: bulk receipt line (used :388, :422, :426)"
@@ -3972,7 +2717,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:364",
+     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:368",
      "area": "goals",
      "features": [
       "goals"
@@ -3986,7 +2731,7 @@ window.SELLO_FINDINGS = {
      "note": "PlanSlip: PlanSlip dashed outline (not a stamp)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:317",
+     "file": "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:316",
      "area": "recibo",
      "features": [
       "recibo"
@@ -4039,7 +2784,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/resumen/SummaryComponents.kt:153",
+     "file": "app/src/main/java/com/software/sello/feature/resumen/SummaryComponents.kt:155",
      "area": "resumen",
      "features": [
       "resumen"
@@ -4106,7 +2851,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:366",
+     "file": "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:370",
      "area": "goals",
      "features": [
       "goals"
@@ -4166,7 +2911,7 @@ window.SELLO_FINDINGS = {
      "note": "CameIn: modifier = Modifier.padding(top = 4.dp).testTag(\"income.carryNote\")"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/recibo/CategoryDetailScreen.kt:418",
+     "file": "app/src/main/java/com/software/sello/feature/recibo/CategoryDetailScreen.kt:382",
      "area": "recibo",
      "features": [
       "recibo"
@@ -4174,7 +2919,7 @@ window.SELLO_FINDINGS = {
      "note": "HeaderSlip: modifier = Modifier.padding(top = 4.dp).testTag(CATEGORY_DETAIL_DEFICIT_TAG)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/recibo/MonthCarrySum.kt:46",
+     "file": "app/src/main/java/com/software/sello/feature/recibo/MonthCarrySum.kt:47",
      "area": "recibo",
      "features": [
       "recibo"
@@ -4182,7 +2927,7 @@ window.SELLO_FINDINGS = {
      "note": "MonthCarrySum: Column(modifier.fillMaxWidth().padding(top = 4.dp).testTag(RECIBO_CARRY_SUM_TAG)) {"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/recibo/MonthCarrySum.kt:69",
+     "file": "app/src/main/java/com/software/sello/feature/recibo/MonthCarrySum.kt:70",
      "area": "recibo",
      "features": [
       "recibo"
@@ -4190,7 +2935,7 @@ window.SELLO_FINDINGS = {
      "note": "MonthCarrySum: modifier = Modifier.padding(top = 4.dp)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/recibo/MonthCarrySum.kt:121",
+     "file": "app/src/main/java/com/software/sello/feature/recibo/MonthCarrySum.kt:122",
      "area": "recibo",
      "features": [
       "recibo"
@@ -4198,7 +2943,7 @@ window.SELLO_FINDINGS = {
      "note": "CarrySumCaption: .padding(bottom = 4.dp)"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:299",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:297",
      "area": "design-system:BulkReceipt",
      "features": [],
      "note": "ReceiptFoot: contentPadding = PaddingValues(horizontal = 4.dp),"
@@ -4337,7 +3082,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/bulk/BulkEntryScreen.kt:136",
+     "file": "app/src/main/java/com/software/sello/feature/bulk/BulkEntryScreen.kt:137",
      "area": "bulk",
      "features": [
       "bulk"
@@ -4345,7 +3090,7 @@ window.SELLO_FINDINGS = {
      "note": "BulkEntryScreen: verticalArrangement = Arrangement.spacedBy(8.dp),"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/bulk/BulkEntryScreen.kt:300",
+     "file": "app/src/main/java/com/software/sello/feature/bulk/BulkEntryScreen.kt:301",
      "area": "bulk",
      "features": [
       "bulk"
@@ -4353,7 +3098,7 @@ window.SELLO_FINDINGS = {
      "note": "Choices: Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/category/CategoryCarry.kt:310",
+     "file": "app/src/main/java/com/software/sello/feature/category/CategoryCarry.kt:301",
      "area": "category",
      "features": [
       "category"
@@ -4361,7 +3106,7 @@ window.SELLO_FINDINGS = {
      "note": "CarryQuestionSlip: modifier = Modifier.padding(top = 8.dp)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/category/CategoryCarry.kt:343",
+     "file": "app/src/main/java/com/software/sello/feature/category/CategoryCarry.kt:334",
      "area": "category",
      "features": [
       "category"
@@ -4369,7 +3114,7 @@ window.SELLO_FINDINGS = {
      "note": "CarryQuestionSlip: modifier = Modifier.padding(bottom = 8.dp).testTag(EDITOR_CARRY_CHANGED_TAG)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/category/CategoryCarry.kt:364",
+     "file": "app/src/main/java/com/software/sello/feature/category/CategoryCarry.kt:355",
      "area": "category",
      "features": [
       "category"
@@ -4377,7 +3122,7 @@ window.SELLO_FINDINGS = {
      "note": "CarryQuestionSlip: Modifier.padding(top = 8.dp),"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:300",
+     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:302",
      "area": "category",
      "features": [
       "category"
@@ -4385,7 +3130,7 @@ window.SELLO_FINDINGS = {
      "note": "PickSheet: Caption(stringResource(R.string.category_delete_pick_archived), top = 8.dp)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:356",
+     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:358",
      "area": "category",
      "features": [
       "category"
@@ -4417,7 +3162,7 @@ window.SELLO_FINDINGS = {
      "note": "Choices: horizontalArrangement = Arrangement.spacedBy(8.dp),"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalStarSheet.kt:174",
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalStarSheet.kt:179",
      "area": "goals",
      "features": [
       "goals"
@@ -4425,15 +3170,7 @@ window.SELLO_FINDINGS = {
      "note": "ChoiceRow: .padding(vertical = 6.dp, horizontal = if (picked) 8.dp else 2.dp)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalStarSheet.kt:206",
-     "area": "goals",
-     "features": [
-      "goals"
-     ],
-     "note": "SheetError: horizontalArrangement = Arrangement.spacedBy(8.dp),"
-    },
-    {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalStarSheet.kt:208",
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalStarSheet.kt:212",
      "area": "goals",
      "features": [
       "goals"
@@ -4441,7 +3178,7 @@ window.SELLO_FINDINGS = {
      "note": "SheetError: .padding(top = 8.dp)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/investments/InvestmentComponents.kt:416",
+     "file": "app/src/main/java/com/software/sello/feature/investments/InvestmentComponents.kt:405",
      "area": "investments",
      "features": [
       "investments"
@@ -4503,37 +3240,37 @@ window.SELLO_FINDINGS = {
      "note": "CarryCorrectionContent: modifier = Modifier.padding(top = 8.dp)"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:224",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:222",
      "area": "design-system:BulkReceipt",
      "features": [],
      "note": "BulkReceipt: TearLine(bleed = ReceiptSide, verticalMargin = 8.dp)"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:234",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:232",
      "area": "design-system:BulkReceipt",
      "features": [],
      "note": "ReceiptHeader: horizontalArrangement = Arrangement.spacedBy(8.dp),"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:290",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:288",
      "area": "design-system:BulkReceipt",
      "features": [],
      "note": "ReceiptFoot: horizontalArrangement = Arrangement.spacedBy(8.dp),"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:305",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:303",
      "area": "design-system:BulkReceipt",
      "features": [],
      "note": "ReceiptFoot: horizontalArrangement = Arrangement.spacedBy(8.dp),"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:478",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:476",
      "area": "design-system:BulkReceipt",
      "features": [],
      "note": "BulkLineRow: .padding(start = 8.dp, end = 10.dp, top = 6.dp, bottom = 6.dp)"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:647",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:620",
      "area": "design-system:BulkReceipt",
      "features": [],
      "note": "file-level constant: private val ReceiptPadding = PaddingValues(start = 12.dp, top = 8.dp, end = 12.dp, bottom = 20.dp)"
@@ -4589,7 +3326,7 @@ window.SELLO_FINDINGS = {
      "note": "MovementRow: .padding(vertical = 8.dp),"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Goals.kt:359",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Goals.kt:353",
      "area": "design-system:Goals",
      "features": [
       "goals"
@@ -4597,7 +3334,7 @@ window.SELLO_FINDINGS = {
      "note": "MilestoneRow: Row(modifier.fillMaxWidth().padding(vertical = 8.dp)) {"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Goals.kt:368",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Goals.kt:362",
      "area": "design-system:Goals",
      "features": [
       "goals"
@@ -4605,7 +3342,7 @@ window.SELLO_FINDINGS = {
      "note": "MilestoneRow: modifier.horizontalScroll(rememberScrollState()).padding(vertical = 8.dp),"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Goals.kt:369",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Goals.kt:363",
      "area": "design-system:Goals",
      "features": [
       "goals"
@@ -4673,13 +3410,13 @@ window.SELLO_FINDINGS = {
      "note": "EntryPanes: verticalArrangement = Arrangement.spacedBy(8.dp)"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Paper.kt:556",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Paper.kt:561",
      "area": "design-system:Paper",
      "features": [],
      "note": "AnswerSlip: Stamp(stamp, ink, Modifier.padding(vertical = 8.dp), angle = -5f)"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Paper.kt:594",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Paper.kt:632",
      "area": "design-system:Paper",
      "features": [],
      "note": "Footnote: horizontalArrangement = Arrangement.spacedBy(8.dp)"
@@ -4691,13 +3428,13 @@ window.SELLO_FINDINGS = {
      "note": "PlanSlip: horizontalArrangement = Arrangement.spacedBy(8.dp),"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/SelloButton.kt:85",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/SelloButton.kt:101",
      "area": "design-system:SelloButton",
      "features": [],
      "note": "SelloButton: Spacer(Modifier.width(8.dp))"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/SelloButton.kt:88",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/SelloButton.kt:104",
      "area": "design-system:SelloButton",
      "features": [],
      "note": "SelloButton: Spacer(Modifier.width(8.dp))"
@@ -4744,7 +3481,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/category/CategoryCarry.kt:138",
+     "file": "app/src/main/java/com/software/sello/feature/category/CategoryCarry.kt:129",
      "area": "category",
      "features": [
       "category"
@@ -4752,7 +3489,7 @@ window.SELLO_FINDINGS = {
      "note": "CarrySwitch: TearLine(verticalMargin = 12.dp)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:242",
+     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:244",
      "area": "category",
      "features": [
       "category"
@@ -4760,15 +3497,7 @@ window.SELLO_FINDINGS = {
      "note": "ChooseSlip: .padding(vertical = 12.dp)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalStarSheet.kt:211",
-     "area": "goals",
-     "features": [
-      "goals"
-     ],
-     "note": "SheetError: .padding(horizontal = 12.dp, vertical = 10.dp)"
-    },
-    {
-     "file": "app/src/main/java/com/software/sello/feature/recurrence/SchedulesScreen.kt:182",
+     "file": "app/src/main/java/com/software/sello/feature/recurrence/SchedulesScreen.kt:183",
      "area": "recurrence",
      "features": [
       "recurrence"
@@ -4776,13 +3505,13 @@ window.SELLO_FINDINGS = {
      "note": "Summary: PaddingValues(start = 16.dp, top = 15.dp, end = 16.dp, bottom = 12.dp)"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:646",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:619",
      "area": "design-system:BulkReceipt",
      "features": [],
      "note": "file-level constant: private val ReceiptSide = 12.dp"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:647",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/BulkReceipt.kt:620",
      "area": "design-system:BulkReceipt",
      "features": [],
      "note": "file-level constant: private val ReceiptPadding = PaddingValues(start = 12.dp, top = 8.dp, end = 12.dp, bottom = 20.dp)"
@@ -4826,7 +3555,7 @@ window.SELLO_FINDINGS = {
      "note": "MovementMonthLine: .padding(top = 12.dp, bottom = 4.dp),"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Goals.kt:422",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Goals.kt:416",
      "area": "design-system:Goals",
      "features": [
       "goals"
@@ -4834,7 +3563,7 @@ window.SELLO_FINDINGS = {
      "note": "StampTicket: .padding(start = 18.dp, top = 12.dp, end = 16.dp, bottom = 12.dp),"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Goals.kt:424",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Goals.kt:418",
      "area": "design-system:Goals",
      "features": [
       "goals"
@@ -4842,7 +3571,7 @@ window.SELLO_FINDINGS = {
      "note": "StampTicket: horizontalArrangement = Arrangement.spacedBy(12.dp)"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Goals.kt:447",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Goals.kt:441",
      "area": "design-system:Goals",
      "features": [
       "goals"
@@ -4850,7 +3579,7 @@ window.SELLO_FINDINGS = {
      "note": "StampTicket: }.padding(start = 12.dp),"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/IconPicker.kt:137",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/IconPicker.kt:140",
      "area": "design-system:IconPicker",
      "features": [],
      "note": "IconChoiceSheetContent: Column(modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {"
@@ -4905,7 +3634,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/recurrence/SchedulesScreen.kt:182",
+     "file": "app/src/main/java/com/software/sello/feature/recurrence/SchedulesScreen.kt:183",
      "area": "recurrence",
      "features": [
       "recurrence"
@@ -4919,7 +3648,7 @@ window.SELLO_FINDINGS = {
      "note": "file-level constant: private val TrailingFade = 16.dp"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Goals.kt:422",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Goals.kt:416",
      "area": "design-system:Goals",
      "features": [
       "goals"
@@ -4968,7 +3697,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:493",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:445",
      "area": "design-system:RepeatParts",
      "features": [
       "recurrence"
@@ -4976,7 +3705,7 @@ window.SELLO_FINDINGS = {
      "note": "file-level constant: DayTarget: day chips min size (used :374, :384, :467)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:240",
+     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:242",
      "area": "category",
      "features": [
       "category"
@@ -5002,7 +3731,7 @@ window.SELLO_FINDINGS = {
      "note": "NoteComposer: NoteComposer done button size(48.dp)"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Paper.kt:591",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Paper.kt:627",
      "area": "design-system:Paper",
      "features": [],
      "note": "Footnote: Footnote row heightIn(min = 48.dp)"
@@ -5019,13 +3748,13 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/IconPicker.kt:73",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/IconPicker.kt:76",
      "area": "design-system:IconPicker",
      "features": [],
      "note": "IconPickerCircle: uses EMPTY_TINT: drawCircle(fill.copy(alpha = EMPTY_TINT))"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/IconPicker.kt:162",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/IconPicker.kt:165",
      "area": "design-system:IconPicker",
      "features": [],
      "note": "file-level constant: EMPTY_TINT defined"
@@ -5113,7 +3842,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:367",
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:393",
      "area": "goals",
      "features": [
       "goals"
@@ -5180,7 +3909,7 @@ window.SELLO_FINDINGS = {
      "note": "file-level constant: DISABLED_ROW_ALPHA defined"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:350",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:302",
      "area": "design-system:RepeatParts",
      "features": [
       "recurrence"
@@ -5188,7 +3917,7 @@ window.SELLO_FINDINGS = {
      "note": "DayGrid: uses DISABLED_ALPHA: .alpha(if (enabled) 1f else DISABLED_ALPHA)"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:426",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:378",
      "area": "design-system:RepeatParts",
      "features": [
       "recurrence"
@@ -5196,7 +3925,7 @@ window.SELLO_FINDINGS = {
      "note": "StepButton: uses DISABLED_ALPHA: .alpha(if (enabled) 1f else DISABLED_ALPHA)"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:487",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:439",
      "area": "design-system:RepeatParts",
      "features": [
       "recurrence"
@@ -5234,13 +3963,13 @@ window.SELLO_FINDINGS = {
      "note": "file-level constant: DISABLED_CHIP_ALPHA defined"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/MoreMenu.kt:55",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/MoreMenu.kt:72",
      "area": "design-system:MoreMenu",
      "features": [],
      "note": "MoreMenu: uses DISABLED_ALPHA: val tint = if (item.enabled) color else color.copy(alpha = DISABLED_ALPHA)"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/MoreMenu.kt:76",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/MoreMenu.kt:92",
      "area": "design-system:MoreMenu",
      "features": [],
      "note": "file-level constant: DISABLED_ALPHA defined"
@@ -5270,13 +3999,13 @@ window.SELLO_FINDINGS = {
      "note": "file-level constant: MORE_SLIP_DISABLED_ALPHA defined"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/SelloButton.kt:59",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/SelloButton.kt:69",
      "area": "design-system:SelloButton",
      "features": [],
      "note": "SelloButton: uses DISABLED_ALPHA: val fade = if (loading) 1f else DISABLED_ALPHA"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/SelloButton.kt:115",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/SelloButton.kt:138",
      "area": "design-system:SelloButton",
      "features": [],
      "note": "file-level constant: DISABLED_ALPHA defined"
@@ -5317,7 +4046,7 @@ window.SELLO_FINDINGS = {
      "note": "MilestonePlace: uses KEPT_ALPHA: val keptInk = colors.semantic.gain.copy(alpha = KEPT_ALPHA)"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Goals.kt:331",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Goals.kt:325",
      "area": "design-system:Goals",
      "features": [
       "goals"
@@ -5344,7 +4073,7 @@ window.SELLO_FINDINGS = {
      "note": "Dots: .background(if (on) colors.brand else colors.outline.copy(alpha = 0.5f))"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/recibo/ReciboComponents.kt:342",
+     "file": "app/src/main/java/com/software/sello/feature/recibo/ReciboComponents.kt:320",
      "area": "recibo",
      "features": [
       "recibo"
@@ -5388,7 +4117,7 @@ window.SELLO_FINDINGS = {
      "note": "IconPickerCircle: uses DISABLED_ALPHA: .alpha(if (enabled) 1f else DISABLED_ALPHA)"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/IconPicker.kt:163",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/IconPicker.kt:166",
      "area": "design-system:IconPicker",
      "features": [],
      "note": "file-level constant: DISABLED_ALPHA defined"
@@ -5451,14 +4180,6 @@ window.SELLO_FINDINGS = {
    "note": null,
    "shots": [],
    "places": [
-    {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:207",
-     "area": "goals",
-     "features": [
-      "goals"
-     ],
-     "note": "ReachedRow: .alpha(if (busy) 0.6f else 1f)"
-    },
     {
      "file": "design-system/src/main/java/com/software/sello/designsystem/component/Lines.kt:188",
      "area": "design-system:Lines",

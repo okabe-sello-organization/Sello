@@ -37,11 +37,16 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
+import com.software.sello.designsystem.component.AnswerSlip
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.CategoryCircle
+import com.software.sello.designsystem.component.FieldMessage
+import com.software.sello.designsystem.component.FieldMessageText
+import com.software.sello.designsystem.component.FieldTone
 import com.software.sello.designsystem.component.FittedMoneyText
 import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.component.MoneyText
+import com.software.sello.designsystem.component.MoreMenuItem
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloNotice
 import com.software.sello.designsystem.component.Slip
@@ -234,98 +239,57 @@ private fun HeaderSlip(
     // While its payments are reserved, what they leave (SELLO-135), as Recibo's answer.
     val figure = category.reserved?.figure ?: category.figure
     val figures = (state.insights as? DetailInsightsState.Ready)?.figures
-    Slip(Modifier.fillMaxWidth().testTag(CATEGORY_DETAIL_HEADER_TAG)) {
-        if (showName) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    category.name,
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.weight(1f).semantics { heading() }
-                )
-                IconButton(
-                    onClick = onEditCategory,
-                    modifier = Modifier.testTag(CATEGORY_DETAIL_EDIT_TAG)
-                ) {
-                    Icon(
-                        SelloIcon.EditNote.painter(),
-                        stringResource(R.string.category_detail_edit)
+    val headline = detailHeadline(figure.headline)
+    val stamp = stampText(figure.stamp)
+    // An archived category is stamped as such: that, not its verdict, is what it is now.
+    val archived = stringResource(R.string.recibo_category_archived)
+        .takeIf { category.archived }
+    val spoken =
+        stringResource(
+            R.string.recibo_summary_description,
+            headline,
+            figure.amount.spoken,
+            archived ?: stamp
+        )
+    AnswerSlip(
+        label = headline,
+        amount = figure.amount,
+        stamp = archived ?: stamp.takeIf { category.limit != null },
+        ink = if (archived != null) StampInk.Neutral else stampInk(figure.stamp),
+        modifier = Modifier.testTag(CATEGORY_DETAIL_HEADER_TAG),
+        description = spoken,
+        lossAmount = category.over && category.reserved == null,
+        heading = {
+            if (showName) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        category.name,
+                        style = MaterialTheme.typography.headlineSmall,
+                        modifier = Modifier.weight(1f).semantics { heading() }
                     )
-                }
-            }
-        }
-        val headline = detailHeadline(figure.headline)
-        val stamp = stampText(figure.stamp)
-        // An archived category is stamped as such: that, not its verdict, is what it is now.
-        val archived = stringResource(R.string.recibo_category_archived)
-            .takeIf { category.archived }
-        val spoken =
-            stringResource(
-                R.string.recibo_summary_description,
-                headline,
-                figure.amount.spoken,
-                archived ?: stamp
-            )
-        Column(Modifier.fillMaxWidth().clearAndSetSemantics { contentDescription = spoken }) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    headline,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = SelloTheme.colors.inkSoft,
-                    modifier = Modifier.weight(1f)
-                )
-                if (archived != null) {
-                    Stamp(
-                        archived,
-                        StampInk.Neutral,
-                        Modifier.padding(vertical = 6.dp).testTag(CATEGORY_DETAIL_ARCHIVED_TAG)
-                    )
-                } else if (category.limit != null) {
-                    Stamp(
-                        stamp,
-                        stampInk(figure.stamp),
-                        Modifier.padding(vertical = 6.dp)
-                    )
-                }
-            }
-            BoxWithConstraints(Modifier.fillMaxWidth()) {
-                val stacked = maxWidth < 240.dp
-                val circle: @Composable () -> Unit = {
-                    CategoryCircle(
-                        CategoryIcons.iconFor(category.iconKey),
-                        category.fraction,
-                        size = 56.dp,
-                        over = category.over,
-                        unlimited = category.unlimited,
-                        archived = category.archived
-                    )
-                }
-                val amount: @Composable () -> Unit = {
-                    FittedMoneyText(
-                        figure.amount,
-                        startSize = 44,
-                        color = if (category.over && category.reserved == null) {
-                            SelloTheme.colors.semantic.loss
-                        } else {
-                            SelloTheme.colors.ink
-                        }
-                    )
-                }
-                if (stacked) {
-                    Column {
-                        circle()
-                        amount()
-                    }
-                } else {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md)
+                    IconButton(
+                        onClick = onEditCategory,
+                        modifier = Modifier.testTag(CATEGORY_DETAIL_EDIT_TAG)
                     ) {
-                        circle()
-                        Column(Modifier.weight(1f)) { amount() }
+                        Icon(
+                            SelloIcon.EditNote.painter(),
+                            stringResource(R.string.category_detail_edit)
+                        )
                     }
                 }
             }
+        },
+        leading = {
+            CategoryCircle(
+                CategoryIcons.iconFor(category.iconKey),
+                category.fraction,
+                size = 56.dp,
+                over = category.over,
+                unlimited = category.unlimited,
+                archived = category.archived
+            )
         }
+    ) {
         category.why?.let { CarryWhyNote(it) }
         // Revisar's two facts under the big number, as on Recibo.
         category.reserved?.shortfall?.let {
@@ -546,18 +510,13 @@ private fun ExpenseList(
             modifier = Modifier.testTag(CATEGORY_DETAIL_HINT_TAG)
         )
         state.deleteProblem?.let { problem ->
-            Text(
-                text = stringResource(problem.text()),
-                style = MaterialTheme.typography.bodyMedium,
-                // Whether it was deleted is a doubt to clear, in the warning ink.
-                color = if (problem == DeleteProblem.Unknown) {
-                    SelloTheme.colors.semantic.warn
-                } else {
-                    SelloTheme.colors.semantic.loss
-                },
-                modifier = Modifier
-                    .testTag(CATEGORY_DETAIL_DELETE_PROBLEM_TAG)
-                    .semantics { liveRegion = LiveRegionMode.Polite }
+            FieldMessageText(
+                FieldMessage(
+                    stringResource(problem.text()),
+                    // Whether it was deleted is a doubt to clear, in the warning tone.
+                    if (problem == DeleteProblem.Unknown) FieldTone.Warning else FieldTone.Error
+                ),
+                Modifier.testTag(CATEGORY_DETAIL_DELETE_PROBLEM_TAG)
             )
             // Whether it was deleted is asked again with the same operation, never resent.
             if (problem == DeleteProblem.Unknown) {
@@ -576,10 +535,20 @@ private fun ExpenseList(
             // top is one row added, instead of every row below it drawn again.
             key(row.id) {
                 if (index > 0) HorizontalDivider(color = SelloTheme.colors.paperAlt)
-                val remove = LineAction(delete) { onAction(CategoryDetailAction.Delete(row.id)) }
+                val remove = MoreMenuItem(
+                    delete,
+                    SelloIcon.Delete,
+                    { onAction(CategoryDetailAction.Delete(row.id)) },
+                    loss = true
+                )
                 ActionRow(
                     onClick = { onEditExpense(row.id) },
-                    actions = listOf(LineAction(edit) { onEditExpense(row.id) }, remove),
+                    actions = listOf(
+                        MoreMenuItem(edit, SelloIcon.EditNote, {
+                            onEditExpense(row.id)
+                        }),
+                        remove
+                    ),
                     modifier = Modifier.testTag(categoryExpenseTag(row.id)),
                     swipeAway = remove
                 ) { pressable -> ExpenseStubLine(row, dates, state.today, pressable) }
@@ -627,7 +596,6 @@ const val CATEGORY_DETAIL_FAILED_TAG = "detail:failed"
 const val CATEGORY_DETAIL_GONE_TAG = "detail:gone"
 const val CATEGORY_DETAIL_STALE_TAG = "detail:stale"
 const val CATEGORY_DETAIL_HEADER_TAG = "detail:header"
-const val CATEGORY_DETAIL_ARCHIVED_TAG = "detail:archived"
 const val CATEGORY_DETAIL_SPENT_TAG = "detail:spent"
 const val CATEGORY_DETAIL_LIMIT_TAG = "detail:limit"
 const val CATEGORY_DETAIL_LIST_TAG = "detail:list"

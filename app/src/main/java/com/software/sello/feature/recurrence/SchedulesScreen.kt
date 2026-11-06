@@ -28,6 +28,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.software.sello.R
+import com.software.sello.designsystem.component.EntryHeading
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.component.ScheduleRow
@@ -322,7 +323,7 @@ private fun Groups(
     }.filterValues { it.isNotEmpty() }
     Slip(Modifier.fillMaxWidth().testTag("schedules.list")) {
         groups.entries.forEachIndexed { index, (group, rows) ->
-            Text(
+            EntryHeading(
                 when (group) {
                     ScheduleGroup.Due -> stringResource(
                         R.string.schedules_group_due,
@@ -347,12 +348,9 @@ private fun Groups(
                     )
 
                     ScheduleGroup.Ended -> stringResource(R.string.schedules_group_ended, rows.size)
-                }.uppercase(),
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.W800),
-                color = SelloTheme.colors.inkSoft,
-                modifier = Modifier
+                },
+                Modifier
                     .padding(top = if (index == 0) 0.dp else 14.dp, bottom = 2.dp)
-                    .semantics { heading() }
                     .testTag("schedules.group.${group.name.lowercase()}")
             )
             rows.forEachIndexed { at, row ->

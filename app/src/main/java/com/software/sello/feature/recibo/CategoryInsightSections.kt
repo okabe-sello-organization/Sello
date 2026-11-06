@@ -35,6 +35,7 @@ import com.software.sello.designsystem.component.StatusSlip
 import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.presentation.carry.CarryBreakdownSection
 import com.software.sello.presentation.carry.carryLabel
 import com.software.sello.presentation.count.countText
 import com.software.sello.presentation.date.DateLabels
@@ -324,9 +325,11 @@ private fun CategoryHistory(categoryId: String, figures: DetailInsights, dates: 
             val carry = entry.carry
             if (entry.limit != null && carry != null) {
                 // Never the capacity alone: base and carry beside it (CP27).
-                LeaderLine(stringResource(R.string.carry_base)) { MoneyText(carry.base) }
-                LeaderLine(carryLabel(carry.carry)) { MoneyText(carry.carry) }
-                LeaderLine(stringResource(R.string.carry_capacity)) { MoneyText(entry.limit) }
+                CarryBreakdownSection(
+                    carry,
+                    footnote = null,
+                    tag = CATEGORY_DETAIL_HISTORY_CARRY_TAG
+                )
             } else {
                 entry.limit?.let { value ->
                     LeaderLine(stringResource(R.string.category_detail_limit)) { MoneyText(value) }
@@ -364,3 +367,5 @@ private fun DetailHeading(text: String) = Text(
 )
 
 private val DetailLocale = Locale.forLanguageTag("es-CO")
+
+const val CATEGORY_DETAIL_HISTORY_CARRY_TAG = "detail:history-carry"

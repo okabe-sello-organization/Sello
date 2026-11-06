@@ -34,6 +34,7 @@ import com.software.sello.designsystem.component.Bullet
 import com.software.sello.designsystem.component.BulletList
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.LeaderLine
+import com.software.sello.designsystem.component.RestoreHeading
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
@@ -142,11 +143,7 @@ private fun LastBackupSlip(state: BackupState, onAction: (BackupAction) -> Unit)
             itemVerticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                text = stringResource(R.string.backup_last),
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.semantics { heading() }
-            )
+            RestoreHeading(stringResource(R.string.backup_last))
             if (state.justSaved) {
                 Stamp(
                     text = stringResource(R.string.backup_saved_stamp),
@@ -213,11 +210,7 @@ private fun LastBackupSlip(state: BackupState, onAction: (BackupAction) -> Unit)
 @Composable
 private fun Disclosure() {
     Slip(Modifier.fillMaxWidth().testTag(BACKUP_DISCLOSURE_TAG), pinked = false) {
-        Text(
-            text = stringResource(R.string.backup_disclosure_title),
-            style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.semantics { heading() }
-        )
+        RestoreHeading(stringResource(R.string.backup_disclosure_title))
         BulletList(backupDisclosure(), Modifier.padding(top = SelloTheme.spacing.sm))
     }
 }

@@ -89,7 +89,7 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Loading</td><td>One <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a> in <code>IncomePane</code>.</td>
+            <tr><td>Loading</td><td>One <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a> in <a href="../components.html#c-MovementPane"><code>MovementPane</code></a>.</td>
               <td><code>app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:160</code></td><td><code>income-form-loading</code></td></tr>
             <tr><td>Error (nothing ever read)</td><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> LoadFailed "No se pudo cargar" / "No pudimos leer los ingresos. Inténtalo de nuevo." with "Reintentar", new or correcting alike.</td>
               <td><code>IncomeFormScreen.kt:164</code></td><td><code>income-form-failed</code></td></tr>
@@ -294,10 +294,10 @@
               <td>Form only</td><td>Older data said, draft kept</td></tr>
             <tr><td><a href="../components.html#c-RepeatRow"><code>RepeatRow</code></a>, <a href="../components.html#c-RepeatChoiceSheet"><code>RepeatChoiceSheet</code></a>, <a href="../components.html#c-FollowingChoice"><code>FollowingChoice</code></a></td><td><code>design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:73</code></td>
               <td><code>income = true</code></td><td>Shared with Anotar</td></tr>
-            <tr><td><code>IncomePane</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:250</code></td>
-              <td>Padding and spacing <code>lg</code></td><td>Holds the skeleton or error</td></tr>
-            <tr><td><code>IncomeDatePicker</code> (feature-local)</td><td><code>IncomeFormScreen.kt:498</code></td>
-              <td>Material date picker, "Aceptar"</td><td>Past only, or future only while repeating</td></tr>
+            <tr><td><a href="../components.html#c-MovementPane"><code>MovementPane</code></a>, <a href="../components.html#c-MovementCloseButton"><code>MovementCloseButton</code></a>, <a href="../components.html#c-MovementNoteLine"><code>MovementNoteLine</code></a></td><td><code>:design-system</code> <code>Movement.kt</code></td>
+              <td>Padding and spacing <code>lg</code>; the X; the note line</td><td>Holds the skeleton or error</td></tr>
+            <tr><td><a href="../components.html#c-MovementDatePicker"><code>MovementDatePicker</code></a></td><td><code>:design-system</code> <code>Movement.kt</code></td>
+              <td>Material date picker, "Aceptar"; <code>last</code> = today, or <code>first</code> = today while repeating</td><td>Past only, or future only while repeating</td></tr>
           </tbody>
         </table>
       </div>
@@ -306,15 +306,10 @@
     <section id="look-alikes">
       <h2>Feature-local parts that look like shared ones</h2>
       <ul>
-        <li><code>IncomePane</code> (<code>IncomeFormScreen.kt:250</code>) is the same code as <code>MovementPane</code>
-          (<code>design-system/src/main/java/com/software/sello/designsystem/component/Movement.kt:47</code>), while the expense
-          form's <code>Pane</code> (<code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:363</code>) differs. Finding: <a href="../findings.html#C03">C03</a>.</li>
-        <li><code>IncomeDatePicker</code> (<code>IncomeFormScreen.kt:498</code>) against <code>MovementDatePicker</code>
-          (<code>component/Movement.kt:146</code>) and the expense form's <code>DayPicker</code>. Finding: <a href="../findings.html#C01">C01</a>.</li>
-        <li>The X (<code>IncomeFormScreen.kt:142</code>) against <code>MovementCloseButton</code> (<code>component/Movement.kt:39</code>). Finding: <a href="../findings.html#C02">C02</a>.</li>
+        <li>The form's pane, date picker, close button and note line are the shared <a href="../components.html#c-MovementPane"><code>MovementPane</code></a>, <a href="../components.html#c-MovementDatePicker"><code>MovementDatePicker</code></a>, <a href="../components.html#c-MovementCloseButton"><code>MovementCloseButton</code></a> and <a href="../components.html#c-MovementNoteLine"><code>MovementNoteLine</code></a>.</li>
         <li>Raw <code>Text</code> hints (<code>IncomeFormScreen.kt:356</code>, <code>:363</code>; <code>IncomeHistoryScreen.kt:355</code>,
           <code>:367</code>, <code>:288</code>) where the expense form uses
-          <a href="../components.html#c-FieldMessageText"><code>FieldMessageText</code></a> with the Hint tone. Finding: <a href="../findings.html#C15">C15</a>.</li>
+          <a href="../components.html#c-FieldMessageText"><code>FieldMessageText</code></a> with the Hint tone.</li>
       </ul>
     </section>
 
@@ -322,7 +317,6 @@
       <h2>Findings here</h2>
       <p class="muted">Places in this feature on the <a href="../findings.html">findings</a> page; shared parts it uses are listed there under their own files.</p>
       <ul>
-        <li><strong>Copies:</strong> <a href="../findings.html#C01">C01</a> <code>MovementDatePicker</code>: <a href="../findings.html#C01-2">C01-2</a>; <a href="../findings.html#C02">C02</a> <code>MovementCloseButton</code>: <a href="../findings.html#C02-2">C02-2</a>; <a href="../findings.html#C03">C03</a> <code>MovementPane</code>: <a href="../findings.html#C03-1">C03-1</a>; <a href="../findings.html#C04">C04</a> <code>MovementNoteLine</code>: <a href="../findings.html#C04-2">C04-2</a>.</li>
         <li><strong>Hard-coded type:</strong> <a href="../findings.html#H46">H46</a> <code>fontWeight = FontWeight.W700</code> (1 place); <a href="../findings.html#H47">H47</a> <code>fontWeight = FontWeight.Bold</code> (1 place); <a href="../findings.html#H49">H49</a> <code>fontWeight = FontWeight.W900</code> (1 place).</li>
         <li><strong>Hard-coded spacing:</strong> <a href="../findings.html#H59">H59</a> <code>4.dp</code> (1 place).</li>
       </ul>

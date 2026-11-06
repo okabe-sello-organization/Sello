@@ -39,6 +39,10 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
 import com.software.sello.designsystem.component.ButtonKind
+import com.software.sello.designsystem.component.ButtonPair
+import com.software.sello.designsystem.component.FieldMessage
+import com.software.sello.designsystem.component.FieldMessageText
+import com.software.sello.designsystem.component.FieldTone
 import com.software.sello.designsystem.component.RepeatSheet
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.icon.SelloIcon
@@ -96,18 +100,17 @@ internal fun ReplaceStarSheet(
         }
         error?.let { SheetError(it, sheet.choices.size) }
         val retry = error != null && sheet.picked != null
-        Row(
-            Modifier.fillMaxWidth().padding(top = 10.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
+        val cancel = @Composable {
             SelloButton(
                 text = stringResource(R.string.goal_replace_cancel),
                 onClick = dismiss,
                 kind = ButtonKind.Outlined,
                 enabled = !busy,
-                modifier = Modifier.weight(1f).testTag(GOAL_REPLACE_CANCEL_TAG)
+                modifier = Modifier.fillMaxWidth().testTag(GOAL_REPLACE_CANCEL_TAG)
             )
-            if (retry) {
+        }
+        if (retry) {
+            ButtonPair(1f, 2f, Modifier.padding(top = 10.dp), first = cancel) {
                 SelloButton(
                     text = stringResource(
                         if (error == GoalDetailError.Unknown) {
@@ -124,9 +127,11 @@ internal fun ReplaceStarSheet(
                         }
                     },
                     loading = busy,
-                    modifier = Modifier.weight(2f).testTag(GOAL_REPLACE_RETRY_TAG)
+                    modifier = Modifier.testTag(GOAL_REPLACE_RETRY_TAG)
                 )
             }
+        } else {
+            Box(Modifier.padding(top = 10.dp)) { cancel() }
         }
     }
 }
@@ -194,41 +199,18 @@ private fun ChoiceRow(
 /** Nothing changed (refused) or not known yet (unknown): said in the sheet, over its actions. */
 @Composable
 private fun SheetError(error: GoalDetailError, count: Int) {
-    val colors = SelloTheme.colors
     // An unknown outcome is a doubt to clear, in the warning tone; a refusal is an error.
-    val unknown = error == GoalDetailError.Unknown
-    val (ink, soft) = if (unknown) {
-        colors.semantic.warn to colors.semantic.warnSoft
-    } else {
-        colors.semantic.loss to colors.semantic.lossSoft
-    }
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier
-            .padding(top = 8.dp)
-            .fillMaxWidth()
-            .background(soft, RoundedCornerShape(12.dp))
-            .padding(horizontal = 12.dp, vertical = 10.dp)
-            .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }
-            .testTag(GOAL_REPLACE_ERROR_TAG)
-    ) {
-        Icon(SelloIcon.Error.painter(), null, Modifier.size(20.dp), ink)
-        val (lead, rest) = when (error) {
-            GoalDetailError.NotSaved ->
-                stringResource(R.string.goal_replace_refused_lead) to
-                    pluralStringResource(R.plurals.goal_replace_refused_body, count, count)
+    val (text, tone) = when (error) {
+        GoalDetailError.NotSaved -> stringResource(R.string.goal_replace_refused_lead) + " " +
+            pluralStringResource(R.plurals.goal_replace_refused_body, count, count) to
+            FieldTone.Error
 
-            GoalDetailError.Unknown -> stringResource(R.string.goal_error_unknown) to ""
-        }
-        Text(
-            buildAnnotatedString {
-                withStyle(SpanStyle(fontWeight = FontWeight.W800)) { append(lead) }
-                if (rest.isNotEmpty()) append(" $rest")
-            },
-            style = MaterialTheme.typography.bodyMedium,
-            color = colors.ink
-        )
+        GoalDetailError.Unknown -> stringResource(R.string.goal_error_unknown) to FieldTone.Warning
     }
+    FieldMessageText(
+        FieldMessage(text, tone),
+        Modifier.padding(top = 8.dp).testTag(GOAL_REPLACE_ERROR_TAG)
+    )
 }
 
 const val GOAL_REPLACE_TAG = "goal.replace"

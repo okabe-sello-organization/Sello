@@ -25,6 +25,7 @@ import com.software.sello.feature.expense.monthOf
 import com.software.sello.feature.expense.storedExpense
 import com.software.sello.testing.testDateLabels
 import com.software.sello.testing.testMoney
+import com.software.sello.testing.testMonthNames
 import java.math.BigInteger
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -58,7 +59,7 @@ internal fun resumenSnapshot(spent: Long = 30_000, income: Long = 150_000): Resu
 }
 
 class ResumenRenderModelTest {
-    private val render = ResumenRenderModel(resumenMoney(), testDateLabels())
+    private val render = ResumenRenderModel(resumenMoney(), testDateLabels(), testMonthNames())
 
     /** Rendered in October 2026, the fixture's month. */
     private fun ResumenRenderModel.render(state: ResumenSnapshotState) =

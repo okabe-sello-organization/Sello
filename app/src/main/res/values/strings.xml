@@ -402,7 +402,6 @@
     <string name="category_delete_one_month">en %1$s de %2$d</string>
     <string name="category_delete_short_range">%1$s – %2$s %3$d</string>
     <string name="category_delete_short_range_years">%1$s %2$d – %3$s %4$d</string>
-    <string name="category_delete_short_month">%1$s %2$d</string>
     <string name="category_delete_move">Moverlos a otra categoría</string>
     <string name="category_delete_move_note">Los totales de cada mes no cambian.</string>
     <string name="category_delete_all">Borrar todo</string>
@@ -1241,7 +1240,6 @@
     <string name="goal_icon_medical_services">Salud</string>
     <string name="goal_editor_new">Nueva meta</string>
     <string name="goal_editor_edit">Editar meta</string>
-    <string name="goal_editor_close">Cerrar</string>
     <string name="goal_editor_name">Nombre</string>
     <string name="goal_editor_name_hint">¿Para qué estás guardando?</string>
     <string name="goal_editor_name_counter">%1$d/%2$d</string>

@@ -274,7 +274,6 @@
       <h2>Feature-local parts that look like shared ones</h2>
       <ul>
         <li><strong>Heading + landing stamp</strong>: Respaldo's "Último respaldo" row (<code>app/src/main/java/com/software/sello/feature/backup/BackupScreen.kt:138</code>) repeats <code>RestoredSlip</code>'s row (<code>design-system/src/main/java/com/software/sello/designsystem/component/Restore.kt:79</code>) and Borrar datos' "Borrado" row (<code>app/src/main/java/com/software/sello/feature/reset/ResetScreen.kt:231</code>); the card's own row (<code>TusDatos.kt:203</code>) is a fourth. Compare <code>components-restore-chosen-set-aside.png</code>; Respaldo's own has no baseline.</li>
-        <li><strong>Inline headings</strong>: "Último respaldo" and "Antes de guardar" (<code>BackupScreen.kt:143</code>, <code>:214</code>) are <code>RestoreHeading</code> typed out again; "Tus datos" (<code>TusDatos.kt:119</code>) is Settings' <code>SectionTitle</code> typed out again. Findings: <a href="../findings.html#C23">C23</a>, <a href="../findings.html#C24">C24</a>.</li>
         <li><strong>Counts table</strong>: <code>Counts</code>/<code>Cell</code> (<code>RestoreSection.kt:210</code>) shows a before/after per row; other destructive confirmations use <a href="../components.html#c-ChangeRow"><code>ChangeRow</code></a> (category delete-all, carry drop). Compare <code>components-restore-unknown.png</code> with <code>category-removal-all-cobalto-light-font1.0.png</code>.</li>
         <li><strong>"Ver qué contiene ›" link</strong> (<code>TusDatos.kt:286</code>): a hand-built clickable Row with <code>labelLarge</code> brand text and an 18 dp chevron; <a href="../components.html#c-SettingRow"><code>SettingRow</code></a> is the shared row that leads somewhere.</li>
         <li><strong>Refreshed note</strong>: the live-region note (<code>RestoreSection.kt:171</code>) is the same part as Borrar datos' (<code>ResetScreen.kt:152</code>), written twice; "data changed" is warn in both, like the carry drop's line, and "not restored" is loss.</li>
@@ -285,7 +284,6 @@
       <h2>Findings here</h2>
       <p class="muted">Places in this feature on the <a href="../findings.html">findings</a> page; shared parts it uses are listed there under their own files.</p>
       <ul>
-        <li><strong>Copies:</strong> <a href="../findings.html#C23">C23</a> <code>RestoreHeading</code>: <a href="../findings.html#C23-1">C23-1</a>, <a href="../findings.html#C23-2">C23-2</a>.</li>
         <li><strong>Hard-coded type:</strong> <a href="../findings.html#H46">H46</a> <code>fontWeight = FontWeight.W700</code> (1 place).</li>
       </ul>
     </section>

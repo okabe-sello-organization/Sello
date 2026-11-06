@@ -56,6 +56,8 @@ import com.software.sello.designsystem.component.CategoryCircle
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.designsystem.component.MoreMenuDropdown
+import com.software.sello.designsystem.component.MoreMenuItem
 import com.software.sello.designsystem.component.categoryColumns
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
@@ -90,7 +92,7 @@ internal fun CategoryCell(
     over: Boolean = false,
     amountCaption: String? = null,
     staggerIndex: Int = 0,
-    actions: List<LineAction> = emptyList(),
+    actions: List<MoreMenuItem> = emptyList(),
     unlimited: Boolean = false,
     archived: Boolean = false,
     carry: MoneyTextValue? = null
@@ -201,9 +203,6 @@ internal fun <T> CategoryGrid(
     }
 }
 
-/** Something a line offers besides being pressed, such as "Borrar". */
-internal class LineAction(val label: String, val onClick: () -> Unit)
-
 /**
  * A line that stands for something that can be opened and acted on, such as a recorded
  * expense. [content] draws it, putting the modifier it is given on its outermost layout,
@@ -219,9 +218,9 @@ internal class LineAction(val label: String, val onClick: () -> Unit)
 @Composable
 internal fun ActionRow(
     onClick: () -> Unit,
-    actions: List<LineAction>,
+    actions: List<MoreMenuItem>,
     modifier: Modifier = Modifier,
-    swipeAway: LineAction? = null,
+    swipeAway: MoreMenuItem? = null,
     content: @Composable (Modifier) -> Unit
 ) {
     var menuOpen by remember { mutableStateOf(false) }
@@ -251,31 +250,10 @@ internal fun ActionRow(
     }
 }
 
-/** [actions] as a menu. Choosing one closes it and then runs it. */
+/** [actions] as the shared menu, opened by a long press. Choosing one closes it and then runs it. */
 @Composable
-internal fun LineActionMenu(actions: List<LineAction>, open: Boolean, onClose: () -> Unit) {
-    DropdownMenu(
-        expanded = open,
-        onDismissRequest = onClose,
-        containerColor = SelloTheme.colors.paper,
-        modifier = Modifier.testTag(ACTION_LINE_MENU_TAG)
-    ) {
-        actions.forEach { action ->
-            DropdownMenuItem(
-                text = {
-                    Text(
-                        text = action.label,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = SelloTheme.colors.ink
-                    )
-                },
-                onClick = {
-                    onClose()
-                    action.onClick()
-                }
-            )
-        }
-    }
+internal fun LineActionMenu(actions: List<MoreMenuItem>, open: Boolean, onClose: () -> Unit) {
+    MoreMenuDropdown(actions, open, onClose, Modifier.testTag(ACTION_LINE_MENU_TAG))
 }
 
 /**
@@ -286,7 +264,7 @@ internal fun LineActionMenu(actions: List<LineAction>, open: Boolean, onClose: (
  * action is already offered by name.
  */
 @Composable
-private fun SwipeAway(action: LineAction, line: @Composable () -> Unit) {
+private fun SwipeAway(action: MoreMenuItem, line: @Composable () -> Unit) {
     val run by rememberUpdatedState(action.onClick)
     val reduced by rememberUpdatedState(SelloTheme.reducedMotion)
     val towardsStart = if (LocalLayoutDirection.current == LayoutDirection.Rtl) -1 else 1

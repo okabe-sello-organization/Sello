@@ -30,6 +30,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.software.sello.R
 import com.software.sello.designsystem.component.OptionSlip
+import com.software.sello.designsystem.component.SectionTitle
 import com.software.sello.designsystem.component.SegmentedSwitch
 import com.software.sello.designsystem.component.SettingRow
 import com.software.sello.designsystem.component.Slip
@@ -205,7 +206,7 @@ private fun RecurringControls(state: SettingsState, onOpenSchedules: () -> Unit)
         )
     }
     Slip(Modifier.fillMaxWidth().testTag(SETTINGS_RECURRING_TAG)) {
-        SectionTitle(R.string.settings_recurring)
+        SectionTitle(stringResource(R.string.settings_recurring))
         SettingRow(
             title = stringResource(R.string.schedules_title),
             icon = SelloIcon.Autorenew,
@@ -220,7 +221,7 @@ private fun RecurringControls(state: SettingsState, onOpenSchedules: () -> Unit)
 @Composable
 private fun AppearanceControls(state: SettingsState, onAction: (SettingsAction) -> Unit) {
     Slip(Modifier.fillMaxWidth().testTag(SETTINGS_APPEARANCE_TAG)) {
-        SectionTitle(R.string.settings_appearance)
+        SectionTitle(stringResource(R.string.settings_appearance))
         SettingRow(
             title = stringResource(R.string.settings_theme),
             icon = SelloIcon.Contrast,
@@ -262,7 +263,7 @@ private fun AppearanceControls(state: SettingsState, onAction: (SettingsAction) 
 @Composable
 private fun CategoryOrderingControls(state: SettingsState, onPick: (SettingsPicker) -> Unit) {
     Slip(Modifier.fillMaxWidth().testTag(SETTINGS_ORDERING_TAG)) {
-        SectionTitle(R.string.settings_recibo)
+        SectionTitle(stringResource(R.string.settings_recibo))
         SettingRow(
             title = stringResource(R.string.settings_order),
             icon = SelloIcon.Sort,
@@ -292,7 +293,7 @@ private fun InvestmentControls(
 ) {
     val rate = state.rate
     Slip(Modifier.fillMaxWidth().testTag(SETTINGS_INVESTMENTS_TAG)) {
-        SectionTitle(R.string.settings_investments)
+        SectionTitle(stringResource(R.string.settings_investments))
         SettingRow(
             title = stringResource(R.string.settings_investment_currency),
             icon = SelloIcon.Payments,
@@ -330,15 +331,6 @@ private fun InvestmentControls(
             modifier = Modifier.testTag(SETTINGS_RATE_TAG)
         )
     }
-}
-
-@Composable
-private fun SectionTitle(resource: Int) {
-    Text(
-        text = stringResource(resource),
-        style = MaterialTheme.typography.titleMedium,
-        modifier = Modifier.padding(bottom = SelloTheme.spacing.sm).semantics { heading() }
-    )
 }
 
 private fun CategoryOrder.label() = when (this) {

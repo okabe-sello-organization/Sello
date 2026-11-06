@@ -1,5 +1,6 @@
 package com.software.sello.presentation.month
 
+import android.content.res.Resources
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.res.stringArrayResource
@@ -31,4 +32,11 @@ fun monthNames() = MonthNames(
     full = stringArrayResource(R.array.month_names).toList(),
     short = stringArrayResource(R.array.month_names_short).toList(),
     titleFormat = stringResource(R.string.month_title)
+)
+
+/** The same names outside composition, for a render model a ViewModel owns. */
+fun monthNames(resources: Resources) = MonthNames(
+    full = resources.getStringArray(R.array.month_names).toList(),
+    short = resources.getStringArray(R.array.month_names_short).toList(),
+    titleFormat = resources.getString(R.string.month_title)
 )

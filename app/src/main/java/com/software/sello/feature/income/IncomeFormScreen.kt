@@ -58,6 +58,7 @@ import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyStyle
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.MoreSlip
+import com.software.sello.designsystem.component.MovementPane
 import com.software.sello.designsystem.component.NoteComposer
 import com.software.sello.designsystem.component.SegmentedSwitch
 import com.software.sello.designsystem.component.SelloButton
@@ -81,7 +82,10 @@ import com.software.sello.domain.model.SourceName
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.income.incomeSourceLabel
 import com.software.sello.presentation.month.monthNames
+import com.software.sello.presentation.movement.MovementCloseButton
+import com.software.sello.presentation.movement.MovementDatePicker
 import com.software.sello.presentation.movement.MovementDiscardSlip
+import com.software.sello.presentation.movement.MovementNoteLine
 import com.software.sello.presentation.recurrence.FollowingChoice
 import com.software.sello.presentation.recurrence.RepeatAction
 import com.software.sello.presentation.recurrence.RepeatChoiceSheet
@@ -140,9 +144,7 @@ fun IncomeFormScreen(
         modifier = modifier,
         band = SelloTheme.colors.band,
         navigationIcon = {
-            IconButton(onClick = { onAction(IncomeFormAction.Back) }) {
-                Icon(SelloIcon.Close.painter(), stringResource(R.string.expense_entry_close))
-            }
+            MovementCloseButton({ onAction(IncomeFormAction.Back) })
         },
         actions = {
             if (state.editing) {
@@ -158,11 +160,11 @@ fun IncomeFormScreen(
         }
     ) { padding ->
         when {
-            state.loading -> IncomePane(padding) {
+            state.loading -> MovementPane(padding) {
                 SlipSkeleton(Modifier.testTag("income.loading"))
             }
 
-            state.loadFailed -> IncomePane(padding) {
+            state.loadFailed -> MovementPane(padding) {
                 StatusSlip(
                     kind = StatusKind.LoadFailed(),
                     message = stringResource(R.string.income_load_failed),
@@ -248,15 +250,6 @@ fun IncomeFormScreen(
     }
 }
 
-@Composable
-private fun IncomePane(padding: PaddingValues, content: @Composable () -> Unit) {
-    Column(
-        Modifier.fillMaxSize().padding(padding)
-            .verticalScroll(rememberScrollState()).padding(SelloTheme.spacing.lg),
-        verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.lg)
-    ) { content() }
-}
-
 /** "Ingreso en pesos", the date, and the amount in gain green with a plus. */
 @Composable
 private fun IncomeAmount(state: IncomeFormState, onAction: (IncomeFormAction) -> Unit) {
@@ -334,14 +327,11 @@ private fun IncomeChoices(state: IncomeFormState, onAction: (IncomeFormAction) -
             FieldMessageText(FieldMessage(stringResource(R.string.income_source_invalid)))
         }
     }
-    EntryLine(
-        text = state.note.ifBlank { stringResource(R.string.expense_entry_add_note) },
-        icon = SelloIcon.EditNote,
-        onClick = { onAction(IncomeFormAction.OpenComposer(IncomeComposer.Note)) },
-        modifier = Modifier.testTag("income.note"),
-        action = stringResource(R.string.expense_entry_edit_note),
-        placeholder = state.note.isBlank(),
-        enabled = state.editable
+    MovementNoteLine(
+        state.note,
+        state.editable,
+        { onAction(IncomeFormAction.OpenComposer(IncomeComposer.Note)) },
+        Modifier.testTag("income.note")
     )
     state.noteProblem?.let {
         FieldMessageText(FieldMessage(stringResource(R.string.income_note_invalid)))
@@ -498,39 +488,17 @@ private fun IncomeComposerSheet(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/** One income is dated today or earlier; while Se repite is on, today or later. */
 @Composable
 private fun IncomeDatePicker(state: IncomeFormState, onAction: (IncomeFormAction) -> Unit) {
     val repeating = state.repeat.choice != null
-    val picker = rememberDatePickerState(
-        initialSelectedDateMillis = state.date.atStartOfDay(
-            ZoneOffset.UTC
-        ).toInstant().toEpochMilli(),
-        selectableDates = object : SelectableDates {
-            // One income is dated today or earlier; while Se repite is on, today or later.
-            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
-                val day = Instant.ofEpochMilli(utcTimeMillis).atZone(ZoneOffset.UTC).toLocalDate()
-                return if (repeating) !day.isBefore(state.today) else !day.isAfter(state.today)
-            }
-
-            override fun isSelectableYear(year: Int) =
-                if (repeating) year >= state.today.year else year <= state.today.year
-        }
+    MovementDatePicker(
+        state.date,
+        onPicked = { onAction(IncomeFormAction.DatePicked(it)) },
+        onDismiss = { onAction(IncomeFormAction.CloseDatePicker) },
+        first = state.today.takeIf { repeating },
+        last = state.today.takeUnless { repeating }
     )
-    DatePickerDialog(
-        onDismissRequest = { onAction(IncomeFormAction.CloseDatePicker) },
-        confirmButton = {
-            SelloButton(stringResource(R.string.expense_entry_date_confirm), {
-                picker.selectedDateMillis?.let {
-                    onAction(
-                        IncomeFormAction.DatePicked(
-                            Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()
-                        )
-                    )
-                } ?: onAction(IncomeFormAction.CloseDatePicker)
-            })
-        }
-    ) { DatePicker(picker) }
 }
 
 const val INCOME_SEVERAL_TAG = "income.several"

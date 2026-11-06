@@ -11,8 +11,9 @@ import androidx.compose.ui.unit.em
 import com.software.sello.designsystem.theme.SelloTheme
 
 /**
- * A section heading of an entry or movement form, such as Tipo, Meta or Inversión:
- * uppercase, heavy and spaced, in the softer ink
+ * A section heading of an entry or movement form, such as Tipo, Meta or Inversión, or
+ * of a group in a list, such as Faltan en octubre: uppercase, heavy and spaced, in the
+ * softer ink
  * (docs/design/system/components.html#c-EntryHeading).
  */
 @Composable

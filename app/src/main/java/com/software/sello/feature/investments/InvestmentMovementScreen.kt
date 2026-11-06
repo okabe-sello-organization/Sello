@@ -197,9 +197,9 @@ fun InvestmentMovementScreen(
     if (state.datePickerOpen) {
         MovementDatePicker(
             state.date,
-            state.today,
             { onAction(InvestmentMovementAction.DatePicked(it)) },
-            { onAction(InvestmentMovementAction.CloseDatePicker) }
+            { onAction(InvestmentMovementAction.CloseDatePicker) },
+            last = state.today
         )
     }
     if (state.composerOpen) Composer(state, onAction)

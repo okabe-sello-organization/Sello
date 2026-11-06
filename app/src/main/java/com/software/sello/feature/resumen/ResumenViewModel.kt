@@ -19,6 +19,7 @@ import com.software.sello.domain.port.SuggestionPreferences
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.presentation.month.MonthNames
 import com.software.sello.presentation.read.LastGoodRead
 import java.time.YearMonth
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -40,12 +41,13 @@ class ResumenViewModel(
     session: MonthSession,
     money: MoneyFormatter,
     labels: DateLabels,
+    months: MonthNames,
     private val suggestions: SuggestionPreferences,
     schedules: ScheduleReads,
     clock: FinancialClock
 ) : ViewModel() {
     private val attempts = MutableStateFlow(0)
-    private val render = ResumenRenderModel(money, labels)
+    private val render = ResumenRenderModel(money, labels, months)
     private var weekdayExpiry: Job? = null
     private var historyExpiry: Job? = null
 

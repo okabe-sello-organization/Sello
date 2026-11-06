@@ -61,6 +61,9 @@ import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.income.incomeSourceLabel
+import com.software.sello.presentation.movement.MovementCloseButton
+import com.software.sello.presentation.movement.MovementDatePicker
+import com.software.sello.presentation.movement.MovementNoteLine
 import com.software.sello.presentation.recurrence.RepeatAction
 import com.software.sello.presentation.recurrence.RepeatChoiceSheet
 import com.software.sello.presentation.recurrence.RepeatRow
@@ -104,9 +107,7 @@ fun ScheduleEditorScreen(
         ),
         modifier = Modifier.testTag(SCHEDULE_EDITOR_TAG),
         navigationIcon = {
-            IconButton(onClick = { onAction(ScheduleEditorAction.Back) }) {
-                Icon(SelloIcon.Close.painter(), stringResource(R.string.expense_entry_close))
-            }
+            MovementCloseButton({ onAction(ScheduleEditorAction.Back) })
         },
         actions = {
             if (!state.loading && !state.loadFailed) {
@@ -294,13 +295,10 @@ private fun Choices(
             )
         }
     }
-    EntryLine(
-        text = state.note.ifBlank { stringResource(R.string.expense_entry_add_note) },
-        icon = SelloIcon.EditNote,
-        onClick = { onAction(ScheduleEditorAction.OpenComposer(ScheduleComposer.Note)) },
-        action = stringResource(R.string.expense_entry_edit_note),
-        placeholder = state.note.isBlank(),
-        enabled = state.editable
+    MovementNoteLine(
+        state.note,
+        state.editable,
+        { onAction(ScheduleEditorAction.OpenComposer(ScheduleComposer.Note)) }
     )
     RepeatRow(
         state.repeat,
@@ -457,35 +455,12 @@ private fun Composer(
 @Composable
 private fun StartPicker(state: ScheduleEditorState, onAction: (ScheduleEditorAction) -> Unit) {
     val first = state.today.plusDays(1)
-    val picker = rememberDatePickerState(
-        initialSelectedDateMillis = maxOf(state.start ?: first, first).atStartOfDay(ZoneOffset.UTC)
-            .toInstant().toEpochMilli(),
-        selectableDates = object : SelectableDates {
-            override fun isSelectableDate(utcTimeMillis: Long) = !day(utcTimeMillis).isBefore(first)
-
-            override fun isSelectableYear(year: Int) = year >= first.year
-        }
+    MovementDatePicker(
+        maxOf(state.start ?: first, first),
+        onPicked = { onAction(ScheduleEditorAction.StartPicked(it)) },
+        onDismiss = { onAction(ScheduleEditorAction.CloseStartPicker) },
+        first = first
     )
-    DatePickerDialog(
-        onDismissRequest = { onAction(ScheduleEditorAction.CloseStartPicker) },
-        confirmButton = {
-            SelloButton(
-                text = stringResource(R.string.expense_entry_date_confirm),
-                onClick = {
-                    val picked = picker.selectedDateMillis?.let(::day)
-                    onAction(
-                        if (picked == null) {
-                            ScheduleEditorAction.CloseStartPicker
-                        } else {
-                            ScheduleEditorAction.StartPicked(picked)
-                        }
-                    )
-                }
-            )
-        }
-    ) {
-        DatePicker(state = picker)
-    }
 }
 
 private fun ScheduleEditorError.text() = when (this) {
@@ -502,6 +477,3 @@ private fun ScheduleEditorError.text() = when (this) {
 
 private const val OTHER = "other"
 private const val SOURCE_NAME_MAX = 24
-
-private fun day(utcMillis: Long): LocalDate =
-    Instant.ofEpochMilli(utcMillis).atZone(ZoneOffset.UTC).toLocalDate()

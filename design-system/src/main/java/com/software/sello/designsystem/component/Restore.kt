@@ -33,13 +33,16 @@ fun RestoreHeading(text: String) {
     )
 }
 
-/** A paragraph of a restore or reset slip, in soft ink under what comes before it. */
+/**
+ * A paragraph of a restore or reset slip, in soft ink under what comes before it; not
+ * [soft], in full ink, for the warning of a step that deletes data.
+ */
 @Composable
-fun RestoreBody(text: String) {
+fun RestoreBody(text: String, soft: Boolean = true) {
     Text(
         text = text,
         style = MaterialTheme.typography.bodyLarge,
-        color = SelloTheme.colors.inkSoft,
+        color = if (soft) SelloTheme.colors.inkSoft else SelloTheme.colors.ink,
         modifier = Modifier.padding(top = SelloTheme.spacing.xs)
     )
 }

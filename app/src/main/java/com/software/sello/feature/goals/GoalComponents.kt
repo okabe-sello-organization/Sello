@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,9 +32,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.onClick
@@ -46,10 +49,13 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
+import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.FittedMoneyText
 import com.software.sello.designsystem.component.MilestonePlace
+import com.software.sello.designsystem.component.MilestoneRow
 import com.software.sello.designsystem.component.MilestoneSpec
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.Stamp
 import com.software.sello.designsystem.component.StampInk
@@ -172,6 +178,7 @@ internal fun ReachedRow(
     val density = LocalDensity.current
     val nameStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.W800)
     val messageStyle = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.W700)
+    // SelloButton(compact)'s label, measured to decide whether everything fits on one line.
     val actionStyle = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.W800)
     BoxWithConstraints(modifier.fillMaxWidth()) {
         val widths = with(density) {
@@ -179,6 +186,7 @@ internal fun ReachedRow(
                 .map { (text, style) -> measurer.measure(text, style).size.width.toDp() }
         }
         // Start padding, icon and gaps, the wider text, the action and its padding, end padding.
+        // Busy, the action keeps this width, so the row never changes shape while it saves.
         val inline = 14.dp + 22.dp + 10.dp + maxOf(widths[0], widths[1]) + 10.dp +
             widths[2] + 28.dp + 6.dp <= maxWidth
         val shape = if (inline) CircleShape else SelloTheme.shapes.control
@@ -198,23 +206,42 @@ internal fun ReachedRow(
             Icon(SelloIcon.Check.painter(), null, Modifier.size(22.dp), tint = colors.semantic.gain)
         }
         val action = @Composable {
-            // The row's own compact button: 44dp, so the name keeps its room.
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.heightIn(min = 44.dp).clip(CircleShape)
-                    .background(colors.semantic.gain)
-                    .clickable(enabled = !busy, role = Role.Button, onClick = onComplete)
-                    .alpha(if (busy) 0.6f else 1f)
-                    .padding(horizontal = 14.dp)
-            ) {
-                Text(actionLabel, color = colors.semantic.onGain, style = actionStyle)
+            // The row's own compact pill, so the name keeps its room. Busy, the spinner takes
+            // the label's place inside the idle button's width: the row keeps its shape.
+            Box(contentAlignment = Alignment.Center) {
+                SelloButton(
+                    text = actionLabel,
+                    onClick = if (busy) ({}) else onComplete,
+                    tone = ButtonTone.Gain,
+                    enabled = !busy,
+                    contentPadding = PaddingValues(horizontal = 14.dp),
+                    compact = true,
+                    // While busy it only gives the width: never seen, read or pressed.
+                    modifier = if (busy) Modifier.alpha(0f).clearAndSetSemantics {} else Modifier
+                )
+                if (busy) {
+                    // The idle button's width; its own height, so it is drawn as the idle one.
+                    Box(Modifier.matchParentSize(), contentAlignment = Alignment.Center) {
+                        SelloButton(
+                            text = "",
+                            onClick = onComplete,
+                            tone = ButtonTone.Gain,
+                            loading = true,
+                            contentPadding = PaddingValues(0.dp),
+                            compact = true,
+                            modifier = Modifier.fillMaxWidth()
+                                .semantics { contentDescription = actionLabel }
+                        )
+                    }
+                }
             }
         }
         val surface = Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(shape)
             .background(colors.semantic.gainSoft)
         if (inline) {
             Row(
-                surface.padding(start = 14.dp, top = 6.dp, end = 6.dp, bottom = 6.dp),
+                // 4 dp above and below the pill's 48 dp touch area: it is drawn 44 dp high, 6 dp in.
+                surface.padding(start = 14.dp, top = 4.dp, end = 6.dp, bottom = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
@@ -309,12 +336,11 @@ internal fun GoalCard(
                     .background(colors.semantic.gain)
             )
         }
-        Row(
-            Modifier.fillMaxWidth().padding(top = SelloTheme.spacing.md),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            places.forEach { MilestonePlace(it) }
-        }
+        MilestoneRow(
+            places,
+            Modifier.padding(top = SelloTheme.spacing.md).testTag(GOAL_CARD_STAMPS_TAG),
+            evenly = true
+        )
     }
 }
 
@@ -382,3 +408,5 @@ internal fun GoalPinPill(
         Text(label, color = colors.onBand, fontWeight = FontWeight.W800)
     }
 }
+
+const val GOAL_CARD_STAMPS_TAG = "goal.card.stamps"

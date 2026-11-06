@@ -18,13 +18,9 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
@@ -47,9 +43,6 @@ import androidx.compose.ui.unit.dp
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneOffset
 
 /*
  * The parts an expense, an income and a schedule use to say how something repeats. Every
@@ -61,8 +54,6 @@ const val REPEAT_ROW_TAG = "repeat:row"
 const val REPEAT_SHEET_TAG = "repeat:sheet"
 
 const val REPEAT_DONE_TAG = "repeat:done"
-
-const val REPEAT_END_CONFIRM_TAG = "repeat:end-confirm"
 
 /**
  * Se repite's row under the note, read as [spoken]: with an [action] ("Cambiar"), [text]
@@ -236,40 +227,6 @@ private fun SheetLabel(text: String) {
 }
 
 /**
- * The date picker for when a repeat ends, opened on [initial]: a day on or after [start];
- * none before it can be picked. [confirmLabel] picks.
- */
-@Composable
-fun RepeatEndPicker(
-    initial: LocalDate,
-    start: LocalDate,
-    confirmLabel: String,
-    onPicked: (LocalDate) -> Unit,
-    onDismiss: () -> Unit
-) {
-    val picker = rememberDatePickerState(
-        initialSelectedDateMillis = initial.millis(),
-        selectableDates = object : SelectableDates {
-            override fun isSelectableDate(utcTimeMillis: Long) = !day(utcTimeMillis).isBefore(start)
-
-            override fun isSelectableYear(year: Int) = year >= start.year
-        }
-    )
-    DatePickerDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            SelloButton(
-                text = confirmLabel,
-                onClick = { picker.selectedDateMillis?.let(::day)?.let(onPicked) ?: onDismiss() },
-                modifier = Modifier.testTag(REPEAT_END_CONFIRM_TAG)
-            )
-        }
-    ) {
-        DatePicker(state = picker)
-    }
-}
-
-/**
  * Asked when saving new terms on an entry a schedule recorded, with [name] (the schedule)
  * in bold between [lead] and [rest]: [onlyThisLabel] ("Solo este"), or [alsoLabel] ("Este
  * y los siguientes"), and [backLabel] ("Volver a editar").
@@ -306,11 +263,6 @@ fun FollowingChoice(
         busy = busy
     )
 }
-
-private fun LocalDate.millis() = atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
-
-private fun day(utcMillis: Long): LocalDate =
-    Instant.ofEpochMilli(utcMillis).atZone(ZoneOffset.UTC).toLocalDate()
 
 /**
  * The days of the month, 1 to 31, as round toggles in rows of seven, or four from font

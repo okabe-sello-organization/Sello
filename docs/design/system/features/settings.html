@@ -51,7 +51,7 @@
         <li><strong>Inversiones</strong>: a Slip with "Moneda al crear" and "Orden de la lista" (each opening an OptionSlip) and "Dólar", which leads to the rate screen (<code>SettingsScreen.kt:276</code>).</li>
         <li>A centred <code>bodySmall</code> footer in <code>inkSoft</code>: "Sello · tus datos no salen de este teléfono" (<code>SettingsScreen.kt:120</code>).</li>
       </ol>
-      <p>Section titles are the private <code>SectionTitle</code>: <code>titleMedium</code>, bottom padding <code>spacing.sm</code>, heading semantics (<code>SettingsScreen.kt:325</code>). The first <code>SettingRow</code> under each title passes <code>divider = false</code>.</p>
+      <p>Section titles, Tus datos' among them, are the design system's <a href="../components.html#c-SectionTitle"><code>SectionTitle</code></a>: <code>titleMedium</code>, bottom padding <code>spacing.sm</code>, heading semantics. The first <code>SettingRow</code> under each title passes <code>divider = false</code>.</p>
 
       <h3>States</h3>
       <div class="table-wrap">
@@ -147,8 +147,8 @@
               <td>"The ink as its light band shows it, the same in both themes"</td>
             </tr>
             <tr>
-              <td><code>SectionTitle</code> (feature-local, private)</td>
-              <td><code>app/src/main/java/com/software/sello/feature/settings/SettingsScreen.kt:325</code></td>
+              <td><a href="../components.html#c-SectionTitle"><code>SectionTitle</code></a></td>
+              <td><code>:design-system</code> <code>Settings.kt</code> (Configuración and Tus datos)</td>
               <td><code>titleMedium</code> heading over each section</td>
               <td>The section's name, read as a heading</td>
             </tr>
@@ -167,7 +167,6 @@
       <h2>Feature-local parts that look like shared ones</h2>
       <ul>
         <li><code>InkSwatches</code> (<code>SettingsComponents.kt:33</code>) is a radio choice like <a href="../components.html#c-SegmentedSwitch"><code>SegmentedSwitch</code></a> and <a href="../components.html#c-OptionSlip"><code>OptionSlip</code></a>, but drawn as colour circles. It re-declares <code>DISABLED_ROW_ALPHA = 0.38f</code> (<code>SettingsComponents.kt:93</code>) with the same name and value as SettingRow's private constant (<code>design-system/src/main/java/com/software/sello/designsystem/component/Settings.kt:133</code>), and hard-codes a <code>6.dp</code> gap and a <code>2.5.dp</code> ring. No other feature draws colour swatches. Finding: <a href="../findings.html#H69">H69</a>.</li>
-        <li><code>SectionTitle</code> (<code>SettingsScreen.kt:325</code>) is copied inline in Tus datos (<code>app/src/main/java/com/software/sello/feature/backup/TusDatos.kt:119</code>) for the same heading. Findings: <a href="../findings.html#C23">C23</a>, <a href="../findings.html#C24">C24</a>.</li>
         <li>The schedule count and the rate say "unreadable" in a row caption, where a failed preference read shows an Older <code>StatusSlip</code>.</li>
       </ul>
     </section>
@@ -176,7 +175,6 @@
       <h2>Findings here</h2>
       <p class="muted">Places in this feature on the <a href="../findings.html">findings</a> page; shared parts it uses are listed there under their own files.</p>
       <ul>
-        <li><strong>Copies:</strong> <a href="../findings.html#C12">C12</a> <code>SelloButton(kind = Text)</code>: <a href="../findings.html#C12-2">C12-2</a>; <a href="../findings.html#C24">C24</a> <code>SectionTitle (Configuración)</code>: <a href="../findings.html#C24-1">C24-1</a>.</li>
         <li><strong>Hard-coded colour:</strong> <a href="../findings.html#H03">H03</a> <code>selloColors(ink, isDark = false).band (palette read directly)</code> (1 place, would not follow dynamic colour).</li>
         <li><strong>Hard-coded type:</strong> <a href="../findings.html#H44">H44</a> <code>fontWeight = FontWeight.W400</code> (1 place); <a href="../findings.html#H45">H45</a> <code>fontWeight = FontWeight.W600</code> (2 places); <a href="../findings.html#H46">H46</a> <code>fontWeight = FontWeight.W700</code> (2 places).</li>
         <li><strong>Hard-coded alpha:</strong> <a href="../findings.html#H69">H69</a> <code>0.38f</code> (4 places).</li>

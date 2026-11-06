@@ -44,28 +44,44 @@ fun MoreMenu(items: List<MoreMenuItem>, modifier: Modifier = Modifier) {
         IconButton(onClick = { open = true }, modifier = Modifier.testTag(MORE_MENU_TAG)) {
             Icon(SelloIcon.MoreVert.painter(), stringResource(R.string.sello_more_options))
         }
-        DropdownMenu(
-            expanded = open,
-            onDismissRequest = { open = false },
-            containerColor = SelloTheme.colors.paper
-        ) {
-            items.forEach { item ->
-                val colors = SelloTheme.colors
-                val color = if (item.loss) colors.semantic.loss else colors.ink
-                val tint = if (item.enabled) color else color.copy(alpha = DISABLED_ALPHA)
-                DropdownMenuItem(
-                    text = {
-                        Text(item.label, style = MaterialTheme.typography.bodyLarge, color = tint)
-                    },
-                    leadingIcon = { Icon(item.icon.painter(), null, tint = tint) },
-                    onClick = {
-                        open = false
-                        item.onClick()
-                    },
-                    enabled = item.enabled,
-                    modifier = item.tag?.let { Modifier.testTag(it) } ?: Modifier
-                )
-            }
+        MoreMenuDropdown(items, open, { open = false })
+    }
+}
+
+/**
+ * The [MoreMenu]'s list of [items] on its own, shown while [open], for a menu something
+ * else opens, such as a long press on a line. Choosing an item calls [onClose] and then
+ * runs it. It drops down from the layout it is placed in.
+ */
+@Composable
+fun MoreMenuDropdown(
+    items: List<MoreMenuItem>,
+    open: Boolean,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    DropdownMenu(
+        expanded = open,
+        onDismissRequest = onClose,
+        containerColor = SelloTheme.colors.paper,
+        modifier = modifier
+    ) {
+        items.forEach { item ->
+            val colors = SelloTheme.colors
+            val color = if (item.loss) colors.semantic.loss else colors.ink
+            val tint = if (item.enabled) color else color.copy(alpha = DISABLED_ALPHA)
+            DropdownMenuItem(
+                text = {
+                    Text(item.label, style = MaterialTheme.typography.bodyLarge, color = tint)
+                },
+                leadingIcon = { Icon(item.icon.painter(), null, tint = tint) },
+                onClick = {
+                    onClose()
+                    item.onClick()
+                },
+                enabled = item.enabled,
+                modifier = item.tag?.let { Modifier.testTag(it) } ?: Modifier
+            )
         }
     }
 }
