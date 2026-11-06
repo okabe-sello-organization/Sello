@@ -297,7 +297,7 @@ window.SELLO_FINDINGS = {
      "file": "app/src/main/java/com/software/sello/feature/reset/ResetScreen.kt:237"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Restore.kt:85"
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Restore.kt:88"
     },
     {
      "file": "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:583"
@@ -586,7 +586,7 @@ window.SELLO_FINDINGS = {
    "meaning": "The one filled button of a screen (the dock aside): its main forward action.",
    "evidence": [
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/SelloButton.kt:26"
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/SelloButton.kt:29"
     },
     {
      "file": "app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:599"
@@ -1198,7 +1198,7 @@ window.SELLO_FINDINGS = {
      "note": "NoteComposer: NoteComposer: no border unless error (loss)"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/SelloButton.kt:60",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/SelloButton.kt:66",
      "area": "design-system:SelloButton",
      "features": [],
      "note": "SelloButton: Outlined/Text button container"
@@ -1212,7 +1212,7 @@ window.SELLO_FINDINGS = {
      "note": "ChoiceRow: ChoiceRow: unpicked row has no fill"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:363",
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:393",
      "area": "goals",
      "features": [
       "goals"
@@ -1220,7 +1220,7 @@ window.SELLO_FINDINGS = {
      "note": "GoalPinPill: GoalPinPill: unselected has no fill"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:364",
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:394",
      "area": "goals",
      "features": [
       "goals"
@@ -1777,7 +1777,7 @@ window.SELLO_FINDINGS = {
      "note": "Plate: style = stencil.copy(fontSize = 15.sp, letterSpacing = 0.14.em),"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/SelloButton.kt:97",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/SelloButton.kt:112",
      "area": "design-system:SelloButton",
      "features": [],
      "note": "SelloButton: MaterialTheme.typography.labelLarge.copy(fontSize = 15.sp)"
@@ -2120,7 +2120,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:280",
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:306",
      "area": "goals",
      "features": [
       "goals"
@@ -2252,7 +2252,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/recibo/CategoryInsightSections.kt:345",
+     "file": "app/src/main/java/com/software/sello/feature/recibo/CategoryInsightSections.kt:349",
      "area": "recibo",
      "features": [
       "recibo"
@@ -2437,7 +2437,7 @@ window.SELLO_FINDINGS = {
      "note": "LimitTotalLine: textStyle = style.copy(fontWeight = FontWeight.W700),"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:178",
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:180",
      "area": "goals",
      "features": [
       "goals"
@@ -2779,7 +2779,7 @@ window.SELLO_FINDINGS = {
      "note": "Plate: fontWeight = FontWeight.W800,"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:129",
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:131",
      "area": "goals",
      "features": [
       "goals"
@@ -2787,7 +2787,7 @@ window.SELLO_FINDINGS = {
      "note": "GoalPill: fontWeight = FontWeight.W800,"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:177",
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:179",
      "area": "goals",
      "features": [
       "goals"
@@ -2795,7 +2795,7 @@ window.SELLO_FINDINGS = {
      "note": "ReachedRow: val nameStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.W800)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:273",
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:299",
      "area": "goals",
      "features": [
       "goals"
@@ -2803,7 +2803,7 @@ window.SELLO_FINDINGS = {
      "note": "GoalCard: style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.W800)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:339",
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:369",
      "area": "goals",
      "features": [
       "goals"
@@ -2811,7 +2811,7 @@ window.SELLO_FINDINGS = {
      "note": "CompletedGoalRow: Text(name, fontWeight = FontWeight.W800, style = MaterialTheme.typography.bodyLarge)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:378",
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:408",
      "area": "goals",
      "features": [
       "goals"
@@ -2883,7 +2883,7 @@ window.SELLO_FINDINGS = {
      "note": "ChoiceRow: style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.W800),"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/investments/InversionesScreen.kt:382",
+     "file": "app/src/main/java/com/software/sello/feature/investments/InversionesScreen.kt:384",
      "area": "investments",
      "features": [
       "investments"
@@ -3247,6 +3247,22 @@ window.SELLO_FINDINGS = {
      "area": "design-system:SummaryCharts",
      "features": [],
      "note": "SplitBar: val labelStyle = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.W800)"
+    },
+    {
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:182",
+     "area": "goals",
+     "features": [
+      "goals"
+     ],
+     "note": "ReachedRow: val actionStyle = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.W800) (measures SelloButton(compact)'s label)"
+    },
+    {
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/SelloButton.kt:109",
+     "area": "design-system:SelloButton",
+     "features": [
+      "goals"
+     ],
+     "note": "SelloButton: compact -> MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.W800)"
     }
    ]
   },
@@ -3276,7 +3292,7 @@ window.SELLO_FINDINGS = {
      "note": "Plate: fontWeight = FontWeight.W900,"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:137",
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:139",
      "area": "goals",
      "features": [
       "goals"
@@ -3284,7 +3300,7 @@ window.SELLO_FINDINGS = {
      "note": "GoalPill: style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.W900)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:279",
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:305",
      "area": "goals",
      "features": [
       "goals"
@@ -4127,7 +4143,7 @@ window.SELLO_FINDINGS = {
      "note": "AnswerSlip: Stamp(stamp, ink, Modifier.padding(vertical = 8.dp), angle = -5f)"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Paper.kt:634",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Paper.kt:632",
      "area": "design-system:Paper",
      "features": [],
      "note": "Footnote: horizontalArrangement = Arrangement.spacedBy(8.dp)"
@@ -4139,13 +4155,13 @@ window.SELLO_FINDINGS = {
      "note": "PlanSlip: horizontalArrangement = Arrangement.spacedBy(8.dp),"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/SelloButton.kt:89",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/SelloButton.kt:101",
      "area": "design-system:SelloButton",
      "features": [],
      "note": "SelloButton: Spacer(Modifier.width(8.dp))"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/SelloButton.kt:92",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/SelloButton.kt:104",
      "area": "design-system:SelloButton",
      "features": [],
      "note": "SelloButton: Spacer(Modifier.width(8.dp))"
@@ -4442,7 +4458,7 @@ window.SELLO_FINDINGS = {
      "note": "NoteComposer: NoteComposer done button size(48.dp)"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Paper.kt:624",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Paper.kt:627",
      "area": "design-system:Paper",
      "features": [],
      "note": "Footnote: Footnote row heightIn(min = 48.dp)"
@@ -4553,7 +4569,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:363",
+     "file": "app/src/main/java/com/software/sello/feature/goals/GoalComponents.kt:393",
      "area": "goals",
      "features": [
       "goals"
@@ -4710,13 +4726,13 @@ window.SELLO_FINDINGS = {
      "note": "file-level constant: MORE_SLIP_DISABLED_ALPHA defined"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/SelloButton.kt:63",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/SelloButton.kt:69",
      "area": "design-system:SelloButton",
      "features": [],
      "note": "SelloButton: uses DISABLED_ALPHA: val fade = if (loading) 1f else DISABLED_ALPHA"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/SelloButton.kt:123",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/SelloButton.kt:138",
      "area": "design-system:SelloButton",
      "features": [],
      "note": "file-level constant: DISABLED_ALPHA defined"

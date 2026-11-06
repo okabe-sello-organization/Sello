@@ -178,7 +178,8 @@ internal fun ReachedRow(
     val density = LocalDensity.current
     val nameStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.W800)
     val messageStyle = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.W700)
-    val actionStyle = MaterialTheme.typography.labelLarge
+    // SelloButton(compact)'s label, measured to decide whether everything fits on one line.
+    val actionStyle = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.W800)
     BoxWithConstraints(modifier.fillMaxWidth()) {
         val widths = with(density) {
             listOf(name to nameStyle, message to messageStyle, actionLabel to actionStyle)
@@ -205,8 +206,8 @@ internal fun ReachedRow(
             Icon(SelloIcon.Check.painter(), null, Modifier.size(22.dp), tint = colors.semantic.gain)
         }
         val action = @Composable {
-            // Narrow side padding, so the name keeps its room. Busy, the spinner takes the
-            // label's place inside the idle button's width: the row keeps its shape.
+            // The row's own compact pill, so the name keeps its room. Busy, the spinner takes
+            // the label's place inside the idle button's width: the row keeps its shape.
             Box(contentAlignment = Alignment.Center) {
                 SelloButton(
                     text = actionLabel,
@@ -214,19 +215,24 @@ internal fun ReachedRow(
                     tone = ButtonTone.Gain,
                     enabled = !busy,
                     contentPadding = PaddingValues(horizontal = 14.dp),
+                    compact = true,
                     // While busy it only gives the width: never seen, read or pressed.
                     modifier = if (busy) Modifier.alpha(0f).clearAndSetSemantics {} else Modifier
                 )
                 if (busy) {
-                    SelloButton(
-                        text = "",
-                        onClick = onComplete,
-                        tone = ButtonTone.Gain,
-                        loading = true,
-                        contentPadding = PaddingValues(0.dp),
-                        modifier = Modifier.matchParentSize()
-                            .semantics { contentDescription = actionLabel }
-                    )
+                    // The idle button's width; its own height, so it is drawn as the idle one.
+                    Box(Modifier.matchParentSize(), contentAlignment = Alignment.Center) {
+                        SelloButton(
+                            text = "",
+                            onClick = onComplete,
+                            tone = ButtonTone.Gain,
+                            loading = true,
+                            contentPadding = PaddingValues(0.dp),
+                            compact = true,
+                            modifier = Modifier.fillMaxWidth()
+                                .semantics { contentDescription = actionLabel }
+                        )
+                    }
                 }
             }
         }
@@ -234,7 +240,8 @@ internal fun ReachedRow(
             .background(colors.semantic.gainSoft)
         if (inline) {
             Row(
-                surface.padding(start = 14.dp, top = 6.dp, end = 6.dp, bottom = 6.dp),
+                // 4 dp above and below the pill's 48 dp touch area: it is drawn 44 dp high, 6 dp in.
+                surface.padding(start = 14.dp, top = 4.dp, end = 6.dp, bottom = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {

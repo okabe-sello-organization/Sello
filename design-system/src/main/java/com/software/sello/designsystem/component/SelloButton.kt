@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -13,9 +14,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -39,7 +42,9 @@ enum class ButtonTone { Brand, Gain, Ink, Loss, OnBand, OnGain }
  * Sello's button. While [loading] it keeps its label and colours, shows a spinner in
  * place of the icon and ignores presses, so a save cannot be submitted twice.
  * [contentPadding] lets a text button end flush with the content beside it. [trailingIcon]
- * follows the label, as the chevron of a link that opens another screen.
+ * follows the label, as the chevron of a link that opens another screen. A [compact] button
+ * is a pill 44 dp high with a smaller, heavy label, for a row that holds its own action;
+ * its touch area is still the 48 dp minimum.
  */
 @Composable
 fun SelloButton(
@@ -52,7 +57,8 @@ fun SelloButton(
     loading: Boolean = false,
     tone: ButtonTone = ButtonTone.Brand,
     contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
-    trailingIcon: SelloIcon? = null
+    trailingIcon: SelloIcon? = null,
+    compact: Boolean = false
 ) {
     val (toneInk, onTone) = tone.inks()
     val (container, content) = when (kind) {
@@ -65,7 +71,7 @@ fun SelloButton(
     Button(
         onClick = onClick,
         enabled = enabled && !loading,
-        shape = SelloTheme.shapes.button,
+        shape = if (compact) CircleShape else SelloTheme.shapes.button,
         colors = ButtonDefaults.buttonColors(
             containerColor = container,
             contentColor = content,
@@ -78,13 +84,19 @@ fun SelloButton(
             null
         },
         contentPadding = contentPadding,
-        modifier = modifier.heightIn(min = if (kind == ButtonKind.Text) 46.dp else 56.dp)
+        modifier = modifier.minimumInteractiveComponentSize().heightIn(
+            min = when {
+                compact -> 44.dp
+                kind == ButtonKind.Text -> 46.dp
+                else -> 56.dp
+            }
+        )
     ) {
         if (loading) {
             CircularProgressIndicator(
                 color = LocalContentColor.current,
                 strokeWidth = 2.dp,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(if (compact) 16.dp else 20.dp)
             )
             Spacer(Modifier.width(8.dp))
         } else if (icon != null) {
@@ -93,10 +105,13 @@ fun SelloButton(
         }
         Text(
             text = text,
-            style = if (kind == ButtonKind.Text) {
-                MaterialTheme.typography.labelLarge.copy(fontSize = TextButtonLabelSize)
-            } else {
-                MaterialTheme.typography.labelLarge
+            style = when {
+                compact -> MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.W800)
+
+                kind == ButtonKind.Text ->
+                    MaterialTheme.typography.labelLarge.copy(fontSize = TextButtonLabelSize)
+
+                else -> MaterialTheme.typography.labelLarge
             },
             textAlign = TextAlign.Center
         )
