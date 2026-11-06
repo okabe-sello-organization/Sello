@@ -8,7 +8,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import com.software.sello.R
 import com.software.sello.designsystem.component.ButtonKind
@@ -34,26 +36,36 @@ internal fun GoalSaveProblem(
     val unknown = error == GoalDetailError.Unknown
     Slip(modifier.fillMaxWidth(), pinked = false) {
         Column(verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)) {
-            Text(
-                stringResource(
-                    if (unknown) {
-                        R.string.goal_save_unknown_title
-                    } else {
-                        R.string.goal_save_failed_title
-                    }
-                ),
-                Modifier.semantics { heading() },
-                style = MaterialTheme.typography.titleMedium,
-                color = SelloTheme.colors.ink
-            )
-            FieldMessageText(
-                FieldMessage(
+            // Read aloud when it appears, as a StatusSlip is; the button is not.
+            Column(
+                Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
+            ) {
+                Text(
                     stringResource(
-                        if (unknown) R.string.goal_error_unknown else R.string.goal_error_not_saved
+                        if (unknown) {
+                            R.string.goal_save_unknown_title
+                        } else {
+                            R.string.goal_save_failed_title
+                        }
                     ),
-                    if (unknown) FieldTone.Warning else FieldTone.Error
+                    Modifier.semantics { heading() },
+                    style = MaterialTheme.typography.titleMedium,
+                    color = SelloTheme.colors.ink
                 )
-            )
+                FieldMessageText(
+                    FieldMessage(
+                        stringResource(
+                            if (unknown) {
+                                R.string.goal_error_unknown
+                            } else {
+                                R.string.goal_error_not_saved
+                            }
+                        ),
+                        if (unknown) FieldTone.Warning else FieldTone.Error
+                    )
+                )
+            }
             SelloButton(
                 stringResource(
                     if (unknown) R.string.expense_entry_check_again else R.string.goal_error_retry

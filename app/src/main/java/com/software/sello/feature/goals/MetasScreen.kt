@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -76,8 +77,14 @@ fun MetasScreen(
     val landed: SnapshotStateList<String> = rememberSaveable(
         saver = listSaver(save = { it.toList() }, restore = { it.toMutableStateList() })
     ) { mutableListOf<String>().toMutableStateList() }
+    val list = rememberLazyListState()
+    // A completion that did not finish is said first in the list; bring it into view, since
+    // the button pressed may be scrolled well below it.
+    val failed = ((state as? MetasState.Ready)?.completion as? CompletionState.Failed)?.error
+    LaunchedEffect(failed) { if (failed != null) list.animateScrollToItem(0) }
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag(METAS_LIST_TAG),
+        state = list,
         contentPadding = PaddingValues(
             start = padding.calculateStartPadding(direction),
             top = padding.calculateTopPadding() + spacing.lg,

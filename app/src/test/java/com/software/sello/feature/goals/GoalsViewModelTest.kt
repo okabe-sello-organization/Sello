@@ -894,7 +894,7 @@ class GoalsViewModelTest {
     }
 
     @Test
-    fun aCompletionCancelledWithMetasIsAskedAboutWhenMetasComesBack() = runTest {
+    fun aCompletionCancelledMidSendKeepsItsOperationToBeAskedAboutNotSentAgain() = runTest {
         reads.board.value = board(summary(viajeId, 3_060_000, 3_000_000))
         val saved = SavedStateHandle()
         val store = ViewModelStore()
@@ -907,7 +907,8 @@ class GoalsViewModelTest {
         model.onAction(MetasAction.MarkComplete(viajeId))
         val operation = commands.sent.single().operationId
 
-        // Metas goes away while the completion is in flight.
+        // The view model's scope is cancelled while the completion is in flight; a new
+        // one reading the same saved state asks about that operation.
         store.clear()
         commands.pause = false
         commands.found = Outcome.Success(null)

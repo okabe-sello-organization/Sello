@@ -10,12 +10,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -26,6 +30,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
@@ -457,6 +462,12 @@ class MetasScreenTest {
         showReached(CompletionState.Failed(GoalDetailError.Unknown), actions)
 
         rule.onNodeWithText("Falta comprobar si se guardó").assertExists()
+        // Read aloud when it appears, as a StatusSlip is.
+        rule.onNode(
+            SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite) and
+                hasAnyDescendant(hasText("Falta comprobar si se guardó")),
+            useUnmergedTree = true
+        ).assertExists()
         rule.onNodeWithText("No sabemos si se guardó el cambio. Compruébalo antes de seguir.")
             .assertExists()
         rule.onNodeWithTag("metas.markComplete.$celular").assertIsNotEnabled()
@@ -464,8 +475,8 @@ class MetasScreenTest {
         assertEquals(listOf<MetasAction>(MetasAction.Retry), actions)
     }
 
-    @Test
-    fun aFailureThatArrivesWhileMetasIsShownComesIntoView() {
+    /** Metas sending a completion, the reached card first; [completion] set by the test. */
+    private fun showSending(): (CompletionState) -> Unit {
         val reached = goal(4, "Celular nuevo", 1_200_000, listOf(450_000, 750_000))
         val ready = ReadState.Ready(
             GoalBoard(1, 1, listOf(reached) + board.goals, emptySet(), emptyList())
@@ -482,8 +493,25 @@ class MetasScreenTest {
                 )
             }
         }
+        return { completion = it }
+    }
 
-        completion = CompletionState.Failed(GoalDetailError.Unknown)
+    @Test
+    fun aFailureThatArrivesWhileMetasIsShownComesIntoView() {
+        val complete = showSending()
+
+        complete(CompletionState.Failed(GoalDetailError.Unknown))
+
+        rule.onNodeWithTag(METAS_COMPLETION_PROBLEM_TAG).assertIsDisplayed()
+    }
+
+    @Test
+    fun aFailureThatArrivesAfterAScrollIsBroughtIntoView() {
+        val complete = showSending()
+        // The reached card scrolled up to the top, the total out of view.
+        rule.onNodeWithTag(METAS_LIST_TAG).performScrollToIndex(1)
+
+        complete(CompletionState.Failed(GoalDetailError.Unknown))
 
         rule.onNodeWithTag(METAS_COMPLETION_PROBLEM_TAG).assertIsDisplayed()
     }
