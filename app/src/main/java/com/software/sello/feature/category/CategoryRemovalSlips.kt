@@ -21,6 +21,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -38,7 +39,6 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.withStyle
@@ -220,7 +220,10 @@ private fun ChooseSlip(
                     val at = text.indexOf(link)
                     append(text.substring(0, at))
                     withStyle(
-                        SpanStyle(color = SelloTheme.colors.brand, fontWeight = FontWeight.W800)
+                        SpanStyle(
+                            color = SelloTheme.colors.brand,
+                            fontWeight = SelloTheme.type.weight.emphasis
+                        )
                     ) { append(link) }
                     append(text.substring(at + link.length))
                 },
@@ -228,9 +231,9 @@ private fun ChooseSlip(
                 modifier = Modifier
                     .padding(top = 6.dp)
                     .fillMaxWidth()
-                    .heightIn(min = 48.dp)
+                    .heightIn(min = SelloTheme.spacing.minTouchTarget)
                     .clickable(role = Role.Button) { onAction(RemovalAction.ArchiveInstead) }
-                    .padding(vertical = 12.dp)
+                    .padding(vertical = SelloTheme.spacing.md)
                     .testTag(REMOVAL_ARCHIVE_TAG)
             )
         }
@@ -288,7 +291,7 @@ private fun PickSheet(
                 )
             }
         }
-        Caption(stringResource(R.string.category_delete_pick_archived), top = 8.dp)
+        Caption(stringResource(R.string.category_delete_pick_archived), top = SelloTheme.spacing.sm)
     }
 }
 
@@ -330,12 +333,12 @@ private fun TargetRow(target: MoveTarget, last: Boolean, enabled: Boolean, onCli
         IconCircle(CategoryIcons.iconFor(target.iconKey), colors.brand)
         Text(
             target.name,
-            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.W800),
+            style = SelloTheme.type.rowTitle,
             modifier = Modifier.weight(1f)
         )
         MoneyText(
             target.amount,
-            textStyle = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.W800)
+            textStyle = SelloTheme.type.rowTitle
         )
     }
 }
@@ -344,7 +347,10 @@ private fun TargetRow(target: MoveTarget, last: Boolean, enabled: Boolean, onCli
 @Composable
 private fun MoveRows(name: String, facts: MoveFacts) {
     val month = monthNames().inSentence(facts.month)
-    Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    Column(
+        Modifier.padding(top = SelloTheme.spacing.sm),
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
         val spent = stringResource(R.string.category_delete_row_spent, facts.target, month)
         ChangeRow(
             spent,
@@ -591,7 +597,7 @@ private fun ChoiceRow(
         Column(Modifier.weight(1f)) {
             Text(
                 title,
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.W800),
+                style = SelloTheme.type.rowTitle,
                 color = ink
             )
             Text(note, style = MaterialTheme.typography.bodySmall, color = colors.inkSoft)
@@ -828,13 +834,15 @@ private fun RemovalLimit.spoken(): String = when (this) {
 }
 
 /** [text] with each of [parts] in bold, in order, as the design writes the counts. */
+@Composable
+@ReadOnlyComposable
 private fun bold(text: String, vararg parts: String): AnnotatedString = buildAnnotatedString {
     var at = 0
     parts.forEach { part ->
         val start = text.indexOf(part, at)
         if (start < 0) return@forEach
         append(text.substring(at, start))
-        withStyle(SpanStyle(fontWeight = FontWeight.W800)) { append(part) }
+        withStyle(SpanStyle(fontWeight = SelloTheme.type.weight.emphasis)) { append(part) }
         at = start + part.length
     }
     append(text.substring(at))

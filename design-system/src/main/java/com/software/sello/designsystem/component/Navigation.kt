@@ -33,7 +33,6 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -87,14 +86,14 @@ fun SelloNavigationRail(
     val colors = SelloTheme.colors
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.xs),
         // As wide as its longest label needs, so a tab's name is never shortened.
         modifier = modifier
             .fillMaxHeight()
             .width(IntrinsicSize.Max)
             .widthIn(min = RailWidth)
             .background(colors.paper)
-            .padding(vertical = 8.dp)
+            .padding(vertical = SelloTheme.spacing.sm)
     ) {
         if (dock != null) {
             val (container, content) = if (dock.enabled) {
@@ -202,7 +201,7 @@ fun MonthGrid(
     onNextYear: (() -> Unit)? = null
 ) {
     val colors = SelloTheme.colors
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             YearArrow(SelloIcon.ChevronLeft, previousYearLabel, onPreviousYear)
             Text(
@@ -231,7 +230,7 @@ fun MonthGrid(
                             modifier = Modifier
                                 .weight(1f)
                                 .heightIn(min = SelloTheme.spacing.minTouchTarget)
-                                .alpha(if (month.enabled) 1f else DISABLED_MONTH_ALPHA)
+                                .alpha(if (month.enabled) 1f else SelloTheme.alpha.disabled)
                                 .clip(SelloTheme.shapes.control)
                                 .background(if (selected) colors.brand else colors.paper)
                                 .border(
@@ -247,7 +246,7 @@ fun MonthGrid(
                             Text(
                                 text = month.label,
                                 style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.W600
+                                    fontWeight = SelloTheme.type.weight.soft
                                 ),
                                 color = when {
                                     selected -> colors.onBrand
@@ -275,5 +274,3 @@ private fun YearArrow(icon: SelloIcon, label: String, onClick: (() -> Unit)?) {
 }
 
 private const val MONTHS_PER_ROW = 3
-
-private const val DISABLED_MONTH_ALPHA = 0.38f

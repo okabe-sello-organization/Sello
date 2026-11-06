@@ -14,7 +14,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
@@ -57,7 +56,7 @@ fun SuggestionNote(
                 title,
                 Modifier.weight(1f),
                 color = colors.onBrandSoft,
-                fontWeight = FontWeight.W800
+                fontWeight = SelloTheme.type.weight.emphasis
             )
             if (onDismiss != null) {
                 IconButton(onClick = onDismiss) {
@@ -70,7 +69,7 @@ fun SuggestionNote(
             Modifier.semantics { evidenceSpoken?.let { contentDescription = it } },
             color = colors.onBrandSoft
         )
-        Text(advice, color = colors.onBrandSoft, fontWeight = FontWeight.W800)
+        Text(advice, color = colors.onBrandSoft, fontWeight = SelloTheme.type.weight.emphasis)
         SelloButton(actionLabel, onAction, kind = ButtonKind.Text)
     }
 }

@@ -52,7 +52,7 @@ fun FieldMessageText(message: FieldMessage, modifier: Modifier = Modifier) {
     }
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.xs),
         modifier = modifier.semantics(mergeDescendants = true) {
             liveRegion = LiveRegionMode.Polite
         }

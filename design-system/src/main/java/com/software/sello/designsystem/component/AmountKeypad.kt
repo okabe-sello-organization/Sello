@@ -178,7 +178,7 @@ private fun RowScope.Key(
             )
             .semantics { if (description != null) contentDescription = description }
             .then(if (compact) Modifier.padding(2.dp) else Modifier)
-            .alpha(if (enabled) 1f else DISABLED_KEY_ALPHA)
+            .alpha(if (enabled) 1f else SelloTheme.alpha.disabled)
             .clip(SelloTheme.shapes.control)
             .background(if (delete) SelloTheme.colors.brandSoft else SelloTheme.colors.paper)
     ) { content() }
@@ -189,7 +189,6 @@ private val KeyGap = 6.dp
 /** A key's digit: titleLarge set larger, on its own line height. Only the keypad uses it. */
 private val KeyLabelSize = 22.sp
 private val KeyLabelLine = 26.sp
-private const val DISABLED_KEY_ALPHA = 0.38f
 
 private val HardwareDigits = mapOf(
     Key.Zero to 0, Key.One to 1, Key.Two to 2, Key.Three to 3, Key.Four to 4,

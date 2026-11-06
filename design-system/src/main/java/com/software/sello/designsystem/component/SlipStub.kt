@@ -28,7 +28,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.software.sello.designsystem.icon.SelloIcon
@@ -49,7 +48,7 @@ fun SlipStub(
     val rule = SelloTheme.colors.rule
     Row(
         modifier.fillMaxWidth().height(IntrinsicSize.Min),
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.xs)
     ) {
         Box(Modifier.weight(1f)) { start() }
         Canvas(Modifier.width(2.dp).fillMaxHeight().padding(vertical = 6.dp)) {
@@ -93,7 +92,7 @@ fun StubButton(
             .semantics {
                 contentDescription = listOfNotNull(label, fact).joinToString(", ")
             }
-            .padding(horizontal = 8.dp, vertical = 6.dp)
+            .padding(horizontal = SelloTheme.spacing.sm, vertical = 6.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -106,7 +105,7 @@ fun StubButton(
                 modifier = Modifier.padding(end = 8.dp).size(24.dp)
             )
             Column(Modifier.clearAndSetSemantics {}) {
-                Text(title, fontWeight = FontWeight.W800, color = colors.brand)
+                Text(title, fontWeight = SelloTheme.type.weight.emphasis, color = colors.brand)
                 if (fact != null) {
                     Text(fact, style = MaterialTheme.typography.labelSmall, color = colors.inkSoft)
                 }

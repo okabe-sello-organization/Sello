@@ -12,7 +12,6 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import com.software.sello.designsystem.theme.SelloTheme
 
@@ -45,7 +44,12 @@ fun BulletList(bullets: List<Bullet>, modifier: Modifier = Modifier) {
                 Text(
                     text = buildAnnotatedString {
                         if (bullet.lead != null) {
-                            withStyle(SpanStyle(color = colors.ink, fontWeight = FontWeight.W700)) {
+                            withStyle(
+                                SpanStyle(
+                                    color = colors.ink,
+                                    fontWeight = SelloTheme.type.weight.strong
+                                )
+                            ) {
                                 append(bullet.lead)
                             }
                             append(" ")

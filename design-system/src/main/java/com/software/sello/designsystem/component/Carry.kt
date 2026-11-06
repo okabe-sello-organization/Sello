@@ -20,7 +20,6 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.software.sello.designsystem.icon.SelloIcon
@@ -52,7 +51,7 @@ fun CarryBreakdown(
     modifier: Modifier = Modifier,
     footnote: String? = null
 ) {
-    Column(modifier.fillMaxWidth().padding(top = 4.dp)) {
+    Column(modifier.fillMaxWidth().padding(top = SelloTheme.spacing.xs)) {
         lines.forEach { line ->
             LeaderLine(line.label, caption = line.caption, emphasis = line.emphasis) {
                 MoneyText(
@@ -63,9 +62,9 @@ fun CarryBreakdown(
                         SelloTheme.colors.ink
                     },
                     fontWeight = if (line.emphasis == LineEmphasis.Strong) {
-                        FontWeight.W900
+                        SelloTheme.type.weight.figure
                     } else {
-                        FontWeight.W700
+                        SelloTheme.type.weight.strong
                     }
                 )
             }
@@ -75,7 +74,7 @@ fun CarryBreakdown(
                 footnote,
                 style = MaterialTheme.typography.labelSmall,
                 color = SelloTheme.colors.inkSoft,
-                modifier = Modifier.padding(top = 4.dp)
+                modifier = Modifier.padding(top = SelloTheme.spacing.xs)
             )
         }
     }
@@ -101,20 +100,20 @@ fun ChangeRow(
         modifier
             .fillMaxWidth()
             .heightIn(min = 36.dp)
-            .padding(vertical = 4.dp)
+            .padding(vertical = SelloTheme.spacing.xs)
             .clearAndSetSemantics { contentDescription = spoken },
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
             label,
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.W800),
+            style = SelloTheme.type.lineTitle,
             modifier = Modifier.padding(end = 10.dp)
         )
         Column(Modifier.weight(1f, fill = true)) {
             Text(
                 value,
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.W700,
+                    fontWeight = SelloTheme.type.weight.strong,
                     fontFeatureSettings = "tnum"
                 ),
                 textAlign = TextAlign.End,
@@ -124,7 +123,9 @@ fun ChangeRow(
                 Text(
                     caption,
                     style = MaterialTheme.typography.bodySmall.copy(
-                        fontWeight = if (emphasized) FontWeight.W800 else FontWeight.W400,
+                        fontWeight = with(SelloTheme.type.weight) {
+                            if (emphasized) emphasis else regular
+                        },
                         fontFeatureSettings = "tnum"
                     ),
                     color = if (emphasized) SelloTheme.colors.ink else SelloTheme.colors.inkSoft,
@@ -177,7 +178,9 @@ fun CarryCorrectionContent(
                 changed,
                 style = MaterialTheme.typography.bodyMedium,
                 color = SelloTheme.colors.semantic.warn,
-                modifier = Modifier.padding(bottom = 8.dp).testTag(CARRY_CORRECTION_CHANGED_TAG)
+                modifier = Modifier.padding(
+                    bottom = SelloTheme.spacing.sm
+                ).testTag(CARRY_CORRECTION_CHANGED_TAG)
             )
         }
         what?.let {
@@ -187,14 +190,14 @@ fun CarryCorrectionContent(
             Text(
                 lead,
                 style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.padding(top = 8.dp).semantics { heading() }
+                modifier = Modifier.padding(top = SelloTheme.spacing.sm).semantics { heading() }
             )
         }
         groups.forEach { group ->
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(top = 8.dp)
+                horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm),
+                modifier = Modifier.padding(top = SelloTheme.spacing.sm)
             ) {
                 group.icon?.let {
                     Icon(it.painter(), null, Modifier.size(18.dp), SelloTheme.colors.brand)
@@ -215,7 +218,7 @@ fun CarryCorrectionContent(
             footer,
             style = MaterialTheme.typography.bodySmall,
             color = SelloTheme.colors.inkSoft,
-            modifier = Modifier.padding(top = 8.dp)
+            modifier = Modifier.padding(top = SelloTheme.spacing.sm)
         )
     }
 }

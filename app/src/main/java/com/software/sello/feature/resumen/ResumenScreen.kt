@@ -30,7 +30,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
 import com.software.sello.designsystem.component.AnswerSlip
@@ -175,7 +174,7 @@ private fun IncomeSlip(
             Text(
                 stringResource(R.string.resumen_income_none, month),
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.W800,
+                fontWeight = SelloTheme.type.weight.emphasis,
                 modifier = Modifier.testTag("resumen.income")
             )
             ResumenNote(stringResource(R.string.resumen_income_none_body))
@@ -233,7 +232,7 @@ private fun IncomeLines(state: ResumenState.Ready, onCategory: (String) -> Unit)
     ) {
         MoneyText(
             state.income,
-            textStyle = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.W900)
+            textStyle = SelloTheme.type.figure
         )
     }
     SplitBar(
@@ -365,7 +364,7 @@ private fun ChartSlips(
                 MoneyText(
                     normal.amount,
                     textStyle = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.W900
+                        fontWeight = SelloTheme.type.weight.figure
                     )
                 )
             }
@@ -571,7 +570,7 @@ private fun Weekdays(
                 Text(
                     stringResource(R.string.resumen_weekdays_answer, busiest),
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.W800,
+                    fontWeight = SelloTheme.type.weight.emphasis,
                     modifier = Modifier.testTag("resumen.weekdays.answer")
                 )
             }
@@ -617,7 +616,7 @@ private fun ResumenHeading(text: String) {
     Text(
         text,
         style = MaterialTheme.typography.bodyLarge,
-        fontWeight = FontWeight.W600,
+        fontWeight = SelloTheme.type.weight.soft,
         color = SelloTheme.colors.inkSoft,
         modifier = Modifier.padding(bottom = 6.dp).semantics {
             heading()

@@ -27,7 +27,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
@@ -138,7 +137,7 @@ fun BulkEntryScreen(
         }
     ) { padding ->
         Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm),
             modifier = Modifier.fillMaxSize().padding(padding)
         ) {
             Receipt(state, dates, onAction, Modifier.weight(1f).heightIn(min = 160.dp))
@@ -302,7 +301,7 @@ private fun Receipt(
 @Composable
 private fun Choices(state: BulkEntryState, onAction: (BulkEntryAction) -> Unit) {
     val income = state.kind == BulkKind.Income
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)) {
         EntryHeading(
             when {
                 state.lines.size <= 1 -> stringResource(
@@ -476,7 +475,7 @@ private fun NoteSheet(state: BulkEntryState, draft: String, onAction: (BulkEntry
     if (state.composing == BulkComposer.SourceName) return SourceNameSheet(state, draft, onAction)
     val line = state.highlightedLine
     val position = state.highlighted + 1
-    val facts = SpanStyle(color = SelloTheme.colors.ink, fontWeight = FontWeight.Bold)
+    val facts = SpanStyle(color = SelloTheme.colors.ink, fontWeight = SelloTheme.type.weight.strong)
     val context = buildAnnotatedString {
         append(stringResource(R.string.bulk_note_context, position))
         val name = line.category?.name ?: line.source?.let { incomeSourceLabel(it.key, it.name) }
@@ -532,7 +531,7 @@ private fun SourceNameSheet(
     onAction: (BulkEntryAction) -> Unit
 ) {
     val position = state.highlighted + 1
-    val facts = SpanStyle(color = SelloTheme.colors.ink, fontWeight = FontWeight.Bold)
+    val facts = SpanStyle(color = SelloTheme.colors.ink, fontWeight = SelloTheme.type.weight.strong)
     val context = buildAnnotatedString {
         append(stringResource(R.string.bulk_source_name_context, position))
         append(" ")

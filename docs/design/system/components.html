@@ -59,7 +59,7 @@
 <section id="g-surfaces">
 <h2>Paper and surfaces</h2>
 <article class="component" id="c-Slip">
-<h3><code>Slip</code> <span class="src"><code>component/Slip.kt:47</code></span></h3>
+<h3><code>Slip</code> <span class="src"><code>component/Slip.kt:55</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The basic surface: a piece of paper on the desk. Everything that carries a figure sits on one. With <code>onClick</code> the whole slip is a single button for accessibility. An <code>outline</code> edges it, as the figure the Sello pad is typing into.</dd>
 <dt>Variants</dt><dd><code>pinked</code> bottom edge (default) or plain, <code>outline</code>, whole-slip <code>onClick</code>.</dd>
@@ -79,7 +79,7 @@
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-SlipStub">
-<h3><code>SlipStub</code> <span class="src"><code>component/SlipStub.kt:44</code></span></h3>
+<h3><code>SlipStub</code> <span class="src"><code>component/SlipStub.kt:43</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The tear-off stub under a slip's <code>TearLine</code>: two halves side by side, split by a dashed rule, each a <code>StubButton</code> to where the slip's figures come from. Both halves get the same width and the taller one sets the height.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/resumen.html">resumen · 1</a></dd>
@@ -95,7 +95,7 @@
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-StubButton">
-<h3><code>StubButton</code> <span class="src"><code>component/SlipStub.kt:75</code></span></h3>
+<h3><code>StubButton</code> <span class="src"><code>component/SlipStub.kt:74</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>One half of a <code>SlipStub</code>: an icon, a short <code>title</code> in the brand ink and, when known, one <code>fact</code> under it, centred in the half. One button, said as <code>label</code> then the fact; <code>label</code> should contain the <code>title</code> so a spoken command finds it. <code>minHeight</code> may be lowered for a compact stub, never below a 48dp target.</dd>
 <dt>Variants</dt><dd><code>fact</code> under the title, <code>minHeight</code> (56 dp, never under 48 dp).</dd>
@@ -128,7 +128,7 @@
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-AnswerSlip">
-<h3><code>AnswerSlip</code> <span class="src"><code>component/Paper.kt:536</code></span></h3>
+<h3><code>AnswerSlip</code> <span class="src"><code>component/Paper.kt:545</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>A screen's answer: a label with its stamp, if it has one, then one large amount, in loss ink when <code>lossAmount</code> (by default when <code>ink</code> is <code>StampInk.Over</code>). Inversiones' Pierde keeps the value in ink: a value is not an overrun. With <code>description</code>, the label, stamp and amount are read as that one sentence; <code>detail</code> is read on its own. <code>heading</code>, such as a category's name, comes first; <code>leading</code>, such as the category's circle, stands beside the amount, or above it when the slip is too narrow.</dd>
 <dt>Variants</dt><dd><code>ink</code> (<code>StampInk</code>), optional <code>stamp</code>, <code>lossAmount</code>, <code>heading</code>, <code>leading</code>, <code>detail</code>.</dd>
@@ -168,7 +168,7 @@
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-ExpectedChip">
-<h3><code>ExpectedChip</code> <span class="src"><code>component/Plan.kt:131</code></span></h3>
+<h3><code>ExpectedChip</code> <span class="src"><code>component/Plan.kt:128</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>One amount still expected, such as "Salario · vie 30 oct · 1.000.000": a dashed pill with a calendar, <code>text</code> soft and the <code>amount</code> in ink. It is information, not a choice: it cannot be tapped. <code>spoken</code> is the whole sentence a screen reader says, with the amount spoken exactly.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/income.html">income · 1</a></dd>
@@ -185,7 +185,7 @@
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-FactLine">
-<h3><code>FactLine</code> <span class="src"><code>component/Paper.kt:573</code></span></h3>
+<h3><code>FactLine</code> <span class="src"><code>component/Paper.kt:587</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>No KDoc. From the code: one paragraph of <code>bodyLarge</code> text in <code>inkSoft</code>, taking an <code>AnnotatedString</code> so facts can be bold.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/goals.html">goals · 7</a> <a class="tag" href="features/investments.html">investments · 8</a> <a class="tag" href="features/recibo.html">recibo · 1</a></dd>
@@ -197,7 +197,7 @@
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-Footnote">
-<h3><code>Footnote</code> <span class="src"><code>component/Paper.kt:617</code></span></h3>
+<h3><code>Footnote</code> <span class="src"><code>component/Paper.kt:631</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>A quiet line at a slip's foot: <code>icon</code> and <code>text</code>. With <code>onClick</code> it opens something, ends in a chevron and is at least 48 dp tall; without, it only says something and is as tall as its text. From the code: an 18 dp brand icon (default <code>Event</code>), <code>bodySmall</code> soft text, the chevron in <code>outline</code>.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/investments.html">investments · 2</a> <a class="tag" href="features/recibo.html">recibo · 1</a></dd>
@@ -217,7 +217,7 @@
 <section id="g-money">
 <h2>Money, lines and verdicts</h2>
 <article class="component" id="c-MoneyText">
-<h3><code>MoneyText</code> <span class="src"><code>component/MoneyText.kt:56</code></span></h3>
+<h3><code>MoneyText</code> <span class="src"><code>component/MoneyText.kt:58</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The only way an amount is drawn: tabular figures, a raised currency code, tightened thousands points and a true minus. A figure too wide for its place wraps between groups, never clips; Hero first steps down to Total.</dd>
 <dt>Variants</dt><dd><code>style</code>: <code>MoneyStyle.Hero</code> 60 sp, <code>Total</code> 44, <code>Card</code> 32, <code>Title</code> 19, <code>Line</code> 14 (drops the currency code). <code>MoneyTextValue.sign</code>: <code>None</code>, <code>Plus</code>, <code>Minus</code>.</dd>
@@ -238,7 +238,7 @@
 <div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
 </article>
 <article class="component" id="c-FittedMoneyText">
-<h3><code>FittedMoneyText</code> <span class="src"><code>component/Paper.kt:83</code></span></h3>
+<h3><code>FittedMoneyText</code> <span class="src"><code>component/Paper.kt:82</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>Display-only fitting. Exact grouped digits and their spoken equivalent come from the caller. <code>startSize</code> in sp overrides the largest size tried, as on a goal card.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/goals.html">goals · 2</a> <a class="tag" href="features/recibo.html">recibo · 1</a> <a class="tag" href="features/resumen.html">resumen · 1</a> <span class="muted">Inside the design system: <code>Paper.kt</code>.</span></dd>
@@ -257,7 +257,7 @@
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-LeaderLine">
-<h3><code>LeaderLine</code> <span class="src"><code>component/Lines.kt:47</code>, <code>component/Lines.kt:115</code></span></h3>
+<h3><code>LeaderLine</code> <span class="src"><code>component/Lines.kt:46</code>, <code>component/Lines.kt:115</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>A receipt line: label, dotted leader, value. For two to six facts. Read as one node, "label, value". Put a <code>MoneyText</code> in <code>value</code> for amounts. A <code>LineEmphasis.Soft</code> line draws its label and, by default, its value in the soft ink; a <code>LineEmphasis.Strong</code> one sets its label in black weight, and the value should match.<br>A <code>LeaderLine</code> whose value is plain text, such as a date or a count.</dd>
 <dt>Variants</dt><dd>Two overloads: a composable <code>value</code> (put a <code>MoneyText</code> there) or a plain <code>String</code> value. <code>emphasis</code>: <code>LineEmphasis.Normal</code>, <code>Soft</code>, <code>Strong</code>; optional <code>icon</code>, <code>caption</code>, <code>onClick</code>.</dd>
@@ -287,7 +287,7 @@ fun LeaderLine(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-TotalLine">
-<h3><code>TotalLine</code> <span class="src"><code>component/Lines.kt:147</code></span></h3>
+<h3><code>TotalLine</code> <span class="src"><code>component/Lines.kt:146</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The closing line of a receipt: a double rule, a bold label and the total.</dd>
 <dt>Variants</dt><dd><code>rule</code>: <code>TotalRule.Double</code> (a receipt total, bold label) or <code>Single</code> (a plan's sum).</dd>
@@ -357,7 +357,7 @@ fun LeaderLine(
 <div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
 </article>
 <article class="component" id="c-SelloNavigationBar">
-<h3><code>SelloNavigationBar</code> <span class="src"><code>component/Controls.kt:131</code></span></h3>
+<h3><code>SelloNavigationBar</code> <span class="src"><code>component/Controls.kt:130</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>No KDoc. From the code: the tab bar, for two to four destinations (it requires that). The selected tab shows its filled icon in a <code>brandSoft</code> pill and its label in <code>ink</code>; the others show the outlined icon and label in <code>inkSoft</code>. Each tab is at least 64 dp tall. Drawn by <code>SelloScaffold</code>, not by the app.</dd>
 <dt>Used by</dt><dd><span class="tag internal">not called from :app</span> <span class="muted">Inside the design system: <code>SelloScaffold.kt</code>.</span></dd>
@@ -367,7 +367,7 @@ fun LeaderLine(
 <div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
 </article>
 <article class="component" id="c-SelloNavigationRail">
-<h3><code>SelloNavigationRail</code> <span class="src"><code>component/Navigation.kt:82</code></span></h3>
+<h3><code>SelloNavigationRail</code> <span class="src"><code>component/Navigation.kt:81</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The rail that replaces the tab bar in short and expanded windows. With a <code>dock</code> its button, in the dock's tone and with its icon, replaces the dock.</dd>
 <dt>Used by</dt><dd><span class="tag internal">not called from :app</span> <span class="muted">Inside the design system: <code>SelloScaffold.kt</code>.</span></dd>
@@ -383,7 +383,7 @@ fun LeaderLine(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-EntryDock">
-<h3><code>EntryDock</code> <span class="src"><code>component/Controls.kt:78</code></span></h3>
+<h3><code>EntryDock</code> <span class="src"><code>component/Controls.kt:77</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>A full-width tab action. Its purpose, enabled state and busy state belong to the caller. A disabled dock is not faded: it is outlined in the soft ink at full strength, so its <code>label</code> stays readable as the reason it cannot be used.</dd>
 <dt>Variants</dt><dd><code>tone</code> (<code>ButtonTone</code>), <code>icon</code>, <code>enabled</code> (outlined, not faded), <code>busy</code>.</dd>
@@ -402,7 +402,7 @@ fun LeaderLine(
 <div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
 </article>
 <article class="component" id="c-BandChip">
-<h3><code>BandChip</code> <span class="src"><code>component/Controls.kt:181</code></span></h3>
+<h3><code>BandChip</code> <span class="src"><code>component/Controls.kt:180</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>A secondary action on the band, as Metas' **+ Nueva meta** beside its title: a paper pill with a plus, the same paper on band as <code>PastMonthRibbon</code>'s return, so it stands out without competing with the dock. Its touch target is 48dp; the pill itself is 36dp. With <code>onPaper</code> the same pill sits on a slip, as Recibo's **+ Nueva categoría**: the soft brand fill instead of paper, which would not show on paper. <code>compact</code> is the round + alone, for a <code>TitleBar</code> whose title would not fit beside the label.</dd>
 <dt>Variants</dt><dd>On a band (default: paper pill, white in light), <code>onPaper</code> (<code>brandSoft</code> fill), <code>compact</code> (the round + alone).</dd>
@@ -420,7 +420,7 @@ fun LeaderLine(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-MonthGrid">
-<h3><code>MonthGrid</code> <span class="src"><code>component/Navigation.kt:193</code></span></h3>
+<h3><code>MonthGrid</code> <span class="src"><code>component/Navigation.kt:192</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The twelve months of one year. It shows what it is given and reports a pick; which months exist, which is current and which year comes next are the app's to decide. A null year callback disables that arrow.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/shell.html">shell · 1</a></dd>
@@ -462,7 +462,7 @@ fun MoreMenuDropdown(
 <section id="g-entry">
 <h2>Entry forms</h2>
 <article class="component" id="c-EntryLayout">
-<h3><code>EntryLayout</code> <span class="src"><code>component/Paper.kt:359</code></span></h3>
+<h3><code>EntryLayout</code> <span class="src"><code>component/Paper.kt:361</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>Keeps the amount, action and pad stable; choices scroll independently in either layout. A portrait window too short for that scrolls the amount with the choices instead. The entry's only text input is the docked <code>NoteComposer</code>, whose keyboard covers this screen. A host that pads for that keyboard would otherwise squeeze the entry or flip it into two columns behind the sheet, so while the keyboard is open the entry keeps the height it had without it. With a <code>band</code> colour, the band under the form's title row carries on behind the header and down to the middle of the amount slip, as a tab's band holds its answer slip: from edge to edge of the window, or in two panes only as far as the amount's pane, so the action beside it never sits on a band of its own colour. <code>more</code>, usually a <code>MoreSlip</code>, sits right under the amount and moves with it; the band still ends at the amount slip's middle.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/category.html">category · 1</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 2</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 3</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a></dd>
@@ -483,7 +483,7 @@ fun MoreMenuDropdown(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-EntryAmountSlip">
-<h3><code>EntryAmountSlip</code> <span class="src"><code>component/Paper.kt:145</code></span></h3>
+<h3><code>EntryAmountSlip</code> <span class="src"><code>component/Paper.kt:144</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The amount being entered: <code>label</code> (or <code>error</code> in its place, so nothing moves), the <code>date</code> pill, an <code>icon</code> circle and the fitted amount. Text pasted that cannot be an amount is shown as it was in <code>rejectedText</code>; with <code>onPaste</code> a paste button hands the clipboard text to the caller untouched. <code>content</code> follows the amount inside the slip. On a form with several figures, <code>onClick</code> makes the slip choose itself for the pad and <code>active</code> edges it in ink while the pad types into it.</dd>
 <dt>Variants</dt><dd><code>tone</code>, <code>error</code> in place of the label, <code>rejectedText</code>, paste button (<code>onPaste</code>), <code>active</code> outline for forms with several figures, <code>limitPulse</code>.</dd>
@@ -510,9 +510,9 @@ fun MoreMenuDropdown(
 <div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
 </article>
 <article class="component" id="c-MoreSlip">
-<h3><code>MoreSlip</code> <span class="src"><code>component/Paper.kt:285</code></span></h3>
+<h3><code>MoreSlip</code> <span class="src"><code>component/Paper.kt:284</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>A second slip tucked behind the entry's amount slip: its visible strip, <code>text</code> after a plus (**Otro gasto**, **Otro movimiento**), opens the bulk receipt with what is typed. <code>EntryLayout</code>'s `more` slot puts it right under the amount, <code>MoreSlipTuck</code> of it hidden behind the amount slip. While not <code>enabled</code> it dims and waits.</dd>
+<dt>Purpose</dt><dd>A second slip tucked behind the entry's amount slip: its visible strip, <code>text</code> after a plus (**Otro gasto**, **Otro movimiento**), opens the bulk receipt with what is typed. <code>EntryLayout</code>'s `more` slot puts it right under the amount, a medium space (<code>spacing.md</code>) of it hidden behind the amount slip. While not <code>enabled</code> it dims and waits.</dd>
 <dt>Variants</dt><dd><code>enabled</code> or dimmed.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 1</a></dd>
 </dl>
@@ -548,7 +548,7 @@ fun MoreMenuDropdown(
 <div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
 </article>
 <article class="component" id="c-EntryHeading">
-<h3><code>EntryHeading</code> <span class="src"><code>component/EntryHeading.kt:19</code></span></h3>
+<h3><code>EntryHeading</code> <span class="src"><code>component/EntryHeading.kt:18</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>A section heading of an entry or movement form, such as Tipo, Meta or Inversión, or of a group in a list, such as Faltan en octubre: uppercase, heavy and spaced, in the softer ink.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 1</a> <a class="tag" href="features/goals.html">goals · 2</a> <a class="tag" href="features/investments.html">investments · 3</a> <a class="tag" href="features/recibo.html">recibo · 1</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a> <span class="muted">Also the group headings of Pagos e ingresos fijos and a category's Pagos fijos.</span></dd>
@@ -560,7 +560,7 @@ fun MoreMenuDropdown(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-EntryLine">
-<h3><code>EntryLine</code> <span class="src"><code>component/Controls.kt:301</code></span></h3>
+<h3><code>EntryLine</code> <span class="src"><code>component/Controls.kt:300</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>A full-width line under the chips that opens an editor, such as the note or an income source's name. Empty, it reads as a quiet <code>text</code> prompt; filled, it shows the value and the brand <code>action</code> (Editar, Cambiar) on the trailing edge. It only opens an editor; something done at once, such as pausing a fixed payment, is a <code>SelloButton</code>.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 2</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/income.html">income · 2</a> <a class="tag" href="features/recurrence.html">recurrence · 2</a> <span class="muted">Inside the design system: <code>Movement.kt</code>, <code>RepeatParts.kt</code>.</span></dd>
@@ -580,7 +580,7 @@ fun MoreMenuDropdown(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-FieldPill">
-<h3><code>FieldPill</code> <span class="src"><code>component/Chips.kt:192</code></span></h3>
+<h3><code>FieldPill</code> <span class="src"><code>component/Chips.kt:190</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>A tappable value on an entry sheet, such as the date, a goal's month or the note.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 1</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 3</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 5</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a></dd>
@@ -597,7 +597,7 @@ fun MoreMenuDropdown(
 <div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
 </article>
 <article class="component" id="c-NoteComposer">
-<h3><code>NoteComposer</code> <span class="src"><code>component/Controls.kt:355</code></span></h3>
+<h3><code>NoteComposer</code> <span class="src"><code>component/Controls.kt:352</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>Native text input docked above the IME. <code>context</code> says what the text belongs to, with its facts in bold spans, and <code>contextIcon</code> leads it; <code>contextDescription</code> is what a screen reader hears for the box, with amounts spoken in full. Under the box, <code>hint</code> (such as "Opcional") gives way to <code>error</code>. Validation and draft retention are caller-owned. The paper reaches the screen's edges; its content keeps clear of <code>windowInsets</code> at the sides, such as a navigation bar on the right of a phone held sideways.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 2</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a> <span class="muted">Inside the design system: <code>Movement.kt</code>.</span></dd>
@@ -684,7 +684,7 @@ fun MoreMenuDropdown(
 <section id="g-choices">
 <h2>Buttons and choices</h2>
 <article class="component" id="c-SelloButton">
-<h3><code>SelloButton</code> <span class="src"><code>component/SelloButton.kt:42</code></span></h3>
+<h3><code>SelloButton</code> <span class="src"><code>component/SelloButton.kt:41</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>Sello's button. While <code>loading</code> it keeps its label and colours, shows a spinner in place of the icon and ignores presses, so a save cannot be submitted twice. <code>contentPadding</code> lets a text button end flush with the content beside it. <code>trailingIcon</code> follows the label, as the chevron of a link that opens another screen. A <code>compact</code> button is a pill 44 dp high with a smaller, heavy label, for a row that holds its own action; its touch area is still the 48 dp minimum.</dd>
 <dt>Variants</dt><dd><code>kind</code>: <code>ButtonKind.Filled</code> (one per screen), <code>Outlined</code>, <code>Text</code>. <code>tone</code>: <code>ButtonTone.Brand</code>, <code>Gain</code>, <code>Ink</code>, <code>Loss</code> (only inside a confirmation), <code>OnBand</code> (a text action on a band), <code>OnGain</code> (a button on the gain colour itself: filled, on-gain ink with gain text, as the celebration's Listo). <code>trailingIcon</code>: a chevron after the label for a link (Ajustar presupuesto ›, Ver qué contiene ›, Ver mi meta ›). <code>compact</code>: a 44 dp pill (<code>CircleShape</code>) with a <code>bodySmall</code> W800 label and a 16 dp spinner, touch area 48 dp (<code>minimumInteractiveComponentSize</code>); used by Recibo's ReachedRow "Marcar como lograda", which keeps its width while busy (the spinner takes the label's place). See <code>recibo-goals-reached</code>. A form's main button and its "Comprobar" take the kind's tone: gastos Brand, ingresos and metas Gain, inversiones Ink. States: <code>enabled</code>, <code>loading</code> (spinner replaces the icon, presses ignored).</dd>
@@ -725,7 +725,7 @@ fun MoreMenuDropdown(
 <div class="gaps"><p>No component capture yet: adding it to a component sheet would change an existing baseline in a pull request that must change none.</p></div>
 </article>
 <article class="component" id="c-ButtonPair">
-<h3><code>ButtonPair</code> <span class="src"><code>component/Recurrence.kt:241</code></span></h3>
+<h3><code>ButtonPair</code> <span class="src"><code>component/Recurrence.kt:247</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>Two buttons side by side, sharing the width by <code>firstWeight</code> and <code>secondWeight</code>, or one above the other at full width when a word of either label would not fit its share. <code>first</code> is the outlined answer, such as Cancelar, and <code>second</code> the filled action. Side by side the action is on the right; one above the other it is on top, Cancelar under it.</dd>
 <dt>Button order</dt><dd>One rule everywhere (owner decision M08-2): stacked, the action on top and Cancelar under it. Every two-button confirmation uses it, in dialogs (<code>ConfirmSlip</code>, <code>ChoiceSlip</code>) and on screens (Borrar datos, Restaurar, start-up restore), so the order never flips when a label stops fitting.</dd>
@@ -747,7 +747,7 @@ fun MoreMenuDropdown(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-SelloChip">
-<h3><code>SelloChip</code> <span class="src"><code>component/Chips.kt:49</code></span></h3>
+<h3><code>SelloChip</code> <span class="src"><code>component/Chips.kt:48</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>One choice in a set: a category, an income source, a goal with its percentage as <code>trailing</code>. It looks 36dp tall, grows with the font size and always takes a 48dp touch target. Put the set in a <code>ChipFlow</code> so it is announced as one group.</dd>
 <dt>Variants</dt><dd><code>selected</code>, <code>enabled</code>, optional <code>icon</code> and <code>trailing</code> text.</dd>
@@ -766,7 +766,7 @@ fun MoreMenuDropdown(
 <div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
 </article>
 <article class="component" id="c-AddChip">
-<h3><code>AddChip</code> <span class="src"><code>component/Chips.kt:116</code></span></h3>
+<h3><code>AddChip</code> <span class="src"><code>component/Chips.kt:112</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The chip that ends a set of choices to create a new one, such as Nueva after the expense categories. It looks like a <code>SelloChip</code> with a dashed brand outline and a plus, and it is a button, never one of the choices.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/expense.html">expense · 1</a></dd>
@@ -781,7 +781,7 @@ fun MoreMenuDropdown(
 <div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
 </article>
 <article class="component" id="c-ChipFlow">
-<h3><code>ChipFlow</code> <span class="src"><code>component/Chips.kt:156</code></span></h3>
+<h3><code>ChipFlow</code> <span class="src"><code>component/Chips.kt:152</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>Lays out a set of chips. By default they wrap onto more lines; with <code>singleLine</code> they scroll sideways and fade at the trailing edge to show there are more.</dd>
 <dt>Variants</dt><dd>Wrapping (default) or <code>singleLine</code> (scrolls sideways with a trailing fade).</dd>
@@ -796,7 +796,7 @@ fun MoreMenuDropdown(
 <div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
 </article>
 <article class="component" id="c-ChipRows">
-<h3><code>ChipRows</code> <span class="src"><code>component/Controls.kt:245</code></span></h3>
+<h3><code>ChipRows</code> <span class="src"><code>component/Controls.kt:244</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>At most two rows that scroll sideways together; the trailing fade is shown only when more choices can be reached. Choices fill down each column first, and every choice in a column takes the widest one's width so the columns line up. Each row is at least a 48dp touch target tall; a shorter chip sits centred in it, leaving a visible gap.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 2</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 2</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 4</a> <a class="tag" href="features/recurrence.html">recurrence · 2</a></dd>
@@ -837,7 +837,7 @@ fun MoreMenuDropdown(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-IconPickerCircle">
-<h3><code>IconPickerCircle</code> <span class="src"><code>component/IconPicker.kt:42</code></span></h3>
+<h3><code>IconPickerCircle</code> <span class="src"><code>component/IconPicker.kt:41</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>What is being created, as a large circle beside its name: tapping it opens the icons to choose from. With no <code>icon</code> yet it is a dashed ring in <code>tone</code> around a centred +, inviting the choice; with one it is filled in <code>tone</code>, with a small pencil. <code>caption</code> sits under it ("Elegir ícono", "Cambiar") and <code>description</code> is what a screen reader says, which should name the chosen icon.</dd>
 <dt>Variants</dt><dd>No icon yet: dashed ring with +; chosen: filled in <code>tone</code> with a pencil.</dd>
@@ -857,7 +857,7 @@ fun MoreMenuDropdown(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-IconChoiceSheetContent">
-<h3><code>IconChoiceSheetContent</code> <span class="src"><code>component/IconPicker.kt:126</code></span></h3>
+<h3><code>IconChoiceSheetContent</code> <span class="src"><code>component/IconPicker.kt:125</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The icons to choose from, under a <code>RepeatSheet</code>-style heading, as round cells. Icons in <code>inUse</code> are drawn dashed and can still be chosen; <code>inUseNote</code> says so under the grid and is added to what a screen reader says for each of them.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/category.html">category · 1</a> <a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/investments.html">investments · 1</a></dd>
@@ -895,7 +895,7 @@ fun MoreMenuDropdown(
 <section id="g-feedback">
 <h2>Feedback, dialogs and sheets</h2>
 <article class="component" id="c-SelloNotice">
-<h3><code>SelloNotice</code> <span class="src"><code>component/Corrections.kt:50</code></span></h3>
+<h3><code>SelloNotice</code> <span class="src"><code>component/Corrections.kt:49</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>A short statement about something that just happened, with at most one thing to do about it, such as "Gasto borrado" and "Deshacer". It is announced when it appears. <code>spoken</code> is what is read aloud, when that should say more than fits on the line. While <code>busy</code> the action stays in view and cannot be pressed. An <code>icon</code> leads the message in place of the confirmation check, such as the repeat icon on what Sello recorded by itself. The check (<code>confirmation</code>) leads only a save or a record; a deletion or a removed line with Deshacer carries none. It holds no time: whoever shows it decides how long, and takes it away. With <code>remaining</code> (1 to 0) it shows that time as a lighter band over the bar that shrinks from the end, and a thin line along its foot.</dd>
 <dt>Variants</dt><dd>Plain or <code>confirmation</code> (a check), with an <code>icon</code>, an action, <code>busy</code>, a <code>remaining</code> time band.</dd>
@@ -936,7 +936,7 @@ fun MoreMenuDropdown(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-ConfirmSlip">
-<h3><code>ConfirmSlip</code> <span class="src"><code>component/Feedback.kt:113</code>, <code>component/Feedback.kt:152</code></span></h3>
+<h3><code>ConfirmSlip</code> <span class="src"><code>component/Feedback.kt:114</code>, <code>component/Feedback.kt:152</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>A confirmation for something that cannot be undone. <code>message</code> says what is affected and how much, with the consequence in bold. Back and a tap outside cancel. While <code>busy</code> the action shows a spinner and nothing can be pressed or dismissed, so the action is requested once. The two buttons share the width; when a word of a label would not fit they go one above the other, the action on top. A slip whose labels are long can narrow <code>buttonPadding</code> so each stays on one line.<br><code>ConfirmSlip</code> with any <code>content</code> under the title, such as points to read before saving a file. The content scrolls when the slip would not fit; the buttons stay in view and go one above the other, the action on top, when a label would not fit. The action stays off until <code>confirmEnabled</code>, such as until a word that confirms it is typed.</dd>
 <dt>Frame</dt><dd>A <code>DialogSlip</code> whose button area is a <code>ButtonPair</code>: outlined <code>dismissLabel</code> and the action, in loss ink when <code>destructive</code>; 1:1 with a <code>message</code>, 1:2 with <code>content</code>.</dd>
@@ -974,7 +974,7 @@ fun ConfirmSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-ChoiceSlip">
-<h3><code>ChoiceSlip</code> <span class="src"><code>component/Feedback.kt:233</code>, <code>component/Feedback.kt:264</code></span></h3>
+<h3><code>ChoiceSlip</code> <span class="src"><code>component/Feedback.kt:234</code>, <code>component/Feedback.kt:264</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>A question with two answers, neither of them destructive, such as whether a change applies to the next ones too: <code>firstLabel</code> outlined, <code>secondLabel</code> filled, and <code>backLabel</code> under them to go back without answering. The slip is <code>DialogSlip</code>. Back and a tap outside are <code>onBack</code>. The answers stand one above the other, the filled one on top, when they do not fit side by side. While <code>busy</code> the answer given shows a spinner and nothing can be pressed or dismissed, so it is requested once.<br><code>ChoiceSlip</code> with any <code>content</code> under the title, such as a choice of format and the points to read before acting. The content scrolls when the slip would not fit; the answers stay in view.</dd>
 <dt>Variants</dt><dd>Two overloads: a <code>message</code> or any scrolling <code>content</code>. First answer outlined, second filled, back as text. <code>busy</code>.</dd>
@@ -1010,7 +1010,7 @@ fun ChoiceSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-OptionSlip">
-<h3><code>OptionSlip</code> <span class="src"><code>component/Settings.kt:130</code></span></h3>
+<h3><code>OptionSlip</code> <span class="src"><code>component/Settings.kt:129</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>Choosing one of a few <code>options</code>, such as the order of the categories: a <code>DialogSlip</code> with <code>title</code>, one radio row per option with <code>selectedIndex</code> marked, and Cancelar. A choice is reported with <code>onSelect</code>; Back, a tap outside and Cancelar are <code>onDismiss</code>. The rows scroll when they do not fit.</dd>
 <dt>Frame</dt><dd>The shared <code>DialogSlip</code>: the radio rows are its body, Cancelar (text, at the end) its button area under the tear line.</dd>
@@ -1074,7 +1074,7 @@ fun StatusSlip(
 <figure data-module="app" data-files="goal-detail-missing-claro.png" data-caption="Gone: a goal deleted meanwhile"></figure>
 </article>
 <article class="component" id="c-SlipSkeleton">
-<h3><code>SlipSkeleton</code> <span class="src"><code>component/Feedback.kt:446</code></span></h3>
+<h3><code>SlipSkeleton</code> <span class="src"><code>component/Feedback.kt:445</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The loading state of a slip: bars where figures will be. Callers show it only when loading lasts long enough to notice. With reduced motion the bars do not pulse.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 2</a> <a class="tag" href="features/bulk.html">bulk · 1</a> <a class="tag" href="features/category.html">category · 1</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 6</a> <a class="tag" href="features/income.html">income · 4</a> <a class="tag" href="features/investments.html">investments · 8</a> <a class="tag" href="features/recibo.html">recibo · 10</a> <a class="tag" href="features/recurrence.html">recurrence · 3</a> <a class="tag" href="features/reset.html">reset · 1</a> <a class="tag" href="features/resumen.html">resumen · 1</a> <a class="tag" href="features/settings.html">settings · 1</a></dd>
@@ -1084,7 +1084,7 @@ fun StatusSlip(
 <div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
 </article>
 <article class="component" id="c-SuggestionNote">
-<h3><code>SuggestionNote</code> <span class="src"><code>component/Suggestion.kt:30</code></span></h3>
+<h3><code>SuggestionNote</code> <span class="src"><code>component/Suggestion.kt:29</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>A tinted note where Sello suggests something: the <code>evidence</code> it rests on, the <code>advice</code> and one <code>actionLabel</code> that opens the place to act. Nothing is changed by showing it. <code>evidenceSpoken</code> is how the evidence is read aloud when it holds an amount, which is said in pesos. It can be sent away only when <code>onDismiss</code> is given, with <code>dismissLabel</code> as its spoken name.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/resumen.html">resumen · 1</a></dd>
@@ -1105,7 +1105,7 @@ fun StatusSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-BulletList">
-<h3><code>BulletList</code> <span class="src"><code>component/BulletList.kt:28</code></span></h3>
+<h3><code>BulletList</code> <span class="src"><code>component/BulletList.kt:27</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>Points a person should read before acting, such as what a backup file exposes or what a replacement will remove. Each reads aloud as one sentence, without the dot.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 3</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 1</span> <a class="tag" href="features/reset.html">reset · 1</a> <span class="muted">Inside the design system: <code>Restore.kt</code>.</span></dd>
@@ -1117,7 +1117,7 @@ fun StatusSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-RepeatSheet">
-<h3><code>RepeatSheet</code> <span class="src"><code>component/Recurrence.kt:60</code></span></h3>
+<h3><code>RepeatSheet</code> <span class="src"><code>component/Recurrence.kt:59</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The sheet that says how something repeats, over the screen it belongs to: a scrim that closes it when tapped, and paper docked at the bottom with <code>title</code> as its heading and <code>content</code> under it, scrolling when it is taller than the screen. It keeps clear of the system bars. Back is the screen's to handle, as is what lies behind.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/category.html">category · 2</a> <a class="tag" href="features/goals.html">goals · 2</a> <a class="tag" href="features/investments.html">investments · 1</a> <a class="tag" href="features/recibo.html">recibo · 1</a> <span class="muted">Inside the design system: <code>RepeatParts.kt</code>.</span></dd>
@@ -1134,7 +1134,7 @@ fun StatusSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-RepeatChoiceSheet">
-<h3><code>RepeatChoiceSheet</code> <span class="src"><code>component/RepeatParts.kt:132</code></span></h3>
+<h3><code>RepeatChoiceSheet</code> <span class="src"><code>component/RepeatParts.kt:131</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The sheet that chooses how it repeats: the kind (<code>kind</code> of <code>RepeatSheetLabels.kinds</code>), then the days or the interval, the end (<code>endDate</code> is the dated chip's text, chosen when <code>ended</code>), when the first one comes (<code>next</code>), and Quitar or Listo, which waits for <code>doneEnabled</code>. The screen shows it while it is open and owns Back.</dd>
 <dt>Inputs</dt><dd>Its words (<code>RepeatSheetLabels</code>), the chosen kind by position, the spacing (<code>RepeatSpacing.MonthDays</code> or <code>Interval</code>), the end chip's text, the next-date line and one lambda per answer.</dd>
@@ -1166,7 +1166,7 @@ fun StatusSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-RepeatRow">
-<h3><code>RepeatRow</code> <span class="src"><code>component/RepeatParts.kt:73</code></span></h3>
+<h3><code>RepeatRow</code> <span class="src"><code>component/RepeatParts.kt:72</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>Se repite's row under the note, read as <code>spoken</code>: with an <code>action</code> ("Cambiar"), <code>text</code> says the rule and its next date; without one, <code>text</code> is an invitation like Agregar nota ("Repetir este gasto").</dd>
 <dt>Inputs</dt><dd>The row's text and spoken text, and the action word ("Cambiar") once it repeats; none for the invitation.</dd>
@@ -1186,7 +1186,7 @@ fun StatusSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-FollowingChoice">
-<h3><code>FollowingChoice</code> <span class="src"><code>component/RepeatParts.kt:278</code></span></h3>
+<h3><code>FollowingChoice</code> <span class="src"><code>component/RepeatParts.kt:277</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>Asked when saving new terms on an entry a schedule recorded, with <code>name</code> (the schedule) in bold between <code>lead</code> and <code>rest</code>: <code>onlyThisLabel</code> ("Solo este"), or <code>alsoLabel</code> ("Este y los siguientes"), and <code>backLabel</code> ("Volver a editar").</dd>
 <dt>Inputs</dt><dd>The title, the message split around the schedule's <code>name</code> (drawn bold) and the three labels.</dd>
@@ -1297,7 +1297,7 @@ fun StatusSlip(
 <div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
 </article>
 <article class="component" id="c-CarryBreakdown">
-<h3><code>CarryBreakdown</code> <span class="src"><code>component/Carry.kt:50</code></span></h3>
+<h3><code>CarryBreakdown</code> <span class="src"><code>component/Carry.kt:49</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>Base, signed carry, capacity and what was spent, as receipt lines (ADR 0020 CP27): the capacity is never shown without the base and the carry beside it. <code>footnote</code> says where the carry comes from and when it was read. Every line is read on its own, "label, amount, caption"; amounts are exact and drawn whole, wrapping under their label at large text.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/recibo.html">recibo · 2</a> <a class="tag" href="features/resumen.html">resumen · 1</a> <span class="muted">Through the app's <code>CarryBreakdownSection</code> (<code>presentation/carry/Carry.kt</code>), which words the lines; category detail's history selection uses it too.</span></dd>
@@ -1311,7 +1311,7 @@ fun StatusSlip(
 <div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
 </article>
 <article class="component" id="c-ChangeRow">
-<h3><code>ChangeRow</code> <span class="src"><code>component/Carry.kt:92</code></span></h3>
+<h3><code>ChangeRow</code> <span class="src"><code>component/Carry.kt:91</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>One change in a list shown before saving, such as a later month whose limit with carry moves: <code>label</code> (the month), <code>value</code> ("180.000 → 200.000 (+20.000)") and an optional <code>caption</code> under it ("Restante 110.000 → 130.000"), stronger when <code>emphasized</code>, as for a verdict that flips. Text is already formatted by the application; <code>spoken</code> is the whole row as a screen reader says it, without arrows.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/category.html">category · 8</a> <span class="muted">Inside the design system: <code>Carry.kt</code>.</span></dd>
@@ -1328,7 +1328,7 @@ fun StatusSlip(
 <div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
 </article>
 <article class="component" id="c-CarryCorrectionContent">
-<h3><code>CarryCorrectionContent</code> <span class="src"><code>component/Carry.kt:164</code></span></h3>
+<h3><code>CarryCorrectionContent</code> <span class="src"><code>component/Carry.kt:165</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>What a correction changes, as the content of a confirmation (ADR 0020 CP20–CP22): <code>changed</code> in warn ink when the list was read again because the data moved, <code>what</code> the correction in words, a <code>lead</code> heading, then each category with its months, and <code>footer</code> under them. Every text arrives written.</dd>
 <dt>Inputs</dt><dd>Every text written: the changed notice, the correction in words, the lead, each category (<code>CarryCorrectionGroup</code>: name, icon) with its months (<code>CarryCorrectionLine</code>), and the footer.</dd>
@@ -1371,7 +1371,7 @@ fun StatusSlip(
 <div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
 </article>
 <article class="component" id="c-SplitBar">
-<h3><code>SplitBar</code> <span class="src"><code>component/SummaryCharts.kt:43</code></span></h3>
+<h3><code>SplitBar</code> <span class="src"><code>component/SummaryCharts.kt:42</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>One bar split by <code>segments</code>, <code>height</code> tall with <code>gap</code> of paper between them (Inversiones uses 22dp and 3dp). A segment's <code>SplitSegment.label</code> is written in its middle only where it fits whole, in its <code>SplitSegment.labelColor</code> or paper; the exact values belong in the lines or rows next to it.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 1</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a> <a class="tag" href="features/resumen.html">resumen · 1</a></dd>
@@ -1390,7 +1390,7 @@ fun StatusSlip(
 <section id="g-goals">
 <h2>Goals and movements</h2>
 <article class="component" id="c-MovementRow">
-<h3><code>MovementRow</code> <span class="src"><code>component/Goals.kt:77</code></span></h3>
+<h3><code>MovementRow</code> <span class="src"><code>component/Goals.kt:76</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>One movement: its mark, <code>title</code> over <code>detail</code>, and the amount at the end with <code>balance</code> under it. A movement that earned a stamp shows the stamp as its mark. <code>rule</code> draws the line under the row; the last row of a group leaves it out.</dd>
 <dt>Variants</dt><dd><code>tone</code>: <code>MovementTone.In</code>, <code>Out</code>, <code>Value</code>. Marks: <code>SelloIcon.Add</code> for an aporte, <code>Remove</code> (−) for a retiro, <code>Insights</code> for a value. Optional <code>milestone</code> (a 34 dp stamp as the mark), <code>balance</code>, <code>annotation</code>, <code>rule</code>.</dd>
@@ -1415,7 +1415,7 @@ fun StatusSlip(
 <figure data-shot="goal-detail-movements" data-module="app" data-caption="Seen in Goal detail: Movimientos"></figure>
 </article>
 <article class="component" id="c-MovementMonthLine">
-<h3><code>MovementMonthLine</code> <span class="src"><code>component/Goals.kt:164</code></span></h3>
+<h3><code>MovementMonthLine</code> <span class="src"><code>component/Goals.kt:168</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>A month of a full movement list, over a rule: its name and, for a goal, its <code>net</code> change. Goal and investment details share it.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/investments.html">investments · 1</a></dd>
@@ -1427,7 +1427,7 @@ fun StatusSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-MilestonePlace">
-<h3><code>MilestonePlace</code> <span class="src"><code>component/Goals.kt:205</code></span></h3>
+<h3><code>MilestonePlace</code> <span class="src"><code>component/Goals.kt:209</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>One stamp place. <code>diameter</code> is 60dp on cards, 66dp in the celebration and 34dp, with a smaller <code>labelSize</code> and no <code>innerRing</code>, in a movement row; <code>ink</code> replaces the state's colour where the place sits on green. <code>land</code> brings an earned stamp down once, after <code>landDelayMillis</code> so stamps earned together come down in turn; <code>relight</code> lights a stamp earned again from its kept ink instead. Reduced motion shows it at once.</dd>
 <dt>Variants</dt><dd><code>MilestoneSpec.state</code>: <code>MilestoneState.Empty</code>, <code>Earned</code>, <code>Kept</code>, <code>Ready</code>. <code>diameter</code> 60 dp on cards, 66 dp in the celebration, 34 dp in a movement row. <code>land</code>, <code>relight</code>.</dd>
@@ -1448,7 +1448,7 @@ fun StatusSlip(
 <div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
 </article>
 <article class="component" id="c-MilestoneRow">
-<h3><code>MilestoneRow</code> <span class="src"><code>component/Goals.kt:335</code></span></h3>
+<h3><code>MilestoneRow</code> <span class="src"><code>component/Goals.kt:347</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The stamps in a row. By default they sit side by side and scroll when they do not fit; <code>evenly</code> centres each in an equal share of the width instead, as on Nueva meta and on each active goal's card in Metas.</dd>
 <dt>Variants</dt><dd>Side by side and scrolling, or <code>evenly</code> spread (Nueva meta). <code>landing</code> and <code>relighting</code> sets.</dd>
@@ -1468,7 +1468,7 @@ fun StatusSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-StampTicket">
-<h3><code>StampTicket</code> <span class="src"><code>component/Goals.kt:409</code></span></h3>
+<h3><code>StampTicket</code> <span class="src"><code>component/Goals.kt:423</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The paper ticket a save notice becomes when a stamp is earned where the goal's own stamps are not in view: the stamps on the left, a dashed tear, then <code>title</code> and <code>detail</code>. Two stamps sit smaller, side by side; with <code>land</code> they come down in turn.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/goals.html">goals · 1</a></dd>
@@ -1486,7 +1486,7 @@ fun StatusSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-MovementPane">
-<h3><code>MovementPane</code> <span class="src"><code>component/Movement.kt:50</code></span></h3>
+<h3><code>MovementPane</code> <span class="src"><code>component/Movement.kt:49</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>A scrolling column for the loading and failed states, padded like the form. Every entry and movement form uses it: Anotar gasto and ingreso as well as the goal and investment movements.</dd>
 <dt>Inputs</dt><dd>The scaffold's padding and the slip to show (a skeleton or an error).</dd>
@@ -1500,7 +1500,7 @@ fun StatusSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-MovementCloseButton">
-<h3><code>MovementCloseButton</code> <span class="src"><code>component/Movement.kt:39</code></span></h3>
+<h3><code>MovementCloseButton</code> <span class="src"><code>component/Movement.kt:38</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The form's close button, an X read as <code>label</code>; not <code>enabled</code> while the form saves. It is a <code>SelloIconButton</code>.</dd>
 <dt>Inputs</dt><dd>The X's spoken <code>label</code> ("Cerrar") and what it does.</dd>
@@ -1518,7 +1518,7 @@ fun StatusSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-MovementNoteLine">
-<h3><code>MovementNoteLine</code> <span class="src"><code>component/Movement.kt:63</code></span></h3>
+<h3><code>MovementNoteLine</code> <span class="src"><code>component/Movement.kt:62</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The note line under the choices: the <code>note</code>, or <code>addLabel</code> as an invitation while it is blank; <code>editLabel</code> names the action.</dd>
 <dt>Inputs</dt><dd>The note as typed, the invitation and action words ("Agregar nota", "Editar").</dd>
@@ -1538,7 +1538,7 @@ fun StatusSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-MovementNoteComposer">
-<h3><code>MovementNoteComposer</code> <span class="src"><code>component/Movement.kt:104</code></span></h3>
+<h3><code>MovementNoteComposer</code> <span class="src"><code>component/Movement.kt:103</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The note composer over the form, its context the movement's <code>kind</code> and, once there is one, its signed <code>figure</code> in bold. <code>spoken</code> names what the note is for when read aloud, followed by <code>amountSpoken</code>. <code>counter</code>, <code>hint</code>, <code>error</code> and the two labels are the <code>NoteComposer</code>'s, already written.</dd>
 <dt>Inputs</dt><dd>The movement's kind and signed figure, the draft, and the composer's counter, hint, error and labels, already written; the app maps a note problem to its message.</dd>
@@ -1566,7 +1566,7 @@ fun StatusSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-MovementDatePicker">
-<h3><code>MovementDatePicker</code> <span class="src"><code>component/Movement.kt:158</code></span></h3>
+<h3><code>MovementDatePicker</code> <span class="src"><code>component/Movement.kt:157</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The date picker of a form, opened on <code>date</code>: only days from <code>first</code> to <code>last</code> can be picked, either end open when null. <code>confirmLabel</code> picks. It works in whole days, with no time or zone. Every date the app asks for uses it: a movement or expense already made (<code>last</code> = today), one that repeats (<code>first</code> = today), a schedule's start (from tomorrow) and a repeat's end (on or after the start).</dd>
 <dt>Inputs</dt><dd>The day it opens on, the first and last days that can be picked (plain <code>LocalDate</code>s) and the confirm label. The confirm button carries <code>MOVEMENT_DATE_CONFIRM_TAG</code>.</dd>
@@ -1586,7 +1586,7 @@ fun StatusSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-MovementDiscardSlip">
-<h3><code>MovementDiscardSlip</code> <span class="src"><code>component/Movement.kt:86</code></span></h3>
+<h3><code>MovementDiscardSlip</code> <span class="src"><code>component/Movement.kt:85</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>Asks before a typed movement is thrown away: <code>message</code>, then <code>confirmLabel</code> in loss ink, or <code>dismissLabel</code> to keep it. It is a <code>ConfirmSlip</code>.</dd>
 <dt>Inputs</dt><dd>The form's own title, the message, the confirm label and, when the form has its own, the keep label (default Cancelar).</dd>
@@ -1609,7 +1609,7 @@ fun StatusSlip(
 <section id="g-rows">
 <h2>List rows</h2>
 <article class="component" id="c-ScheduleRow">
-<h3><code>ScheduleRow</code> <span class="src"><code>component/Recurrence.kt:122</code></span></h3>
+<h3><code>ScheduleRow</code> <span class="src"><code>component/Recurrence.kt:126</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>One payment or income that repeats: its <code>icon</code> in a circle, <code>name</code> over <code>caption</code> (the category, the rule, the next date), an optional <code>pausedLabel</code> stamp and the <code>amount</code>, with an optional date <code>pill</code> under it. One still <code>soon</code> to come is in soft ink; an <code>income</code> is in gain ink. <code>recorded</code>, for one whose month already went through, shows a check instead of its icon and softens a payment's amount. <code>dimmed</code>, for one paused or ended, softens it while every text keeps its contrast. The whole row is one button read as <code>spoken</code>. A rule separates it from the next row unless it is the <code>last</code>.</dd>
 <dt>Variants</dt><dd><code>soon</code>, <code>income</code> (gain ink), <code>recorded</code> (a check), <code>dimmed</code> (paused or ended), <code>pausedLabel</code> stamp, date <code>pill</code>, <code>last</code>.</dd>
@@ -1636,7 +1636,7 @@ fun StatusSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-SettingRow">
-<h3><code>SettingRow</code> <span class="src"><code>component/Settings.kt:62</code></span></h3>
+<h3><code>SettingRow</code> <span class="src"><code>component/Settings.kt:61</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>One line of Configuración: <code>icon</code>, <code>title</code> with an optional <code>caption</code> under it, and <code>value</code> at the end. With <code>onClick</code> the whole row is one button and a chevron says it leads somewhere, unless it is the <code>SettingTone.Loss</code> row, which is red instead. A dashed rule above separates it from the row before; the first row under a heading has none. When they don't fit on one line, the title and value share the width and each wraps.</dd>
 <dt>Variants</dt><dd><code>tone</code>: <code>SettingTone.Normal</code> or <code>Loss</code> (red, no chevron). With or without <code>onClick</code>, <code>caption</code>, <code>value</code>, <code>divider</code>.</dd>
@@ -1659,7 +1659,7 @@ fun StatusSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-SectionTitle">
-<h3><code>SectionTitle</code> <span class="src"><code>component/Settings.kt:195</code></span></h3>
+<h3><code>SectionTitle</code> <span class="src"><code>component/Settings.kt:196</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>A section's title on the settings screen, such as Apariencia, read as a heading.</dd>
 <dt>Inputs</dt><dd>The title's text. From the code: <code>titleMedium</code>, <code>spacing.sm</code> under it.</dd>
@@ -1675,7 +1675,7 @@ fun StatusSlip(
 <section id="g-bulk">
 <h2>Bulk receipt</h2>
 <article class="component" id="c-BulkReceipt">
-<h3><code>BulkReceipt</code> <span class="src"><code>component/BulkReceipt.kt:165</code></span></h3>
+<h3><code>BulkReceipt</code> <span class="src"><code>component/BulkReceipt.kt:164</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The bulk receipt of Anotar varios: a pinked slip with the <code>caption</code> and <code>headerEnd</code> (the receipt's date) on top, the <code>lines</code>, a tear line and a foot with **Otro renglón** and the <code>total</code>. It takes the height its <code>modifier</code> gives it: the lines scroll inside, fading at the edge that hides more, while the header and the foot stay. Tapping a line calls <code>onSelect</code>; the <code>highlighted</code> one is edged in ink, shows a caret and carries <code>highlightedFoot</code> (a goal's or investment's date pill). <code>onRemove</code> runs from a swipe towards the start past 40 % of the line, from its long-press menu or from the action a screen reader offers; the last line offers none of them. Each line is read as one item: its place, title, detail, amount and reason; the date pill is reached on its own. While not <code>enabled</code> nothing responds and no line is highlighted.</dd>
 <dt>Variants</dt><dd><code>BulkLine.markTone</code>: <code>BulkMarkTone.Category</code>, <code>Gain</code>, <code>Neutral</code>, <code>Value</code>. <code>BulkAmountTone.Ink</code> or <code>Gain</code>. Marks as in <code>MovementRow</code>: Add, Remove (−) for a retiro, Insights. <code>BulkCaption.Count</code> or <code>Problem</code>. A line with a <code>reason</code> is outlined in loss. At most <code>BULK_RECEIPT_MAX_LINES</code> = 30 lines.</dd>

@@ -45,7 +45,6 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.text.drawText
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
@@ -96,8 +95,8 @@ internal fun PerformanceLine(
             color = ink,
             // Proportional figures: tabular ones give the decimal comma a digit's width.
             style = MaterialTheme.typography.titleLarge.copy(
-                fontSize = 20.sp,
-                fontWeight = FontWeight.W900,
+                fontSize = PerformanceSize,
+                fontWeight = SelloTheme.type.weight.figure,
                 fontFeatureSettings = null
             )
         )
@@ -105,7 +104,7 @@ internal fun PerformanceLine(
             amount,
             Modifier.weight(1f, fill = false),
             color = ink,
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.W800)
+            style = SelloTheme.type.lineTitle
         )
     }
 }
@@ -185,7 +184,7 @@ internal fun InvestmentRow(
             )
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(name, fontWeight = FontWeight.W800, style = MaterialTheme.typography.bodyLarge)
+            Text(name, style = SelloTheme.type.rowTitle)
             // It wraps, so "sin valor anotado" is never cut beside "aportaste …".
             Text(detail, style = MaterialTheme.typography.bodySmall, color = colors.inkSoft)
         }
@@ -194,13 +193,17 @@ internal fun InvestmentRow(
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             if (value == null) {
-                Text(missingLabel, fontWeight = FontWeight.W800, color = colors.inkSoft)
+                Text(
+                    missingLabel,
+                    fontWeight = SelloTheme.type.weight.emphasis,
+                    color = colors.inkSoft
+                )
                 Text(secondary, style = MaterialTheme.typography.bodySmall, color = colors.inkSoft)
             } else {
                 MoneyText(
                     value,
                     textStyle = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.W800
+                        fontWeight = SelloTheme.type.weight.emphasis
                     )
                 )
                 val ink = when {
@@ -223,7 +226,7 @@ internal fun InvestmentRow(
                     Text(
                         secondary,
                         color = ink,
-                        fontWeight = FontWeight.W800,
+                        fontWeight = SelloTheme.type.weight.emphasis,
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
@@ -275,7 +278,7 @@ internal fun RecordedValuesChart(
             val width = with(density) { maxWidth.toPx() }
             val height = with(density) { CHART_HEIGHT.toPx() }
             val gutter = with(density) { labelWidth.toPx() + LABEL_GAP.toPx() }
-            val inset = with(density) { INSET.toPx() }
+            val inset = with(density) { SelloTheme.spacing.sm.toPx() }
             fun point(mark: RecordedMark) = Offset(
                 gutter + mark.x.coerceIn(0f, 1f) * (width - gutter - inset),
                 inset + (1f - mark.y.coerceIn(0f, 1f)) * (height - 2 * inset)
@@ -386,7 +389,7 @@ internal fun RecordedValuesChart(
                 Modifier.weight(1f),
                 style = style,
                 color = colors.ink,
-                fontWeight = FontWeight.W800,
+                fontWeight = SelloTheme.type.weight.emphasis,
                 textAlign = TextAlign.End
             )
         }
@@ -402,7 +405,6 @@ internal fun RecordedValuesChart(
 
 private val CHART_HEIGHT = 150.dp
 private val LABEL_GAP = 6.dp
-private val INSET = 8.dp
 private val DOT_TARGET = 24.dp
 
 @Composable
@@ -429,3 +431,6 @@ private fun LegendItem(label: String, dashed: Boolean, color: Color) {
         )
     }
 }
+
+/** An investment's return percentage, used once (no type token). */
+private val PerformanceSize = 20.sp

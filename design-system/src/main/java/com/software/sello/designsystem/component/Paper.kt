@@ -61,7 +61,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -201,7 +200,7 @@ fun EntryAmountSlip(
         }
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md)
         ) {
             if (icon != null) {
                 Box(
@@ -278,7 +277,7 @@ fun EntryAmountSlip(
 /**
  * A second slip tucked behind the entry's amount slip: its visible strip, [text] after a
  * plus (**Otro gasto**, **Otro movimiento**), opens the bulk receipt with what is typed.
- * [EntryLayout]'s `more` slot puts it right under the amount, [MoreSlipTuck] of it hidden
+ * [EntryLayout]'s `more` slot puts it right under the amount, a medium space of it hidden
  * behind the amount slip. While not [enabled] it dims and waits.
  */
 @Composable
@@ -290,12 +289,14 @@ fun MoreSlip(
 ) {
     val colors = SelloTheme.colors
     val shape = remember { PinkedBottomShape(corner = 0.dp) }
+    // How much of it hides behind the amount slip.
+    val hidden = SelloTheme.spacing.md
     Row(
         Modifier
             .zIndex(-1f)
             .layout { measurable, constraints ->
                 val placeable = measurable.measure(constraints)
-                val tuck = MoreSlipTuck.roundToPx()
+                val tuck = hidden.roundToPx()
                 layout(placeable.width, (placeable.height - tuck).coerceAtLeast(0)) {
                     placeable.place(0, -tuck)
                 }
@@ -303,29 +304,31 @@ fun MoreSlip(
             .padding(horizontal = MoreSlipInset)
             .then(modifier)
             .fillMaxWidth()
-            .alpha(if (enabled) 1f else MORE_SLIP_DISABLED_ALPHA)
+            .alpha(if (enabled) 1f else SelloTheme.alpha.disabled)
             .clip(shape)
             .background(colors.paperAlt)
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
-            .padding(top = MoreSlipTuck, bottom = MoreSlipTeeth, start = 12.dp, end = 12.dp)
+            .padding(
+                top = hidden,
+                bottom = MoreSlipTeeth,
+                start = SelloTheme.spacing.md,
+                end = SelloTheme.spacing.md
+            )
             .heightIn(min = MoreSlipStrip),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(SelloIcon.Add.painter(), null, Modifier.size(18.dp), tint = colors.brand)
-        Spacer(Modifier.width(4.dp))
+        Spacer(Modifier.width(SelloTheme.spacing.xs))
         Text(
             text,
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.W800),
+            style = SelloTheme.type.lineTitle,
             color = colors.brand,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
     }
 }
-
-/** How much of [MoreSlip] hides behind the amount slip. */
-private val MoreSlipTuck = 12.dp
 
 /** How far [MoreSlip] sits in from the amount slip's edges, so it reads as the one behind. */
 private val MoreSlipInset = 10.dp
@@ -336,7 +339,6 @@ private val MoreSlipInset = 10.dp
  */
 private val MoreSlipStrip = 35.dp
 private val MoreSlipTeeth = 5.dp
-private const val MORE_SLIP_DISABLED_ALPHA = 0.38f
 
 /**
  * Keeps the amount, action and pad stable; choices scroll independently in either layout.
@@ -367,6 +369,7 @@ fun EntryLayout(
     more: (@Composable () -> Unit)? = null
 ) {
     val reach = remember { BandReach() }
+    val paneGap = SelloTheme.spacing.md
     val windowWidth = LocalWindowInfo.current.containerSize.width
     val banded = if (band == null) {
         Modifier
@@ -377,7 +380,7 @@ fun EntryLayout(
                 val depth = reach.amountMiddle - reach.layout.y
                 // In the window's coordinates: where the band ends on the right.
                 val end = if (reach.twoPane) {
-                    reach.amountEnd + (PaneGap / 2).toPx()
+                    reach.amountEnd + (paneGap / 2).toPx()
                 } else {
                     maxOf(windowWidth.toFloat(), reach.layout.x + size.width)
                 }
@@ -436,9 +439,6 @@ fun EntryLayout(
 
 private class SettledHeight(var height: Dp)
 
-/** The space between the two panes. */
-private val PaneGap = 12.dp
-
 /**
  * Where the entry, the middle and the end of its amount sit in the window, and whether
  * it is in two panes; read when drawing.
@@ -461,16 +461,19 @@ private fun EntryPanes(
     keypad: @Composable () -> Unit
 ) {
     if (twoPane) {
-        Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(PaneGap)) {
+        Row(
+            Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md)
+        ) {
             Column(
                 Modifier.weight(1f).fillMaxHeight(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
             ) {
                 header()
                 amount()
                 Column(
                     Modifier.weight(1f).verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
                 ) { choices() }
             }
             Column(
@@ -480,7 +483,7 @@ private fun EntryPanes(
                 Column(
                     Modifier.heightIn(max = availableHeight)
                         .verticalScroll(rememberScrollState(), reverseScrolling = true),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
                 ) {
                     action()
                     keypad()
@@ -488,12 +491,15 @@ private fun EntryPanes(
             }
         }
     } else if (availableHeight >= PinnedAmountMinHeight) {
-        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(
+            Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
+        ) {
             header()
             amount()
             Column(
                 Modifier.weight(1f).verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
             ) {
                 choices()
             }
@@ -503,10 +509,13 @@ private fun EntryPanes(
     } else {
         // Too short to pin the amount and still leave two rows of choices: the header,
         // amount and choices scroll together; the action and pad stay put.
-        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(
+            Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
+        ) {
             Column(
                 Modifier.weight(1f).verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
             ) {
                 header()
                 amount()
@@ -558,7 +567,12 @@ fun AnswerSlip(
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(label, modifier = Modifier.weight(1f), color = SelloTheme.colors.inkSoft)
-                    Stamp(stamp, ink, Modifier.padding(vertical = 8.dp), angle = -5f)
+                    Stamp(
+                        stamp,
+                        ink,
+                        Modifier.padding(vertical = SelloTheme.spacing.sm),
+                        angle = -5f
+                    )
                 }
             }
             val figure = @Composable {
@@ -624,12 +638,14 @@ fun Footnote(
     val target = if (onClick == null) {
         Modifier
     } else {
-        Modifier.heightIn(min = 48.dp).clickable(role = Role.Button, onClick = onClick)
+        Modifier.heightIn(
+            min = SelloTheme.spacing.minTouchTarget
+        ).clickable(role = Role.Button, onClick = onClick)
     }
     Row(
         modifier.fillMaxWidth().then(target),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
     ) {
         Icon(icon.painter(), null, Modifier.size(18.dp), SelloTheme.colors.brand)
         Text(

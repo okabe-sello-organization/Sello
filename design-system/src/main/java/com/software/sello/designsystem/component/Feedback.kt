@@ -75,7 +75,8 @@ fun DialogSlip(
     val density = LocalDensity.current
     Dialog(onDismissRequest = onDismissRequest) {
         val window = (LocalView.current.parent as? DialogWindowProvider)?.window
-        SideEffect { window?.setDimAmount(SCRIM_ALPHA) }
+        val scrim = SelloTheme.alpha.scrim
+        SideEffect { window?.setDimAmount(scrim) }
         // The dialog's own window would take the system's text size; keep the caller's.
         CompositionLocalProvider(LocalDensity provides density) {
             Slip(
@@ -85,7 +86,7 @@ fun DialogSlip(
             ) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.headlineSmall.copy(fontSize = 22.sp),
+                    style = SelloTheme.type.dialogTitle,
                     modifier = Modifier.semantics { heading() }
                 )
                 Spacer(Modifier.height(SelloTheme.spacing.sm))
@@ -320,8 +321,6 @@ fun ChoiceSlip(
     )
 }
 
-internal const val SCRIM_ALPHA = 0.55f
-
 /**
  * The loading state of a slip: bars where figures will be. Callers show it only when
  * loading lasts long enough to notice. With reduced motion the bars do not pulse.
@@ -363,5 +362,7 @@ fun SlipSkeleton(modifier: Modifier = Modifier, lines: Int = 3) {
 }
 
 private const val SKELETON_PULSE_MILLIS = 900
+
+/** The skeleton's resting pulse, one role (no alpha token). */
 private const val SKELETON_REST_ALPHA = 0.7f
 private val SkeletonWidths = listOf(0.45f, 0.8f, 0.6f)

@@ -36,7 +36,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
@@ -284,7 +283,7 @@ private fun Archived(state: CategoryEditorState, onAction: (CategoryEditorAction
         Text(
             stringResource(R.string.category_edit_archived),
             style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(top = 4.dp)
+            modifier = Modifier.padding(top = SelloTheme.spacing.xs)
         )
         SelloButton(
             text = stringResource(R.string.category_edit_unarchive),
@@ -514,7 +513,7 @@ private fun Limit(state: CategoryEditorState, onAction: (CategoryEditorAction) -
         } else {
             null
         },
-        amountAlpha = if (state.unlimited) GREYED_OUT_ALPHA else 1f
+        amountAlpha = if (state.unlimited) SelloTheme.alpha.disabled else 1f
     ) {
         ChipFlow(Modifier.padding(top = SelloTheme.spacing.sm)) {
             state.suggestions.forEach { suggestion ->
@@ -682,15 +681,12 @@ private fun LimitTotalLine(total: LimitTotal, modifier: Modifier = Modifier) {
             Text(lead, style = style, color = colors.inkSoft)
             MoneyText(
                 total.amount,
-                textStyle = style.copy(fontWeight = FontWeight.W700),
+                textStyle = style.copy(fontWeight = SelloTheme.type.weight.strong),
                 color = colors.ink
             )
         }
     }
 }
-
-/** As the design system greys out a switch that cannot be used. */
-private const val GREYED_OUT_ALPHA = 0.38f
 
 private fun NameError.text() = when (this) {
     NameError.Required -> R.string.category_editor_name_required

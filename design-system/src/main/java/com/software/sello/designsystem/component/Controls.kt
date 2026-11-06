@@ -56,7 +56,6 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
@@ -117,7 +116,7 @@ private fun UnavailableDock(label: String, icon: SelloIcon, modifier: Modifier) 
             .padding(horizontal = 24.dp)
     ) {
         Icon(icon.painter(), contentDescription = null, Modifier.size(20.dp), colors.inkSoft)
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(SelloTheme.spacing.sm))
         Text(
             text = label,
             style = MaterialTheme.typography.labelLarge,
@@ -136,10 +135,10 @@ fun SelloNavigationBar(navigation: SelloNavigation, modifier: Modifier = Modifie
             val selected = destination.id == navigation.selectedId
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.xs),
                 modifier = Modifier.weight(1f).heightIn(min = 64.dp)
                     .selectable(selected, role = Role.Tab) { navigation.onSelect(destination.id) }
-                    .padding(vertical = 8.dp, horizontal = 2.dp)
+                    .padding(vertical = SelloTheme.spacing.sm, horizontal = 2.dp)
             ) {
                 Box(
                     Modifier.size(
@@ -219,15 +218,15 @@ fun BandChip(
             .clip(CircleShape)
             .background(fill)
             .clickable(role = Role.Button, onClick = onClick)
-            .padding(start = 8.dp, end = 14.dp),
+            .padding(start = SelloTheme.spacing.sm, end = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.xs)
     ) {
         Icon(SelloIcon.Add.painter(), null, Modifier.size(20.dp), tint = content)
         Text(
             label,
             color = content,
-            fontWeight = FontWeight.W800,
+            fontWeight = SelloTheme.type.weight.emphasis,
             style = MaterialTheme.typography.bodyMedium,
             // On a narrow slip the label wraps rather than being cut.
             maxLines = if (onPaper) 2 else 1
@@ -313,19 +312,19 @@ fun EntryLine(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         modifier = modifier
             .fillMaxWidth()
-            .heightIn(min = 48.dp)
-            .alpha(if (enabled) 1f else 0.5f)
-            .clip(EntryShape)
+            .heightIn(min = SelloTheme.spacing.minTouchTarget)
+            .alpha(if (enabled) 1f else SelloTheme.alpha.disabled)
+            .clip(SelloTheme.shapes.inset)
             .background(colors.paper)
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 8.dp)
+            .padding(horizontal = 14.dp, vertical = SelloTheme.spacing.sm)
     ) {
         Icon(icon.painter(), null, tint = colors.brand, modifier = Modifier.size(22.dp))
         Text(
             text,
             Modifier.weight(1f),
             color = if (placeholder) colors.inkSoft else colors.ink,
-            fontWeight = if (placeholder) null else FontWeight.W600,
+            fontWeight = if (placeholder) null else SelloTheme.type.weight.soft,
             style = MaterialTheme.typography.bodyMedium,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
@@ -334,14 +333,12 @@ fun EntryLine(
             Text(
                 action,
                 color = colors.brand,
-                fontWeight = FontWeight.W800,
+                fontWeight = SelloTheme.type.weight.emphasis,
                 style = MaterialTheme.typography.bodyMedium
             )
         }
     }
 }
-
-private val EntryShape = RoundedCornerShape(12.dp)
 
 /**
  * Native text input docked above the IME. [context] says what the text belongs to, with
@@ -392,11 +389,16 @@ fun NoteComposer(
                     Modifier
                         .fillMaxWidth()
                         .windowInsetsPadding(windowInsets.only(WindowInsetsSides.Horizontal))
-                        .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 10.dp)
+                        .padding(
+                            start = SelloTheme.spacing.md,
+                            end = SelloTheme.spacing.md,
+                            top = SelloTheme.spacing.xs,
+                            bottom = 10.dp
+                        )
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm),
                         modifier = Modifier.padding(horizontal = 2.dp)
                     ) {
                         Row(
@@ -422,14 +424,14 @@ fun NoteComposer(
                     }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
                     ) {
                         BasicTextField(
                             value = edited.field,
                             onValueChange = { edited.edit(it)?.let(onValueChange) },
                             textStyle = MaterialTheme.typography.bodyLarge.copy(
                                 color = colors.ink,
-                                fontWeight = FontWeight.W600
+                                fontWeight = SelloTheme.type.weight.soft
                             ),
                             cursorBrush = SolidColor(colors.brand),
                             maxLines = 4,
@@ -443,8 +445,8 @@ fun NoteComposer(
                             decorationBox = { field ->
                                 Box(
                                     Modifier
-                                        .heightIn(min = 48.dp)
-                                        .clip(EntryShape)
+                                        .heightIn(min = SelloTheme.spacing.minTouchTarget)
+                                        .clip(SelloTheme.shapes.inset)
                                         .background(colors.paperAlt)
                                         .border(
                                             2.dp,
@@ -455,9 +457,12 @@ fun NoteComposer(
                                             } else {
                                                 Color.Transparent
                                             },
-                                            EntryShape
+                                            SelloTheme.shapes.inset
                                         )
-                                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                                        .padding(
+                                            horizontal = 14.dp,
+                                            vertical = SelloTheme.spacing.md
+                                        ),
                                     contentAlignment = Alignment.CenterStart
                                 ) { field() }
                             }
@@ -467,7 +472,7 @@ fun NoteComposer(
                             enabled = doneEnabled,
                             shape = CircleShape,
                             color = if (doneEnabled) colors.brand else colors.paperDim,
-                            modifier = Modifier.size(48.dp)
+                            modifier = Modifier.size(SelloTheme.spacing.minTouchTarget)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
@@ -479,14 +484,14 @@ fun NoteComposer(
                         }
                     }
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm),
                         modifier = Modifier.padding(start = 6.dp, end = 6.dp, top = 6.dp)
                     ) {
                         Text(
                             error ?: hint.orEmpty(),
                             Modifier.weight(1f),
                             color = if (error != null) colors.semantic.loss else colors.inkSoft,
-                            fontWeight = if (error != null) FontWeight.W600 else null,
+                            fontWeight = if (error != null) SelloTheme.type.weight.soft else null,
                             style = MaterialTheme.typography.labelMedium
                         )
                         Text(

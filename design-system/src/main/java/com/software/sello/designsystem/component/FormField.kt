@@ -108,7 +108,7 @@ fun FormField(
             }
         )
         if (message != null || counter != null) {
-            Row(modifier = Modifier.padding(top = 4.dp)) {
+            Row(modifier = Modifier.padding(top = SelloTheme.spacing.xs)) {
                 Box(modifier = Modifier.weight(1f)) {
                     if (message != null) FieldMessageText(message)
                 }

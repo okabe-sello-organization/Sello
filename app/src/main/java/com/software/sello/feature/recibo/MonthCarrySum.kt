@@ -18,7 +18,6 @@ import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
@@ -44,7 +43,9 @@ import com.software.sello.presentation.date.dateLabels
 internal fun MonthCarrySum(carry: ReciboCarry, modifier: Modifier = Modifier) {
     val figures = carry.figures
     val colors = SelloTheme.colors
-    Column(modifier.fillMaxWidth().padding(top = 4.dp).testTag(RECIBO_CARRY_SUM_TAG)) {
+    Column(
+        modifier.fillMaxWidth().padding(top = SelloTheme.spacing.xs).testTag(RECIBO_CARRY_SUM_TAG)
+    ) {
         LeaderLine(stringResource(R.string.carry_capacity), emphasis = LineEmphasis.Strong) {
             MoneyText(
                 figures.capacity,
@@ -53,13 +54,13 @@ internal fun MonthCarrySum(carry: ReciboCarry, modifier: Modifier = Modifier) {
                 } else {
                     colors.ink
                 },
-                fontWeight = FontWeight.W900
+                fontWeight = SelloTheme.type.weight.figure
             )
         }
         CarrySumCaption(figures)
         figures.spent?.let { spent ->
             LeaderLine(stringResource(R.string.carry_spent)) {
-                MoneyText(spent, color = colors.ink, fontWeight = FontWeight.W700)
+                MoneyText(spent, color = colors.ink, fontWeight = SelloTheme.type.weight.strong)
             }
         }
         val dates = dateLabels()
@@ -67,7 +68,7 @@ internal fun MonthCarrySum(carry: ReciboCarry, modifier: Modifier = Modifier) {
             stringResource(R.string.carry_read_day, dates.shortDay(carry.asOf, carry.asOf)),
             style = MaterialTheme.typography.labelSmall,
             color = colors.inkSoft,
-            modifier = Modifier.padding(top = 4.dp)
+            modifier = Modifier.padding(top = SelloTheme.spacing.xs)
         )
     }
 }
@@ -97,7 +98,7 @@ private fun CarrySumCaption(figures: CarryFigures) {
         append(stringResource(R.string.carry_sum_base, figures.base.signedText(showPlus = false)))
         append(' ')
         // Kept together: a wrap never leaves the sign at the end of a line.
-        withStyle(SpanStyle(color = ink, fontWeight = FontWeight.W800)) {
+        withStyle(SpanStyle(color = ink, fontWeight = SelloTheme.type.weight.emphasis)) {
             append(if (deficit) '−' else '+')
             append(NO_BREAK)
             appendInlineContent(BADGE, "↻")
@@ -119,7 +120,7 @@ private fun CarrySumCaption(figures: CarryFigures) {
             ) { CarryBadge(badge) }
         ),
         modifier = Modifier
-            .padding(bottom = 4.dp)
+            .padding(bottom = SelloTheme.spacing.xs)
             .testTag(RECIBO_CARRY_SUM_CAPTION_TAG)
             .clearAndSetSemantics { contentDescription = spoken }
     )

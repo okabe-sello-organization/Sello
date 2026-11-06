@@ -53,7 +53,7 @@ internal fun SwitchRow(
         horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md),
         modifier = modifier
             .fillMaxWidth()
-            .alpha(if (enabled) 1f else DISABLED_SWITCH_ALPHA)
+            .alpha(if (enabled) 1f else SelloTheme.alpha.disabled)
             .toggleable(
                 value = checked,
                 enabled = enabled,
@@ -82,14 +82,16 @@ internal fun SwitchRow(
             }
         }
         val spec = if (SelloTheme.reducedMotion) snap() else SelloMotion.standard<Dp>()
-        val thumb by animateDpAsState(if (checked) ThumbTravel else 0.dp, spec, "thumb")
+        val inset = SelloTheme.spacing.xs
+        val travel = TrackWidth - ThumbSize - inset * 2
+        val thumb by animateDpAsState(if (checked) travel else 0.dp, spec, "thumb")
         Box(
             modifier = Modifier
                 .size(TrackWidth, TrackHeight)
                 .clip(CircleShape)
                 .background(if (checked) colors.brand else colors.paperDim)
                 .border(1.5.dp, if (checked) colors.brand else colors.outline, CircleShape)
-                .padding(ThumbInset)
+                .padding(inset)
         ) {
             Box(
                 modifier = Modifier
@@ -106,9 +108,3 @@ private val TrackWidth = 48.dp
 private val TrackHeight = 28.dp
 
 private val ThumbSize = 20.dp
-
-private val ThumbInset = 4.dp
-
-private val ThumbTravel = TrackWidth - ThumbSize - ThumbInset * 2
-
-private const val DISABLED_SWITCH_ALPHA = 0.38f

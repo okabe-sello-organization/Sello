@@ -124,7 +124,7 @@ internal fun CarrySwitch(state: CategoryEditorState, onAction: (CategoryEditorAc
     val card = state.carry ?: return
     val dates = dateLabels()
     Column(Modifier.fillMaxWidth().testTag(EDITOR_CARRY_TAG)) {
-        TearLine(verticalMargin = 12.dp)
+        TearLine(verticalMargin = SelloTheme.spacing.md)
         when (card) {
             CarryCard.Unreadable -> {
                 Text(
@@ -302,7 +302,7 @@ internal fun CarryQuestionSlip(
                     months.inSentence(question.month.plusMonths(1))
                 ),
                 style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.padding(top = 8.dp)
+                modifier = Modifier.padding(top = SelloTheme.spacing.sm)
             )
         }
 
@@ -336,7 +336,9 @@ internal fun CarryQuestionSlip(
                         stringResource(R.string.carry_drop_changed, it.signedText()),
                         style = MaterialTheme.typography.bodyMedium,
                         color = SelloTheme.colors.semantic.warn,
-                        modifier = Modifier.padding(bottom = 8.dp).testTag(EDITOR_CARRY_CHANGED_TAG)
+                        modifier = Modifier.padding(
+                            bottom = SelloTheme.spacing.sm
+                        ).testTag(EDITOR_CARRY_CHANGED_TAG)
                     )
                 }
                 Text(
@@ -357,7 +359,7 @@ internal fun CarryQuestionSlip(
                     style = MaterialTheme.typography.bodyLarge
                 )
                 Column(
-                    Modifier.padding(top = 8.dp),
+                    Modifier.padding(top = SelloTheme.spacing.sm),
                     verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
                     val unlimited = question.reason == DropReason.Unlimited

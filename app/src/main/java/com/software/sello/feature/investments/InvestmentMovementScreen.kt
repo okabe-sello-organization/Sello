@@ -16,7 +16,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -346,7 +345,11 @@ private fun Fact(
                 append(text)
                 val start = figure?.let { text.indexOf(it) } ?: -1
                 if (figure != null && start >= 0) {
-                    addStyle(SpanStyle(fontWeight = FontWeight.W800), start, start + figure.length)
+                    addStyle(
+                        SpanStyle(fontWeight = SelloTheme.type.weight.emphasis),
+                        start,
+                        start + figure.length
+                    )
                 }
             },
             Modifier.testTag(INVESTMENT_MOVEMENT_FACT_TAG)

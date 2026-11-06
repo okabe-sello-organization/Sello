@@ -18,7 +18,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.software.sello.designsystem.theme.SelloInk
@@ -53,7 +52,7 @@ internal fun InkSwatches(
                         enabled = enabled,
                         role = Role.RadioButton
                     ) { onSelect(ink) }
-                    .alpha(if (enabled) 1f else DISABLED_ROW_ALPHA)
+                    .alpha(if (enabled) 1f else SelloTheme.alpha.disabled)
                     .padding(SelloTheme.spacing.xs)
             ) {
                 Box(
@@ -76,7 +75,7 @@ internal fun InkSwatches(
                 Text(
                     label,
                     style = MaterialTheme.typography.labelMedium.copy(
-                        fontWeight = if (chosen) FontWeight.W700 else FontWeight.W600
+                        fontWeight = with(SelloTheme.type.weight) { if (chosen) strong else soft }
                     ),
                     color = if (chosen) colors.ink else colors.inkSoft,
                     textAlign = TextAlign.Center
@@ -89,5 +88,3 @@ internal fun InkSwatches(
 private val SwatchSize = 44.dp
 
 private val SwatchRing = 56.dp
-
-private const val DISABLED_ROW_ALPHA = 0.38f

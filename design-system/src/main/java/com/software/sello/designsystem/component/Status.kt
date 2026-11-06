@@ -339,7 +339,7 @@ private fun StatusButton(action: StatusAction, kind: ButtonKind, modifier: Modif
         onClick = action.onClick,
         // A text button is drawn 46 dp tall; the touch target is 48 dp (ARCHITECTURE §6).
         modifier = modifier
-            .heightIn(min = 48.dp)
+            .heightIn(min = SelloTheme.spacing.minTouchTarget)
             .semantics { if (action.busy) stateDescription = busy },
         kind = kind,
         loading = action.busy,

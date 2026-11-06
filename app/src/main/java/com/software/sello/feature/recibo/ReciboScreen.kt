@@ -48,7 +48,6 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
@@ -264,7 +263,9 @@ internal fun ReservedFootnote(reserved: ReciboReserved, onClick: () -> Unit) {
     val text = buildAnnotatedString {
         val at = template.indexOf(AMOUNT_MARK)
         append(template.substring(0, at))
-        withStyle(SpanStyle(fontWeight = FontWeight.W800, color = SelloTheme.colors.ink)) {
+        withStyle(
+            SpanStyle(fontWeight = SelloTheme.type.weight.emphasis, color = SelloTheme.colors.ink)
+        ) {
             append(reserved.total.digits)
         }
         append(template.substring(at + AMOUNT_MARK.length))
@@ -323,7 +324,7 @@ internal fun ClosedMonthInvitation(
         modifier = modifier
             .fillMaxWidth()
             .testTag(RECIBO_INVITATION_TAG)
-            .dashedOutline(colors.rule, 1.5.dp, 14.dp)
+            .dashedOutline(colors.rule, 1.5.dp, SelloTheme.shapes.panel)
             .heightIn(min = 52.dp)
     ) {
         Row(
@@ -347,7 +348,7 @@ internal fun ClosedMonthInvitation(
             Text(
                 text = text,
                 style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.W700,
+                fontWeight = SelloTheme.type.weight.strong,
                 color = colors.ink,
                 modifier = Modifier.weight(1f)
             )
@@ -648,7 +649,7 @@ internal fun CarryWhyNote(why: CarryWhy, modifier: Modifier = Modifier) {
         text,
         style = MaterialTheme.typography.bodyMedium,
         color = SelloTheme.colors.inkSoft,
-        modifier = modifier.padding(top = 8.dp).testTag(RECIBO_CARRY_WHY_TAG)
+        modifier = modifier.padding(top = SelloTheme.spacing.sm).testTag(RECIBO_CARRY_WHY_TAG)
     )
 }
 

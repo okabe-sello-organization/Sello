@@ -24,7 +24,6 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.software.sello.R
@@ -68,8 +67,8 @@ internal fun ExpenseStubLine(
             Text(
                 weekday.uppercase(Locale.forLanguageTag("es-CO")),
                 style = MaterialTheme.typography.labelSmall.copy(
-                    fontWeight = FontWeight.W700,
-                    letterSpacing = 0.6.sp
+                    fontWeight = SelloTheme.type.weight.strong,
+                    letterSpacing = WeekdayTracking
                 ),
                 color = colors.inkSoft,
                 maxLines = 1
@@ -77,7 +76,7 @@ internal fun ExpenseStubLine(
             Text(
                 row.date.dayOfMonth.toString(),
                 style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.W900,
+                    fontWeight = SelloTheme.type.weight.figure,
                     fontFeatureSettings = "tnum"
                 ),
                 color = if (future) colors.inkSoft else colors.ink
@@ -119,11 +118,13 @@ internal fun ExpenseStubLine(
             if (future) {
                 Text(
                     stringResource(R.string.category_detail_not_counted_short),
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.W700),
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = SelloTheme.type.weight.strong
+                    ),
                     color = colors.semantic.warn,
                     modifier = Modifier
                         .padding(top = 2.dp)
-                        .background(colors.semantic.warnSoft, RoundedCornerShape(6.dp))
+                        .background(colors.semantic.warnSoft, NotCountedTagShape)
                         .padding(horizontal = 6.dp, vertical = 1.dp)
                 )
             }
@@ -133,3 +134,9 @@ internal fun ExpenseStubLine(
 }
 
 private val STUB_WIDTH = 38.dp
+
+/** The weekday's spaced capitals; the plan tag's are another role (no type token). */
+private val WeekdayTracking = 0.6.sp
+
+/** The small tag behind a future expense, used once (no shape token). */
+private val NotCountedTagShape = RoundedCornerShape(6.dp)

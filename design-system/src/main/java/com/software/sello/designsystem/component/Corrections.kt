@@ -28,7 +28,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
@@ -59,6 +58,7 @@ fun SelloNotice(
     remaining: Float? = null
 ) {
     val colors = SelloTheme.colors
+    val timeBand = colors.paper.copy(alpha = SelloTheme.alpha.bandTint)
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md),
@@ -71,7 +71,7 @@ fun SelloNotice(
                 val left = remaining?.coerceIn(0f, 1f) ?: return@drawBehind
                 val width = size.width * left
                 drawRect(
-                    colors.paper.copy(alpha = TIME_BAND_ALPHA),
+                    timeBand,
                     size = Size(width, size.height)
                 )
                 val line = TIME_LINE.toPx()
@@ -119,8 +119,10 @@ fun SelloNotice(
             ) {
                 Text(
                     text = actionLabel,
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.W700),
-                    color = colors.paper.copy(alpha = if (busy) BUSY_ALPHA else 1f)
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontWeight = SelloTheme.type.weight.strong
+                    ),
+                    color = colors.paper.copy(alpha = if (busy) SelloTheme.alpha.muted else 1f)
                 )
             }
         }
@@ -132,9 +134,5 @@ private val NoticeMaxWidth = 560.dp
 /** The confirmation check of a [SelloNotice]; decorative, so it says nothing. */
 const val SELLO_NOTICE_CHECK_TAG = "sello-notice:check"
 
-/** How much the time left lightens the bar, and the line along its foot. */
-private const val TIME_BAND_ALPHA = 0.14f
-
+/** The line along the foot of the time left, which lightens the bar by the band tint. */
 private val TIME_LINE = 3.dp
-
-private const val BUSY_ALPHA = 0.5f

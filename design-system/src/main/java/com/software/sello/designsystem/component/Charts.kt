@@ -112,18 +112,20 @@ fun ColumnsChart(
             barArea
         ->
         val colors = SelloTheme.colors
+        val alpha = SelloTheme.alpha
+        val barShape = SelloTheme.shapes.bar
         val ink = when (point.period) {
             ChartPeriod.Past -> colors.pastBar
             ChartPeriod.Current, ChartPeriod.Upcoming -> colors.brand
             ChartPeriod.Over -> colors.semantic.loss
-        }.copy(alpha = if (dimmed) DIMMED_ALPHA else 1f)
+        }.copy(alpha = if (dimmed) alpha.muted else 1f)
         val barHeight = if (fraction > 0f) (barArea * fraction).coerceAtLeast(2.dp) else 0.dp
         Box(
             modifier = Modifier
                 .fillMaxWidth(COLUMN_WIDTH_SHARE)
                 .height(barHeight)
                 .drawBehind {
-                    val corner = CornerRadius(4.dp.toPx())
+                    val corner = CornerRadius(barShape.topStart.toPx(size, this))
                     val bar = Path().apply {
                         addRoundRect(
                             RoundRect(
@@ -147,7 +149,7 @@ fun ColumnsChart(
                                 alpha = if (stripedCurrent &&
                                     point.period == ChartPeriod.Current
                                 ) {
-                                    0.15f
+                                    alpha.faintFill
                                 } else {
                                     ink.alpha
                                 }
@@ -168,7 +170,7 @@ fun ColumnsChart(
                                             )
                                 clipRect(bottom = topHeight) {
                                     drawRect(colors.paper)
-                                    drawRect(ink.copy(alpha = 0.15f))
+                                    drawRect(ink.copy(alpha = alpha.faintFill))
                                     var x = -size.height
                                     while (x < size.width) {
                                         drawLine(
@@ -313,7 +315,7 @@ private fun ChartFrame(
                         .semantics { contentDescription = reference.spoken }
                         .offset(y = (y - LabelRoom / 2).coerceAtLeast(0.dp))
                         .background(colors.paper)
-                        .padding(horizontal = 4.dp)
+                        .padding(horizontal = SelloTheme.spacing.xs)
                 )
             }
         }
@@ -346,7 +348,7 @@ private fun AxisLabels(points: List<ChartPoint>, short: Boolean, modifier: Modif
                 textAlign = TextAlign.Center,
                 // On a narrow column "sem 2" wraps rather than being cut.
                 maxLines = 2,
-                modifier = Modifier.weight(1f).padding(top = 4.dp)
+                modifier = Modifier.weight(1f).padding(top = SelloTheme.spacing.xs)
             )
         }
     }
@@ -362,4 +364,3 @@ private fun TextMeasurer.fitsWhole(text: String, style: TextStyle, width: Int): 
 private val LabelRoom = 18.dp
 private val AxisRoom = 20.dp
 private const val COLUMN_WIDTH_SHARE = 0.62f
-private const val DIMMED_ALPHA = 0.5f

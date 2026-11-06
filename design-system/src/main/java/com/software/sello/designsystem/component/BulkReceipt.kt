@@ -63,7 +63,6 @@ import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
@@ -191,7 +190,14 @@ fun BulkReceipt(
             if (reduced) list.scrollToItem(highlighted) else list.animateScrollToItem(highlighted)
         }
     }
-    Slip(modifier.fillMaxWidth(), contentPadding = ReceiptPadding) {
+    val side = SelloTheme.spacing.md
+    val padding = PaddingValues(
+        start = side,
+        top = SelloTheme.spacing.sm,
+        end = side,
+        bottom = ReceiptBottom
+    )
+    Slip(modifier.fillMaxWidth(), contentPadding = padding) {
         ReceiptHeader(caption, headerEnd)
         LazyColumn(
             state = list,
@@ -219,7 +225,7 @@ fun BulkReceipt(
                 )
             }
         }
-        TearLine(bleed = ReceiptSide, verticalMargin = 8.dp)
+        TearLine(bleed = side, verticalMargin = SelloTheme.spacing.sm)
         ReceiptFoot(total, onAdd, addEnabled && enabled)
     }
 }
@@ -229,7 +235,7 @@ private fun ReceiptHeader(caption: BulkCaption, end: @Composable () -> Unit) {
     val colors = SelloTheme.colors
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm),
         modifier = Modifier.fillMaxWidth().heightIn(min = 40.dp)
     ) {
         Box(Modifier.weight(1f).semantics(mergeDescendants = true) {}) {
@@ -238,7 +244,7 @@ private fun ReceiptHeader(caption: BulkCaption, end: @Composable () -> Unit) {
                     Text(
                         caption.title,
                         style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.W800,
+                        fontWeight = SelloTheme.type.weight.emphasis,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -267,7 +273,7 @@ private fun ReceiptHeader(caption: BulkCaption, end: @Composable () -> Unit) {
                     Text(
                         caption.text,
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.W700,
+                        fontWeight = SelloTheme.type.weight.strong,
                         color = colors.semantic.loss,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
@@ -285,7 +291,7 @@ private fun ReceiptFoot(total: BulkTotal, onAdd: () -> Unit, addEnabled: Boolean
     Column(Modifier.fillMaxWidth()) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm),
             modifier = Modifier.fillMaxWidth().heightIn(min = 46.dp)
         ) {
             SelloButton(
@@ -294,33 +300,33 @@ private fun ReceiptFoot(total: BulkTotal, onAdd: () -> Unit, addEnabled: Boolean
                 kind = ButtonKind.Text,
                 icon = SelloIcon.Add,
                 enabled = addEnabled,
-                contentPadding = PaddingValues(horizontal = 4.dp),
+                contentPadding = PaddingValues(horizontal = SelloTheme.spacing.xs),
                 modifier = Modifier.offset(x = (-4).dp)
             )
             Spacer(Modifier.weight(1f))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm),
                 modifier = Modifier.semantics(mergeDescendants = true) {}
             ) {
                 Text(
                     total.label,
                     style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.W600,
+                    fontWeight = SelloTheme.type.weight.soft,
                     color = colors.inkSoft
                 )
                 Column(horizontalAlignment = Alignment.End) {
                     MoneyText(
                         total.value,
                         style = MoneyStyle.Title,
-                        fontWeight = FontWeight.W900,
+                        fontWeight = SelloTheme.type.weight.figure,
                         color = total.tone.ink()
                     )
                     total.second?.let {
                         MoneyText(
                             it,
                             style = MoneyStyle.Title,
-                            fontWeight = FontWeight.W900,
+                            fontWeight = SelloTheme.type.weight.figure,
                             color = total.tone.ink()
                         )
                     }
@@ -383,7 +389,7 @@ private fun BulkLineRow(
     Box(
         Modifier
             .fillMaxWidth()
-            .clip(LineShape)
+            .clip(SelloTheme.shapes.inset)
             .onSizeChanged { width = it.width }
     ) {
         if (dragged.value < 0f) {
@@ -407,7 +413,7 @@ private fun BulkLineRow(
                         }
                     ),
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.W800,
+                    fontWeight = SelloTheme.type.weight.emphasis,
                     color = colors.semantic.onLoss,
                     maxLines = 1
                 )
@@ -417,11 +423,11 @@ private fun BulkLineRow(
             Modifier
                 .offset { IntOffset((dragged.value * towardsStart).roundToInt(), 0) }
                 .fillMaxWidth()
-                .clip(LineShape)
+                .clip(SelloTheme.shapes.inset)
                 .background(if (highlighted) colors.paperAlt else colors.paper)
                 .then(
                     if (edge != null) {
-                        Modifier.border(2.dp, edge, LineShape)
+                        Modifier.border(2.dp, edge, SelloTheme.shapes.inset)
                     } else if (ruled) {
                         Modifier.drawBehind {
                             val rule = 1.dp.toPx()
@@ -473,7 +479,7 @@ private fun BulkLineRow(
                     }
                 }
                 .heightIn(min = 54.dp)
-                .padding(start = 8.dp, end = 10.dp, top = 6.dp, bottom = 6.dp)
+                .padding(start = SelloTheme.spacing.sm, end = 10.dp, top = 6.dp, bottom = 6.dp)
         ) {
             Box(Modifier.clearAndSetSemantics {}) { LineContent(line, highlighted) }
             if (foot != null) {
@@ -503,7 +509,9 @@ private fun LineContent(line: BulkLine, highlighted: Boolean) {
             Text(
                 line.title,
                 style = MaterialTheme.typography.bodyLarge,
-                fontWeight = if (line.titleSoft) FontWeight.W600 else FontWeight.W800,
+                fontWeight = with(SelloTheme.type.weight) {
+                    if (line.titleSoft) soft else emphasis
+                },
                 color = if (line.titleSoft) colors.inkSoft else colors.ink,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -513,7 +521,7 @@ private fun LineContent(line: BulkLine, highlighted: Boolean) {
                 Text(
                     under,
                     style = MaterialTheme.typography.labelMedium,
-                    fontWeight = if (line.reason != null) FontWeight.W700 else null,
+                    fontWeight = if (line.reason != null) SelloTheme.type.weight.strong else null,
                     color = if (line.reason != null) colors.semantic.loss else colors.inkSoft,
                     maxLines = if (line.reason != null) 2 else 1,
                     overflow = TextOverflow.Ellipsis
@@ -525,13 +533,13 @@ private fun LineContent(line: BulkLine, highlighted: Boolean) {
                 Text(
                     "0",
                     style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.W800,
+                    fontWeight = SelloTheme.type.weight.emphasis,
                     color = colors.outline
                 )
             } else {
                 MoneyText(
                     line.amount.withCodeInline(),
-                    fontWeight = FontWeight.W800,
+                    fontWeight = SelloTheme.type.weight.emphasis,
                     color = line.amountTone.ink(),
                     singleLine = false
                 )
@@ -553,7 +561,7 @@ private fun LineMark(icon: SelloIcon?, tone: BulkMarkTone, missingInLoss: Boolea
             contentAlignment = Alignment.Center,
             modifier = Modifier.size(MarkSize).dashedOutline(ink, 2.dp, CircleShape)
         ) {
-            Text("?", fontWeight = FontWeight.W900, color = ink)
+            Text("?", fontWeight = SelloTheme.type.weight.figure, color = ink)
         }
         return
     }
@@ -616,9 +624,8 @@ private fun Modifier.fadeEdges(top: Boolean, bottom: Boolean): Modifier = if (!t
     }
 }
 
-private val ReceiptSide = 12.dp
-private val ReceiptPadding = PaddingValues(start = 12.dp, top = 8.dp, end = 12.dp, bottom = 20.dp)
-private val LineShape = RoundedCornerShape(12.dp)
+/** Room under the last line, clear of the slip's teeth. */
+private val ReceiptBottom = 20.dp
 private val MarkSize = 36.dp
 private val FadeLength = 18.dp
 private const val SWIPE_THRESHOLD = 0.4f

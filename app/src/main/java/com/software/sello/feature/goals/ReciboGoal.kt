@@ -236,7 +236,15 @@ private fun Dots(count: Int, current: Int) {
             val on = index == current
             Box(
                 Modifier.size(width = if (on) 18.dp else 6.dp, height = 6.dp).clip(CircleShape)
-                    .background(if (on) colors.brand else colors.outline.copy(alpha = 0.5f))
+                    .background(
+                        if (on) {
+                            colors.brand
+                        } else {
+                            colors.outline.copy(
+                                alpha = SelloTheme.alpha.muted
+                            )
+                        }
+                    )
             )
         }
     }
