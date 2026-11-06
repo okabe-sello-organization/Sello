@@ -49,6 +49,7 @@
       <figure data-shot="resumen-weekday-selected" data-module="app" data-caption="A weekday column selected"></figure>
       <figure data-shot="resumen-carry" data-module="app" data-caption="A carried month selected: base, carry and month limit"></figure>
       <figure data-shot="resumen-suggestion" data-module="app" data-caption="The suggestion"></figure>
+      <figure data-shot="resumen-suggestion-dismiss-failed" data-module="app" data-caption="A dismissal that was not saved"></figure>
       <figure data-shot="resumen-two-panes" data-module="app" data-caption="Landscape (891 × 412): two panes"></figure>
 
       <h3>Layout</h3>
@@ -67,7 +68,7 @@
         <li><strong>Empty</strong> instead of the chart slips: an Empty <a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> with the Insights icon and "Anotar un gasto" (<code>ResumenScreen.kt:343</code>).</li>
         <li><strong>"Mes a mes" slip</strong>: heading, the "Un mes normal" row and its basis, the selected column's label and amount (with <code>CarryBreakdownSection</code> or "Límite de ese mes" under it), then a <a href="../components.html#c-ColumnsChart"><code>ColumnsChart</code></a> that scrolls sideways when columns would be narrower than 48 dp, with the month's limit as a dashed reference line, the current month striped and starred, short value labels on the highest and current columns, the "* Mes en curso" note and the insufficient-history line (<code>ResumenScreen.kt:355</code>).</li>
         <li><strong>"¿Qué días gastas más?" slip</strong>: the selected weekday's average, or the answer "Los sábados" in <code>headlineSmall</code> W800, the basis, and a 120 dp ColumnsChart Monday first (<code>ResumenScreen.kt:549</code>).</li>
-        <li><strong>Suggestion</strong>: <a href="../components.html#c-SuggestionNote"><code>SuggestionNote</code></a> with evidence, advice, an action and a dismiss (<code>ResumenScreen.kt:446</code>).</li>
+        <li><strong>Suggestion</strong>: <a href="../components.html#c-SuggestionNote"><code>SuggestionNote</code></a> with evidence, advice, an action and a dismiss (<code>ResumenScreen.kt:447</code>); under it, a dismissal that was not saved (<code>ResumenScreen.kt:465</code>).</li>
       </ol>
 
       <h3>States</h3>
@@ -85,12 +86,14 @@
             <tr><td>No income</td><td>"Aún no anotas ingresos en …" and "Sello funciona sin ingresos. …"; the ranking and a Total line; the Ingresos stub says "Ninguno en …".</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:173</code></td><td><code>resumen-no-income</code></td></tr>
             <tr><td>Overspent income</td><td>"Ingresos menos gastos" in loss ink and "Anotaste … de ingresos y … de gastos."</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:262</code></td><td><code>resumen-overspent</code></td></tr>
             <tr><td>Next fixed unknown</td><td>The "Fijos" stub shows no fact while the schedules are loading or failed; never "none".</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:314</code></td><td><code>resumen</code> (its Fijos stub has no fact)</td></tr>
-            <tr><td>Column selected</td><td>The column's label and amount over the month chart (with its limit or carry), or the weekday's average; cleared after 3 seconds.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:381</code>, <code>app/src/main/java/com/software/sello/feature/resumen/ResumenViewModel.kt:152</code></td><td><code>resumen-history-selected</code>, <code>resumen-weekday-selected</code></td></tr>
+            <tr><td>Column selected</td><td>The column's label and amount over the month chart (with its limit or carry), or the weekday's average; cleared after 3 seconds.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:381</code>, <code>app/src/main/java/com/software/sello/feature/resumen/ResumenViewModel.kt:162</code></td><td><code>resumen-history-selected</code>, <code>resumen-weekday-selected</code></td></tr>
             <tr><td>Carry month</td><td>The limit line reads "Límite del mes …"; a selected carried month shows base, carry and capacity.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:390</code></td><td><code>resumen-carry</code></td></tr>
-            <tr><td>Suggestion</td><td>SuggestionNote "Una sugerencia"; hidden for this month once dismissed (it comes back next month if it still applies).</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:446</code></td><td><code>resumen-suggestion</code></td></tr>
+            <tr><td>Suggestion</td><td>SuggestionNote "Una sugerencia"; hidden for this month once dismissed (it comes back next month if it still applies).</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:447</code></td><td><code>resumen-suggestion</code></td></tr>
             <tr><td>Two panes</td><td>Summary slips left, chart slips right, each scrolling.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:100</code></td><td><code>resumen-two-panes</code> (landscape, 891 × 412)</td></tr>
-            <tr><td>Restored after process death</td><td>The selected column survives in <code>SavedStateHandle</code> and its 3-second timer restarts.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenViewModel.kt:115</code></td><td>Drawn as before: <code>resumen-history-selected</code></td></tr>
-            <tr><td>Busy, unknown outcome, refused</td><td>Do not exist: the only write is dismissing the suggestion, which is fire-and-forget; the note goes when the stored preference says so.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenViewModel.kt:130</code></td><td>—</td></tr>
+            <tr><td>Restored after process death</td><td>The selected column survives in <code>SavedStateHandle</code> and its 3-second timer restarts.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenViewModel.kt:129</code></td><td>Drawn as before: <code>resumen-history-selected</code></td></tr>
+            <tr><td>Dismissal not saved</td><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> ActionFailed under the suggestion, "No pudimos descartar la sugerencia. Tus gastos y límites siguen igual; inténtalo de nuevo." with Reintentar, which dismisses again; the suggestion stays. A dismissal that is saved clears it.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:465</code>, <code>app/src/main/java/com/software/sello/feature/resumen/ResumenViewModel.kt:144</code></td><td><code>resumen-suggestion-dismiss-failed</code></td></tr>
+            <tr><td>Busy</td><td>While a dismissal is saved, another tap sends nothing; nothing is drawn, as the save is a local preference. The note goes when the stored preference says so.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenViewModel.kt:150</code></td><td>—</td></tr>
+            <tr><td>Unknown outcome, refused</td><td>Do not exist: the only write is the dismissal, a local preference that is saved or not.</td><td>—</td><td>—</td></tr>
           </tbody>
         </table>
       </div>
@@ -119,7 +122,7 @@
         <li>"Mes a mes" (<code>resumen_month_by_month</code>), "Un mes normal" (<code>resumen_normal_month</code>), "Límite %1$s" (<code>resumen_limit_line</code>), "* Mes en curso: lo gastado hasta hoy." (<code>resumen_in_progress_note</code>)</li>
         <li>"¿Qué días gastas más?" (<code>resumen_weekdays_title</code>), "Los %1$s" (<code>resumen_weekdays_answer</code>)</li>
         <li>"Aún no hay gastos" (<code>resumen_empty</code>), "Cuando anotes un gasto, aquí verás cómo crece tu historia." (<code>resumen_empty_body</code>), "Anotar un gasto" (<code>resumen_record_expense</code>)</li>
-        <li>"Una sugerencia" (<code>resumen_suggestion_title</code>), "Podrías ajustar su límite para que refleje lo que de verdad gastas." (<code>resumen_suggestion_advice</code>), "Ajustar el presupuesto de %1$s" (<code>resumen_suggestion_action</code>), "Descartar sugerencia" (<code>resumen_suggestion_dismiss</code>)</li>
+        <li>"Una sugerencia" (<code>resumen_suggestion_title</code>), "Podrías ajustar su límite para que refleje lo que de verdad gastas." (<code>resumen_suggestion_advice</code>), "Ajustar el presupuesto de %1$s" (<code>resumen_suggestion_action</code>), "Descartar sugerencia" (<code>resumen_suggestion_dismiss</code>), "No pudimos descartar la sugerencia. Tus gastos y límites siguen igual; inténtalo de nuevo." (<code>resumen_suggestion_dismiss_failed</code>)</li>
         <li>"No pudimos leer el resumen. Intenta de nuevo." (<code>resumen_load_failed</code>), "No pudimos actualizar. Estas cifras son de la última lectura, hasta el %1$s." (<code>resumen_stale</code>)</li>
       </ul>
     </section>
@@ -169,9 +172,7 @@
     <section id="gaps">
       <h2>Gaps</h2>
       <div class="gaps">
-        <ul>
-          <li>Whether a failed suggestion dismissal tells the person anything: the code ignores the write's result (<code>ResumenViewModel.kt:130</code>); the note stays until the stored preference changes.</li>
-        </ul>
+        <p>None: every state on this page has a screenshot.</p>
       </div>
     </section>
   </main>

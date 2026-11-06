@@ -39,6 +39,7 @@ import com.software.sello.testing.testMonthNames
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -308,6 +309,58 @@ class ResumenViewModelTest {
         assertNull((model.state.value as ResumenState.Ready).suggestion)
     }
 
+    private val ResumenViewModel.ready get() = state.value as ResumenState.Ready
+
+    /** #377: a dismissal that was not saved is said, with the suggestion still there. */
+    @Test
+    fun aDismissalThatIsNotSavedIsSaidAndKeepsTheSuggestion() = runTest {
+        val model = model()
+        watch(model)
+        reads.of(october).value = ReadState.Ready(withSuggestion())
+        suggestions.failing = true
+
+        model.onAction(ResumenAction.DismissSuggestion)
+
+        assertEquals(SuggestionDismissal.Failed, model.ready.dismissal)
+        assertEquals("Hogar", model.ready.suggestion?.name)
+    }
+
+    @Test
+    fun dismissingAgainAfterAFailureThatSavesClearsTheFailureAndHidesTheSuggestion() = runTest {
+        val model = model()
+        watch(model)
+        reads.of(october).value = ReadState.Ready(withSuggestion())
+        suggestions.failing = true
+        model.onAction(ResumenAction.DismissSuggestion)
+        suggestions.failing = false
+
+        model.onAction(ResumenAction.DismissSuggestion)
+
+        assertEquals(2, suggestions.written.size)
+        assertEquals(SuggestionDismissal.Idle, model.ready.dismissal)
+        assertNull(model.ready.suggestion)
+    }
+
+    @Test
+    fun aSecondTapWhileTheDismissalIsSavedSendsNothingMore() = runTest {
+        val model = model()
+        watch(model)
+        reads.of(october).value = ReadState.Ready(withSuggestion())
+        val hold = CompletableDeferred<Unit>()
+        suggestions.hold = hold
+
+        model.onAction(ResumenAction.DismissSuggestion)
+        val saving = model.ready.dismissal
+        model.onAction(ResumenAction.DismissSuggestion)
+        hold.complete(Unit)
+        runCurrent()
+
+        assertEquals(SuggestionDismissal.Saving, saving)
+        assertEquals(1, suggestions.written.size)
+        assertEquals(SuggestionDismissal.Idle, model.ready.dismissal)
+        assertNull(model.ready.suggestion)
+    }
+
     @Test
     fun aSuggestionDismissedLastMonthComesBackWhileItStillApplies() = runTest {
         suggestions.stored.value =
@@ -336,11 +389,15 @@ class ResumenViewModelTest {
 private class HandSuggestions : SuggestionPreferences {
     val stored = MutableStateFlow<PreferenceRead<DismissedSuggestion?>>(PreferenceRead.Ready(null))
     val written = mutableListOf<DismissedSuggestion>()
+    var failing = false
+    var hold: CompletableDeferred<Unit>? = null
 
     override fun observeDismissedSuggestion(): Flow<PreferenceRead<DismissedSuggestion?>> = stored
 
     override suspend fun dismissSuggestion(dismissed: DismissedSuggestion): PreferenceWrite {
         written += dismissed
+        hold?.await()
+        if (failing) return PreferenceWrite.Failed(PreferenceFailure.Unavailable)
         stored.value = PreferenceRead.Ready(dismissed)
         return PreferenceWrite.Saved
     }

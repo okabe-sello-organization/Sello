@@ -605,4 +605,20 @@ class ResumenScreenTest {
             .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
         assertEquals(16.sp, layouts.single().layoutInput.style.fontSize)
     }
+
+    /** #377: a dismissal that was not saved is said by the suggestion, with Reintentar. */
+    @Test
+    fun aDismissalThatWasNotSavedIsSaidAndReintentarDismissesAgain() {
+        state.value = (resumenExample(money) as ResumenState.Ready)
+            .copy(dismissal = SuggestionDismissal.Failed)
+        show()
+
+        rule.onNodeWithText(
+            "No pudimos descartar la sugerencia. Tus gastos y límites siguen igual; " +
+                "inténtalo de nuevo."
+        ).performScrollTo().assertIsDisplayed()
+        rule.onNodeWithText("Reintentar").performScrollTo().performClick()
+
+        assertEquals(listOf<ResumenAction>(ResumenAction.DismissSuggestion), actions)
+    }
 }

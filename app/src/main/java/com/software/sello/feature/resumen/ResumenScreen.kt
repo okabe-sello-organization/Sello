@@ -460,6 +460,17 @@ private fun ChartSlips(
             onDismiss = { onAction(ResumenAction.DismissSuggestion) },
             modifier = Modifier.testTag("resumen.suggestion")
         )
+        if (state.dismissal == SuggestionDismissal.Failed) {
+            // A dismissal that was not saved: the suggestion stays, and Reintentar asks again.
+            StatusSlip(
+                kind = StatusKind.ActionFailed(),
+                message = stringResource(R.string.resumen_suggestion_dismiss_failed),
+                modifier = Modifier.testTag(RESUMEN_DISMISS_FAILED_TAG),
+                action = StatusAction(StatusSlipDefaults.retryLabel) {
+                    onAction(ResumenAction.DismissSuggestion)
+                }
+            )
+        }
     }
 }
 
@@ -647,3 +658,5 @@ private fun carrySpoken(point: ResumenPoint): String {
         carry.carry.spoken
     )
 }
+
+const val RESUMEN_DISMISS_FAILED_TAG = "resumen.suggestion.dismissFailed"

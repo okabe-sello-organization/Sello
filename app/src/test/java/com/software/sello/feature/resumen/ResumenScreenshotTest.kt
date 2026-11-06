@@ -200,6 +200,21 @@ class ResumenScreenshotTest {
     @Test
     fun suggestionDark() = shot("suggestion", ready, Look(dark = true), "resumen.suggestion")
 
+    /** A dismissal that was not saved (#377): said under the suggestion, with Reintentar. */
+    private val dismissFailed = ready.copy(dismissal = SuggestionDismissal.Failed)
+
+    @Test
+    fun suggestionDismissFailedLight() =
+        shot("suggestion-dismiss-failed", dismissFailed, Look(), RESUMEN_DISMISS_FAILED_TAG)
+
+    @Test
+    fun suggestionDismissFailedDark() = shot(
+        "suggestion-dismiss-failed",
+        dismissFailed,
+        Look(dark = true),
+        RESUMEN_DISMISS_FAILED_TAG
+    )
+
     /** Landscape (891 × 412): the summary slips left, the charts right. */
     @Test
     @Config(qualifiers = "w891dp-h412dp-mdpi")

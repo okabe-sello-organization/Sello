@@ -11,6 +11,7 @@ import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.policy.ScheduleListPolicy
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.PreferenceRead
+import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ResumenSnapshots
 import com.software.sello.domain.port.ScheduleBookState
@@ -65,6 +66,13 @@ class ResumenViewModel(
         }
     }
 
+    /** The dismissal being saved or not saved, with the suggestion it was asked for. */
+    private data class Dismissal(val of: DismissedSuggestion, val status: SuggestionDismissal)
+
+    private val dismissal = MutableStateFlow<Dismissal?>(null)
+
+    private val dismissing = combine(dismissed, dismissal) { stored, asked -> stored to asked }
+
     /** The stub's fact: the nearest fixed one still to come, on the financial day. */
     private val nextFixed = combine(schedules.observe(), clock.today) { read, today ->
         when (read) {
@@ -88,10 +96,14 @@ class ResumenViewModel(
         snapshot,
         saved.getStateFlow<String?>(HISTORY, null),
         saved.getStateFlow<String?>(WEEKDAY, null),
-        dismissed,
+        dismissing,
         nextFixed
-    ) { state, history, weekday, dismissed, next ->
+    ) { state, history, weekday, (dismissed, asked), next ->
         if (state is ResumenState.Ready) {
+            val shown = state.suggestion?.takeUnless {
+                dismissed?.month?.toString() == state.month &&
+                    dismissed.categoryId.value == it.categoryId
+            }
             state.copy(
                 nextFixed = next,
                 selectedHistory = selection(history, state.month, state.history),
@@ -100,10 +112,12 @@ class ResumenViewModel(
                     state.month,
                     state.weekdays?.points.orEmpty()
                 ),
-                suggestion = state.suggestion?.takeUnless {
-                    dismissed?.month?.toString() == state.month &&
-                        dismissed.categoryId.value == it.categoryId
-                }
+                suggestion = shown,
+                // Said only by the suggestion it was asked for, while it is shown.
+                dismissal = asked?.takeIf {
+                    shown != null && it.of.month.toString() == state.month &&
+                        it.of.categoryId.value == shown.categoryId
+                }?.status ?: SuggestionDismissal.Idle
             )
         } else {
             state
@@ -132,7 +146,18 @@ class ResumenViewModel(
         val suggestion = current.suggestion ?: return
         val month = runCatching { YearMonth.parse(current.month) }.getOrNull() ?: return
         val id = (CategoryId.of(suggestion.categoryId) as? Outcome.Success)?.value ?: return
-        viewModelScope.launch { suggestions.dismissSuggestion(DismissedSuggestion(month, id)) }
+        // One save at a time: a second tap while it is saved sends nothing more.
+        if (dismissal.value?.status == SuggestionDismissal.Saving) return
+        val asked = DismissedSuggestion(month, id)
+        dismissal.value = Dismissal(asked, SuggestionDismissal.Saving)
+        viewModelScope.launch {
+            dismissal.value = when (suggestions.dismissSuggestion(asked)) {
+                // Hidden by the stored dismissal; an earlier failure goes with it.
+                PreferenceWrite.Saved -> null
+
+                is PreferenceWrite.Failed -> Dismissal(asked, SuggestionDismissal.Failed)
+            }
+        }
     }
 
     private fun select(key: String, id: String) {
