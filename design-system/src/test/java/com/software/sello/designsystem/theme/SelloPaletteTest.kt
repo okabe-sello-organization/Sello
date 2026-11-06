@@ -45,18 +45,14 @@ class SelloPaletteTest(private val ink: SelloInk, private val dark: Boolean) {
     fun investmentNeighboursDifferInLightnessEvenWhereTheCycleRestarts() {
         assertEquals(c.brand, c.investmentInk(0).fill)
         assertEquals(c.investmentInk(0), c.investmentInk(6))
-        (0..5).forEach { rank ->
-            val here = c.investmentInk(rank).fill
-            val next = c.investmentInk(rank + 1).fill
-            assertTrue("$ink dark=$dark: inks $rank and ${rank + 1}", contrast(here, next) >= 1.7)
-        }
+        val failures = investmentNeighbourFailures(c)
+        assertTrue(failures.joinToString("\n"), failures.isEmpty())
     }
 
     @Test
     fun eachEntryBandStandsApart() {
         // Expense, goal and investment forms are told apart by their band at a glance.
-        val bands = listOf(c.band, c.goalBand, c.investmentBand)
-        assertEquals(3, bands.distinct().size)
+        assertEquals(3, entryBands(c).distinct().size)
         // In light they are the docks' own colours: Aportar's green, Anotar movimiento's ink.
         if (!dark) {
             assertEquals(c.semantic.gain, c.goalBand)
@@ -66,60 +62,7 @@ class SelloPaletteTest(private val ink: SelloInk, private val dark: Boolean) {
 
     @Test
     fun everyReferencePairMeetsItsContrastNeed() {
-        val s = c.semantic
-        val text = 4.5
-        val mark = 3.0
-        val pairs = buildList {
-            listOf(c.desk, c.paper, c.paperAlt, c.paperDim).forEach {
-                add(Triple(c.ink, it, text))
-            }
-            listOf(c.desk, c.paper, c.paperAlt).forEach {
-                add(Triple(c.inkSoft, it, text))
-                add(Triple(c.brand, it, text))
-            }
-            add(Triple(c.onBrand, c.brand, text))
-            add(Triple(c.onBrandSoft, c.brandSoft, text))
-            add(Triple(c.onBand, c.band, text))
-            // The entry forms' bands carry the same title, close and switch as the band.
-            add(Triple(c.onBand, c.goalBand, text))
-            add(Triple(c.onBand, c.investmentBand, text))
-            add(Triple(c.band, c.onBand, text))
-            add(Triple(c.goalBand, c.onBand, text))
-            add(Triple(c.investmentBand, c.onBand, text))
-            // The side of a band's switch not chosen: white on the lighter trough.
-            listOf(c.band, c.goalBand, c.investmentBand).forEach {
-                add(Triple(c.onBand, bandTrough(it, c.onBand), text))
-            }
-            listOf(c.desk, c.paper).forEach {
-                add(Triple(s.gain, it, text))
-                add(Triple(s.loss, it, text))
-                add(Triple(s.warn, it, text))
-                add(Triple(c.outline, it, mark))
-            }
-            add(Triple(c.pastBar, c.paper, mark))
-            add(Triple(s.onGain, s.gain, text))
-            add(Triple(s.onLoss, s.loss, text))
-            // Stamps, slips and the past-month bar: each "on" colour on its own fill.
-            add(Triple(c.onPastBar, c.pastBar, text))
-            add(Triple(c.onPastBarSoft, c.pastBarSoft, text))
-            add(Triple(s.onGainSoft, s.gainSoft, text))
-            add(Triple(s.onLossSoft, s.lossSoft, text))
-            add(Triple(s.gain, s.gainSoft, text))
-            add(Triple(s.loss, s.lossSoft, text))
-            add(Triple(s.warn, s.warnSoft, text))
-            add(Triple(c.inkSoft, c.paperDim, text))
-            add(Triple(c.brand, c.paperDim, text))
-            listOf(c.brandSoft, c.pastBarSoft, s.gainSoft, s.lossSoft, s.warnSoft).forEach {
-                add(Triple(c.ink, it, text))
-            }
-            // Investment inks are drawn on a slip: the percent is written on each fill.
-            (0..5).map(c::investmentInk).forEach { ink ->
-                add(Triple(ink.on, ink.fill, text))
-                listOf(c.paper, c.paperAlt).forEach { add(Triple(ink.fill, it, mark)) }
-            }
-        }
-        val failures = pairs.filter { (fg, bg, need) -> contrast(fg, bg) < need }
-            .map { (fg, bg, need) -> "$ink dark=$dark: $fg on $bg needs $need" }
+        val failures = contrastFailures(c)
         assertTrue(failures.joinToString("\n"), failures.isEmpty())
     }
 
@@ -153,4 +96,75 @@ class SelloPaletteTest(private val ink: SelloInk, private val dark: Boolean) {
             )
         )
     }
+}
+
+/** Expense, goal and investment forms' bands: told apart at a glance. */
+internal fun entryBands(c: SelloColors) = listOf(c.band, c.goalBand, c.investmentBand)
+
+/**
+ * The neighbours in a bar ordered by rank whose fills are too close in lightness, from the
+ * brand through one restart of the cycle.
+ */
+internal fun investmentNeighbourFailures(c: SelloColors): List<String> = (0..5).mapNotNull { rank ->
+    val here = c.investmentInk(rank).fill
+    val next = c.investmentInk(rank + 1).fill
+    "${c.family} dark=${c.isDark}: inks $rank and ${rank + 1}".takeIf { contrast(here, next) < 1.7 }
+}
+
+/** Every reference pair of [c] that misses its contrast need, as readable lines. */
+internal fun contrastFailures(c: SelloColors): List<String> {
+    val s = c.semantic
+    val text = 4.5
+    val mark = 3.0
+    val pairs = buildList {
+        listOf(c.desk, c.paper, c.paperAlt, c.paperDim).forEach {
+            add(Triple(c.ink, it, text))
+        }
+        listOf(c.desk, c.paper, c.paperAlt).forEach {
+            add(Triple(c.inkSoft, it, text))
+            add(Triple(c.brand, it, text))
+        }
+        add(Triple(c.onBrand, c.brand, text))
+        add(Triple(c.onBrandSoft, c.brandSoft, text))
+        add(Triple(c.onBand, c.band, text))
+        // The entry forms' bands carry the same title, close and switch as the band.
+        add(Triple(c.onBand, c.goalBand, text))
+        add(Triple(c.onBand, c.investmentBand, text))
+        add(Triple(c.band, c.onBand, text))
+        add(Triple(c.goalBand, c.onBand, text))
+        add(Triple(c.investmentBand, c.onBand, text))
+        // The side of a band's switch not chosen: white on the lighter trough.
+        listOf(c.band, c.goalBand, c.investmentBand).forEach {
+            add(Triple(c.onBand, bandTrough(it, c.onBand), text))
+        }
+        listOf(c.desk, c.paper).forEach {
+            add(Triple(s.gain, it, text))
+            add(Triple(s.loss, it, text))
+            add(Triple(s.warn, it, text))
+            add(Triple(c.outline, it, mark))
+        }
+        add(Triple(c.pastBar, c.paper, mark))
+        add(Triple(s.onGain, s.gain, text))
+        add(Triple(s.onLoss, s.loss, text))
+        // Stamps, slips and the past-month bar: each "on" colour on its own fill.
+        add(Triple(c.onPastBar, c.pastBar, text))
+        add(Triple(c.onPastBarSoft, c.pastBarSoft, text))
+        add(Triple(s.onGainSoft, s.gainSoft, text))
+        add(Triple(s.onLossSoft, s.lossSoft, text))
+        add(Triple(s.gain, s.gainSoft, text))
+        add(Triple(s.loss, s.lossSoft, text))
+        add(Triple(s.warn, s.warnSoft, text))
+        add(Triple(c.inkSoft, c.paperDim, text))
+        add(Triple(c.brand, c.paperDim, text))
+        listOf(c.brandSoft, c.pastBarSoft, s.gainSoft, s.lossSoft, s.warnSoft).forEach {
+            add(Triple(c.ink, it, text))
+        }
+        // Investment inks are drawn on a slip: the percent is written on each fill.
+        (0..5).map(c::investmentInk).forEach { ink ->
+            add(Triple(ink.on, ink.fill, text))
+            listOf(c.paper, c.paperAlt).forEach { add(Triple(ink.fill, it, mark)) }
+        }
+    }
+    return pairs.filter { (fg, bg, need) -> contrast(fg, bg) < need }
+        .map { (fg, bg, need) -> "${c.family} dark=${c.isDark}: $fg on $bg needs $need" }
 }
