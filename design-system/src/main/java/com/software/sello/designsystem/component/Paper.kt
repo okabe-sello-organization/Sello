@@ -610,8 +610,9 @@ fun FactLine(text: AnnotatedString, modifier: Modifier = Modifier) {
 }
 
 /**
- * A quiet line at a slip's foot: [icon] and [text]. With [onClick] it opens something and
- * ends in a chevron; without, it only says something.
+ * A quiet line at a slip's foot: [icon] and [text]. With [onClick] it opens something,
+ * ends in a chevron and is at least a touch target tall; without, it only says something
+ * and is as tall as its text.
  */
 @Composable
 fun Footnote(
@@ -620,16 +621,13 @@ fun Footnote(
     modifier: Modifier = Modifier,
     icon: SelloIcon = SelloIcon.Event
 ) {
+    val target = if (onClick == null) {
+        Modifier
+    } else {
+        Modifier.heightIn(min = 48.dp).clickable(role = Role.Button, onClick = onClick)
+    }
     Row(
-        modifier.fillMaxWidth().heightIn(min = 48.dp).then(
-            if (onClick ==
-                null
-            ) {
-                Modifier
-            } else {
-                Modifier.clickable(role = Role.Button, onClick = onClick)
-            }
-        ),
+        modifier.fillMaxWidth().then(target),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {

@@ -32,6 +32,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.Role
@@ -182,9 +183,10 @@ internal fun ReachedRow(
             listOf(name to nameStyle, message to messageStyle, actionLabel to actionStyle)
                 .map { (text, style) -> measurer.measure(text, style).size.width.toDp() }
         }
-        // Start padding, icon and gaps, the wider text, the action and its padding, end padding.
+        // Start padding, icon and gaps, the wider text, the action with its padding and room
+        // for its busy spinner (so the row never changes shape while it saves), end padding.
         val inline = 14.dp + 22.dp + 10.dp + maxOf(widths[0], widths[1]) + 10.dp +
-            widths[2] + 28.dp + 6.dp <= maxWidth
+            widths[2] + 28.dp + BusySpinnerRoom + 6.dp <= maxWidth
         val shape = if (inline) CircleShape else SelloTheme.shapes.control
         val texts = @Composable { textModifier: Modifier ->
             Column(textModifier.semantics(mergeDescendants = true) {}) {
@@ -202,7 +204,7 @@ internal fun ReachedRow(
             Icon(SelloIcon.Check.painter(), null, Modifier.size(22.dp), tint = colors.semantic.gain)
         }
         val action = @Composable {
-            // Narrow side padding, so the name keeps its room; busy, it spins.
+            // Narrow side padding, so the name keeps more room; busy, a spinner leads the label.
             SelloButton(
                 text = actionLabel,
                 onClick = onComplete,
@@ -310,7 +312,11 @@ internal fun GoalCard(
                     .background(colors.semantic.gain)
             )
         }
-        MilestoneRow(places, Modifier.padding(top = SelloTheme.spacing.md), evenly = true)
+        MilestoneRow(
+            places,
+            Modifier.padding(top = SelloTheme.spacing.md).testTag(GOAL_CARD_STAMPS_TAG),
+            evenly = true
+        )
     }
 }
 
@@ -378,3 +384,8 @@ internal fun GoalPinPill(
         Text(label, color = colors.onBand, fontWeight = FontWeight.W800)
     }
 }
+
+/** SelloButton's busy spinner and the gap after it: 20 dp + 8 dp. */
+private val BusySpinnerRoom = 28.dp
+
+const val GOAL_CARD_STAMPS_TAG = "goal.card.stamps"

@@ -304,7 +304,8 @@ private fun Warning(state: StartupFailureState, onAction: (StartupFailureAction)
             .testTag(STARTUP_WARNING_TAG)
     ) {
         RestoreHeading(stringResource(R.string.startup_start_over_title))
-        RestoreBody(stringResource(R.string.startup_start_over_body))
+        // The warning of the step that deletes data keeps full ink.
+        RestoreBody(stringResource(R.string.startup_start_over_body), soft = false)
         RestoreBody(stringResource(R.string.startup_failure_newer_hint))
         Spacer(Modifier.height(SelloTheme.spacing.md))
         FormField(

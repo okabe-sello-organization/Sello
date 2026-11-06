@@ -325,7 +325,11 @@ private fun CategoryHistory(categoryId: String, figures: DetailInsights, dates: 
             val carry = entry.carry
             if (entry.limit != null && carry != null) {
                 // Never the capacity alone: base and carry beside it (CP27).
-                CarryBreakdownSection(carry, footnote = null)
+                CarryBreakdownSection(
+                    carry,
+                    footnote = null,
+                    tag = CATEGORY_DETAIL_HISTORY_CARRY_TAG
+                )
             } else {
                 entry.limit?.let { value ->
                     LeaderLine(stringResource(R.string.category_detail_limit)) { MoneyText(value) }
@@ -363,3 +367,5 @@ private fun DetailHeading(text: String) = Text(
 )
 
 private val DetailLocale = Locale.forLanguageTag("es-CO")
+
+const val CATEGORY_DETAIL_HISTORY_CARRY_TAG = "detail:history-carry"

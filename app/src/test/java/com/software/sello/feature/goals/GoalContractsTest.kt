@@ -74,17 +74,15 @@ class GoalContractsTest {
                     .getUnclippedBoundsInRoot()
                 (label.left + label.right) / 2
             }
-            val meta = rule.onNodeWithText(
-                "Meta",
-                useUnmergedTree = true
-            ).getUnclippedBoundsInRoot()
+            val stamps = rule.onNodeWithTag(GOAL_CARD_STAMPS_TAG, useUnmergedTree = true)
+                .getUnclippedBoundsInRoot()
             // MilestoneRow's evenly: each place centred in an equal share of the width, the
-            // last one's share ending at the card's trailing padding; the teeth follow closely,
-            // after the row's own 8 dp under the stamps.
+            // last one's share ending at the card's trailing padding; the teeth follow the row
+            // closely.
             val share = centres[1] - centres[0]
             centres.zipWithNext().forEach { (a, b) -> assertTrue((b - a - share).value in -1f..1f) }
             assertTrue(card.right - (centres.last() + share / 2) < 40.dp)
-            assertTrue(card.bottom - meta.bottom < 52.dp)
+            assertTrue(card.bottom - stamps.bottom < 44.dp)
         }
     }
 }

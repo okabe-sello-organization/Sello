@@ -199,7 +199,7 @@
 <article class="component" id="c-Footnote">
 <h3><code>Footnote</code> <span class="src"><code>component/Paper.kt:617</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>A quiet line at a slip's foot: <code>icon</code> and <code>text</code>. With <code>onClick</code> it opens something and ends in a chevron; without, it only says something. From the code: at least 48 dp tall, an 18 dp brand icon (default <code>Event</code>), <code>bodySmall</code> soft text, the chevron in <code>outline</code>.</dd>
+<dt>Purpose</dt><dd>A quiet line at a slip's foot: <code>icon</code> and <code>text</code>. With <code>onClick</code> it opens something, ends in a chevron and is at least 48 dp tall; without, it only says something and is as tall as its text. From the code: an 18 dp brand icon (default <code>Event</code>), <code>bodySmall</code> soft text, the chevron in <code>outline</code>.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/investments.html">investments · 2</a> <a class="tag" href="features/recibo.html">recibo · 1</a></dd>
 </dl>
 <pre><code>fun Footnote(
@@ -1249,11 +1249,11 @@ fun StatusSlip(
 <article class="component" id="c-RestoreBody">
 <h3><code>RestoreBody</code> <span class="src"><code>component/Restore.kt:38</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>A paragraph of a restore or reset slip, in soft ink under what comes before it.</dd>
+<dt>Purpose</dt><dd>A paragraph of a restore or reset slip, in soft ink under what comes before it. With <code>soft = false</code> it is in full ink, for the warning of a step that deletes data (start-up's "Empezar de cero").</dd>
 <dt>Inputs</dt><dd>The paragraph's text.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 3</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 4</span> <span class="muted">The legacy report.</span> <a class="tag" href="features/reset.html">reset · 5</a> <a class="tag" href="features/startup.html">startup · 6</a> <span class="muted">Inside the design system: <code>Restore.kt</code>.</span></dd>
 </dl>
-<pre><code>fun RestoreBody(text: String)</code></pre>
+<pre><code>fun RestoreBody(text: String, soft: Boolean = true)</code></pre>
 
 <p class="muted">Also visible in screen baselines: <code>backup-restore-pending</code>.</p>
 <figure data-shot="backup-restore-pending" data-module="app" data-caption="Seen in Respaldo: the paragraphs under the heading"></figure>
