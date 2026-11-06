@@ -41,23 +41,6 @@ data class CreateCategory(
     val limit: BudgetLimit
 ) : CategoryCommand
 
-/** The identity, history, amounts and limits stay; only the shown name changes. */
-data class RenameCategory(
-    override val operationId: OperationId,
-    override val generation: Long,
-    override val categoryId: CategoryId,
-    override val expectedVersion: Long,
-    val name: CategoryName
-) : CategoryEdit
-
-data class ChangeCategoryIcon(
-    override val operationId: OperationId,
-    override val generation: Long,
-    override val categoryId: CategoryId,
-    override val expectedVersion: Long,
-    val icon: IconKey
-) : CategoryEdit
-
 /**
  * Stops new expenses in the category. Nothing is deleted: this month keeps its
  * limit, and the category gets no automatic budget from next month while archived.
@@ -108,29 +91,6 @@ data class SetMonthLimit(
     val limit: BudgetLimit,
     val confirmedCarryIn: Money? = null,
     val confirmation: CorrectionConfirmation? = null
-) : CategoryEdit
-
-/**
- * Turns carry on from the current financial month, which counts whole from its first day
- * with a carry-in of 0 (ADR 0020 CP1–CP4). Earlier months never count.
- */
-data class EnableCarry(
-    override val operationId: OperationId,
-    override val generation: Long,
-    override val categoryId: CategoryId,
-    override val expectedVersion: Long
-) : CategoryEdit
-
-/**
- * Turns carry off in the current financial month, dropping its carry-in (CP9, CP10). While
- * that is not zero, [confirmedCarryIn] must be exactly it.
- */
-data class DisableCarry(
-    override val operationId: OperationId,
-    override val generation: Long,
-    override val categoryId: CategoryId,
-    override val expectedVersion: Long,
-    val confirmedCarryIn: Money? = null
 ) : CategoryEdit
 
 /** A limit the category form changes: from [EditCategory.month] onwards, or of one past month. */

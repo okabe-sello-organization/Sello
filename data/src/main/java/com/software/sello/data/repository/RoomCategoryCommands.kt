@@ -33,7 +33,6 @@ import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CategoryEdit
 import com.software.sello.domain.port.CategoryRejection
-import com.software.sello.domain.port.ChangeCategoryIcon
 import com.software.sello.domain.port.CommandOutcome.Committed
 import com.software.sello.domain.port.CommandOutcome.OutcomeUnknown
 import com.software.sello.domain.port.CommandOutcome.Rejected
@@ -42,14 +41,11 @@ import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CommittedCategoryChange
 import com.software.sello.domain.port.CreateCategory
 import com.software.sello.domain.port.DeleteCategory
-import com.software.sello.domain.port.DisableCarry
 import com.software.sello.domain.port.EditCategory
-import com.software.sello.domain.port.EnableCarry
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.LimitEdit
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.RemovalPreviewFailure
-import com.software.sello.domain.port.RenameCategory
 import com.software.sello.domain.port.SetDefaultLimit
 import com.software.sello.domain.port.SetMonthLimit
 import com.software.sello.domain.port.UnarchiveCategory
@@ -207,16 +203,6 @@ class RoomCategoryCommands(
         val limits = database.limitDao()
         val carry = CategoryCarry(database, id, month, clock.today.value.date)
         val changed = when (command) {
-            is RenameCategory -> {
-                val holder = database.categoryDao().byNameKey(command.name.uniquenessKey)
-                if (holder != null && holder.id != id.value) {
-                    return refused(Specific(CategoryRejection.NameTaken))
-                }
-                next.copy(name = command.name)
-            }
-
-            is ChangeCategoryIcon -> next.copy(icon = command.icon)
-
             is ArchiveCategory -> {
                 if (category.archived) return refused(Specific(CategoryRejection.AlreadyArchived))
                 // CP11: archiving drops the balance carried into this month.
@@ -284,23 +270,6 @@ class RoomCategoryCommands(
                 next
             }
 
-            is EnableCarry -> {
-                val chains = when (val decided = carry.enable(category.archived)) {
-                    is CarryDecision.Chains -> decided.chains
-                    is CarryDecision.Refused -> return refused(decided.reason)
-                    CarryDecision.Unchanged -> error("Turning carry on always decides the chains")
-                }
-                carry.write(chains)
-                next
-            }
-
-            is DisableCarry -> {
-                val chains = carry.drop(command.confirmedCarryIn).chainsOr { return it }
-                    ?: return refused(Specific(CategoryRejection.NotCarrying))
-                carry.write(chains)
-                next
-            }
-
             is EditCategory -> when (
                 val edited = editAll(
                     command,
@@ -363,8 +332,13 @@ class RoomCategoryCommands(
         if (limit is LimitEdit.FromThisMonth && category.archived) {
             return refuse(CategoryRejection.CategoryArchived)
         }
-        if (limit is LimitEdit.OfMonth && !EffectiveDates.isStorable(limit.month)) {
-            return refuse(CategoryRejection.InvalidMonth)
+        if (limit is LimitEdit.OfMonth) {
+            // Storage's own month decides, as for SetMonthLimit: a clock moved back must not
+            // let a month that has not begun here take a limit (CP24).
+            if (limit.month >= month) return refuse(CategoryRejection.FutureMonth(month))
+            if (!EffectiveDates.isStorable(limit.month)) {
+                return refuse(CategoryRejection.InvalidMonth)
+            }
         }
         val carry = CategoryCarry(database, id, month, clock.today.value.date)
         // CP9–CP11: turning off and an unlimited limit from this month both drop the

@@ -153,6 +153,8 @@ internal fun CarrySwitch(state: CategoryEditorState, onAction: (CategoryEditorAc
                         modifier = Modifier.testTag(EDITOR_CARRY_PENDING_TAG)
                     )
                 }
+                // A save sent from here can still be refused for carry: said here too.
+                CarryMessages(state)
             }
 
             else -> {

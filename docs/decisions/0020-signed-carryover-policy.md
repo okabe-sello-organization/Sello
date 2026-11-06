@@ -217,7 +217,9 @@ net flow and never in the 1–999.999.999.999 transaction range, which it does n
   sets, and refused once the month it was made for has ended. The drop confirmation is
   destructive; its figures are read from the month when the switch is turned off, and
   only the confirmed carry-in `K` binds: if it moved before saving, nothing changes and
-  the person is asked again. `EnableCarry` and `DisableCarry` stay for other callers.
+  the person is asked again. `EnableCarry`, `DisableCarry`, `RenameCategory` and
+  `ChangeCategoryIcon` are removed, as nothing sends them any more; receipts they stored
+  still read, and the sandbox turns carry on and off through `EditCategory` too.
 
 ## Presentation wording (Proposed)
 

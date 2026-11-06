@@ -9,7 +9,6 @@ import com.software.sello.domain.port.ArchiveCategory
 import com.software.sello.domain.port.CategoryCommand
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryRejection
-import com.software.sello.domain.port.ChangeCategoryIcon
 import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandOutcome.Committed
 import com.software.sello.domain.port.CommandOutcome.Rejected
@@ -17,7 +16,6 @@ import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseRejection
-import com.software.sello.domain.port.RenameCategory
 import com.software.sello.domain.port.SetDefaultLimit
 import com.software.sello.domain.port.SetMonthLimit
 import com.software.sello.domain.port.UnarchiveCategory
@@ -67,7 +65,7 @@ class CategoryCommandContractTest {
         ledger.categories.submit(ledger.createCategory("Mercado"))
     }
 
-    private fun rename(version: Long, name: String, category: Int = 100) = RenameCategory(
+    private fun rename(version: Long, name: String, category: Int = 100) = ledger.renamed(
         ledger.operation(),
         1,
         ledger.categoryId(category),
@@ -84,8 +82,8 @@ class CategoryCommandContractTest {
     private fun everyEdit(version: Long, category: Int = 100): List<CategoryCommand> {
         val id = ledger.categoryId(category)
         return listOf(
-            RenameCategory(ledger.operation(), 1, id, version, ledger.name("Otro nombre")),
-            ChangeCategoryIcon(ledger.operation(), 1, id, version, ledger.icon("home")),
+            ledger.renamed(ledger.operation(), 1, id, version, ledger.name("Otro nombre")),
+            ledger.withIcon(ledger.operation(), 1, id, version, ledger.icon("home")),
             ArchiveCategory(ledger.operation(), 1, id, version),
             UnarchiveCategory(ledger.operation(), 1, id, version),
             SetDefaultLimit(ledger.operation(), 1, id, version, finite(50_000)),
@@ -181,11 +179,11 @@ class CategoryCommandContractTest {
         val operation = ledger.operation()
 
         val outcome = ledger.categories.submit(
-            ChangeCategoryIcon(operation, 1, ledger.categoryId(100), 1, ledger.icon("storefront"))
+            ledger.withIcon(operation, 1, ledger.categoryId(100), 1, ledger.icon("storefront"))
         )
 
         assertEquals(
-            Committed(ledger.change(operation, OperationKind.ChangeCategoryIcon, 100, 2), false),
+            Committed(ledger.change(operation, OperationKind.EditCategory, 100, 2), false),
             outcome
         )
         assertEquals(listOf("${uuid(100)}|Mercado|mercado|storefront|0|2"), categoryRows())

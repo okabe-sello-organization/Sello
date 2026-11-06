@@ -16,7 +16,6 @@ import com.software.sello.domain.port.CommandOutcome.Rejected
 import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.EditCategory
-import com.software.sello.domain.port.EnableCarry
 import com.software.sello.domain.port.LimitEdit
 import java.time.YearMonth
 import kotlin.coroutines.cancellation.CancellationException
@@ -155,7 +154,7 @@ class EditCategoryContractTest {
         val before = state()
 
         // On its own, carry cannot start on an unlimited month (CP3).
-        val alone = ledger.categories.submit(EnableCarry(ledger.operation(), 1, id, 1))
+        val alone = ledger.categories.submit(ledger.carryOn(ledger.operation(), 1, id, 1))
         val withUnlimited = ledger.categories.submit(
             edit(
                 ocio,
@@ -369,6 +368,97 @@ class EditCategoryContractTest {
             val renamed = ledger.categories.submit(edit(comida, 1, "2027-01", name = "Mercado"))
             assertTrue("$renamed", renamed is Committed)
         }
+
+    /** Review R1: storage's own month decides, even when the clock was moved back (CP24). */
+    @Test
+    fun aPastMonthsLimitIsRefusedForAMonthStorageHasNotFinished() = runBlocking {
+        val comida = histories.category("Comida", 100_000, "2027-01-05")
+        val before = state()
+
+        // The form was in mar; storage's clock went back to ene.
+        val ahead = ledger.categories.submit(
+            edit(comida, 1, "2027-03", limit = LimitEdit.OfMonth(month("2027-02"), finite(50_000)))
+        )
+        val current = ledger.categories.submit(
+            edit(comida, 1, "2027-02", limit = LimitEdit.OfMonth(month("2027-01"), finite(50_000)))
+        )
+        val unchanged = state()
+        ledger.goTo("2027-03-01")
+        val past = ledger.categories.submit(
+            edit(comida, 1, "2027-03", limit = LimitEdit.OfMonth(month("2027-02"), finite(50_000)))
+        )
+
+        val future = Rejected(Specific(CategoryRejection.FutureMonth(month("2027-01"))))
+        assertEquals(listOf(future, future), listOf(ahead, current))
+        assertEquals(before, unchanged)
+        assertTrue("$past", past is Committed)
+        assertEquals(
+            listOf("${uuid(comida)}|2027-02|finite|50000"),
+            ledger.rows("month_limit", "category_id", "month", "kind", "limit_minor")
+        )
+    }
+
+    /**
+     * Review R3, SC01: ene's limit corrected from 100.000 to 120.000 in abr moves every
+     * later month of the chain by +20.000 (CP20, CP21). Refused until its list is
+     * confirmed, with the name in the same save left unwritten; then saved whole.
+     * Carry-in by month, worked out by hand with K(m+1) = B(m) + K(m) − S(m):
+     * before ene 0, feb 80.000, mar 110.000, abr −40.000;
+     * after  ene 0, feb 100.000, mar 130.000, abr −20.000.
+     */
+    @Test
+    fun aPastChainMonthsLimitIsSavedOnlyOnceItsLaterMonthsWereConfirmed() = runBlocking {
+        histories.sc01()
+        val comida = 100
+        val before = state()
+        val carriedBefore = ledger.carry.history(ledger.categoryId(comida), month("2027-04"))
+            .valueOrFail().replay.months.map { it.carryIn.minorUnits }
+        val command = edit(
+            comida,
+            version = 2,
+            month = "2027-04",
+            name = "Mercado",
+            limit = LimitEdit.OfMonth(month("2027-01"), finite(120_000))
+        )
+
+        val refused = ledger.categories.submit(command)
+        val unchanged = state()
+        val asked = ((refused as Rejected).reason as Specific).reason
+            as CategoryRejection.CorrectionUnconfirmed
+        val confirmed = command.copy(
+            operationId = ledger.operation(),
+            confirmation = asked.confirmation
+        )
+        val saved = ledger.categories.submit(confirmed)
+
+        assertEquals(listOf(0L, 80_000L, 110_000L, -40_000L), carriedBefore)
+        assertEquals(before, unchanged)
+        assertEquals(
+            listOf(cop(20_000)),
+            asked.correction.months.map { it.capacityChange }.distinct()
+        )
+        assertTrue(asked.correction.months.any { it.month == month("2027-02") })
+        assertEquals(
+            Committed(
+                ledger.change(confirmed.operationId, OperationKind.EditCategory, comida, 6),
+                false
+            ),
+            saved
+        )
+        assertEquals(
+            listOf("${uuid(comida)}|2027-01|finite|120000"),
+            ledger.rows("month_limit", "category_id", "month", "kind", "limit_minor")
+        )
+        assertEquals(
+            listOf("${uuid(comida)}|Mercado|shopping_cart|0|3"),
+            ledger.rows("category", "id", "name", "icon", "archived", "version")
+        )
+        assertEquals(
+            listOf(0L, 100_000L, 130_000L, -20_000L),
+            ledger.carry.history(ledger.categoryId(comida), month("2027-04"))
+                .valueOrFail().replay.months.map { it.carryIn.minorUnits }
+        )
+    }
 
     @Test
     fun aFailureAfterTheLimitAndChainWereWrittenRollsEveryPartBack() = runBlocking {

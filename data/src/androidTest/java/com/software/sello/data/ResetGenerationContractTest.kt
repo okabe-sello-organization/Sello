@@ -15,8 +15,6 @@ import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CreateIncome
 import com.software.sello.domain.port.DeleteExpense
-import com.software.sello.domain.port.DisableCarry
-import com.software.sello.domain.port.EnableCarry
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseRejection
 import com.software.sello.domain.port.PreferenceFailure
@@ -326,14 +324,14 @@ class ResetGenerationContractTest {
     fun anEraseRemovesEveryCarryChainAndFencesCarryCommandsPreparedBefore() = runBlocking {
         currentHistory()
         val enabled = ledger.categories.submit(
-            EnableCarry(ledger.operation(), 1, ledger.categoryId(100), 1)
+            ledger.carryOn(ledger.operation(), 1, ledger.categoryId(100), 1)
         )
         assertTrue("$enabled", enabled is CommandOutcome.Committed)
         assertEquals(listOf("${uuid(100)}|2026-10|null"), ledger.chainRows())
 
         resets().reset(preview(), ledger.operation())
         val prepared = ledger.categories.submit(
-            DisableCarry(ledger.operation(), 1, ledger.categoryId(100), 2)
+            ledger.carryOff(ledger.operation(), 1, ledger.categoryId(100), 2)
         )
 
         assertEquals(emptyList<String>(), ledger.chainRows())

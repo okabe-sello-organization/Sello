@@ -16,7 +16,6 @@ import com.software.sello.domain.port.ArchiveCategory
 import com.software.sello.domain.port.CarrySetting
 import com.software.sello.domain.port.CategoryCommand
 import com.software.sello.domain.port.CategoryEdit
-import com.software.sello.domain.port.ChangeCategoryIcon
 import com.software.sello.domain.port.ChangeGoalTarget
 import com.software.sello.domain.port.ChangeSchedule
 import com.software.sello.domain.port.CompleteGoal
@@ -37,7 +36,6 @@ import com.software.sello.domain.port.DeleteIncome
 import com.software.sello.domain.port.DeleteInvestment
 import com.software.sello.domain.port.DeleteInvestmentMovement
 import com.software.sello.domain.port.DeleteSchedule
-import com.software.sello.domain.port.DisableCarry
 import com.software.sello.domain.port.Disposal
 import com.software.sello.domain.port.EditCategory
 import com.software.sello.domain.port.EditExpense
@@ -46,7 +44,6 @@ import com.software.sello.domain.port.EditGoalMovement
 import com.software.sello.domain.port.EditIncome
 import com.software.sello.domain.port.EditInvestment
 import com.software.sello.domain.port.EditInvestmentMovement
-import com.software.sello.domain.port.EnableCarry
 import com.software.sello.domain.port.GoalCommand
 import com.software.sello.domain.port.GoalEdit
 import com.software.sello.domain.port.InvestmentCommand
@@ -58,7 +55,6 @@ import com.software.sello.domain.port.RecordGoalMovements
 import com.software.sello.domain.port.RecordInvestmentMovement
 import com.software.sello.domain.port.RecordInvestmentMovements
 import com.software.sello.domain.port.RemovalPreview
-import com.software.sello.domain.port.RenameCategory
 import com.software.sello.domain.port.ReplaceStar
 import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.RestoreGoalMovement
@@ -244,14 +240,10 @@ internal fun inputDigest(command: CreateIncomes): String = digest(
 internal val CategoryCommand.kind: OperationKind
     get() = when (this) {
         is CreateCategory -> OperationKind.CreateCategory
-        is RenameCategory -> OperationKind.RenameCategory
-        is ChangeCategoryIcon -> OperationKind.ChangeCategoryIcon
         is ArchiveCategory -> OperationKind.ArchiveCategory
         is UnarchiveCategory -> OperationKind.UnarchiveCategory
         is SetDefaultLimit -> OperationKind.SetDefaultLimit
         is SetMonthLimit -> OperationKind.SetMonthLimit
-        is EnableCarry -> OperationKind.EnableCarry
-        is DisableCarry -> OperationKind.DisableCarry
         is DeleteCategory -> OperationKind.DeleteCategory
         is EditCategory -> OperationKind.EditCategory
     }
@@ -264,11 +256,7 @@ internal fun inputDigest(command: CategoryCommand): String {
     val change = when (command) {
         is CreateCategory -> listOf(command.name.value, command.icon.value) + command.limit.fields
 
-        is RenameCategory -> listOf(command.name.value)
-
-        is ChangeCategoryIcon -> listOf(command.icon.value)
-
-        is ArchiveCategory, is UnarchiveCategory, is EnableCarry -> emptyList()
+        is ArchiveCategory, is UnarchiveCategory -> emptyList()
 
         is SetDefaultLimit -> command.limit.fields
 
@@ -279,10 +267,6 @@ internal fun inputDigest(command: CategoryCommand): String {
         is DeleteCategory ->
             command.disposal.fields + command.confirmed.fields +
                 (confirmation(null, command.confirmation) ?: listOf("0", "", "", "0", "", ""))
-
-        // A new kind: its confirmation is always part of it, present or not.
-        is DisableCarry -> confirmation(command.confirmedCarryIn, null)
-            ?: listOf("0", "", "", "0", "", "")
 
         // Every part in a slot of its own, present or not, so none can be read as another.
         is EditCategory -> listOf(

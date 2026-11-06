@@ -40,13 +40,11 @@ import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.DeleteCategory
 import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.Disposal
-import com.software.sello.domain.port.EnableCarry
 import com.software.sello.domain.port.PauseSchedule
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.RemovalPreview
 import com.software.sello.domain.port.RemovalPreviewFailure
-import com.software.sello.domain.port.RenameCategory
 import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.SetMonthLimit
 import com.software.sello.domain.port.TargetPreview
@@ -358,9 +356,9 @@ class CategoryRemovalContractTest {
             )
         )
         committed(
-            ledger.categories.submit(EnableCarry(ledger.operation(), 1, cafe, versionOf(100)))
+            ledger.categories.submit(ledger.carryOn(ledger.operation(), 1, cafe, versionOf(100)))
         )
-        committed(ledger.categories.submit(EnableCarry(ledger.operation(), 1, ocio, 1)))
+        committed(ledger.categories.submit(ledger.carryOn(ledger.operation(), 1, ocio, 1)))
         committed(
             ledger.categories.submit(
                 SetMonthLimit(
@@ -583,7 +581,7 @@ class CategoryRemovalContractTest {
         history()
         committed(
             ledger.categories.submit(
-                RenameCategory(ledger.operation(), 1, cafe, 1, ledger.name("Cafés"))
+                ledger.renamed(ledger.operation(), 1, cafe, 1, ledger.name("Cafés"))
             )
         )
         val before = state()
@@ -755,7 +753,7 @@ class CategoryRemovalContractTest {
                 DeleteExpense(ledger.operation(), 1, expenseIdOf(ledger.nextRecord - 1), 1)
             )
         )
-        committed(ledger.categories.submit(EnableCarry(ledger.operation(), 1, cafe, 1)))
+        committed(ledger.categories.submit(ledger.carryOn(ledger.operation(), 1, cafe, 1)))
         // The database itself refuses the category's deletion, after everything else moved.
         ledger.database.openHelper.writableDatabase.execSQL(
             "CREATE TRIGGER refuse_category_delete BEFORE DELETE ON category " +
@@ -861,7 +859,7 @@ class CategoryRemovalContractTest {
     @Test
     fun aBackupAfterEitherDeletionHoldsNoReferenceToTheCategoryAndReadsBack() = runBlocking {
         history()
-        committed(ledger.categories.submit(EnableCarry(ledger.operation(), 1, cafe, 1)))
+        committed(ledger.categories.submit(ledger.carryOn(ledger.operation(), 1, cafe, 1)))
         committed(
             ledger.categories.submit(deleteCafe(Disposal.MoveTo(comida), cafePreview(comidaTarget)))
         )

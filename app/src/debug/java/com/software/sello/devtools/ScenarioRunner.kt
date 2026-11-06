@@ -48,6 +48,7 @@ import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.model.UsdRate
 import com.software.sello.domain.port.ArchiveCategory
+import com.software.sello.domain.port.CarrySetting
 import com.software.sello.domain.port.CategoryCommand
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
@@ -63,9 +64,8 @@ import com.software.sello.domain.port.CreateInvestment
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.DatedUsdRate
 import com.software.sello.domain.port.DeleteExpense as DeleteExpenseCommand
-import com.software.sello.domain.port.DisableCarry as DisableCarryCommand
+import com.software.sello.domain.port.EditCategory
 import com.software.sello.domain.port.EditExpense as EditExpenseCommand
-import com.software.sello.domain.port.EnableCarry as EnableCarryCommand
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseCommands
 import com.software.sello.domain.port.ExpenseRejection
@@ -91,6 +91,7 @@ import com.software.sello.domain.port.StarGoal
 import com.software.sello.domain.usecase.CatchUpNow
 import com.software.sello.domain.usecase.CatchUpStop
 import java.time.LocalDate
+import java.time.YearMonth
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -330,17 +331,27 @@ class ScenarioRunner(
                 )
             }
 
+            // Through the category form's one save (SELLO-188), in today's month.
             is EnableCarry -> categoryChange(loaded, step.category) { id ->
-                EnableCarryCommand(operation, generation, id, step.version)
-            }
-
-            is DisableCarry -> categoryChange(loaded, step.category) { id ->
-                DisableCarryCommand(
+                EditCategory(
                     operation,
                     generation,
                     id,
                     step.version,
-                    carryIn(step.confirmedCarryIn)
+                    YearMonth.from(today),
+                    carry = CarrySetting.On
+                )
+            }
+
+            is DisableCarry -> categoryChange(loaded, step.category) { id ->
+                EditCategory(
+                    operation,
+                    generation,
+                    id,
+                    step.version,
+                    YearMonth.from(today),
+                    carry = CarrySetting.Off,
+                    confirmedCarryIn = carryIn(step.confirmedCarryIn)
                 )
             }
 

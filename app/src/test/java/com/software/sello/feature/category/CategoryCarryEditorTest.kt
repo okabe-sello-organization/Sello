@@ -542,6 +542,41 @@ class CategoryCarryEditorTest {
         assertEquals(true, form.now.carryPending?.on)
     }
 
+    /** Review R6: carry already as asked refuses the whole save; the rest is said unsaved. */
+    @Test
+    fun carryAlreadyAsAskedSaysTheOtherChangesWereNotSaved() {
+        publish(carrying = false)
+        commands.answers +=
+            rejected(CategoryRejection.CarryRefused(CarryEnableRefusal.AlreadyOn))
+        val form = form()
+        form.onAction(CategoryEditorAction.NameChanged("Mercado"))
+        form.turnOn()
+
+        form.onAction(CategoryEditorAction.Submit)
+
+        assertEquals(SaveError.NotSaved, form.now.saveError)
+        assertEquals("Mercado", form.now.name)
+        assertNull(form.now.result)
+        assertEquals(false, form.now.busy)
+    }
+
+    @Test
+    fun carryAlreadyAsAskedWithNothingElseToSaveSaysNothingFailed() {
+        publish(carrying = false)
+        commands.answers +=
+            rejected(CategoryRejection.CarryRefused(CarryEnableRefusal.AlreadyOn))
+        val form = form()
+        form.turnOn()
+        // Storage already carries: the reread card shows it.
+        publish(carrying = true)
+
+        form.onAction(CategoryEditorAction.Submit)
+
+        assertNull(form.now.saveError)
+        assertNull(form.now.carryPending)
+        assertEquals(false, form.now.changed)
+    }
+
     @Test
     fun sc20ArchivingWithABalanceAsksForTheDropAndArchivesWithIt() {
         publish(carrying = true)

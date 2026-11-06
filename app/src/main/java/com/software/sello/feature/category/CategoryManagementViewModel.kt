@@ -455,13 +455,26 @@ class CategoryManagementViewModel(
     /** The balance the draft agreed to forget when turning carry off. */
     private fun draftDrop(): Money? = typed.drop.toLongOrNull()?.let(Money::cop)
 
+    /**
+     * Carry is already as the draft asked: the card is read again to say so. Nothing of
+     * the save was stored, so with other changes still waiting the form says that too.
+     */
     private fun carryReread() {
+        val others = original?.let { stored ->
+            parts(mutable.value, stored).any { it != EditPart.Carry }
+        } ?: false
         viewModelScope.launch {
             pendingDrop = null
             confirmedDrop = null
             dropReason = null
             readCarry()
-            render { it.copy(busy = false, carryQuestion = null) }
+            render {
+                it.copy(
+                    busy = false,
+                    carryQuestion = null,
+                    saveError = SaveError.NotSaved.takeIf { others }
+                )
+            }
         }
     }
 
@@ -1038,13 +1051,6 @@ class CategoryManagementViewModel(
 
             Settled.NotCommitted -> false
         }
-        if (step == STEP_CARRY) {
-            // Whatever it was, the card says what the month is now.
-            if (!load(keepOriginal = false, resetDraft = false)) {
-                return render { it.copy(busy = false) }
-            }
-            return render { it.copy(busy = false, saveError = null) }
-        }
         if (committed && step != STEP_EDIT) return archived(unarchived = step == STEP_UNARCHIVE)
         // What the save asked for, before reading again settles the draft against storage.
         val carry = carryChange()
@@ -1156,8 +1162,6 @@ class CategoryManagementViewModel(
         private const val STEP_ARCHIVE = "archive"
         private const val STEP_UNARCHIVE = "unarchive"
 
-        /** A step of the carry switch's own command, before SELLO-188: still recovered. */
-        private const val STEP_CARRY = "carry"
         private const val CARRY_ON = "on"
         private const val CARRY_OFF = "off"
     }

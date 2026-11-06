@@ -20,11 +20,12 @@ import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.PastVerdict
 import com.software.sello.domain.model.TransactionAmount
+import com.software.sello.domain.port.CarrySetting
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommittedExpense
 import com.software.sello.domain.port.CreateExpense
-import com.software.sello.domain.port.EnableCarry
+import com.software.sello.domain.port.EditCategory
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.FinancialDay
@@ -240,7 +241,16 @@ class CarryoverMigrationTest {
         )
         val replayed = expenses.create(recordedInEne)
         val enabled = RoomCategoryCommands(database, { audit }, clock, { uuid(99) })
-            .submit(EnableCarry(operationIdOf(30), 4, categoryIdOf(1), 3))
+            .submit(
+                EditCategory(
+                    operationIdOf(30),
+                    4,
+                    categoryIdOf(1),
+                    3,
+                    YearMonth.of(2027, 4),
+                    carry = CarrySetting.On
+                )
+            )
         val afterEnabling = snapshots.read(YearMonth.of(2027, 4)).valueOrFail()
         val chains = database.openHelper.readableDatabase
             .query("SELECT category_id, start_month, end_month FROM carry_chain").use {

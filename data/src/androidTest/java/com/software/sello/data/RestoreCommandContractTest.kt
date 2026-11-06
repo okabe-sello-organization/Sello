@@ -33,7 +33,6 @@ import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.DispatcherProvider
-import com.software.sello.domain.port.EnableCarry
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseOrder
 import com.software.sello.domain.port.ExpenseRejection
@@ -673,14 +672,14 @@ class RestoreCommandContractTest {
     fun aRestoreLeavesEveryCategoryOffAndFencesCarryCommandsPreparedBefore() = runBlocking {
         currentHistory()
         val enabled = ledger.categories.submit(
-            EnableCarry(ledger.operation(), 1, ledger.categoryId(100), 1)
+            ledger.carryOn(ledger.operation(), 1, ledger.categoryId(100), 1)
         )
         assertTrue("$enabled", enabled is CommandOutcome.Committed)
         assertEquals(listOf("${uuid(100)}|2026-10|null"), ledger.chainRows())
 
         restores().replace(stage())
         val prepared = ledger.categories.submit(
-            EnableCarry(ledger.operation(), 1, ledger.categoryId(1), 1)
+            ledger.carryOn(ledger.operation(), 1, ledger.categoryId(1), 1)
         )
 
         assertEquals(emptyList<String>(), ledger.chainRows())

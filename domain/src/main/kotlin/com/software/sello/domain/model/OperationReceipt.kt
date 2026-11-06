@@ -19,6 +19,8 @@ enum class OperationKind(val key: String) {
     /** Several incomes recorded on one receipt. Its subjects are the new incomes. */
     CreateIncomes("income.create_batch"),
     CreateCategory("category.create"),
+
+    /** Receipts of the commands before SELLO-188's [EditCategory]; still read. */
     RenameCategory("category.rename"),
     ChangeCategoryIcon("category.change_icon"),
     ArchiveCategory("category.archive"),

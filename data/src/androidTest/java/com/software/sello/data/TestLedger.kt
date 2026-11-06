@@ -60,6 +60,7 @@ import com.software.sello.domain.port.ScheduleCommands
 import com.software.sello.domain.port.ScheduleReads
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneId
 import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration
@@ -174,6 +175,9 @@ class TestLedger(
         database.close()
         open()
     }
+
+    /** The financial month of [goTo]'s day: the month a category save is made for. */
+    val month: YearMonth get() = YearMonth.from(today.value.date)
 
     /** Moves the financial day, as a real month change or the sandbox would. */
     fun goTo(date: String) {

@@ -713,6 +713,21 @@ class CategoryEditorScreenTest {
         rule.onNodeWithText("Se activa al guardar: empieza en 0 en octubre.").assertIsDisplayed()
     }
 
+    /** Review R2: a save sent with the card unreadable can be refused for carry: it is said. */
+    @Test
+    fun aCarryRefusalIsSaidOnAnUnreadableCard() {
+        show(
+            editing.copy(
+                carry = CarryCard.Unreadable,
+                changed = true,
+                carryPending = CarryPending(on = false, month = october, forgets = null),
+                carryProblem = CarryProblemText.Unavailable
+            )
+        )
+
+        rule.onNodeWithTag(EDITOR_CARRY_PROBLEM_TAG).revealed().assertIsDisplayed()
+    }
+
     @Test
     fun anUnreadableCarryStillShowsAChangeWaitingInTheDraft() {
         show(
