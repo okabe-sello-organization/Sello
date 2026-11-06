@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -41,8 +42,23 @@ class BackupViewModel(
     /** The name to suggest while the picker is waiting to be opened, then null. */
     private val pickerRequest = MutableStateFlow<String?>(null)
 
+    /**
+     * The record as last read. Every observation, such as a Retry's or one started when the
+     * screen comes back, starts with no last good record; this keeps the one already shown,
+     * so a failed read never forgets it.
+     */
+    private var lastGood: BackupRecord? = null
+
     private val record: Flow<PreferenceRead<BackupRecord>> =
-        retry.flatMapLatest { records.observeBackups() }
+        retry.flatMapLatest { records.observeBackups() }.map { read ->
+            when (read) {
+                is PreferenceRead.Ready -> read.also { lastGood = it.value }
+
+                is PreferenceRead.Failed ->
+                    PreferenceRead.Failed(read.failure, read.lastGood ?: lastGood)
+                        .also { lastGood = it.lastGood }
+            }
+        }
 
     val state: StateFlow<BackupState> = combine(
         record,
@@ -131,4 +147,10 @@ data class BackupState(
     val failure: BackupFailure? = null
 ) {
     val busy: Boolean get() = loading || choosing || saving
+
+    /**
+     * The record could not be read again and [last] is the one read before: shown, marked
+     * as older. Not after a save this process just made, whose figures are its own.
+     */
+    val recordOlder: Boolean get() = recordFailed && last != null && !justSaved
 }

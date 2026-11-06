@@ -112,6 +112,106 @@ class BackupViewModelTest {
     }
 
     @Test
+    fun aRecordThatCannotBeReadAgainKeepsTheLastOneMarkedOlder() = runTest {
+        records.backupCompleted(earlier)
+        val model = model()
+
+        records.failReads(lastGood = BackupRecord(earlier))
+        runCurrent()
+
+        val state = model.state.value
+        assertEquals(earlier, state.last)
+        assertTrue(state.recordFailed)
+        assertTrue(state.recordOlder)
+        assertFalse(state.busy)
+    }
+
+    @Test
+    fun aRetryThatFailsAgainKeepsTheLastBackupInsteadOfForgettingIt() = runTest {
+        records.backupCompleted(earlier)
+        val model = model()
+        records.failReads(lastGood = BackupRecord(earlier))
+        runCurrent()
+
+        model.onAction(BackupAction.RetryRecord)
+        // The Retry's new observation fails before reading anything.
+        records.failReads(lastGood = null)
+        runCurrent()
+
+        assertEquals(2, records.observations)
+        val state = model.state.value
+        assertEquals(earlier, state.last)
+        assertTrue(state.recordOlder)
+    }
+
+    @Test
+    fun aRetryThatReadsTheRecordDropsTheNotice() = runTest {
+        records.backupCompleted(earlier)
+        val model = model()
+        records.failReads(lastGood = BackupRecord(earlier))
+        runCurrent()
+
+        model.onAction(BackupAction.RetryRecord)
+        records.readAgain()
+        runCurrent()
+
+        val state = model.state.value
+        assertEquals(earlier, state.last)
+        assertFalse(state.recordFailed)
+        assertFalse(state.recordOlder)
+    }
+
+    @Test
+    fun anUnfinishedStartReadBeforeTheFailureIsStillUnknownAndMarkedOlder() = runTest {
+        records.backupCompleted(earlier)
+        records.backupStarted()
+        val model = model()
+
+        records.failReads(lastGood = BackupRecord(earlier, unfinished = true))
+        runCurrent()
+
+        val state = model.state.value
+        assertEquals(earlier, state.last)
+        assertTrue(state.unknownOutcome)
+        assertTrue(state.recordOlder)
+    }
+
+    @Test
+    fun aBackupSavedWhileTheRecordCannotBeReadIsShownAsSavedNotOlder() = runTest {
+        records.backupCompleted(earlier)
+        val model = model()
+        records.failReads(lastGood = BackupRecord(earlier))
+        runCurrent()
+
+        openPicker(model)
+        model.onAction(BackupAction.DestinationChosen(document))
+        runCurrent()
+
+        val saved = LastBackup(savedAt, "Mi respaldo.json", 4_096, g01Summary)
+        val state = model.state.value
+        assertTrue(state.justSaved)
+        assertEquals(saved, state.last)
+        assertTrue(state.recordFailed)
+        assertFalse(state.recordOlder)
+        assertFalse(state.unknownOutcome)
+        // The note of it is kept even though it cannot be read back yet.
+        assertEquals(BackupRecord(saved, unfinished = false), records.stored.value)
+    }
+
+    @Test
+    fun aRecreatedScreenThatNeverReadTheRecordSaysSoWithoutOlderFigures() = runTest {
+        records.backupCompleted(earlier)
+        records.failReads(lastGood = null)
+
+        // A new process: nothing was read before, so there is nothing older to show.
+        val state = model().state.value
+
+        assertNull(state.last)
+        assertTrue(state.recordFailed)
+        assertFalse(state.recordOlder)
+    }
+
+    @Test
     fun creatingAsksThePickerOnceWithTheSuggestedName() = runTest {
         val model = model()
 
