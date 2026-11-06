@@ -48,6 +48,9 @@ enum class IncomeFormError {
     /** Deleting failed and the income is still there. */
     NotDeleted,
 
+    /** It is not known yet whether it was deleted; asking again will tell. */
+    DeleteUnknown,
+
     /** A schedule starts today or later; the date was earlier. */
     StartTooEarly,
 
@@ -150,15 +153,21 @@ data class IncomeFormState(
 
     val needsOtherName: Boolean get() = sourceKey == OTHER
 
+    /** A save or deletion whose outcome is unknown: the form only offers to check it again. */
+    val unresolved: Boolean get() = error in Unresolved
+
     companion object {
         /** The key of the source that carries a name of its own. */
         const val OTHER = "other"
 
         private val Blocking = setOf(
             IncomeFormError.Unknown,
+            IncomeFormError.DeleteUnknown,
             IncomeFormError.IncomeGone,
             IncomeFormError.IncomeChanged
         )
+
+        private val Unresolved = setOf(IncomeFormError.Unknown, IncomeFormError.DeleteUnknown)
     }
 }
 

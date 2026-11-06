@@ -56,6 +56,7 @@
       <figure data-shot="income-form-failed" data-module="app" data-caption="Nothing could be read"></figure>
       <figure data-shot="income-form-busy" data-module="app" data-caption="Saving"></figure>
       <figure data-shot="income-form-unknown" data-module="app" data-caption="The save outcome is not known"></figure>
+      <figure data-shot="income-form-delete-unknown" data-module="app" data-caption="The deletion's outcome is not known"></figure>
       <figure data-shot="income-form-refused" data-module="app" data-caption="Not saved"></figure>
       <figure data-shot="income-form-otro" data-module="app" data-caption="Otro chosen: its name line and what is missing"></figure>
       <figure data-shot="income-form-amount-refused" data-module="app" data-caption="Thirteen digits pasted"></figure>
@@ -97,15 +98,17 @@
             <tr><td>Ready</td><td>"+5.000.000" in green, Salario chosen, "Anotar ingreso" in green.</td>
               <td><code>IncomeFormScreen.kt:179</code></td><td>income-form</td></tr>
             <tr><td>Missing</td><td>A hint: "Escribe el nombre de la fuente.", "Corrige la nota.", the Se repite end problem, or "Aún no cambiaste nada.".</td>
-              <td><code>IncomeFormScreen.kt:400</code></td><td><code>income-form-otro</code></td></tr>
+              <td><code>IncomeFormScreen.kt:401</code></td><td><code>income-form-otro</code></td></tr>
             <tr><td>Amount refused</td><td>The slip label becomes "Escribe un monto entero entre 1 y 999.999.999.999 COP." (one text for every problem) or "Máximo 12 dígitos".</td>
               <td><code>IncomeFormScreen.kt:261</code></td><td><code>income-form-amount-refused</code></td></tr>
             <tr><td>Stale</td><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> Older with the shared "No pudimos actualizar…" and "Reintentar".</td>
               <td><code>IncomeFormScreen.kt:291</code></td><td>income-form-stale</td></tr>
             <tr><td>Busy</td><td>"Guardando…" with spinner; chips, pill, lines, switch and pad off; the X stays enabled but Back is ignored.</td>
-              <td><code>IncomeFormScreen.kt:418</code>, <code>app/src/main/java/com/software/sello/feature/income/IncomeFormViewModel.kt:324</code></td><td><code>income-form-busy</code></td></tr>
-            <tr><td>Unknown outcome</td><td>Warning "Aún no sabemos si se guardó. Compruébalo antes de volver a anotar." and a green "Comprobar si se guardó". The same text follows a deletion whose outcome is unknown.</td>
-              <td><code>IncomeFormScreen.kt:413</code>, <code>IncomeFormViewModel.kt:756</code></td><td><code>income-form-unknown</code></td></tr>
+              <td><code>IncomeFormScreen.kt:421</code>, <code>app/src/main/java/com/software/sello/feature/income/IncomeFormViewModel.kt:324</code></td><td><code>income-form-busy</code></td></tr>
+            <tr><td>Unknown outcome</td><td>Warning "Aún no sabemos si se guardó. Compruébalo antes de volver a anotar." and a green "Comprobar si se guardó".</td>
+              <td><code>IncomeFormScreen.kt:414</code>, <code>IncomeFormViewModel.kt:541</code></td><td><code>income-form-unknown</code></td></tr>
+            <tr><td>Unknown outcome (deletion)</td><td>Warning "Aún no sabemos si se borró. Compruébalo antes de volver a intentarlo." and a green "Comprobar si se borró"; "Borrar" is off. A check that finds nothing deleted says "No se pudo borrar. El ingreso sigue anotado." and Borrar is on again.</td>
+              <td><code>IncomeFormScreen.kt:419</code>, <code>IncomeFormViewModel.kt:757</code></td><td><code>income-form-delete-unknown</code></td></tr>
             <tr><td>Refused</td><td>An error above the button: "No se pudo guardar el ingreso. Lo que escribiste sigue aquí.", "La fecha no puede ser posterior a hoy. No se anotó nada.", "No se pudo borrar. El ingreso sigue anotado.", the repeat and following-income messages. "Este ingreso ya no existe…" and "Este ingreso cambió mientras lo corregías…" freeze the form.</td>
               <td><code>IncomeFormScreen.kt:371</code></td><td><code>income-form-refused</code></td></tr>
             <tr><td>Data replaced</td><td>As soon as a restore or reset changes the history: "Tus datos cambiaron. No se guardó el ingreso; sal y vuelve a abrirlo." and the form is frozen.</td>
@@ -157,10 +160,10 @@
           for a new and a corrected income (<code>IncomeFormScreen.kt:228</code>).</li>
         <li>Composer: one <a href="../components.html#c-NoteComposer"><code>NoteComposer</code></a> for both the note
           (60, context "Ingreso · <b>+5.000.000</b>") and Otro's name (24, context "¿De dónde vino?"), with the bank icon
-          (<code>IncomeFormScreen.kt:437</code>). Over the limit: "Máximo 60 caracteres. Tu texto sigue aquí." or
+          (<code>IncomeFormScreen.kt:440</code>). Over the limit: "Máximo 60 caracteres. Tu texto sigue aquí." or
           "Máximo 24 caracteres. Tu texto sigue aquí."; a line break: "No puede tener saltos de línea ni caracteres de control.".</li>
         <li>Date picker: Material dialog with "Aceptar"; past only, or today and later while Se repite is on
-          (<code>IncomeFormScreen.kt:492</code>).</li>
+          (<code>IncomeFormScreen.kt:495</code>).</li>
         <li>Se repite and the following incomes: <code>RepeatChoiceSheet</code> and <code>FollowingChoice</code> with
           <code>income = true</code> (<code>IncomeFormScreen.kt:237</code>, <code>:241</code>).</li>
       </ul>

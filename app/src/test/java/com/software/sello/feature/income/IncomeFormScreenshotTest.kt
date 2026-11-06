@@ -112,6 +112,17 @@ class IncomeFormScreenshotTest {
 
     @Test fun unknownDark() = shot("unknown", unknown, Look(dark = true))
 
+    /** Correcting, after a deletion whose outcome is unknown: only checking again is offered. */
+    private val deleteUnknown = ready.copy(
+        editing = true,
+        missing = IncomeMissing.Changes,
+        error = IncomeFormError.DeleteUnknown
+    )
+
+    @Test fun deleteUnknownLight() = shot("delete-unknown", deleteUnknown, Look())
+
+    @Test fun deleteUnknownDark() = shot("delete-unknown", deleteUnknown, Look(dark = true))
+
     private val refused = ready.copy(error = IncomeFormError.NotSaved)
 
     @Test fun refusedLight() = shot("refused", refused, Look())

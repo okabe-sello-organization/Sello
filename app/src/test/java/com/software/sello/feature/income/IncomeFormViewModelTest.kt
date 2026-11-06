@@ -738,7 +738,7 @@ class IncomeFormViewModelTest {
         commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
         val form = opened()
         form.onAction(IncomeFormAction.Delete)
-        assertEquals(IncomeFormError.Unknown, form.now.error)
+        assertEquals(IncomeFormError.DeleteUnknown, form.now.error)
         form.onAction(IncomeFormAction.Delete)
         assertEquals(1, commands.deleted.size)
         commands.found = { Outcome.Success(commands.committed(it, logo.id)) }
@@ -747,6 +747,108 @@ class IncomeFormViewModelTest {
         assertTrue(corrections.notice.value is CorrectionNotice.IncomeDeleted)
         assertEquals(1, commands.deleted.size)
         assertTrue(commands.edited.isEmpty())
+    }
+
+    /** A deletion was sent and asking how it ended failed too. */
+    private fun IncomeFormViewModel.deleteWithUnknownOutcome() {
+        commands.deleteAnswer = { CommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
+        onAction(IncomeFormAction.Delete)
+    }
+
+    @Test
+    fun aDeletionWhoseOutcomeIsUnknownIsSaidAsADeletionAndLocksTheForm() {
+        val form = opened()
+        form.retype("900000")
+        form.deleteWithUnknownOutcome()
+
+        form.onAction(IncomeFormAction.Delete)
+        form.onAction(IncomeFormAction.Submit)
+        form.onAction(IncomeFormAction.Back)
+        val asked = form.now
+        form.onAction(IncomeFormAction.DiscardConfirmed)
+
+        assertEquals(IncomeFormError.DeleteUnknown, form.now.error)
+        assertFalse(form.now.canDelete || form.now.editable || form.now.canSubmit)
+        assertFalse(asked.confirmDiscard || form.now.closed)
+        assertEquals(1, commands.deleted.size)
+        assertTrue(commands.edited.isEmpty())
+    }
+
+    @Test
+    fun aCheckThatStillCannotTellAsksTheSameOperationAndStaysUnknown() {
+        val form = opened()
+        form.deleteWithUnknownOutcome()
+        val operation = commands.deleted.single().operationId
+
+        form.onAction(IncomeFormAction.Retry)
+
+        assertEquals(listOf(operation, operation), commands.looked)
+        assertEquals(IncomeFormError.DeleteUnknown to false, form.now.error to form.now.busy)
+        assertEquals(1, commands.deleted.size)
+        assertNull(corrections.notice.value)
+    }
+
+    @Test
+    fun aCheckThatFindsNothingDeletedSaysSoAndBorrarSendsANewOperation() {
+        val form = opened()
+        form.deleteWithUnknownOutcome()
+        commands.found = { Outcome.Success(null) }
+
+        form.onAction(IncomeFormAction.Retry)
+        val notDeleted = form.now
+        commands.deleteAnswer = {
+            CommandOutcome.Committed(commands.committed(it.operationId, it.incomeId), false)
+        }
+        form.onAction(IncomeFormAction.Delete)
+
+        assertEquals(IncomeFormError.NotDeleted, notDeleted.error)
+        assertTrue(notDeleted.canDelete && !notDeleted.closed)
+        assertEquals(2, commands.deleted.size)
+        assertTrue(commands.deleted[0].operationId != commands.deleted[1].operationId)
+        assertTrue(form.now.closed)
+        assertTrue(corrections.notice.value is CorrectionNotice.IncomeDeleted)
+    }
+
+    @Test
+    fun anUnknownDeletionIsStillCheckedWithTheSameOperationAfterTheProcessIsKilled() {
+        val saved = editing()
+        val first = opened(saved = saved)
+        first.deleteWithUnknownOutcome()
+        val operation = commands.deleted.single().operationId
+
+        val restored = form(saved.afterProcessDeath())
+        restored.onAction(IncomeFormAction.Back)
+        restored.onAction(IncomeFormAction.DiscardConfirmed)
+        val unknown = restored.now
+        commands.found = { Outcome.Success(null) }
+        restored.onAction(IncomeFormAction.Retry)
+
+        assertEquals(IncomeFormError.DeleteUnknown, unknown.error)
+        assertFalse(unknown.canDelete || unknown.confirmDiscard || unknown.closed)
+        assertEquals(listOf(operation, operation, operation), commands.looked)
+        assertEquals(IncomeFormError.NotDeleted, restored.now.error)
+        assertTrue(restored.now.canDelete)
+        assertEquals(1, commands.deleted.size)
+    }
+
+    @Test
+    fun aDeletionCutOffMidFlightIsLookedUpAfterARestartAndNeverSentTwice() {
+        val saved = editing()
+        val first = opened(saved = saved)
+        commands.hold = CompletableDeferred()
+        first.onAction(IncomeFormAction.Delete)
+        first.onAction(IncomeFormAction.Delete)
+        val sending = first.now
+        commands.hold = null
+        commands.found = { Outcome.Success(null) }
+
+        val restored = form(saved.afterProcessDeath())
+
+        assertTrue(sending.busy && !sending.canDelete)
+        assertEquals(1, commands.deleted.size)
+        assertEquals(listOf(commands.deleted.single().operationId), commands.looked)
+        assertEquals(IncomeFormError.NotDeleted to false, restored.now.error to restored.now.closed)
     }
 
     @Test
