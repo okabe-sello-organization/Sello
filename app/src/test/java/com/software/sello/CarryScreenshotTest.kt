@@ -296,6 +296,31 @@ class CarryScreenshotTest {
         rule.captureStill("src/test/screenshots/carry-drop-${look.label}.png")
     }
 
+    /** The carry moved while the drop was asked: it was −30.000, now −40.000; nothing saved. */
+    private fun dropChanged(look: Look) {
+        val asked = carrying.copy(
+            carryQuestion = CarryQuestion.Drop(
+                DropReason.Disable,
+                DropFigures(
+                    month = abr,
+                    carry = minus("40.000"),
+                    base = plain("100.000"),
+                    capacityBefore = plain("60.000"),
+                    capacityAfter = plain("100.000"),
+                    remainingBefore = plain("60.000"),
+                    remainingAfter = plain("100.000"),
+                    changedFrom = minus("30.000")
+                )
+            )
+        )
+        rule.showSello(look) { CategoryEditorScreen(asked, {}) }
+        rule.captureStill("src/test/screenshots/carry-drop-changed-${look.label}.png")
+    }
+
+    @Test fun dropChangedLight() = dropChanged(Look())
+
+    @Test fun dropChangedDark() = dropChanged(Look(dark = true))
+
     @Test
     fun dropQuestionLight() = dropQuestion(Look())
 
