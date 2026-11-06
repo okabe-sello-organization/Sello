@@ -465,18 +465,18 @@
     <section id="look-alikes">
       <h2>Feature-local parts that look like shared ones</h2>
       <ul>
-        <li><code>MonthBar</code> (<code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:63</code>) and <code>TitleBar</code> (<code>:122</code>) are the same band row twice (min 56dp, start <code>spacing.lg</code>, end 6dp, <code>headlineSmall</code> copied to 24sp W800), and both stand where <a href="../components.html#c-SelloScaffold"><code>SelloScaffold</code></a>'s private title row (min 50dp, <code>titleLarge</code>) stands on every other screen. Shots: <code>components-bars-and-keypad.png</code> against <code>category-editor</code>. Finding: <a href="../findings.html#F44">F44</a>.</li>
-        <li><code>MonthSwitcher</code> (<code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:214</code>) is a title button like <code>MonthBar</code>'s month button but in <code>titleLarge</code> copied to 21sp, with a 22dp chevron. Finding: <a href="../findings.html#F71">F71</a>.</li>
-        <li><code>PastMonthRibbon</code>'s "Volver a …" pill (<code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:194</code>) is a chip on the band like <a href="../components.html#c-BandChip"><code>BandChip</code></a>, built by hand: 40dp, 14dp padding, <code>Color.White</code> in light. Shot: <code>shell-past-month</code>. Finding: <a href="../findings.html#F74">F74</a>.</li>
-        <li><code>StaleSlip</code> (<code>app/src/main/java/com/software/sello/presentation/read/StaleSlip.kt:23</code>) is app-wide but lives in <code>:app</code>; half the features use <a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a> for the same purpose instead. Finding: <a href="../findings.html#F01">F01</a>.</li>
-        <li><code>MovementCloseButton</code>, <code>MovementPane</code> and <code>MovementDatePicker</code> (<code>app/src/main/java/com/software/sello/presentation/movement/MovementForm.kt:45</code>, <code>:53</code>, <code>:144</code>) are shared within <code>:app</code> by four movement screens while seven other forms keep their own copies. Findings: <a href="../findings.html#F27">F27</a>, <a href="../findings.html#F28">F28</a>, <a href="../findings.html#F26">F26</a>.</li>
-        <li>The signed-figure helper <code>signedDigits</code> (<code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:503</code>) has two twins in Inversiones and Ajustar presupuesto. Finding: <a href="../findings.html#F68">F68</a>.</li>
+        <li><code>MonthBar</code> (<code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:63</code>) and <code>TitleBar</code> (<code>:122</code>) are the same band row twice (min 56dp, start <code>spacing.lg</code>, end 6dp, <code>headlineSmall</code> copied to 24sp W800), and both stand where <a href="../components.html#c-SelloScaffold"><code>SelloScaffold</code></a>'s private title row (min 50dp, <code>titleLarge</code>) stands on every other screen. Shots: <code>components-bars-and-keypad.png</code> against <code>category-editor</code>.</li>
+        <li><code>MonthSwitcher</code> (<code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:214</code>) is a title button like <code>MonthBar</code>'s month button but in <code>titleLarge</code> copied to 21sp, with a 22dp chevron. Finding: <a href="../findings.html#hard-type">hard-coded type</a>.</li>
+        <li><code>PastMonthRibbon</code>'s "Volver a …" pill (<code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:194</code>) is a chip on the band like <a href="../components.html#c-BandChip"><code>BandChip</code></a>, built by hand: 40dp, 14dp padding, <code>Color.White</code> in light. Shot: <code>shell-past-month</code>. Finding: <a href="../findings.html#H01">H01</a>.</li>
+        <li><code>StaleSlip</code> (<code>app/src/main/java/com/software/sello/presentation/read/StaleSlip.kt:23</code>) is app-wide but lives in <code>:app</code>; half the features use <a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a> for the same purpose instead. Findings: <a href="../findings.html#M01">M01</a>, <a href="../findings.html#C06">C06</a>.</li>
+        <li><code>MovementCloseButton</code>, <code>MovementPane</code> and <code>MovementDatePicker</code> (<code>app/src/main/java/com/software/sello/presentation/movement/MovementForm.kt:45</code>, <code>:53</code>, <code>:144</code>) are shared within <code>:app</code> by four movement screens while seven other forms keep their own copies. Findings: <a href="../findings.html#C02">C02</a>, <a href="../findings.html#C03">C03</a>, <a href="../findings.html#C01">C01</a>.</li>
+        <li>The signed-figure helper <code>signedDigits</code> (<code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:503</code>) has two twins in Inversiones and Ajustar presupuesto. Findings: <a href="../findings.html#C21">C21</a>, <a href="../findings.html#C22">C22</a>.</li>
       </ul>
     </section>
 
     <section id="app-wide">
       <h2>App-wide patterns</h2>
-      <p>How every feature frames and fills its screens, with each variant's source. Where the variants serve the same purpose they are logged as findings, linked under each part; the choice is made there, not here.</p>
+      <p>How every feature frames and fills its screens, with each variant's source. Findings that touch a pattern are linked under it.</p>
 
       <h3>Top bars</h3>
       <div class="table-wrap">
@@ -495,7 +495,7 @@
         </table>
       </div>
       <p>Top-bar actions: a pencil <code>IconButton</code> for edit (category, goal, investment); "Borrar" as a text button on records (expense, income, goal and investment movements); ⋮ <a href="../components.html#c-MoreMenu"><code>MoreMenu</code></a> on items (category, goal, investment, fixed payment, a completed goal).</p>
-      <p class="muted">Findings: <a href="../findings.html#F42">F42</a>, <a href="../findings.html#F43">F43</a>, <a href="../findings.html#F44">F44</a>, <a href="../findings.html#F45">F45</a>, <a href="../findings.html#F18">F18</a>, <a href="../findings.html#F27">F27</a>.</p>
+      <p class="muted">Findings: <a href="../findings.html#M06">M06</a>, <a href="../findings.html#C02">C02</a>.</p>
 
       <h3>Sheets and dialogs</h3>
       <div class="table-wrap">
@@ -513,7 +513,7 @@
         </table>
       </div>
 
-      <p class="muted">Findings: <a href="../findings.html#F23">F23</a>, <a href="../findings.html#F20">F20</a>, <a href="../findings.html#F15">F15</a>, <a href="../findings.html#F17">F17</a>, <a href="../findings.html#F26">F26</a>.</p>
+      <p class="muted">Findings: <a href="../findings.html#C09">C09</a>, <a href="../findings.html#M03">M03</a>, <a href="../findings.html#C05">C05</a>, <a href="../findings.html#M08">M08</a>, <a href="../findings.html#C01">C01</a>.</p>
 
       <h3>Loading, error and older figures</h3>
       <ul>
@@ -536,21 +536,31 @@
       <figure data-shot="schedules-stale" data-module="app" data-caption="StaleSlip (Pagos e ingresos fijos)"></figure>
       <figure data-shot="recibo-goals-stale" data-module="app" data-caption="ErrorSlip used for older figures (Recibo's goals)"></figure>
       <figure data-module="app" data-files="limit-sheet-stale-claro.png,investment-movements-stale-claro.png" data-caption="Loose text in the limit sheet; a field hint in Varios movimientos"></figure>
-      <p class="muted">Findings: <a href="../findings.html#F01">F01</a>, <a href="../findings.html#F02">F02</a>, <a href="../findings.html#F08">F08</a>, <a href="../findings.html#F28">F28</a>.</p>
+      <p class="muted">Findings: <a href="../findings.html#M01">M01</a>, <a href="../findings.html#C06">C06</a>, <a href="../findings.html#C03">C03</a>.</p>
 
       <h3>Busy and unknown outcome</h3>
       <ul>
         <li>Busy writes show the spinner inside the pressed <a href="../components.html#c-SelloButton"><code>SelloButton</code></a> (<code>loading</code>), <a href="../components.html#c-SelloNotice"><code>SelloNotice</code></a> (<code>busy</code>) or <a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a> (<code>busy</code>), and nothing else can be pressed.</li>
         <li>An unknown deletion made from the expense form is asked about from the notice bar ("Comprobar si se borró"); from a category's lists it is asked inline or on an error card; unknown saves are handled inside each form (see each feature page).</li>
       </ul>
-      <p class="muted">Findings: <a href="../findings.html#F29">F29</a>, <a href="../findings.html#F05">F05</a>, <a href="../findings.html#F06">F06</a>, <a href="../findings.html#F07">F07</a>, <a href="../findings.html#F60">F60</a>.</p>
+      <p class="muted">Findings: <a href="../findings.html#M10">M10</a>, <a href="../findings.html#C15">C15</a>, <a href="../findings.html#M01">M01</a>.</p>
 
       <h3>Self-dismissing notices</h3>
       <ul>
         <li>Correction statements: 4 seconds fixed, <code>app/src/main/java/com/software/sello/presentation/corrections/Corrections.kt:1292</code>.</li>
         <li>Catch-up notice: 5 seconds stretched for a screen reader, with a draining band, <code>app/src/main/java/com/software/sello/feature/recurrence/CatchUpNotice.kt:284</code>.</li>
       </ul>
-      <p class="muted">Findings: <a href="../findings.html#F11">F11</a>.</p>
+    </section>
+
+    <section id="findings-here">
+      <h2>Findings here</h2>
+      <p class="muted">Places in this feature on the <a href="../findings.html">findings</a> page; shared parts it uses are listed there under their own files.</p>
+      <ul>
+        <li><strong>Copies:</strong> <a href="../findings.html#C22">C22</a> <code>MoneyText sign rule (signText, + and true minus)</code>: <a href="../findings.html#C22-3">C22-3</a>.</li>
+        <li><strong>Hard-coded colour:</strong> <a href="../findings.html#H01">H01</a> <code>Color.White (visible fill)</code> (1 place, would not follow dynamic colour).</li>
+        <li><strong>Hard-coded type:</strong> <a href="../findings.html#H23">H23</a> <code>fontSize = 21.sp</code> (1 place); <a href="../findings.html#H25">H25</a> <code>fontSize = 24.sp</code> (2 places); <a href="../findings.html#H31">H31</a> <code>lineHeight = 24.sp</code> (1 place); <a href="../findings.html#H37">H37</a> <code>letterSpacing = -0.02.em</code> (2 places); <a href="../findings.html#H45">H45</a> <code>fontWeight = FontWeight.W600</code> (1 place); <a href="../findings.html#H48">H48</a> <code>fontWeight = FontWeight.W800</code> (4 places).</li>
+        <li><strong>Hard-coded alpha:</strong> <a href="../findings.html#H67">H67</a> <code>0.16f</code> (1 place); <a href="../findings.html#H76">H76</a> <code>0.8f</code> (1 place).</li>
+      </ul>
     </section>
 
     <section id="gaps">

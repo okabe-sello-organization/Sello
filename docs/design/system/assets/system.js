@@ -1,5 +1,5 @@
 /*
- * Sello design system pages: shared nav, screenshot figures, icons and the findings form.
+ * Sello design system pages: shared nav, screenshot figures, icons and the findings page.
  * No dependencies. Every path is worked out from where this script lives, so pages in
  * docs/design/system/ and docs/design/system/features/ use the same markup.
  *
@@ -10,7 +10,8 @@
  *           [data-variants="claro,oscuro"] [data-files="a.png,b.png"]
  *           [data-caption="What this shows"]></figure>
  *   <div class="icon-cell" data-drawable="ic_sello_add"></div>   (foundations only)
- *   <div id="findings"></div> with window.SELLO_FINDINGS set     (findings only)
+ *   <div id="findings"></div> with window.SELLO_FINDINGS set     (findings only: misuse,
+ *                                                               copies, hard-coded values)
  */
 (function () {
   "use strict";
@@ -266,181 +267,209 @@
 
   /* ----------------------------------------------------------- findings */
 
-  var STORE = "sello-design-findings:";
-
-  function loadAnswer(id) {
-    try {
-      return JSON.parse(localStorage.getItem(STORE + id)) || { choice: "", note: "" };
-    } catch (ignored) {
-      return { choice: "", note: "" };
-    }
-  }
-
-  function saveAnswer(id, answer) {
-    try { localStorage.setItem(STORE + id, JSON.stringify(answer)); } catch (ignored) { /* private mode */ }
-  }
+  var SOURCE_BASE = "../../../";
 
   function featureLink(name) {
     return el("a", { class: "tag", href: new URL("features/" + name + ".html", SYSTEM).href, text: name });
   }
 
-  function answersText(list) {
-    return list.map(function (finding) {
-      var answer = loadAnswer(finding.id);
-      if (!answer.choice && !answer.note) return finding.id + ": (no answer)";
-      var line = finding.id + ": " + (answer.choice || "(no choice)");
-      if (answer.note && answer.note.trim()) line += " — " + answer.note.trim().replace(/\s+/g, " ");
-      return line;
-    }).join("\n");
+  /** The place's area as text, plus a link to each feature page it touches. */
+  function areaTags(place) {
+    var tags = (place.features || []).map(featureLink);
+    if (!tags.length && place.area) tags.push(el("span", { class: "tag internal", text: place.area }));
+    return tags;
   }
 
-  function copyText(text) {
-    if (navigator.clipboard && window.isSecureContext) {
-      return navigator.clipboard.writeText(text);
+  function codeRef(text) { return el("code", { text: text }); }
+
+  /** A component reference: components.html#c-Name, foundations.html, or the shared file. */
+  function componentLink(ref, shared) {
+    if (ref) {
+      var name = ref.indexOf("#c-") >= 0 ? "catalog: " + ref.split("#c-")[1] : ref.replace(/\.html.*$/, "");
+      return el("a", { class: "tag", href: new URL(ref, SYSTEM).href, text: name });
     }
-    var area = el("textarea", { style: "position:fixed;left:-9999px" });
-    area.value = text;
-    document.body.appendChild(area);
-    area.select();
-    var done = document.execCommand("copy");
-    area.remove();
-    return done ? Promise.resolve() : Promise.reject(new Error("copy refused"));
+    if (shared) {
+      var path = shared.replace(/:\d+$/, "");
+      return el("span", null, ["shared at ", el("a", { href: new URL(SOURCE_BASE + path, SYSTEM).href }, [codeRef(shared)])]);
+    }
+    return null;
   }
 
-  function findingCard(finding) {
-    var answer = loadAnswer(finding.id);
-    var card = el("article", { class: "finding", id: finding.id });
-    if (answer.choice) card.classList.add("answered");
+  function shotRow(list) {
+    if (!list || !list.length) return el("p", { class: "muted small", text: "No screenshot shows this." });
+    var row = el("div", { class: "shot-row" });
+    list.forEach(function (shot) { row.appendChild(shotCard(shot.module || "app", shot.file, "")); });
+    return row;
+  }
 
-    card.appendChild(el("header", null, [
-      el("span", { class: "fid", text: finding.id }),
-      el("h2", { text: finding.title || "" }),
-      finding.category ? el("span", { class: "tag", text: finding.category }) : null
+  function unsureBadge() { return el("span", { class: "badge unsure", text: "unsure" }); }
+
+  function misuseCard(card) {
+    var node = el("article", { class: "finding", id: card.id });
+    node.appendChild(el("header", null, [
+      el("span", { class: "fid", text: card.id }),
+      el("h3", null, [codeRef(card.component)]),
+      componentLink(card.ref)
     ]));
-    if (finding.purpose) card.appendChild(el("p", { text: finding.purpose }));
-    if (finding.features && finding.features.length) {
-      card.appendChild(el("p", null, ["Features: "].concat(finding.features.map(featureLink))));
-    }
-
-    var variants = finding.variants || [];
-    var row = el("div", { class: "variants" });
-    variants.forEach(function (variant) {
-      var box = el("div", { class: "variant" }, [
-        el("h3", { text: variant.label }),
-        variant.note ? el("p", { text: variant.note }) : null
-      ]);
-      if (variant.files && variant.files.length) {
-        box.appendChild(el("ul", { class: "files" }, variant.files.map(function (file) {
-          return el("li", null, [el("code", { text: file })]);
-        })));
-      }
-      if (variant.shots && variant.shots.length) {
-        var shotRow = el("div", { class: "shot-row" });
-        variant.shots.forEach(function (shot) {
-          shotRow.appendChild(shotCard(shot.module || "app", shot.file, ""));
-        });
-        box.appendChild(shotRow);
-      }
-      row.appendChild(box);
-    });
-    card.appendChild(row);
-
-    if (finding.recommend) {
-      card.appendChild(el("div", { class: "recommend" }, [
-        el("strong", { text: "Recommended: " + finding.recommend }),
-        finding.reason ? el("span", { text: " — " + finding.reason }) : null
+    node.appendChild(el("p", null, [el("strong", { text: "Its meaning: " }), card.meaning]));
+    node.appendChild(el("details", { class: "evidence" }, [
+      el("summary", { text: "Evidence for the meaning (" + card.evidence.length + ")" }),
+      el("ul", { class: "files" }, card.evidence.map(function (e) {
+        return el("li", null, [codeRef(e.file), e.note ? " — " + e.note : null]);
+      }))
+    ]));
+    card.places.forEach(function (place) {
+      node.appendChild(el("div", { class: "place" + (place.unsure ? " is-unsure" : ""), id: place.id }, [
+        el("p", { class: "place-head" }, [
+          el("span", { class: "pid", text: place.id }), " ", codeRef(place.file), " "
+        ].concat(areaTags(place), [place.unsure ? unsureBadge() : null])),
+        el("p", null, [el("strong", { text: "What: " }), place.what]),
+        el("p", null, [el("strong", { text: place.unsure ? "Why, and the doubt: " : "Why: " }), place.why]),
+        shotRow(place.shots)
       ]));
-    }
-
-    var choices = el("div", { class: "choices", role: "radiogroup" });
-    var options = variants.map(function (variant) { return variant.label; });
-    options.push(variants.length > 2 ? "All are fine" : "Both are fine", "Other");
-    var note = el("textarea", { "aria-label": finding.id + " note", placeholder: "Note (optional)" });
-    note.value = answer.note || "";
-    function store() {
-      var picked = choices.querySelector("input:checked");
-      var next = { choice: picked ? picked.value : "", note: note.value };
-      saveAnswer(finding.id, next);
-      card.classList.toggle("answered", Boolean(next.choice));
-      document.dispatchEvent(new CustomEvent("sello-answers-changed"));
-    }
-    options.forEach(function (option) {
-      var input = el("input", { type: "radio", name: "choice-" + finding.id, value: option });
-      if (answer.choice === option) input.checked = true;
-      input.addEventListener("change", store);
-      choices.appendChild(el("label", null, [input, " " + option]));
     });
-    note.addEventListener("input", store);
-    card.appendChild(el("fieldset", null, [el("legend", { text: "Your choice" }), choices, note]));
-    return card;
+    return node;
   }
 
-  /** "Notices & states" -> "theme-notices-states", the anchor of a theme heading. */
-  function themeId(theme) {
-    return "theme-" + theme.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  function copyCard(card) {
+    var node = el("article", { class: "finding", id: card.id });
+    node.appendChild(el("header", null, [
+      el("span", { class: "fid", text: card.id }),
+      el("h3", null, [codeRef(card.component)]),
+      componentLink(card.ref, card.ref ? null : card.shared)
+    ]));
+    if (card.ref) node.appendChild(el("p", { class: "muted" }, ["Shared at ", codeRef(card.shared)]));
+    card.copies.forEach(function (copy) {
+      var kind = copy.drift ? "drifted" : copy.identical ? "identical" : "differs";
+      node.appendChild(el("div", { class: "place copy-" + kind + (copy.unsure ? " is-unsure" : ""), id: copy.id }, [
+        el("p", { class: "place-head" }, [
+          el("span", { class: "pid", text: copy.id }), " ", codeRef(copy.file), " "
+        ].concat(areaTags(copy), [
+          el("span", { class: "badge " + kind, text: kind }),
+          copy.unsure ? unsureBadge() : null
+        ])),
+        copy.drift ? el("p", { class: "drift" }, [el("strong", { text: "Drifted: " }), copy.drift]) : null,
+        el("p", null, [el("strong", { text: "How it differs: " }), copy.differs]),
+        copy.unsure ? el("p", null, [el("strong", { text: "Doubt: " }), copy.doubt]) : null,
+        shotRow(copy.shots)
+      ]));
+    });
+    return node;
   }
 
-  /** One line per theme: its name linked to its heading, and the IDs it covers. */
-  function themeIndex(items, themes) {
-    return el("ol", { class: "theme-index" }, themes.map(function (theme) {
-      var ids = items.filter(function (f) { return f.theme === theme; }).map(function (f) { return f.id; });
-      var range = ids.length > 1 ? ids[0] + "–" + ids[ids.length - 1] : ids[0];
-      return el("li", null, [
-        el("a", { href: "#" + themeId(theme), text: theme }),
-        el("span", { class: "muted", text: " · " + range + " (" + ids.length + ")" })
-      ]);
+  function placeList(places) {
+    var list = el("ul", { class: "files" }, places.map(function (p) {
+      return el("li", null, [codeRef(p.file), " "].concat(areaTags(p), [" ", p.note]));
     }));
+    if (places.length <= 4) return list;
+    return el("details", null, [el("summary", { text: places.length + " places" }), list]);
   }
 
-  function findings(container, list) {
+  function hardTable(groups, colour) {
+    var head = ["ID", "Value", "Token"].concat(colour ? ["Dynamic colour"] : [], ["Places"]);
+    var body = groups.map(function (g) {
+      var cells = [
+        el("td", null, [el("span", { class: "fid", text: g.id })]),
+        el("td", null, [codeRef(g.value), g.note ? el("p", { class: "muted small", text: g.note }) : null]),
+        el("td", null, [g.token ? codeRef(g.token) : el("span", { class: "muted", text: "none" })])
+      ];
+      if (colour) cells.push(el("td", null, [g.risk ? el("span", { class: "badge risk", text: "at risk" }) : el("span", { class: "muted", text: "no" })]));
+      cells.push(el("td", null, [placeList(g.places), g.shots && g.shots.length ? shotRow(g.shots) : null]));
+      return el("tr", { id: g.id, class: g.risk ? "risk" : null }, cells);
+    });
+    return el("div", { class: "table-wrap" }, [el("table", { class: "hard" }, [
+      el("thead", null, [el("tr", null, head.map(function (t) { return el("th", { text: t }); }))]),
+      el("tbody", null, body)
+    ])]);
+  }
+
+  function dynamicBox(d, groups) {
+    function list(items) { return el("ul", null, items.map(function (t) { return el("li", { text: t }); })); }
+    var risky = groups.filter(function (g) { return g.kind === "colour" && g.risk; });
+    return el("div", { class: "note dynamic", id: "dynamic-colours" }, [
+      el("h3", { text: "Dynamic colours" }),
+      el("p", null, [el("strong", { text: "How colour flows today" })]), list(d.today),
+      el("p", null, [el("strong", { text: "What dynamic colour would need" })]), list(d.needs),
+      el("p", null, [el("strong", { text: "Roles with no Material equivalent: " }), d.noMaterial]),
+      el("p", null, [el("strong", { text: "Role literals that copy other roles: " }), d.copiesRole, " See ",
+        el("a", { href: "#" + d.copiesRoleId, text: d.copiesRoleId }), "."]),
+      el("p", null, [d.outside, " The colours that would not follow a dynamic scheme: "].concat(
+        risky.map(function (g, i) { return el("span", null, [i ? ", " : "", el("a", { href: "#" + g.id, text: g.id })]); }), ["."])),
+      el("p", { class: "muted" }, [el("strong", { text: "Not listed: " }), d.notListed])
+    ]);
+  }
+
+  function count(list, fn) { return list.filter(fn).length; }
+
+  function summary(data) {
+    var misusePlaces = [].concat.apply([], data.misuse.map(function (c) { return c.places; }));
+    var copyPlaces = [].concat.apply([], data.copies.map(function (c) { return c.copies; }));
+    function kind(k) { return data.hardcoded.filter(function (g) { return g.kind === k; }); }
+    function places(gs) { return gs.reduce(function (n, g) { return n + g.places.length; }, 0); }
+    var colours = kind("colour");
+    var rows = [
+      [el("a", { href: "#misuse", text: "Misuse" }), data.misuse.length + " components",
+        misusePlaces.length + " places: " + count(misusePlaces, function (p) { return !p.unsure; }) + " sure, " +
+        count(misusePlaces, function (p) { return p.unsure; }) + " unsure"],
+      [el("a", { href: "#copies", text: "Copies" }), data.copies.length + " shared components",
+        copyPlaces.length + " copies: " + count(copyPlaces, function (p) { return p.drift; }) + " drifted, " +
+        count(copyPlaces, function (p) { return p.identical; }) + " identical"],
+      [el("a", { href: "#hard-colour", text: "Hard-coded colour" }), colours.length + " values",
+        places(colours) + " places: " + places(colours.filter(function (g) { return g.risk; })) + " would not follow dynamic colour"]
+    ];
+    ["type", "shape", "spacing", "alpha"].forEach(function (k) {
+      var gs = kind(k);
+      rows.push([el("a", { href: "#hard-" + k, text: "Hard-coded " + k }), gs.length + " values", places(gs) + " places"]);
+    });
+    return el("div", { class: "table-wrap" }, [el("table", { class: "summary" }, [
+      el("tbody", null, rows.map(function (r) {
+        return el("tr", null, r.map(function (cell) { return el("td", null, [cell]); }));
+      }))
+    ])]);
+  }
+
+  var KIND_TITLES = { colour: "Colours", type: "Type", shape: "Shape", spacing: "Spacing", alpha: "Alpha" };
+
+  function findings(container, input) {
     var holder = container || document.getElementById("findings");
     if (!holder) return;
-    var items = list || window.SELLO_FINDINGS || [];
+    var data = input || window.SELLO_FINDINGS;
     holder.innerHTML = "";
-    if (!items.length) {
-      holder.appendChild(el("div", { class: "empty-state" }, [
-        el("p", { text: "No findings yet." })
-      ]));
+    if (!data) {
+      holder.appendChild(el("div", { class: "empty-state" }, [el("p", { text: "No findings loaded." })]));
       return;
     }
-    var output = el("textarea", { class: "answers-out", readonly: true, "aria-label": "Answers" });
-    var status = el("span", { class: "copy-status", "aria-live": "polite" });
-    function refresh() { output.value = answersText(items); }
-    var copy = el("button", { type: "button", text: "Copy answers" });
-    copy.addEventListener("click", function () {
-      refresh();
-      copyText(output.value).then(function () {
-        status.textContent = "Copied " + items.length + " lines.";
-      }, function () {
-        output.select();
-        status.textContent = "Copy was refused: select the text below and copy it.";
-      });
+    holder.appendChild(summary(data));
+
+    holder.appendChild(el("h2", { id: "misuse", text: "Misuse" }));
+    holder.appendChild(el("p", { class: "muted", text: "One card per component: what it means in the app, then each place that uses it against that meaning. Sure places first; unsure ones are marked and say why." }));
+    data.misuse.forEach(function (card) { holder.appendChild(misuseCard(card)); });
+
+    holder.appendChild(el("h2", { id: "copies", text: "Copies" }));
+    holder.appendChild(el("p", { class: "muted", text: "One card per shared component: each place that rebuilds it by hand and how the copy differs. Drifted copies say something the shared part would not." }));
+    data.copies.forEach(function (card) { holder.appendChild(copyCard(card)); });
+
+    holder.appendChild(el("h2", { id: "hardcoded", text: "Hard-coded values" }));
+    holder.appendChild(dynamicBox(data.dynamic, data.hardcoded));
+    ["colour", "type", "shape", "spacing", "alpha"].forEach(function (k) {
+      var groups = data.hardcoded.filter(function (g) { return g.kind === k; });
+      holder.appendChild(el("h3", { id: "hard-" + k, class: "theme-heading", text: KIND_TITLES[k] }));
+      if (k === "colour") holder.appendChild(el("p", { class: "muted", text: "Every colour not read from the theme. Those that would stay put under a dynamic scheme come first." }));
+      holder.appendChild(hardTable(groups, k === "colour"));
     });
-    var answered = el("span", { class: "muted" });
-    function count() {
-      var done = items.filter(function (f) { return loadAnswer(f.id).choice; }).length;
-      answered.textContent = done + " of " + items.length + " answered";
-    }
-    holder.appendChild(el("div", { class: "findings-toolbar" }, [copy, answered, status]));
-    var themes = [];
-    items.forEach(function (finding) {
-      if (finding.theme && themes.indexOf(finding.theme) < 0) themes.push(finding.theme);
-    });
-    if (themes.length) holder.appendChild(themeIndex(items, themes));
-    var shownTheme = null;
-    items.forEach(function (finding) {
-      if (finding.theme && finding.theme !== shownTheme) {
-        shownTheme = finding.theme;
-        holder.appendChild(el("h2", { class: "theme-heading", id: themeId(shownTheme), text: shownTheme }));
-      }
-      holder.appendChild(findingCard(finding));
-    });
-    holder.appendChild(el("h2", { text: "Answers" }));
-    holder.appendChild(output);
-    document.addEventListener("sello-answers-changed", function () { refresh(); count(); });
-    refresh();
-    count();
+
+    holder.appendChild(el("details", { class: "not-listed", id: "not-listed" }, [
+      el("summary", { text: "Not listed (" + data.notListed.length + " look-alikes the copies audit left out)" }),
+      el("ul", null, data.notListed.map(function (d) {
+        return el("li", null, [el("strong", { text: d.what }), " — " + d.why]);
+      }))
+    ]));
+
     shots(holder);
+    if (location.hash) {
+      var target = document.getElementById(location.hash.slice(1));
+      if (target) target.scrollIntoView();
+    }
   }
 
   /* ---------------------------------------------------------------- run */

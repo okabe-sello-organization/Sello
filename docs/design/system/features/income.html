@@ -307,18 +307,28 @@
       <ul>
         <li><code>IncomePane</code> (<code>IncomeFormScreen.kt:250</code>) is the same code as <code>MovementPane</code>
           (<code>app/src/main/java/com/software/sello/presentation/movement/MovementForm.kt:53</code>), while the expense
-          form's <code>Pane</code> (<code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:363</code>) differs. Finding: <a href="../findings.html#F28">F28</a>.</li>
+          form's <code>Pane</code> (<code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:363</code>) differs. Finding: <a href="../findings.html#C03">C03</a>.</li>
         <li><code>IncomeDatePicker</code> (<code>IncomeFormScreen.kt:498</code>) against <code>MovementDatePicker</code>
-          (<code>MovementForm.kt:144</code>) and the expense form's <code>DayPicker</code>. Finding: <a href="../findings.html#F26">F26</a>.</li>
-        <li>The X (<code>IncomeFormScreen.kt:142</code>) against <code>MovementCloseButton</code> (<code>MovementForm.kt:45</code>). Finding: <a href="../findings.html#F27">F27</a>.</li>
+          (<code>MovementForm.kt:144</code>) and the expense form's <code>DayPicker</code>. Finding: <a href="../findings.html#C01">C01</a>.</li>
+        <li>The X (<code>IncomeFormScreen.kt:142</code>) against <code>MovementCloseButton</code> (<code>MovementForm.kt:45</code>). Finding: <a href="../findings.html#C02">C02</a>.</li>
         <li>Raw <code>Text</code> hints (<code>IncomeFormScreen.kt:356</code>, <code>:363</code>; <code>IncomeHistoryScreen.kt:355</code>,
           <code>:367</code>, <code>:288</code>) where the expense form uses
-          <a href="../components.html#c-FieldMessageText"><code>FieldMessageText</code></a> with the Hint tone. Finding: <a href="../findings.html#F33">F33</a>.</li>
+          <a href="../components.html#c-FieldMessageText"><code>FieldMessageText</code></a> with the Hint tone. Finding: <a href="../findings.html#C15">C15</a>.</li>
         <li>The history's stale notice is an <a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a>
           (<code>IncomeHistoryScreen.kt:182</code>) where the income form, Anotar and Recibo use <code>StaleSlip</code>:
-          compare income-history-stale with income-form-stale. Finding: <a href="../findings.html#F01">F01</a>.</li>
+          compare income-history-stale with income-form-stale. Findings: <a href="../findings.html#M01">M01</a>, <a href="../findings.html#C06">C06</a>.</li>
       </ul>
-      <p>The choice for each linked finding is made on the <a href="../findings.html">findings</a> page.</p>
+    </section>
+
+    <section id="findings-here">
+      <h2>Findings here</h2>
+      <p class="muted">Places in this feature on the <a href="../findings.html">findings</a> page; shared parts it uses are listed there under their own files.</p>
+      <ul>
+        <li><strong>Misuse:</strong> <a href="../findings.html#M01">M01</a> <code>ErrorSlip</code>: <a href="../findings.html#M01-8">M01-8</a>.</li>
+        <li><strong>Copies:</strong> <a href="../findings.html#C01">C01</a> <code>MovementDatePicker</code>: <a href="../findings.html#C01-2">C01-2</a>; <a href="../findings.html#C02">C02</a> <code>MovementCloseButton</code>: <a href="../findings.html#C02-2">C02-2</a>; <a href="../findings.html#C03">C03</a> <code>MovementPane</code>: <a href="../findings.html#C03-1">C03-1</a>; <a href="../findings.html#C04">C04</a> <code>MovementNoteLine</code>: <a href="../findings.html#C04-2">C04-2</a>; <a href="../findings.html#C05">C05</a> <code>MovementDiscardSlip</code>: <a href="../findings.html#C05-1">C05-1</a>.</li>
+        <li><strong>Hard-coded type:</strong> <a href="../findings.html#H46">H46</a> <code>fontWeight = FontWeight.W700</code> (1 place); <a href="../findings.html#H47">H47</a> <code>fontWeight = FontWeight.Bold</code> (1 place); <a href="../findings.html#H49">H49</a> <code>fontWeight = FontWeight.W900</code> (1 place).</li>
+        <li><strong>Hard-coded spacing:</strong> <a href="../findings.html#H59">H59</a> <code>4.dp</code> (1 place).</li>
+      </ul>
     </section>
 
     <section id="gaps">

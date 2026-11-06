@@ -533,44 +533,10 @@ figure.shots > figcaption {
 
 /* ---------- Findings ---------- */
 
-.findings-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-button,
-.button {
-  font: inherit;
-  font-weight: 700;
-  font-size: 14px;
-  padding: 8px 16px;
-  border-radius: var(--radius-button);
-  border: 0;
-  background: var(--brand);
-  color: var(--on-brand);
-  cursor: pointer;
-}
-
-button.secondary {
-  background: transparent;
-  color: var(--brand);
-  border: 1.5px solid var(--brand);
-}
-
-.theme-index {
-  margin: 0 0 8px;
-  padding-left: 22px;
-  columns: 2 260px;
-}
-
 .theme-heading {
   margin: 32px 0 14px;
   padding-bottom: 6px;
   border-bottom: 2px solid var(--rule);
-  scroll-margin-top: 16px;
 }
 
 .finding {
@@ -582,8 +548,6 @@ button.secondary {
   border-left: 6px solid var(--rule);
 }
 
-.finding.answered { border-left-color: var(--gain); }
-
 .finding header {
   display: flex;
   flex-wrap: wrap;
@@ -591,90 +555,66 @@ button.secondary {
   align-items: baseline;
 }
 
-.finding header h2 { margin: 0; font-size: 20px; }
+.finding header h3 { margin: 0; font-size: 19px; }
 
-.finding .fid {
+.finding .fid,
+.hard .fid {
   font-weight: 900;
   color: var(--brand);
 }
 
-.finding .variants {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 18px;
-  margin: 12px 0;
-}
-
-.finding .variant {
-  flex: 1 1 320px;
-  max-width: 640px;
-  border: 1px solid var(--rule);
-  border-radius: 12px;
-  padding: 12px 14px;
-  background: var(--paper-alt);
-}
-
-.finding .variant h3 { margin: 0 0 4px; }
-
-.finding .variant ul.files {
+.finding ul.files,
+.hard ul.files {
   padding-left: 18px;
   margin: 6px 0;
   font-size: 13px;
 }
 
-.finding .variant .shot-row { gap: 10px; }
-
-.finding .variant .shot,
-.finding .variant .shot-missing { width: 220px; }
-
-.finding .recommend {
-  background: var(--gain-soft);
-  border-radius: 10px;
-  padding: 8px 12px;
-  margin: 10px 0;
+.finding .place {
+  border-top: 1px solid var(--rule);
+  margin-top: 14px;
+  padding-top: 10px;
 }
 
-.finding fieldset {
-  border: 1px solid var(--rule);
-  border-radius: 10px;
-  padding: 10px 14px;
-  margin: 10px 0 0;
+.finding .place p { margin: 6px 0; }
+.finding .place-head { font-size: 14px; }
+.finding .pid { font-weight: 800; color: var(--ink-soft); }
+.finding .place .shot-row { gap: 10px; }
+.finding .place .shot,
+.finding .place .shot-missing { width: 200px; }
+.finding .place.is-unsure { opacity: 0.92; }
+.finding .place.copy-drifted { border-left: 4px solid var(--loss); padding-left: 10px; }
+.finding .drift { color: var(--loss); }
+
+.badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 1px 8px;
+  border-radius: 999px;
+  margin-left: 6px;
+  background: var(--paper-alt);
+  color: var(--ink-soft);
 }
 
-.finding fieldset legend {
-  font-weight: 700;
-  padding: 0 4px;
-}
+.badge.unsure { background: var(--warn-soft); color: var(--warn); }
+.badge.drifted, .badge.risk { background: var(--loss-soft); color: var(--loss); }
+.badge.identical { background: var(--gain-soft); color: var(--gain); }
 
-.finding .choices {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 18px;
-  margin-bottom: 8px;
-}
-
-.finding textarea,
-.answers-out {
-  width: 100%;
-  min-height: 56px;
-  font: inherit;
-  font-size: 14px;
-  padding: 8px 10px;
-  border-radius: var(--radius-control);
-  border: 1px solid var(--outline);
-  background: var(--paper);
-  color: var(--ink);
-}
-
-.answers-out {
-  font-family: ui-monospace, "DejaVu Sans Mono", monospace;
-  min-height: 120px;
-}
+.small { font-size: 13px; }
+.note.dynamic h3 { margin-top: 0; }
+table.hard td { vertical-align: top; }
+table.hard td p { margin: 4px 0 0; }
+table.hard .shot,
+table.hard .shot-missing { width: 160px; }
+table.summary td:first-child { font-weight: 700; }
+.not-listed { margin-top: 28px; }
+.not-listed summary { font-weight: 700; cursor: pointer; }
 
 .empty-state {
   text-align: center;
   padding: 36px 16px;
   color: var(--ink-soft);
 }
-
-.copy-status { color: var(--gain); font-weight: 700; }

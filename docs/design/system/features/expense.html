@@ -288,14 +288,23 @@
           (<code>app/src/main/java/com/software/sello/presentation/movement/MovementForm.kt:53</code>) and its copy
           <code>IncomePane</code> (<code>app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:250</code>):
           the expense one drops the <code>lg</code> inner padding and spaces by <code>md</code>, so its skeleton and
-          ErrorSlip reach the screen edge. No screenshots of either. Finding: <a href="../findings.html#F28">F28</a>.</li>
+          ErrorSlip reach the screen edge. No screenshots of either. Finding: <a href="../findings.html#C03">C03</a>.</li>
         <li><code>DayPicker</code> (<code>ExpenseEntryScreen.kt:673</code>) against <code>MovementDatePicker</code>
           (<code>MovementForm.kt:144</code>): the same dialog plus the Se repite range rule. Income and Anotar varios have
-          their own copies too. Finding: <a href="../findings.html#F26">F26</a>.</li>
+          their own copies too. Finding: <a href="../findings.html#C01">C01</a>.</li>
         <li>The X (<code>ExpenseEntryScreen.kt:190</code>) against <code>MovementCloseButton</code>
-          (<code>MovementForm.kt:45</code>): identical markup, written inline. Findings: <a href="../findings.html#F27">F27</a>, <a href="../findings.html#F30">F30</a>.</li>
+          (<code>MovementForm.kt:45</code>): identical markup, written inline. Finding: <a href="../findings.html#C02">C02</a>.</li>
       </ul>
-      <p>The choice for each linked finding is made on the <a href="../findings.html">findings</a> page.</p>
+    </section>
+
+    <section id="findings-here">
+      <h2>Findings here</h2>
+      <p class="muted">Places in this feature on the <a href="../findings.html">findings</a> page; shared parts it uses are listed there under their own files.</p>
+      <ul>
+        <li><strong>Misuse:</strong> <a href="../findings.html#M03">M03</a> <code>ConfirmSlip(destructive)</code>: <a href="../findings.html#M03-1">M03-1</a>.</li>
+        <li><strong>Copies:</strong> <a href="../findings.html#C01">C01</a> <code>MovementDatePicker</code>: <a href="../findings.html#C01-1">C01-1</a>; <a href="../findings.html#C02">C02</a> <code>MovementCloseButton</code>: <a href="../findings.html#C02-1">C02-1</a>; <a href="../findings.html#C03">C03</a> <code>MovementPane</code>: <a href="../findings.html#C03-2">C03-2</a>; <a href="../findings.html#C04">C04</a> <code>MovementNoteLine</code>: <a href="../findings.html#C04-1">C04-1</a>; <a href="../findings.html#C05">C05</a> <code>MovementDiscardSlip</code>: <a href="../findings.html#C05-2">C05-2 (drifted)</a>.</li>
+        <li><strong>Hard-coded type:</strong> <a href="../findings.html#H47">H47</a> <code>fontWeight = FontWeight.Bold</code> (1 place).</li>
+      </ul>
     </section>
 
     <section id="gaps">

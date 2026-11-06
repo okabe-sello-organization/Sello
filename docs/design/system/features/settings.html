@@ -166,9 +166,21 @@
     <section id="look-alikes">
       <h2>Feature-local parts that look like shared ones</h2>
       <ul>
-        <li><code>InkSwatches</code> (<code>SettingsComponents.kt:33</code>) is a radio choice like <a href="../components.html#c-SegmentedSwitch"><code>SegmentedSwitch</code></a> and <a href="../components.html#c-OptionSlip"><code>OptionSlip</code></a>, but drawn as colour circles. It re-declares <code>DISABLED_ROW_ALPHA = 0.38f</code> (<code>SettingsComponents.kt:93</code>) with the same name and value as SettingRow's private constant (<code>design-system/src/main/java/com/software/sello/designsystem/component/Settings.kt:133</code>), and hard-codes a <code>6.dp</code> gap and a <code>2.5.dp</code> ring. No other feature draws colour swatches. Finding: <a href="../findings.html#F73">F73</a>.</li>
-        <li><code>SectionTitle</code> (<code>SettingsScreen.kt:325</code>) is copied inline in Tus datos (<code>app/src/main/java/com/software/sello/feature/backup/TusDatos.kt:119</code>) for the same heading. Finding: <a href="../findings.html#F87">F87</a>.</li>
-        <li>The stale notice is an ErrorSlip, not the shared <code>StaleSlip</code> (<code>app/src/main/java/com/software/sello/presentation/read/StaleSlip.kt:23</code>) other screens use for older figures; the schedule count and the rate say "unreadable" in a row caption instead. Logged as a finding. Finding: <a href="../findings.html#F01">F01</a>.</li>
+        <li><code>InkSwatches</code> (<code>SettingsComponents.kt:33</code>) is a radio choice like <a href="../components.html#c-SegmentedSwitch"><code>SegmentedSwitch</code></a> and <a href="../components.html#c-OptionSlip"><code>OptionSlip</code></a>, but drawn as colour circles. It re-declares <code>DISABLED_ROW_ALPHA = 0.38f</code> (<code>SettingsComponents.kt:93</code>) with the same name and value as SettingRow's private constant (<code>design-system/src/main/java/com/software/sello/designsystem/component/Settings.kt:133</code>), and hard-codes a <code>6.dp</code> gap and a <code>2.5.dp</code> ring. No other feature draws colour swatches. Finding: <a href="../findings.html#H69">H69</a>.</li>
+        <li><code>SectionTitle</code> (<code>SettingsScreen.kt:325</code>) is copied inline in Tus datos (<code>app/src/main/java/com/software/sello/feature/backup/TusDatos.kt:119</code>) for the same heading. Findings: <a href="../findings.html#C23">C23</a>, <a href="../findings.html#C24">C24</a>.</li>
+        <li>The stale notice is an ErrorSlip, not the shared <code>StaleSlip</code> (<code>app/src/main/java/com/software/sello/presentation/read/StaleSlip.kt:23</code>) other screens use for older figures; the schedule count and the rate say "unreadable" in a row caption instead. Logged as a finding. Findings: <a href="../findings.html#M01">M01</a>, <a href="../findings.html#C06">C06</a>.</li>
+      </ul>
+    </section>
+
+    <section id="findings-here">
+      <h2>Findings here</h2>
+      <p class="muted">Places in this feature on the <a href="../findings.html">findings</a> page; shared parts it uses are listed there under their own files.</p>
+      <ul>
+        <li><strong>Misuse:</strong> <a href="../findings.html#M07">M07</a> <code>Stamp(ink)</code>: <a href="../findings.html#M07-1">M07-1</a>, <a href="../findings.html#M07-2">M07-2 (unsure)</a>, <a href="../findings.html#M07-3">M07-3 (unsure)</a>; <a href="../findings.html#M08">M08</a> <code>ButtonPair</code>: <a href="../findings.html#M08-1">M08-1 (unsure)</a>.</li>
+        <li><strong>Copies:</strong> <a href="../findings.html#C12">C12</a> <code>SelloButton(kind = Text)</code>: <a href="../findings.html#C12-2">C12-2</a>; <a href="../findings.html#C24">C24</a> <code>SectionTitle (Configuración)</code>: <a href="../findings.html#C24-1">C24-1</a>.</li>
+        <li><strong>Hard-coded colour:</strong> <a href="../findings.html#H03">H03</a> <code>selloColors(ink, isDark = false).band (palette read directly)</code> (1 place, would not follow dynamic colour); <a href="../findings.html#H13">H13</a> <code>Color.Black scrim / platform window dim</code> (1 place).</li>
+        <li><strong>Hard-coded type:</strong> <a href="../findings.html#H24">H24</a> <code>fontSize = 22.sp</code> (1 place); <a href="../findings.html#H44">H44</a> <code>fontWeight = FontWeight.W400</code> (1 place); <a href="../findings.html#H45">H45</a> <code>fontWeight = FontWeight.W600</code> (2 places); <a href="../findings.html#H46">H46</a> <code>fontWeight = FontWeight.W700</code> (2 places).</li>
+        <li><strong>Hard-coded alpha:</strong> <a href="../findings.html#H69">H69</a> <code>0.38f</code> (4 places); <a href="../findings.html#H72">H72</a> <code>0.55f</code> (1 place).</li>
       </ul>
     </section>
 
