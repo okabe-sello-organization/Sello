@@ -44,7 +44,7 @@
 <li><a href="#g-frame">Frame and navigation</a> <span class="muted">(7)</span></li>
 <li><a href="#g-entry">Entry forms</a> <span class="muted">(11)</span></li>
 <li><a href="#g-choices">Buttons and choices</a> <span class="muted">(10)</span></li>
-<li><a href="#g-feedback">Feedback, dialogs and sheets</a> <span class="muted">(21)</span></li>
+<li><a href="#g-feedback">Feedback, dialogs and sheets</a> <span class="muted">(17)</span></li>
 <li><a href="#g-categories">Categories and carry</a> <span class="muted">(5)</span></li>
 <li><a href="#g-charts">Charts</a> <span class="muted">(2)</span></li>
 <li><a href="#g-goals">Goals and movements</a> <span class="muted">(11)</span></li>
@@ -53,7 +53,7 @@
 <li><a href="#g-theme">Theme and helpers</a> <span class="muted">(6)</span></li>
       </ul>
       <div class="gaps">
-        <p>Of 90 components, 24 have a component capture of their own, 59 are shown inside a screen baseline, and 7 are not shown at all: <a href="#c-rememberSelectedFirst"><code>rememberSelectedFirst</code></a>, <a href="#c-SelloTheme"><code>SelloTheme</code></a>, <a href="#c-systemReducedMotion"><code>systemReducedMotion</code></a>, <a href="#c-StatusBarInk"><code>StatusBarInk</code></a>, <a href="#c-statusBarLightIconsUnder"><code>statusBarLightIconsUnder</code></a>, <a href="#c-DialogBarIcons"><code>DialogBarIcons</code></a>, <a href="#c-painter"><code>painter</code></a> (theme and helper functions with nothing of their own to draw). No component capture has a dark version except the bulk receipt.</p>
+        <p>Of 86 components, 24 have a component capture of their own, 55 are shown inside a screen baseline, and 7 are not shown at all: <a href="#c-rememberSelectedFirst"><code>rememberSelectedFirst</code></a>, <a href="#c-SelloTheme"><code>SelloTheme</code></a>, <a href="#c-systemReducedMotion"><code>systemReducedMotion</code></a>, <a href="#c-StatusBarInk"><code>StatusBarInk</code></a>, <a href="#c-statusBarLightIconsUnder"><code>statusBarLightIconsUnder</code></a>, <a href="#c-DialogBarIcons"><code>DialogBarIcons</code></a>, <a href="#c-painter"><code>painter</code></a> (theme and helper functions with nothing of their own to draw). No component capture has a dark version except the bulk receipt.</p>
       </div>
     </section>
 <section id="g-surfaces">
@@ -1162,81 +1162,6 @@ fun ChoiceSlip(
 
 <p class="muted">Also visible in screen baselines: <code>expense-entry-following</code>.</p>
 <figure data-shot="expense-entry-following" data-module="app" data-caption="Seen over the expense form: ¿Cambiar también los siguientes?"></figure>
-<div class="gaps"><p>No component capture.</p></div>
-</article>
-<article class="component" id="c-DayGrid">
-<h3><code>DayGrid</code> <span class="src"><code>component/RepeatParts.kt:323</code></span></h3>
-<dl>
-<dt>Purpose</dt><dd>The days of the month, 1 to 31, as round toggles in rows of seven, or four from font scale 1.6 so the numbers keep their size. Every day keeps a 48dp touch target; where seven of those do not fit the width, a row holds fewer. A chosen day is filled with the brand. Each is read as <code>dayDescription</code> with whether it is chosen. Which days may be chosen together belongs to the caller.</dd>
-<dt>Inputs</dt><dd>The chosen days, how each is read, and the toggle.</dd>
-<dt>Used by</dt><dd><span class="tag internal">not called from :app</span> <span class="muted">Inside the design system: <code>RepeatParts.kt</code> (<code>RepeatChoiceSheet</code>). Public so its contract test (<code>RepeatPartsTest</code>) reaches it.</span></dd>
-</dl>
-<pre><code>fun DayGrid(
-    selected: Set&lt;Int&gt;,
-    onToggle: (Int) -&gt; Unit,
-    dayDescription: (Int) -&gt; String,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true
-)</code></pre>
-
-<p class="muted">Also visible in screen baselines: <code>expense-entry-repeat-sheet</code>.</p>
-<figure data-shot="expense-entry-repeat-sheet" data-module="app" data-caption="Seen in Se repite: the days of the month"></figure>
-<div class="gaps"><p>No component capture.</p></div>
-</article>
-<article class="component" id="c-IntervalStepper">
-<h3><code>IntervalStepper</code> <span class="src"><code>component/RepeatParts.kt:381</code></span></h3>
-<dl>
-<dt>Purpose</dt><dd>How many weeks or days between one and the next: a minus, the <code>value</code>, a plus and the <code>unit</code> after them, such as "semanas, desde el día que elegiste". The value is read with its unit and said again whenever it changes. The bounds belong to the caller, who turns a button off with <code>canDecrease</code> or <code>canIncrease</code>.</dd>
-<dt>Inputs</dt><dd>The value, its unit and the two buttons' labels and bounds.</dd>
-<dt>Used by</dt><dd><span class="tag internal">not called from :app</span> <span class="muted">Inside the design system: <code>RepeatParts.kt</code> (<code>RepeatChoiceSheet</code>). Public so its contract test (<code>RepeatPartsTest</code>) reaches it.</span></dd>
-</dl>
-<pre><code>fun IntervalStepper(
-    value: Int,
-    unit: String,
-    onDecrease: () -&gt; Unit,
-    onIncrease: () -&gt; Unit,
-    decreaseLabel: String,
-    increaseLabel: String,
-    modifier: Modifier = Modifier,
-    canDecrease: Boolean = true,
-    canIncrease: Boolean = true
-)</code></pre>
-
-<p class="muted">Also visible in screen baselines: <code>schedule-editor-repeat-days</code>.</p>
-<figure data-shot="schedule-editor-repeat-days" data-module="app" data-caption="Seen in Se repite: Cada 10 días"></figure>
-<div class="gaps"><p>No component capture.</p></div>
-</article>
-<article class="component" id="c-RepeatNext">
-<h3><code>RepeatNext</code> <span class="src"><code>component/RepeatParts.kt:466</code></span></h3>
-<dl>
-<dt>Purpose</dt><dd>When the next one is recorded, such as "Próximo: lun 5 nov. Se anota solo en su fecha."</dd>
-<dt>Inputs</dt><dd>The sentence about the next one, already written.</dd>
-<dt>Used by</dt><dd><span class="tag internal">not called from :app</span> <span class="muted">Inside the design system: <code>RepeatParts.kt</code> (<code>RepeatChoiceSheet</code>). Public so its contract test (<code>RepeatPartsTest</code>) reaches it.</span></dd>
-</dl>
-<pre><code>fun RepeatNext(text: String, modifier: Modifier = Modifier)</code></pre>
-
-<p class="muted">Also visible in screen baselines: <code>expense-entry-repeat-sheet</code>.</p>
-<figure data-shot="expense-entry-repeat-sheet" data-module="app" data-caption="Seen in Se repite: Próximo"></figure>
-<div class="gaps"><p>No component capture.</p></div>
-</article>
-<article class="component" id="c-RepeatSheetActions">
-<h3><code>RepeatSheetActions</code> <span class="src"><code>component/RepeatParts.kt:447</code></span></h3>
-<dl>
-<dt>Purpose</dt><dd>The last row of a <code>RepeatSheet</code>: <code>dismissLabel</code> outlined in a third of the width and <code>confirmLabel</code> filled in the rest. When a label would not fit beside the other, the two go one above the other.</dd>
-<dt>Inputs</dt><dd>The two labels, their actions, and whether the confirm is on.</dd>
-<dt>Used by</dt><dd><span class="tag internal">not called from :app</span> <span class="muted">Inside the design system: <code>RepeatParts.kt</code> (<code>RepeatChoiceSheet</code>). Public so its contract test (<code>RepeatPartsTest</code>) reaches it.</span></dd>
-</dl>
-<pre><code>fun RepeatSheetActions(
-    dismissLabel: String,
-    onDismiss: () -&gt; Unit,
-    confirmLabel: String,
-    onConfirm: () -&gt; Unit,
-    modifier: Modifier = Modifier,
-    confirmEnabled: Boolean = true
-)</code></pre>
-
-<p class="muted">Also visible in screen baselines: <code>expense-entry-repeat-sheet</code>.</p>
-<figure data-shot="expense-entry-repeat-sheet" data-module="app" data-caption="Seen in Se repite: Quitar and Listo"></figure>
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-RestoredSlip">

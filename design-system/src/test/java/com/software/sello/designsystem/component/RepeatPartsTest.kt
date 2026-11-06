@@ -1,4 +1,4 @@
-package com.software.sello.presentation.recurrence
+package com.software.sello.designsystem.component
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
@@ -35,13 +35,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.height
 import androidx.compose.ui.unit.width
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.software.sello.designsystem.component.DayGrid
-import com.software.sello.designsystem.component.IntervalStepper
-import com.software.sello.designsystem.component.RepeatNext
-import com.software.sello.designsystem.component.RepeatSheet
-import com.software.sello.designsystem.component.RepeatSheetActions
-import com.software.sello.feature.recibo.text
-import com.software.sello.inEveryScheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule

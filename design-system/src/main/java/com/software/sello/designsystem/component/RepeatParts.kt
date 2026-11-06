@@ -320,7 +320,7 @@ private fun day(utcMillis: Long): LocalDate =
  * be chosen together belongs to the caller.
  */
 @Composable
-fun DayGrid(
+internal fun DayGrid(
     selected: Set<Int>,
     onToggle: (Int) -> Unit,
     dayDescription: (Int) -> String,
@@ -378,7 +378,7 @@ fun DayGrid(
  * turns a button off with [canDecrease] or [canIncrease].
  */
 @Composable
-fun IntervalStepper(
+internal fun IntervalStepper(
     value: Int,
     unit: String,
     onDecrease: () -> Unit,
@@ -444,7 +444,7 @@ private fun StepButton(sign: String, label: String, enabled: Boolean, onClick: (
  * two go one above the other.
  */
 @Composable
-fun RepeatSheetActions(
+internal fun RepeatSheetActions(
     dismissLabel: String,
     onDismiss: () -> Unit,
     confirmLabel: String,
@@ -463,7 +463,7 @@ fun RepeatSheetActions(
 
 /** When the next one is recorded, such as "Próximo: lun 5 nov. Se anota solo en su fecha." */
 @Composable
-fun RepeatNext(text: String, modifier: Modifier = Modifier) {
+internal fun RepeatNext(text: String, modifier: Modifier = Modifier) {
     val colors = SelloTheme.colors
     Row(
         verticalAlignment = Alignment.CenterVertically,

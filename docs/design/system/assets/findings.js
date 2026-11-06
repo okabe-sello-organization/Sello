@@ -1331,7 +1331,7 @@ window.SELLO_FINDINGS = {
     {
      "id": "C01-7",
      "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:243",
-     "area": "design-system:RepeatParts.kt:",
+     "area": "design-system:RepeatParts",
      "features": [
       "recurrence"
      ],
@@ -4444,7 +4444,7 @@ window.SELLO_FINDINGS = {
     },
     {
      "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:360",
-     "area": "design-system:RepeatParts.kt:",
+     "area": "design-system:RepeatParts",
      "features": [
       "recurrence"
      ],
@@ -4452,7 +4452,7 @@ window.SELLO_FINDINGS = {
     },
     {
      "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:412",
-     "area": "design-system:RepeatParts.kt:",
+     "area": "design-system:RepeatParts",
      "features": [
       "recurrence"
      ],
@@ -4601,13 +4601,13 @@ window.SELLO_FINDINGS = {
     },
     {
      "file": "design-system/src/main/java/com/software/sello/designsystem/component/Movement.kt:120",
-     "area": "design-system:Movement.kt:",
+     "area": "design-system:Movement",
      "features": [],
      "note": "MovementNoteComposer: val facts = SpanStyle(color = SelloTheme.colors.ink, fontWeight = FontWeight.Bold)"
     },
     {
      "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:292",
-     "area": "design-system:RepeatParts.kt:",
+     "area": "design-system:RepeatParts",
      "features": [
       "recurrence"
      ],
@@ -5042,7 +5042,7 @@ window.SELLO_FINDINGS = {
     },
     {
      "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:232",
-     "area": "design-system:RepeatParts.kt:",
+     "area": "design-system:RepeatParts",
      "features": [
       "recurrence"
      ],
@@ -5340,7 +5340,7 @@ window.SELLO_FINDINGS = {
    "places": [
     {
      "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:495",
-     "area": "design-system:RepeatParts.kt:",
+     "area": "design-system:RepeatParts",
      "features": [
       "recurrence"
      ],
@@ -5888,31 +5888,31 @@ window.SELLO_FINDINGS = {
     },
     {
      "file": "design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:180",
-     "area": "design-system:Carry.kt:",
+     "area": "design-system:Carry",
      "features": [],
      "note": "CarryCorrectionContent: modifier = Modifier.padding(bottom = 8.dp).testTag(CARRY_CORRECTION_CHANGED_TAG)"
     },
     {
      "file": "design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:190",
-     "area": "design-system:Carry.kt:",
+     "area": "design-system:Carry",
      "features": [],
      "note": "CarryCorrectionContent: modifier = Modifier.padding(top = 8.dp).semantics { heading() }"
     },
     {
      "file": "design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:196",
-     "area": "design-system:Carry.kt:",
+     "area": "design-system:Carry",
      "features": [],
      "note": "CarryCorrectionContent: horizontalArrangement = Arrangement.spacedBy(8.dp),"
     },
     {
      "file": "design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:197",
-     "area": "design-system:Carry.kt:",
+     "area": "design-system:Carry",
      "features": [],
      "note": "CarryCorrectionContent: modifier = Modifier.padding(top = 8.dp)"
     },
     {
      "file": "design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:218",
-     "area": "design-system:Carry.kt:",
+     "area": "design-system:Carry",
      "features": [],
      "note": "CarryCorrectionContent: modifier = Modifier.padding(top = 8.dp)"
     },
@@ -6383,7 +6383,7 @@ window.SELLO_FINDINGS = {
    "places": [
     {
      "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:493",
-     "area": "design-system:RepeatParts.kt:",
+     "area": "design-system:RepeatParts",
      "features": [
       "recurrence"
      ],
@@ -6595,7 +6595,7 @@ window.SELLO_FINDINGS = {
     },
     {
      "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:350",
-     "area": "design-system:RepeatParts.kt:",
+     "area": "design-system:RepeatParts",
      "features": [
       "recurrence"
      ],
@@ -6603,7 +6603,7 @@ window.SELLO_FINDINGS = {
     },
     {
      "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:426",
-     "area": "design-system:RepeatParts.kt:",
+     "area": "design-system:RepeatParts",
      "features": [
       "recurrence"
      ],
@@ -6611,7 +6611,7 @@ window.SELLO_FINDINGS = {
     },
     {
      "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:487",
-     "area": "design-system:RepeatParts.kt:",
+     "area": "design-system:RepeatParts",
      "features": [
       "recurrence"
      ],
