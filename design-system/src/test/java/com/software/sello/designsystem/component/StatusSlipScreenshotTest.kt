@@ -60,19 +60,18 @@ class StatusSlipScreenshotTest {
     @Test
     fun empty() = capture("empty") {
         StatusSlip(
-            kind = StatusKind.Empty(SelloIcon.ReceiptLong),
-            title = "Aún no hay gastos",
+            kind = StatusKind.Empty(SelloIcon.ReceiptLong, "Aún no hay gastos"),
             message = "Anota el primero y aquí verás tu mes.",
-            action = StatusAction(label = "Anotar gasto") {}
+            action = StatusAction("Anotar gasto") {}
         )
     }
 
     @Test
     fun loadFailed() = capture("load-failed") {
         StatusSlip(
-            kind = StatusKind.LoadFailed,
+            kind = StatusKind.LoadFailed(),
             message = "No pudimos leer tus gastos. Tus registros siguen guardados.",
-            action = StatusAction {}
+            action = StatusAction(StatusSlipDefaults.retryLabel) {}
         )
     }
 
@@ -82,38 +81,36 @@ class StatusSlipScreenshotTest {
             kind = StatusKind.Older,
             message = "No pudimos actualizar. Esto es lo último que se leyó y puede no " +
                 "estar al día.",
-            action = StatusAction {}
+            action = StatusAction(StatusSlipDefaults.retryLabel) {}
         )
     }
 
     @Test
     fun actionFailed() = capture("action-failed") {
         StatusSlip(
-            kind = StatusKind.ActionFailed,
-            title = "No se guardó el respaldo",
+            kind = StatusKind.ActionFailed("No se guardó el respaldo"),
             message = "No hay espacio suficiente en el teléfono. Libera espacio e " +
                 "inténtalo de nuevo.",
-            action = StatusAction {}
+            action = StatusAction(StatusSlipDefaults.retryLabel) {}
         )
     }
 
     @Test
     fun unknown() = capture("unknown") {
         StatusSlip(
-            kind = StatusKind.Unknown,
-            title = "No sabemos si se guardó",
+            kind = StatusKind.Unknown("No sabemos si se guardó"),
             message = "El respaldo se interrumpió antes de confirmarse. Comprueba si quedó " +
                 "guardado antes de hacer otro.",
-            action = StatusAction {}
+            action = StatusAction(StatusSlipDefaults.checkLabel) {}
         )
     }
 
     @Test
     fun gone() = capture("gone") {
         StatusSlip(
-            kind = StatusKind.Gone,
+            kind = StatusKind.Gone(),
             message = "Esta categoría se borró mientras la veías.",
-            action = StatusAction {}
+            action = StatusAction(StatusSlipDefaults.backLabel) {}
         )
     }
 
@@ -121,15 +118,14 @@ class StatusSlipScreenshotTest {
     @Test
     fun busy() = capture("busy") {
         StatusSlip(
-            kind = StatusKind.LoadFailed,
+            kind = StatusKind.LoadFailed(),
             message = "No pudimos leer tus gastos. Tus registros siguen guardados.",
-            action = StatusAction(busy = true) {}
+            action = StatusAction(StatusSlipDefaults.retryLabel, busy = true) {}
         )
         StatusSlip(
-            kind = StatusKind.Unknown,
-            title = "No sabemos si se guardó",
+            kind = StatusKind.Unknown("No sabemos si se guardó"),
             message = "Comprueba si quedó guardado antes de hacer otro.",
-            action = StatusAction(busy = true) {}
+            action = StatusAction(StatusSlipDefaults.checkLabel, busy = true) {}
         )
     }
 }

@@ -974,19 +974,19 @@ fun ChoiceSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-StatusSlip">
-<h3><code>StatusSlip</code> <span class="src"><code>component/Status.kt:90</code></span></h3>
+<h3><code>StatusSlip</code> <span class="src"><code>component/Status.kt:108</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>A slip that says what kind of news it brings. Its required <code>kind</code> decides the icon, ink, layout and button; a caller gives only the words (<code>title</code>, <code>message</code>) and at most one <code>StatusAction</code> (label, <code>busy</code>, <code>onClick</code>). It replaces <a href="#c-EmptySlip"><code>EmptySlip</code></a>, <a href="#c-ErrorSlip"><code>ErrorSlip</code></a> and the app's <code>StaleSlip</code> (SELLO-184 moves the screens over).</dd>
+<dt>Purpose</dt><dd>A slip that says what kind of news it brings. Its required <code>kind</code> decides the icon, ink, layout and button and carries the title, so the compiler checks each kind gets the words it needs (Empty a title, Older none, the others an optional one). A caller adds the <code>message</code> and at most one <code>StatusAction</code> (label, <code>busy</code>, <code>onClick</code>); <code>StatusSlipDefaults</code> has the usual labels. A busy action shows a spinner, says "En curso" to TalkBack and ignores presses; every action is at least 48 dp tall. It replaces <a href="#c-EmptySlip"><code>EmptySlip</code></a>, <a href="#c-ErrorSlip"><code>ErrorSlip</code></a> and the app's <code>StaleSlip</code> (SELLO-184 moves the screens over).</dd>
 <dt>Kinds</dt><dd>
 <table>
 <thead><tr><th>Kind</th><th>When</th><th>Looks</th><th>Default words</th></tr></thead>
 <tbody>
-<tr><td><code>Empty(icon)</code></td><td>Nothing to show yet</td><td>Centred under the caller's icon in brand; sentence in inkSoft; outlined action</td><td>Title and label required</td></tr>
-<tr><td><code>LoadFailed</code></td><td>Content could not be read and nothing older is shown. Never above figures</td><td>Centred under Error in brand; sentence in inkSoft; outlined retry; read aloud</td><td>"No se pudo cargar", "Reintentar"</td></tr>
-<tr><td><code>Older</code></td><td>Figures still shown are the last read</td><td>Flat inline slip, no title; sentence in warn; text-button retry; read aloud</td><td>"Reintentar"</td></tr>
-<tr><td><code>ActionFailed</code></td><td>A save, export or backup failed</td><td>Flat inline slip; Error icon and sentence in loss; outlined retry; read aloud</td><td>"Reintentar"</td></tr>
-<tr><td><code>Unknown</code></td><td>The outcome of an action is not known yet; never says it failed</td><td>Flat inline slip; Info icon and sentence in warn; outlined check; read aloud</td><td>"Comprobar"</td></tr>
-<tr><td><code>Gone</code></td><td>The thing no longer exists</td><td>Centred under Block in brand; sentence in inkSoft; optional outlined way back</td><td>"Ya no está", "Volver"</td></tr>
+<tr><td><code>Empty(icon, title)</code></td><td>Nothing to show yet</td><td>Centred under the caller's icon in brand; sentence in inkSoft; outlined action</td><td>Title required</td></tr>
+<tr><td><code>LoadFailed(title?)</code></td><td>Content could not be read and nothing older is shown. Never above figures</td><td>Centred under Error in brand; sentence in inkSoft; outlined retry; read aloud</td><td>"No se pudo cargar"; <code>retryLabel</code> "Reintentar"</td></tr>
+<tr><td><code>Older</code></td><td>Figures still shown are the last read</td><td>Flat inline slip, no title; sentence in warn; text-button retry lined up with the sentence; read aloud</td><td><code>retryLabel</code></td></tr>
+<tr><td><code>ActionFailed(title?)</code></td><td>A save, export or backup failed</td><td>Flat inline slip; Error icon and sentence in loss; outlined retry; read aloud</td><td><code>retryLabel</code></td></tr>
+<tr><td><code>Unknown(title?)</code></td><td>The outcome of an action is not known yet; never says it failed</td><td>Flat inline slip; Info icon and sentence in warn; outlined check; read aloud</td><td><code>checkLabel</code> "Comprobar"</td></tr>
+<tr><td><code>Gone(title?)</code></td><td>The thing no longer exists</td><td>Centred under Block in brand; sentence in inkSoft; optional outlined way back; read aloud</td><td>"Ya no está"; <code>backLabel</code> "Volver"</td></tr>
 </tbody>
 </table></dd>
 <dt>Used by</dt><dd>No screen yet.</dd>
@@ -995,7 +995,6 @@ fun ChoiceSlip(
     kind: StatusKind,
     message: String,
     modifier: Modifier = Modifier,
-    title: String? = null,
     action: StatusAction? = null
 )</code></pre>
 <figure data-shot="status-slip-empty" data-module="design-system" data-variants="claro,oscuro" data-caption="Empty"></figure>

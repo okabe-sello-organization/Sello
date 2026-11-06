@@ -2,12 +2,15 @@ package com.software.sello.designsystem.component
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -21,6 +24,7 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -30,88 +34,98 @@ import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 
 /**
- * What news a [StatusSlip] brings. The kind decides the slip's icon, ink, layout and
- * button; a caller only gives the words and the action.
+ * What news a [StatusSlip] brings, with the words that belong to it. The kind decides the
+ * slip's icon, ink, layout and button; the compiler checks that each kind gets the words
+ * it needs: Empty a title, Older none, the others an optional one.
  */
 sealed interface StatusKind {
     /**
-     * Nothing to show yet, such as no expenses this month. The only kind whose [icon] the
-     * caller picks, to fit what is missing. Its title is required.
+     * Nothing to show yet, such as no expenses this month, under [title]. The only kind
+     * whose [icon] the caller picks, to fit what is missing.
      */
-    data class Empty(val icon: SelloIcon) : StatusKind
+    data class Empty(val icon: SelloIcon, val title: String) : StatusKind
 
     /**
      * Content that could not be read, and nothing read before to show instead. It never
-     * sits above figures: older figures that are still shown take [Older].
+     * sits above figures: older figures that are still shown take [Older]. A null [title]
+     * is "No se pudo cargar".
      */
-    data object LoadFailed : StatusKind
+    data class LoadFailed(val title: String? = null) : StatusKind
 
-    /**
-     * Figures still shown are the last ones read: a refresh could not update them. It has
-     * no title.
-     */
+    /** Figures still shown are the last ones read: a refresh could not update them. */
     data object Older : StatusKind
 
     /** Something the person did, such as a save, an export or a backup, failed. */
-    data object ActionFailed : StatusKind
+    data class ActionFailed(val title: String? = null) : StatusKind
 
     /**
-     * The outcome of something the person did is not known yet. It offers to check and
+     * The outcome of something the person did is not known yet. Its action checks; it
      * never says it failed.
      */
-    data object Unknown : StatusKind
+    data class Unknown(val title: String? = null) : StatusKind
 
-    /** The thing shown no longer exists, such as a category deleted meanwhile. */
-    data object Gone : StatusKind
+    /**
+     * The thing shown no longer exists, such as a category deleted meanwhile. A null
+     * [title] is "Ya no está".
+     */
+    data class Gone(val title: String? = null) : StatusKind
 }
 
 /**
- * The one action of a [StatusSlip]. A null [label] takes the kind's own: Reintentar,
- * Comprobar for [StatusKind.Unknown], Volver for [StatusKind.Gone]; [StatusKind.Empty] has
- * none and needs one. While [busy] it shows a spinner and ignores presses, so it is
- * requested once.
+ * The one action of a [StatusSlip], with its [label]; [StatusSlipDefaults] has each
+ * kind's usual one. While [busy] it shows a spinner, says it is busy and ignores presses,
+ * so it is requested once.
  */
-class StatusAction(val label: String? = null, val busy: Boolean = false, val onClick: () -> Unit)
+class StatusAction(val label: String, val busy: Boolean = false, val onClick: () -> Unit)
+
+/** The usual action labels of a [StatusSlip]. */
+object StatusSlipDefaults {
+    /** Reading or doing it again: LoadFailed, Older and ActionFailed. */
+    val retryLabel: String
+        @Composable get() = stringResource(R.string.sello_retry)
+
+    /** Finding out how an Unknown outcome ended. */
+    val checkLabel: String
+        @Composable get() = stringResource(R.string.sello_check)
+
+    /** The way back from something Gone. */
+    val backLabel: String
+        @Composable get() = stringResource(R.string.sello_back)
+}
 
 /**
  * A slip that says what kind of news it brings: nothing yet, a failed read, older
  * figures, a failed action, an unknown outcome or something gone. [kind] decides the
- * icon, ink, layout and button; [title] and [message] are the words and [action] at
- * most one thing to do.
+ * icon, ink, layout and button and carries the title; [message] is the sentence and
+ * [action] at most one thing to do.
  *
  * [StatusKind.Empty], [StatusKind.LoadFailed] and [StatusKind.Gone] are centred under a
  * large decorative icon and stand in for content. [StatusKind.Older],
  * [StatusKind.ActionFailed] and [StatusKind.Unknown] are flat inline slips that sit with
- * the content they speak of, and are read aloud when they appear. A null [title] takes
- * the kind's own where it has one ("No se pudo cargar", "Ya no está"); Empty needs one
- * and Older has none.
+ * the content they speak of. Every kind but Empty is read aloud when it appears.
  */
 @Composable
 fun StatusSlip(
     kind: StatusKind,
     message: String,
     modifier: Modifier = Modifier,
-    title: String? = null,
     action: StatusAction? = null
 ) {
-    require(kind !is StatusKind.Empty || title != null) { "An empty slip needs a title" }
-    require(kind != StatusKind.Older || title == null) { "An older-figures slip has no title" }
-    require(kind !is StatusKind.Empty || action == null || action.label != null) {
-        "An empty slip's action needs a label"
-    }
     val look = kind.look()
-    val shownTitle = title ?: look.defaultTitle?.let { stringResource(it) }
-    val shownAction = action?.let {
-        ShownAction(
-            label = it.label ?: stringResource(checkNotNull(look.defaultLabel)),
-            busy = it.busy,
-            onClick = it.onClick
-        )
-    }
+    val title = kind.title() ?: look.defaultTitle?.let { stringResource(it) }
     when (look.layout) {
-        StatusLayout.Centred -> CentredStatus(look, shownTitle, message, shownAction, modifier)
-        StatusLayout.Inline -> InlineStatus(look, shownTitle, message, shownAction, modifier)
+        StatusLayout.Centred -> CentredStatus(look, title, message, action, modifier)
+        StatusLayout.Inline -> InlineStatus(look, title, message, action, modifier)
     }
+}
+
+private fun StatusKind.title(): String? = when (this) {
+    is StatusKind.Empty -> title
+    is StatusKind.LoadFailed -> title
+    StatusKind.Older -> null
+    is StatusKind.ActionFailed -> title
+    is StatusKind.Unknown -> title
+    is StatusKind.Gone -> title
 }
 
 /** The test tag of a [StatusSlip]'s icon, where its kind has one. */
@@ -131,8 +145,7 @@ internal data class StatusLook(
     val messageInk: StatusInk,
     val button: ButtonKind,
     val announced: Boolean,
-    val defaultTitle: Int?,
-    val defaultLabel: Int?
+    val defaultTitle: Int?
 )
 
 internal fun StatusKind.look(): StatusLook = when (this) {
@@ -143,19 +156,17 @@ internal fun StatusKind.look(): StatusLook = when (this) {
         messageInk = StatusInk.InkSoft,
         button = ButtonKind.Outlined,
         announced = false,
-        defaultTitle = null,
-        defaultLabel = null
+        defaultTitle = null
     )
 
-    StatusKind.LoadFailed -> StatusLook(
+    is StatusKind.LoadFailed -> StatusLook(
         layout = StatusLayout.Centred,
         icon = SelloIcon.Error,
         iconInk = StatusInk.Brand,
         messageInk = StatusInk.InkSoft,
         button = ButtonKind.Outlined,
         announced = true,
-        defaultTitle = R.string.sello_error_title,
-        defaultLabel = R.string.sello_retry
+        defaultTitle = R.string.sello_error_title
     )
 
     StatusKind.Older -> StatusLook(
@@ -165,41 +176,37 @@ internal fun StatusKind.look(): StatusLook = when (this) {
         messageInk = StatusInk.Warn,
         button = ButtonKind.Text,
         announced = true,
-        defaultTitle = null,
-        defaultLabel = R.string.sello_retry
+        defaultTitle = null
     )
 
-    StatusKind.ActionFailed -> StatusLook(
+    is StatusKind.ActionFailed -> StatusLook(
         layout = StatusLayout.Inline,
         icon = SelloIcon.Error,
         iconInk = StatusInk.Loss,
         messageInk = StatusInk.Loss,
         button = ButtonKind.Outlined,
         announced = true,
-        defaultTitle = null,
-        defaultLabel = R.string.sello_retry
+        defaultTitle = null
     )
 
-    StatusKind.Unknown -> StatusLook(
+    is StatusKind.Unknown -> StatusLook(
         layout = StatusLayout.Inline,
         icon = SelloIcon.Info,
         iconInk = StatusInk.Warn,
         messageInk = StatusInk.Warn,
         button = ButtonKind.Outlined,
         announced = true,
-        defaultTitle = null,
-        defaultLabel = R.string.sello_check
+        defaultTitle = null
     )
 
-    StatusKind.Gone -> StatusLook(
+    is StatusKind.Gone -> StatusLook(
         layout = StatusLayout.Centred,
         icon = SelloIcon.Block,
         iconInk = StatusInk.Brand,
         messageInk = StatusInk.InkSoft,
         button = ButtonKind.Outlined,
-        announced = false,
-        defaultTitle = R.string.sello_status_gone_title,
-        defaultLabel = R.string.sello_back
+        announced = true,
+        defaultTitle = R.string.sello_status_gone_title
     )
 }
 
@@ -211,8 +218,6 @@ private fun StatusInk.color(): Color = when (this) {
     StatusInk.Loss -> SelloTheme.colors.semantic.loss
 }
 
-private class ShownAction(val label: String, val busy: Boolean, val onClick: () -> Unit)
-
 private fun Modifier.announcedIf(announced: Boolean): Modifier =
     if (announced) semantics { liveRegion = LiveRegionMode.Polite } else this
 
@@ -222,7 +227,7 @@ private fun CentredStatus(
     look: StatusLook,
     title: String?,
     message: String,
-    action: ShownAction?,
+    action: StatusAction?,
     modifier: Modifier
 ) {
     Slip(modifier = modifier.fillMaxWidth()) {
@@ -266,7 +271,7 @@ private fun InlineStatus(
     look: StatusLook,
     title: String?,
     message: String,
-    action: ShownAction?,
+    action: StatusAction?,
     modifier: Modifier
 ) {
     Slip(modifier = modifier.fillMaxWidth(), pinked = false) {
@@ -310,14 +315,23 @@ private fun StatusIcon(icon: SelloIcon, ink: StatusInk, size: Dp) {
 }
 
 @Composable
-private fun StatusButton(action: ShownAction, kind: ButtonKind, modifier: Modifier = Modifier) {
+private fun StatusButton(action: StatusAction, kind: ButtonKind, modifier: Modifier = Modifier) {
+    val busy = stringResource(R.string.sello_busy)
+    // A text button's words start where the message does.
+    val padding = if (kind == ButtonKind.Text) TextButtonPadding else ButtonDefaults.ContentPadding
     SelloButton(
         text = action.label,
         onClick = action.onClick,
-        modifier = modifier,
+        // A text button is drawn 46 dp tall; the touch target is 48 dp (ARCHITECTURE §6).
+        modifier = modifier
+            .heightIn(min = 48.dp)
+            .semantics { if (action.busy) stateDescription = busy },
         kind = kind,
-        loading = action.busy
+        loading = action.busy,
+        contentPadding = padding
     )
 }
+
+private val TextButtonPadding = PaddingValues(start = 0.dp, top = 8.dp, end = 24.dp, bottom = 8.dp)
 
 private val INLINE_ICON = 24.dp
