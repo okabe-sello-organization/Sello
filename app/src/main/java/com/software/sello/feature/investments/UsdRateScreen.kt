@@ -20,13 +20,15 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import com.software.sello.R
 import com.software.sello.designsystem.component.ButtonKind
-import com.software.sello.designsystem.component.EmptySlip
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FactLine
 import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
@@ -53,31 +55,38 @@ fun UsdRateScreen(
         when (state) {
             UsdRateState.Loading -> SlipSkeleton(Modifier.testTag("usd.rate.loading"))
 
-            UsdRateState.Failed -> ErrorSlip(
-                stringResource(R.string.usd_rate_failed_body),
-                { onAction(UsdRateAction.Retry) },
-                Modifier.testTag("usd.rate.failed"),
-                title = stringResource(R.string.usd_rate_failed_title),
-                icon = SelloIcon.Error
+            UsdRateState.Failed -> StatusSlip(
+                kind = StatusKind.LoadFailed(stringResource(R.string.usd_rate_failed_title)),
+                message = stringResource(R.string.usd_rate_failed_body),
+                modifier = Modifier.testTag("usd.rate.failed"),
+                action = StatusAction(StatusSlipDefaults.retryLabel) {
+                    onAction(UsdRateAction.Retry)
+                }
             )
 
             is UsdRateState.Ready -> {
                 if (state.stale) {
-                    ErrorSlip(
-                        stringResource(R.string.usd_rate_stale),
-                        { onAction(UsdRateAction.Retry) },
-                        Modifier.testTag("usd.rate.stale")
+                    StatusSlip(
+                        kind = StatusKind.Older,
+                        message = stringResource(R.string.usd_rate_stale),
+                        modifier = Modifier.testTag("usd.rate.stale"),
+                        action = StatusAction(StatusSlipDefaults.retryLabel) {
+                            onAction(UsdRateAction.Retry)
+                        }
                     )
                 }
                 val current = state.current
                 if (current == null) {
-                    EmptySlip(
-                        title = stringResource(R.string.usd_rate_empty_title),
-                        body = stringResource(R.string.usd_rate_empty_body),
-                        icon = SelloIcon.AccountBalance,
+                    StatusSlip(
+                        kind = StatusKind.Empty(
+                            SelloIcon.AccountBalance,
+                            stringResource(R.string.usd_rate_empty_title)
+                        ),
+                        message = stringResource(R.string.usd_rate_empty_body),
                         modifier = Modifier.testTag("usd.rate.empty"),
-                        actionLabel = stringResource(R.string.usd_rate_enter),
-                        onAction = { onAction(UsdRateAction.Change) }
+                        action = StatusAction(stringResource(R.string.usd_rate_enter)) {
+                            onAction(UsdRateAction.Change)
+                        }
                     )
                 } else {
                     Current(current, state, dates, onAction)

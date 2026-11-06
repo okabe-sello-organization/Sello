@@ -181,7 +181,7 @@ class ResetScreenTest {
     fun aFailureSaysNothingChangedAndAnUnknownOutcomeIsChecked() {
         show(ResetState(ResetStep.Failed))
         rule.onNodeWithText("Tus datos no cambiaron.").assertIsDisplayed()
-        rule.onNodeWithText("Volver").performScrollTo().performClick()
+        rule.onNodeWithText("Intentar de nuevo").performScrollTo().performClick()
 
         assertEquals(listOf<ResetAction>(ResetAction.Retry), actions)
     }

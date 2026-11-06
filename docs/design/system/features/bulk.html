@@ -125,7 +125,7 @@
               <td><code>BulkEntryScreen.kt:235</code></td><td>bulk-expenses-thirty-lines</td></tr>
             <tr><td>Digit limit</td><td>"Máximo 12 dígitos" as a hint above the button.</td>
               <td><code>BulkEntryScreen.kt:415</code></td><td><code>bulk-expenses-digit-limit</code></td></tr>
-            <tr><td>Stale</td><td><code>StaleSlip</code> "No pudimos actualizar…" and "Reintentar" under the heading; the lines stay.</td>
+            <tr><td>Stale</td><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> Older "No pudimos actualizar…" and "Reintentar" under the heading; the lines stay.</td>
               <td><code>BulkEntryScreen.kt:314</code></td><td>bulk-expenses-stale</td></tr>
             <tr><td>Busy</td><td>"Guardando…" with spinner, no "+"; the X, lines, chips and pad are off.</td>
               <td><code>BulkEntryScreen.kt:116</code>, <code>:441</code></td><td>bulk-expenses-saving</td></tr>
@@ -227,7 +227,7 @@
               <td><code>lines = 2</code>, in the chips' place</td><td>The receipt is usable while choices load</td></tr>
             <tr><td><a href="../components.html#c-AmountKeypad"><code>AmountKeypad</code></a></td><td><code>:design-system</code> <code>AmountKeypad.kt</code></td>
               <td><code>compact</code></td><td>Types into the highlighted line</td></tr>
-            <tr><td><code>StaleSlip</code></td><td><code>app/src/main/java/com/software/sello/presentation/read/StaleSlip.kt:23</code></td>
+            <tr><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> Older</td><td><code>:design-system</code> <code>Status.kt</code></td>
               <td>Under the heading</td><td>Older categories said; the lines stay</td></tr>
             <tr><td><a href="../components.html#c-CarryCorrectionContent"><code>CarryCorrectionContent</code></a></td><td><code>design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:164</code></td>
               <td>In the correction slip</td><td>Lists the later months the receipt changes</td></tr>
@@ -244,8 +244,8 @@
         <li><code>DayPicker</code> (<code>BulkEntryScreen.kt:566</code>) is the same dialog as <code>MovementDatePicker</code>
           (<code>design-system/src/main/java/com/software/sello/designsystem/component/Movement.kt:146</code>). Finding: <a href="../findings.html#C01">C01</a>.</li>
         <li>The read-failure pair, an error <code>FieldMessageText</code> plus an Outlined "Reintentar"
-          (<code>BulkEntryScreen.kt:322</code>), rebuilds what <a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a>
-          draws; the goal receipt uses ErrorSlip for the same case
+          (<code>BulkEntryScreen.kt:322</code>), rebuilds what a <a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> LoadFailed
+          draws; the goal receipt uses that StatusSlip for the same case
           (<code>app/src/main/java/com/software/sello/feature/goals/GoalBulkScreen.kt:93</code>). See bulk-expenses-failed-read.</li>
         <li>The X (<code>BulkEntryScreen.kt:116</code>) against <code>MovementCloseButton</code> (<code>component/Movement.kt:39</code>),
           here with <code>enabled = !busy</code>. Finding: <a href="../findings.html#C02">C02</a>.</li>

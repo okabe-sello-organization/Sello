@@ -53,6 +53,9 @@ import com.software.sello.designsystem.component.SCAFFOLD_SECONDARY_TAG
 import com.software.sello.navigation.ShellDetail
 import com.software.sello.navigation.ShellScreen
 import com.software.sello.navigation.ShellState
+import com.software.sello.presentation.carry.CARRY_PROBLEM_TAG
+import com.software.sello.presentation.carry.CarryProblem
+import com.software.sello.presentation.carry.CarryProblemKind
 import com.software.sello.presentation.month.monthNames
 import com.software.sello.showSello
 import java.time.YearMonth
@@ -521,6 +524,30 @@ class ReciboScreenTest {
         ).assertIsDisplayed()
         rule.onNodeWithContentDescription("Restante del presupuesto: 937.200 pesos. Al día.")
             .assertIsDisplayed()
+        rule.onNodeWithText("Reintentar").performClick()
+
+        assertEquals(listOf<ReciboAction>(ReciboAction.Retry), actions)
+    }
+
+    @Test
+    fun aCarryProblemOverOlderFiguresIsTheirOneNoticeWithItsTitle() {
+        val stale = month(
+            plain("937.200"),
+            ReciboStamp.OnTrack,
+            days = 9,
+            perDay = "99.100",
+            stale = true
+        ) as ReciboState.Month
+        val problem = CarryProblem("a", "Comida", CarryProblemKind.Missing, YearMonth.of(2026, 9))
+        show(stale.copy(carryProblem = problem))
+
+        rule.onNodeWithTag(CARRY_PROBLEM_TAG).assertIsDisplayed()
+        rule.onNodeWithText(
+            "No pudimos calcular lo que sobra o falta en Comida. " +
+                "Esto es lo último que se leyó y puede no estar al día."
+        ).assertIsDisplayed()
+        rule.onNodeWithTag(RECIBO_STALE_TAG).assertDoesNotExist()
+        rule.onNodeWithText("No se pudo cargar").assertDoesNotExist()
         rule.onNodeWithText("Reintentar").performClick()
 
         assertEquals(listOf<ReciboAction>(ReciboAction.Retry), actions)

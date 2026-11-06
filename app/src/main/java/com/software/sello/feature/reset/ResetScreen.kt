@@ -34,7 +34,6 @@ import com.software.sello.designsystem.component.Bullet
 import com.software.sello.designsystem.component.BulletList
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ButtonTone
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FormField
 import com.software.sello.designsystem.component.RestoreBody
 import com.software.sello.designsystem.component.RestoreHeading
@@ -43,6 +42,10 @@ import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.component.Stamp
 import com.software.sello.designsystem.component.StampInk
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.port.ResetPreview
 import com.software.sello.presentation.count.countText
@@ -98,12 +101,13 @@ fun ResetScreen(
         when (val step = state.step) {
             ResetStep.Idle, ResetStep.Counting -> SlipSkeleton(Modifier.testTag(RESET_LOADING_TAG))
 
-            ResetStep.Unreadable -> ErrorSlip(
-                title = stringResource(R.string.reset_unreadable_title),
+            ResetStep.Unreadable -> StatusSlip(
+                kind = StatusKind.LoadFailed(stringResource(R.string.reset_unreadable_title)),
                 message = stringResource(R.string.reset_unreadable_body),
-                retryLabel = stringResource(R.string.reset_retry),
-                onRetry = { onAction(ResetAction.Retry) },
-                modifier = Modifier.testTag(RESET_UNREADABLE_TAG)
+                modifier = Modifier.testTag(RESET_UNREADABLE_TAG),
+                action = StatusAction(stringResource(R.string.reset_retry)) {
+                    onAction(ResetAction.Retry)
+                }
             )
 
             is ResetStep.Ready -> if (state.confirming) {
@@ -114,20 +118,22 @@ fun ResetScreen(
 
             is ResetStep.Erasing -> Word(state, erasing = true, onAction)
 
-            ResetStep.Failed -> ErrorSlip(
-                title = stringResource(R.string.reset_failed_title),
+            ResetStep.Failed -> StatusSlip(
+                kind = StatusKind.ActionFailed(stringResource(R.string.reset_failed_title)),
                 message = stringResource(R.string.reset_failed_body),
-                retryLabel = stringResource(R.string.reset_failed_action),
-                onRetry = { onAction(ResetAction.Retry) },
-                modifier = Modifier.testTag(RESET_FAILED_TAG)
+                modifier = Modifier.testTag(RESET_FAILED_TAG),
+                action = StatusAction(stringResource(R.string.reset_retry)) {
+                    onAction(ResetAction.Retry)
+                }
             )
 
-            is ResetStep.Unknown -> ErrorSlip(
-                title = stringResource(R.string.reset_unknown_title),
+            is ResetStep.Unknown -> StatusSlip(
+                kind = StatusKind.Unknown(stringResource(R.string.reset_unknown_title)),
                 message = stringResource(R.string.reset_unknown_body),
-                retryLabel = stringResource(R.string.reset_unknown_action),
-                onRetry = { onAction(ResetAction.Check) },
-                modifier = Modifier.testTag(RESET_UNKNOWN_TAG)
+                modifier = Modifier.testTag(RESET_UNKNOWN_TAG),
+                action = StatusAction(StatusSlipDefaults.checkLabel) {
+                    onAction(ResetAction.Check)
+                }
             )
 
             is ResetStep.Erased -> if (step.preferencesPending) {

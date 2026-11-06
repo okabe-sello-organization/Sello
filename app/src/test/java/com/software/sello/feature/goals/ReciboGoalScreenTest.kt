@@ -193,6 +193,7 @@ class ReciboGoalScreenTest {
         show(ReciboGoalState.Shown(listOf(viaje, fondo), null, stale = true))
 
         rule.onNodeWithText("No pudimos leer tus metas de nuevo", substring = true).assertExists()
+        rule.onNodeWithText("No se pudo cargar").assertDoesNotExist()
         rule.onNode(hasText("Reintentar") and hasAnyAncestor(hasTestTag(RECIBO_GOAL_STALE_TAG)))
             .performClick()
         pillOf("Viaje a la costa", 1, 2, 57).assertExists()

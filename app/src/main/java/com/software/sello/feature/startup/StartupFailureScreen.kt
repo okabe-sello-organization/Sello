@@ -39,7 +39,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.software.sello.R
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ButtonTone
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FieldMessage
 import com.software.sello.designsystem.component.FieldMessageText
 import com.software.sello.designsystem.component.FormField
@@ -48,6 +47,9 @@ import com.software.sello.designsystem.component.RestoreHeading
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloScaffold
 import com.software.sello.designsystem.component.Slip
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.port.CheckedBackup
 import com.software.sello.presentation.count.countText
@@ -191,24 +193,28 @@ private fun RestoreFromBackup(step: StartupRestoreStep, onAction: (StartupFailur
     when (step) {
         StartupRestoreStep.Idle, StartupRestoreStep.Checking -> Unit
 
-        is StartupRestoreStep.Rejected -> ErrorSlip(
-            title = stringResource(R.string.restore_rejected_title),
+        is StartupRestoreStep.Rejected -> StatusSlip(
+            kind = StatusKind.ActionFailed(stringResource(R.string.restore_rejected_title)),
             message = stringResource(step.reason.message()),
-            retryLabel = stringResource(R.string.restore_choose_other),
-            onRetry = { onAction(StartupFailureAction.RestoreBackup) },
-            modifier = modifier.testTag(STARTUP_RESTORE_REJECTED_TAG)
+            modifier = modifier.testTag(STARTUP_RESTORE_REJECTED_TAG),
+            action = StatusAction(stringResource(R.string.restore_choose_other)) {
+                onAction(StartupFailureAction.RestoreBackup)
+            }
         )
 
         is StartupRestoreStep.Previewing -> Preview(step.backup, false, onAction, modifier)
 
         is StartupRestoreStep.Restoring -> Preview(step.backup, true, onAction, modifier)
 
-        StartupRestoreStep.Interrupted -> ErrorSlip(
-            title = stringResource(R.string.startup_restore_interrupted_title),
+        StartupRestoreStep.Interrupted -> StatusSlip(
+            kind = StatusKind.Unknown(
+                stringResource(R.string.startup_restore_interrupted_title)
+            ),
             message = stringResource(R.string.startup_restore_interrupted_body),
-            retryLabel = stringResource(R.string.startup_restore_continue),
-            onRetry = { onAction(StartupFailureAction.Leave) },
-            modifier = modifier.testTag(STARTUP_RESTORE_INTERRUPTED_TAG)
+            modifier = modifier.testTag(STARTUP_RESTORE_INTERRUPTED_TAG),
+            action = StatusAction(stringResource(R.string.startup_restore_continue)) {
+                onAction(StartupFailureAction.Leave)
+            }
         )
 
         is StartupRestoreStep.Restored -> Box(modifier) {

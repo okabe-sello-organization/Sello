@@ -24,7 +24,10 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
-import com.software.sello.designsystem.component.ErrorSlip
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.theme.SelloTheme
 import kotlinx.coroutines.launch
 
@@ -45,11 +48,13 @@ fun ReciboGoal(
     when (state) {
         ReciboGoalState.Hidden -> Unit
 
-        ReciboGoalState.Failed -> ErrorSlip(
+        ReciboGoalState.Failed -> StatusSlip(
+            kind = StatusKind.LoadFailed(stringResource(R.string.metas_failed_title)),
             message = stringResource(R.string.metas_failed_body),
-            onRetry = { onAction(ReciboGoalAction.Retry) },
             modifier = modifier.testTag(RECIBO_GOAL_FAILED_TAG),
-            title = stringResource(R.string.metas_failed_title)
+            action = StatusAction(StatusSlipDefaults.retryLabel) {
+                onAction(ReciboGoalAction.Retry)
+            }
         )
 
         is ReciboGoalState.Shown -> Column(
@@ -58,10 +63,13 @@ fun ReciboGoal(
         ) {
             // The last good goals after a failed read: said, never passed off as fresh.
             if (state.stale) {
-                ErrorSlip(
-                    stringResource(R.string.metas_stale),
-                    { onAction(ReciboGoalAction.Retry) },
-                    Modifier.testTag(RECIBO_GOAL_STALE_TAG)
+                StatusSlip(
+                    kind = StatusKind.Older,
+                    message = stringResource(R.string.metas_stale),
+                    modifier = Modifier.testTag(RECIBO_GOAL_STALE_TAG),
+                    action = StatusAction(StatusSlipDefaults.retryLabel) {
+                        onAction(ReciboGoalAction.Retry)
+                    }
                 )
             }
             when (state.pills.size) {

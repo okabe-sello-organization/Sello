@@ -57,6 +57,10 @@ import com.software.sello.designsystem.component.SelloChip
 import com.software.sello.designsystem.component.SelloNotice
 import com.software.sello.designsystem.component.SelloScaffold
 import com.software.sello.designsystem.component.SlipSkeleton
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.component.rememberSelectedFirst
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
@@ -68,7 +72,6 @@ import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.income.incomeSourceLabel
-import com.software.sello.presentation.read.StaleSlip
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -312,10 +315,13 @@ private fun Choices(state: BulkEntryState, onAction: (BulkEntryAction) -> Unit) 
         )
         // A refresh failed: the choices are those last read and the lines stay.
         if (state.stale) {
-            StaleSlip(
-                stringResource(R.string.recibo_stale),
-                { onAction(BulkEntryAction.Retry) },
-                Modifier.testTag(BULK_STALE_TAG)
+            StatusSlip(
+                kind = StatusKind.Older,
+                message = stringResource(R.string.recibo_stale),
+                modifier = Modifier.testTag(BULK_STALE_TAG),
+                action = StatusAction(StatusSlipDefaults.retryLabel) {
+                    onAction(BulkEntryAction.Retry)
+                }
             )
         }
         when {

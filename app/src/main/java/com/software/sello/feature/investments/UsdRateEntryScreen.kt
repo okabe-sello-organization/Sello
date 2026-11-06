@@ -31,7 +31,6 @@ import com.software.sello.designsystem.component.AmountKeypad
 import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.EntryAmountSlip
 import com.software.sello.designsystem.component.EntryLayout
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FactLine
 import com.software.sello.designsystem.component.FieldMessage
 import com.software.sello.designsystem.component.FieldMessageText
@@ -42,6 +41,10 @@ import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloScaffold
 import com.software.sello.designsystem.component.SlipSkeleton
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
@@ -87,11 +90,13 @@ fun UsdRateEntryScreen(state: UsdRateEntryState, onAction: (UsdRateEntryAction) 
             state.loadFailed -> Column(
                 Modifier.fillMaxSize().padding(padding).padding(SelloTheme.spacing.lg)
             ) {
-                ErrorSlip(
-                    stringResource(R.string.usd_rate_failed_body),
-                    { onAction(UsdRateEntryAction.Retry) },
-                    Modifier.testTag("usd.rate.entry.failed"),
-                    title = stringResource(R.string.usd_rate_failed_title)
+                StatusSlip(
+                    kind = StatusKind.LoadFailed(stringResource(R.string.usd_rate_failed_title)),
+                    message = stringResource(R.string.usd_rate_failed_body),
+                    modifier = Modifier.testTag("usd.rate.entry.failed"),
+                    action = StatusAction(StatusSlipDefaults.retryLabel) {
+                        onAction(UsdRateEntryAction.Retry)
+                    }
                 )
             }
 

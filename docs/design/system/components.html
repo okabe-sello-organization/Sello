@@ -995,7 +995,7 @@ fun ChoiceSlip(
 <article class="component" id="c-StatusSlip">
 <h3><code>StatusSlip</code> <span class="src"><code>component/Status.kt:108</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>A slip that says what kind of news it brings. Its required <code>kind</code> decides the icon, ink, layout and button and carries the title, so the compiler checks each kind gets the words it needs (Empty a title, Older none, the others an optional one). A caller adds the <code>message</code> and at most one <code>StatusAction</code> (label, <code>busy</code>, <code>onClick</code>); <code>StatusSlipDefaults</code> has the usual labels. A busy action shows a spinner, says "En curso" to TalkBack and ignores presses; every action is at least 48 dp tall. It replaces <a href="#c-EmptySlip"><code>EmptySlip</code></a>, <a href="#c-ErrorSlip"><code>ErrorSlip</code></a> and the app's <code>StaleSlip</code> (SELLO-184 moves the screens over).</dd>
+<dt>Purpose</dt><dd>A slip that says what kind of news it brings. Its required <code>kind</code> decides the icon, ink, layout and button and carries the title, so the compiler checks each kind gets the words it needs (Empty a title, Older none, the others an optional one). A caller adds the <code>message</code> and at most one <code>StatusAction</code> (label, <code>busy</code>, <code>onClick</code>); <code>StatusSlipDefaults</code> has the usual labels. A busy action shows a spinner, says "En curso" to TalkBack and ignores presses; every action is at least 48 dp tall. It replaced <code>EmptySlip</code>, <code>ErrorSlip</code> and the app's <code>StaleSlip</code> (SELLO-184): every screen picks the kind that means its state.</dd>
 <dt>Kinds</dt><dd>
 <table>
 <thead><tr><th>Kind</th><th>When</th><th>Looks</th><th>Default words</th></tr></thead>
@@ -1004,11 +1004,11 @@ fun ChoiceSlip(
 <tr><td><code>LoadFailed(title?)</code></td><td>Content could not be read and nothing older is shown. Never above figures</td><td>Centred under Error in brand; sentence in inkSoft; outlined retry; read aloud</td><td>"No se pudo cargar"; <code>retryLabel</code> "Reintentar"</td></tr>
 <tr><td><code>Older</code></td><td>Figures still shown are the last read</td><td>Flat inline slip, no title; sentence in warn; text-button retry lined up with the sentence; read aloud</td><td><code>retryLabel</code></td></tr>
 <tr><td><code>ActionFailed(title?)</code></td><td>A save, export or backup failed</td><td>Flat inline slip; Error icon and sentence in loss; outlined retry; read aloud</td><td><code>retryLabel</code></td></tr>
-<tr><td><code>Unknown(title?)</code></td><td>The outcome of an action is not known yet; never says it failed</td><td>Flat inline slip; Info icon and sentence in warn; outlined check; read aloud</td><td><code>checkLabel</code> "Comprobar"</td></tr>
+<tr><td><code>Unknown(title?)</code></td><td>The outcome of an action is not known yet. Its action checks, or starts a safe new attempt when it cannot be checked; never says it failed</td><td>Flat inline slip; Info icon and sentence in warn; outlined check; read aloud</td><td><code>checkLabel</code> "Comprobar"</td></tr>
 <tr><td><code>Gone(title?)</code></td><td>The thing no longer exists</td><td>Centred under Block in brand; sentence in inkSoft; optional outlined way back; read aloud</td><td>"Ya no está"; <code>backLabel</code> "Volver"</td></tr>
 </tbody>
 </table></dd>
-<dt>Used by</dt><dd>No screen yet.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 6</a> <a class="tag" href="features/bulk.html">bulk · 1</a> <a class="tag" href="features/category.html">category · 1</a> <a class="tag" href="features/expense.html">expense · 2</a> <a class="tag" href="features/goals.html">goals · 11</a> <a class="tag" href="features/income.html">income · 7</a> <a class="tag" href="features/investments.html">investments · 12</a> <a class="tag" href="features/recibo.html">recibo · 24</a> <a class="tag" href="features/recurrence.html">recurrence · 7</a> <a class="tag" href="features/reset.html">reset · 3</a> <a class="tag" href="features/resumen.html">resumen · 3</a> <a class="tag" href="features/settings.html">settings · 1</a> <a class="tag" href="features/startup.html">startup · 2</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 3</span></dd>
 </dl>
 <pre><code>fun StatusSlip(
     kind: StatusKind,
@@ -1023,42 +1023,11 @@ fun ChoiceSlip(
 <figure data-shot="status-slip-unknown" data-module="design-system" data-variants="claro,oscuro" data-caption="Unknown"></figure>
 <figure data-shot="status-slip-gone" data-module="design-system" data-variants="claro,oscuro" data-caption="Gone"></figure>
 <figure data-shot="status-slip-busy" data-module="design-system" data-variants="claro,oscuro" data-caption="Busy: LoadFailed and Unknown while their action runs"></figure>
-</article>
-<article class="component" id="c-EmptySlip">
-<h3><code>EmptySlip</code> <span class="src"><code>component/Feedback.kt:352</code></span></h3>
-<dl>
-<dt>Purpose</dt><dd>A slip with nothing to show yet: a title, one sentence and at most one action, centred under a large decorative <code>icon</code> that fits what is missing.</dd>
-<dt>Used by</dt><dd><a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 2</a> <a class="tag" href="features/recibo.html">recibo · 5</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a> <a class="tag" href="features/resumen.html">resumen · 1</a></dd>
-</dl>
-<pre><code>fun EmptySlip(
-    title: String,
-    body: String,
-    icon: SelloIcon,
-    modifier: Modifier = Modifier,
-    actionLabel: String? = null,
-    onAction: (() -&gt; Unit)? = null
-)</code></pre>
-<figure data-module="design-system" data-files="components-feedback.png" data-caption="Component capture: components-feedback.png (design-system)"></figure>
-<div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
-</article>
-<article class="component" id="c-ErrorSlip">
-<h3><code>ErrorSlip</code> <span class="src"><code>component/Feedback.kt:377</code></span></h3>
-<dl>
-<dt>Purpose</dt><dd>A slip whose content could not be read. <code>message</code> says what failed in plain words. It never shows a figure: a failed read has no amount, not a zero. It is centred under a large decorative <code>icon</code>. While <code>loading</code>, the retry runs and cannot be pressed again.</dd>
-<dt>Variants</dt><dd><code>loading</code> while retrying; title and retry label default to "No se pudo cargar" and "Reintentar".</dd>
-<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 6</a> <a class="tag" href="features/category.html">category · 1</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 9</a> <a class="tag" href="features/income.html">income · 5</a> <a class="tag" href="features/investments.html">investments · 10</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 3</span> <a class="tag" href="features/recibo.html">recibo · 11</a> <a class="tag" href="features/recurrence.html">recurrence · 4</a> <a class="tag" href="features/reset.html">reset · 3</a> <a class="tag" href="features/resumen.html">resumen · 2</a> <a class="tag" href="features/settings.html">settings · 1</a> <a class="tag" href="features/startup.html">startup · 2</a></dd>
-</dl>
-<pre><code>fun ErrorSlip(
-    message: String,
-    onRetry: () -&gt; Unit,
-    modifier: Modifier = Modifier,
-    title: String = stringResource(R.string.sello_error_title),
-    retryLabel: String = stringResource(R.string.sello_retry),
-    icon: SelloIcon = SelloIcon.Error,
-    loading: Boolean = false
-)</code></pre>
-<figure data-module="design-system" data-files="components-feedback.png" data-caption="Component capture: components-feedback.png (design-system)"></figure>
-<div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
+<p class="muted">On screens:</p>
+<figure data-module="app" data-files="resumen-stale-cobalto-light-font1.0.png" data-caption="Older: Resumen keeps its last figures"></figure>
+<figure data-module="app" data-files="backup-failed-cobalto-light-font1.0.png" data-caption="ActionFailed: a backup that could not be saved"></figure>
+<figure data-module="app" data-files="reset-unknown-cobalto-light-font1.0.png" data-caption="Unknown: an erase whose outcome is checked"></figure>
+<figure data-module="app" data-files="goal-detail-missing-claro.png" data-caption="Gone: a goal deleted meanwhile"></figure>
 </article>
 <article class="component" id="c-SlipSkeleton">
 <h3><code>SlipSkeleton</code> <span class="src"><code>component/Feedback.kt:446</code></span></h3>

@@ -32,8 +32,6 @@ import androidx.compose.ui.unit.dp
 import com.software.sello.R
 import com.software.sello.designsystem.component.AnswerSlip
 import com.software.sello.designsystem.component.ButtonKind
-import com.software.sello.designsystem.component.EmptySlip
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.Footnote
 import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.component.MoneySign
@@ -45,6 +43,10 @@ import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.component.SplitBar
 import com.software.sello.designsystem.component.SplitSegment
 import com.software.sello.designsystem.component.StampInk
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
@@ -93,31 +95,37 @@ fun InversionesScreen(
             }
 
             InversionesState.Failed -> item {
-                ErrorSlip(
+                StatusSlip(
+                    kind = StatusKind.LoadFailed(stringResource(R.string.inversiones_failed_title)),
                     message = stringResource(R.string.inversiones_failed_body),
-                    onRetry = { onAction(InversionesAction.Retry) },
                     modifier = Modifier.testTag("inversiones.failed"),
-                    title = stringResource(R.string.inversiones_failed_title),
-                    icon = SelloIcon.Error
+                    action = StatusAction(StatusSlipDefaults.retryLabel) {
+                        onAction(InversionesAction.Retry)
+                    }
                 )
             }
 
             is InversionesState.Ready -> {
                 if (state.stale) {
                     item {
-                        ErrorSlip(
-                            stringResource(R.string.inversiones_stale),
-                            { onAction(InversionesAction.Retry) },
-                            Modifier.testTag("inversiones.stale")
+                        StatusSlip(
+                            kind = StatusKind.Older,
+                            message = stringResource(R.string.inversiones_stale),
+                            modifier = Modifier.testTag("inversiones.stale"),
+                            action = StatusAction(StatusSlipDefaults.retryLabel) {
+                                onAction(InversionesAction.Retry)
+                            }
                         )
                     }
                 }
                 when {
                     state.empty -> item {
-                        EmptySlip(
-                            title = stringResource(R.string.inversiones_empty_title),
-                            body = stringResource(R.string.inversiones_empty_body),
-                            icon = SelloIcon.TrendingUp,
+                        StatusSlip(
+                            kind = StatusKind.Empty(
+                                SelloIcon.TrendingUp,
+                                stringResource(R.string.inversiones_empty_title)
+                            ),
+                            message = stringResource(R.string.inversiones_empty_body),
                             modifier = Modifier.testTag("inversiones.empty")
                         )
                     }

@@ -63,7 +63,6 @@ import com.software.sello.designsystem.component.ConfirmSlip
 import com.software.sello.designsystem.component.EntryAmountSlip
 import com.software.sello.designsystem.component.EntryLayout
 import com.software.sello.designsystem.component.EntryLine
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FieldMessage
 import com.software.sello.designsystem.component.FieldMessageText
 import com.software.sello.designsystem.component.FieldPill
@@ -83,6 +82,10 @@ import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.component.Stamp
 import com.software.sello.designsystem.component.StampInk
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.component.TotalLine
 import com.software.sello.designsystem.component.rememberSelectedFirst
@@ -97,7 +100,6 @@ import com.software.sello.presentation.corrections.CorrectionAnnouncementState
 import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.month.monthNames
-import com.software.sello.presentation.read.StaleSlip
 import com.software.sello.presentation.recurrence.FollowingChoice
 import com.software.sello.presentation.recurrence.RepeatAction
 import com.software.sello.presentation.recurrence.RepeatChoiceSheet
@@ -213,7 +215,8 @@ fun ExpenseEntryScreen(
             state.loading -> Pane(padding) { SlipSkeleton(Modifier.testTag(ENTRY_LOADING_TAG)) }
 
             state.loadFailed -> Pane(padding) {
-                ErrorSlip(
+                StatusSlip(
+                    kind = StatusKind.LoadFailed(),
                     message = stringResource(
                         if (state.editing) {
                             R.string.expense_edit_load_failed
@@ -221,8 +224,10 @@ fun ExpenseEntryScreen(
                             R.string.expense_entry_load_failed
                         }
                     ),
-                    onRetry = { onAction(ExpenseEntryAction.Retry) },
-                    modifier = Modifier.testTag(ENTRY_LOAD_FAILED_TAG)
+                    modifier = Modifier.testTag(ENTRY_LOAD_FAILED_TAG),
+                    action = StatusAction(StatusSlipDefaults.retryLabel) {
+                        onAction(ExpenseEntryAction.Retry)
+                    }
                 )
             }
 
@@ -430,10 +435,13 @@ private fun Choices(
 ) {
     // A refresh failed: the categories are those last read and the draft stays.
     if (state.stale) {
-        StaleSlip(
-            stringResource(R.string.recibo_stale),
-            { onAction(ExpenseEntryAction.Retry) },
-            Modifier.testTag(ENTRY_STALE_TAG)
+        StatusSlip(
+            kind = StatusKind.Older,
+            message = stringResource(R.string.recibo_stale),
+            modifier = Modifier.testTag(ENTRY_STALE_TAG),
+            action = StatusAction(StatusSlipDefaults.retryLabel) {
+                onAction(ExpenseEntryAction.Retry)
+            }
         )
     }
     val addNew = onCreateCategory.takeIf { !state.editing }

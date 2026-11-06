@@ -29,12 +29,15 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.software.sello.R
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.OptionSlip
 import com.software.sello.designsystem.component.SegmentedSwitch
 import com.software.sello.designsystem.component.SettingRow
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.CategoryOrder
@@ -106,10 +109,18 @@ fun SettingsScreen(
             return@Column
         }
         if (state.failure != null) {
-            ErrorSlip(
+            // A save that failed, or a read that failed under the last settings read.
+            StatusSlip(
+                kind = if (state.writeFailure != null) {
+                    StatusKind.ActionFailed()
+                } else {
+                    StatusKind.Older
+                },
                 message = stringResource(R.string.settings_preferences_failed),
-                onRetry = { onAction(SettingsAction.Retry) },
-                modifier = Modifier.testTag(SETTINGS_ERROR_TAG)
+                modifier = Modifier.testTag(SETTINGS_ERROR_TAG),
+                action = StatusAction(StatusSlipDefaults.retryLabel) {
+                    onAction(SettingsAction.Retry)
+                }
             )
         }
         Box(Modifier.testTag(SETTINGS_DATA_TAG)) { tusDatos() }

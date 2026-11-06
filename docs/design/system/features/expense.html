@@ -119,7 +119,7 @@
           <tbody>
             <tr><td>Loading</td><td>One <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a> under the bar; no form yet.</td>
               <td><code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:213</code></td><td><code>expense-entry-loading</code></td></tr>
-            <tr><td>Error (nothing ever read)</td><td><a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a> "No se pudo cargar" with "No pudimos leer tus categorías." (or "No pudimos leer este gasto." when correcting) and "Reintentar".</td>
+            <tr><td>Error (nothing ever read)</td><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> LoadFailed "No se pudo cargar" with "No pudimos leer tus categorías." (or "No pudimos leer este gasto." when correcting) and "Reintentar".</td>
               <td><code>ExpenseEntryScreen.kt:215</code></td><td><code>expense-entry-failed</code></td></tr>
             <tr><td>Empty</td><td>Does not exist on the form: with no category the shell opens the category editor first.</td>
               <td><code>app/src/main/java/com/software/sello/navigation/SelloApp.kt:165</code></td><td>—</td></tr>
@@ -129,7 +129,7 @@
               <td><code>ExpenseEntryScreen.kt:546</code></td><td><code>expense-entry-missing</code></td></tr>
             <tr><td>Amount refused</td><td>The slip's label is replaced by the reason ("Eso no es un monto…", "El monto debe ser mayor que cero.", "El monto es mayor que el máximo…") and the pasted text stays as it was; "Máximo 12 dígitos" with a shake when a key is refused.</td>
               <td><code>ExpenseEntryScreen.kt:390</code></td><td><code>expense-entry-amount-refused</code></td></tr>
-            <tr><td>Stale</td><td><code>StaleSlip</code> "No pudimos actualizar. Esto es lo último que se leyó y puede no estar al día." with "Reintentar" above the chips; the draft stays.</td>
+            <tr><td>Stale</td><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> Older "No pudimos actualizar. Esto es lo último que se leyó y puede no estar al día." with "Reintentar" above the chips; the draft stays.</td>
               <td><code>ExpenseEntryScreen.kt:432</code></td><td>expense-entry-stale</td></tr>
             <tr><td>Busy</td><td>The button reads "Guardando…" with its spinner; chips, pill, note, switch and pad are off. The X stays enabled but Back is ignored.</td>
               <td><code>ExpenseEntryScreen.kt:589</code>, <code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryViewModel.kt:486</code></td><td><code>expense-entry-busy</code></td></tr>
@@ -261,13 +261,13 @@
               <td>Filled, full width, <code>loading</code> while busy; Text + <code>OnBand</code> for "Borrar"</td><td>One action; loading blocks a double submit</td></tr>
             <tr><td><a href="../components.html#c-AmountKeypad"><code>AmountKeypad</code></a></td><td><code>:design-system</code> <code>AmountKeypad.kt</code></td>
               <td><code>compact</code>, off while not editable</td><td>The amount is typed only on the pad</td></tr>
-            <tr><td><a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a>, <a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a></td><td><code>:design-system</code> <code>Feedback.kt</code></td>
+            <tr><td><a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a>, <a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> LoadFailed</td><td><code>:design-system</code> <code>Feedback.kt</code>, <code>Status.kt</code></td>
               <td>Loading and nothing-read panes, in the feature's own <code>Pane</code></td><td>Error screen only when nothing was ever read</td></tr>
             <tr><td><a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a></td><td><code>:design-system</code> <code>Feedback.kt</code></td>
               <td>Discard (not destructive) and the carry correction list (busy)</td><td>Asks before losing a draft or changing later months</td></tr>
             <tr><td><a href="../components.html#c-SelloNotice"><code>SelloNotice</code></a></td><td><code>:design-system</code> <code>Corrections.kt</code></td>
               <td>Past-expense announcement, inline in the choices</td><td>Said once; "Entendido" remembers it</td></tr>
-            <tr><td><code>StaleSlip</code></td><td><code>app/src/main/java/com/software/sello/presentation/read/StaleSlip.kt:23</code></td>
+            <tr><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> Older</td><td><code>:design-system</code> <code>Status.kt</code></td>
               <td>Above the chips when a refresh failed</td><td>Older data said, never passed off as fresh</td></tr>
             <tr><td><a href="../components.html#c-RepeatRow"><code>RepeatRow</code></a>, <a href="../components.html#c-RepeatChoiceSheet"><code>RepeatChoiceSheet</code></a>, <a href="../components.html#c-FollowingChoice"><code>FollowingChoice</code></a></td><td><code>design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:73</code></td>
               <td><code>income = false</code></td><td>Shared with Anotar ingreso and the schedules</td></tr>
@@ -289,7 +289,7 @@
           (<code>design-system/src/main/java/com/software/sello/designsystem/component/Movement.kt:47</code>) and its copy
           <code>IncomePane</code> (<code>app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:250</code>):
           the expense one drops the <code>lg</code> inner padding and spaces by <code>md</code>, so its skeleton and
-          ErrorSlip reach the screen edge: compare <code>expense-entry-loading</code>, <code>expense-entry-failed</code> with <code>income-form-loading</code>, <code>income-form-failed</code>. Finding: <a href="../findings.html#C03">C03</a>.</li>
+          StatusSlip reach the screen edge: compare <code>expense-entry-loading</code>, <code>expense-entry-failed</code> with <code>income-form-loading</code>, <code>income-form-failed</code>. Finding: <a href="../findings.html#C03">C03</a>.</li>
         <li><code>DayPicker</code> (<code>ExpenseEntryScreen.kt:673</code>) against <code>MovementDatePicker</code>
           (<code>component/Movement.kt:146</code>): the same dialog plus the Se repite range rule. Income and Anotar varios have
           their own copies too. Finding: <a href="../findings.html#C01">C01</a>.</li>

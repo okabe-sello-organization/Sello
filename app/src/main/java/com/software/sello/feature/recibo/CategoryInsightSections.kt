@@ -25,11 +25,14 @@ import com.software.sello.designsystem.component.ChartPeriod
 import com.software.sello.designsystem.component.ChartPoint
 import com.software.sello.designsystem.component.ChartReference
 import com.software.sello.designsystem.component.ColumnsChart
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.carry.carryLabel
@@ -49,12 +52,13 @@ internal fun CategoryInsightSections(
     when (val insights = state.insights) {
         DetailInsightsState.Loading -> SlipSkeleton(Modifier.testTag("detail:insights-loading"))
 
-        DetailInsightsState.Failed -> ErrorSlip(
-            stringResource(R.string.category_detail_insights_failed),
-            {
+        DetailInsightsState.Failed -> StatusSlip(
+            kind = StatusKind.LoadFailed(),
+            message = stringResource(R.string.category_detail_insights_failed),
+            modifier = Modifier.testTag("detail:insights-failed"),
+            action = StatusAction(StatusSlipDefaults.retryLabel) {
                 onAction(CategoryDetailAction.Retry)
-            },
-            modifier = Modifier.testTag("detail:insights-failed")
+            }
         )
 
         is DetailInsightsState.Ready -> {

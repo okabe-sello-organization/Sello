@@ -24,9 +24,11 @@ import com.software.sello.R
 import com.software.sello.designsystem.component.Bullet
 import com.software.sello.designsystem.component.BulletList
 import com.software.sello.designsystem.component.ChoiceSlip
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.SegmentedSwitch
 import com.software.sello.designsystem.component.SettingRow
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.IncomeSource
@@ -123,8 +125,8 @@ internal fun ExportRow(state: ExportState, onOpen: () -> Unit) {
 @Composable
 internal fun ExportProblems(state: ExportState, onRetry: () -> Unit) {
     val problem = state.problem ?: return
-    ErrorSlip(
-        title = stringResource(R.string.export_failed_title),
+    StatusSlip(
+        kind = StatusKind.ActionFailed(stringResource(R.string.export_failed_title)),
         message = stringResource(
             when (problem) {
                 ExportProblem.Storage -> R.string.export_failed_storage
@@ -132,9 +134,8 @@ internal fun ExportProblems(state: ExportState, onRetry: () -> Unit) {
                 ExportProblem.Share -> R.string.export_failed_share
             }
         ),
-        retryLabel = stringResource(R.string.export_retry),
-        onRetry = onRetry,
-        modifier = Modifier.testTag(EXPORT_FAILED_TAG)
+        modifier = Modifier.testTag(EXPORT_FAILED_TAG),
+        action = StatusAction(stringResource(R.string.export_retry), onClick = onRetry)
     )
 }
 

@@ -42,7 +42,6 @@ import com.software.sello.designsystem.component.ChartPeriod
 import com.software.sello.designsystem.component.ChartPoint
 import com.software.sello.designsystem.component.ColumnsChart
 import com.software.sello.designsystem.component.ConfirmSlip
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FactLine
 import com.software.sello.designsystem.component.FittedMoneyText
 import com.software.sello.designsystem.component.LeaderLine
@@ -55,6 +54,10 @@ import com.software.sello.designsystem.component.MovementTone
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
@@ -92,26 +95,20 @@ fun GoalDetailScreen(
         when (state) {
             GoalDetailState.Loading -> SlipSkeleton(Modifier.testTag("goal.loading"))
 
-            GoalDetailState.Failed -> ErrorSlip(
+            GoalDetailState.Failed -> StatusSlip(
+                kind = StatusKind.LoadFailed(stringResource(R.string.goal_failed_title)),
                 message = stringResource(R.string.goal_failed_body),
-                onRetry = { onAction(GoalDetailAction.Retry) },
                 modifier = Modifier.testTag("goal.failed"),
-                title = stringResource(R.string.goal_failed_title),
-                icon = SelloIcon.Error
+                action = StatusAction(StatusSlipDefaults.retryLabel) {
+                    onAction(GoalDetailAction.Retry)
+                }
             )
 
-            GoalDetailState.Missing -> Slip(Modifier.fillMaxWidth().testTag("goal.missing")) {
-                Text(
-                    stringResource(R.string.goal_missing_title),
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.semantics { heading() }
-                )
-                Text(
-                    stringResource(R.string.goal_missing_body),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = SelloTheme.colors.inkSoft
-                )
-            }
+            GoalDetailState.Missing -> StatusSlip(
+                kind = StatusKind.Gone(stringResource(R.string.goal_missing_title)),
+                message = stringResource(R.string.goal_missing_body),
+                modifier = Modifier.testTag("goal.missing")
+            )
 
             is GoalDetailState.Ready -> Ready(
                 state,
@@ -146,10 +143,13 @@ private fun ColumnScope.Ready(
         GoalSaveProblem(error, { onAction(GoalDetailAction.Retry) }, Modifier.testTag("goal.error"))
     }
     if (state.stale) {
-        ErrorSlip(
-            stringResource(R.string.metas_stale),
-            { onAction(GoalDetailAction.Retry) },
-            Modifier.testTag("goal.stale")
+        StatusSlip(
+            kind = StatusKind.Older,
+            message = stringResource(R.string.metas_stale),
+            modifier = Modifier.testTag("goal.stale"),
+            action = StatusAction(StatusSlipDefaults.retryLabel) {
+                onAction(GoalDetailAction.Retry)
+            }
         )
     }
     Hero(goal, state, dates, months, onAction, landing, relighting)

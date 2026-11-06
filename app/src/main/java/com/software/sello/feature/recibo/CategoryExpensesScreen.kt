@@ -18,19 +18,20 @@ import androidx.compose.ui.semantics.stateDescription
 import com.software.sello.R
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ChipFlow
-import com.software.sello.designsystem.component.EmptySlip
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FormField
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloChip
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.port.ExpenseOrder
 import com.software.sello.presentation.count.countText
 import com.software.sello.presentation.date.dateLabels
-import com.software.sello.presentation.read.StaleSlip
 
 @Composable
 fun CategoryExpensesScreen(
@@ -96,27 +97,36 @@ fun CategoryExpensesScreen(
             CategoryExpensesState.Loading -> item { SlipSkeleton() }
 
             CategoryExpensesState.Failed -> item {
-                ErrorSlip(stringResource(R.string.category_detail_list_failed), {
-                    onAction(CategoryExpensesAction.Retry)
-                })
+                StatusSlip(
+                    kind = StatusKind.LoadFailed(),
+                    message = stringResource(R.string.category_detail_list_failed),
+                    action = StatusAction(StatusSlipDefaults.retryLabel) {
+                        onAction(CategoryExpensesAction.Retry)
+                    }
+                )
             }
 
             is CategoryExpensesState.Ready -> {
                 if (state.stale) {
                     item(key = "stale") {
-                        StaleSlip(
-                            stringResource(R.string.recibo_stale),
-                            { onAction(CategoryExpensesAction.Retry) },
-                            Modifier.testTag("category.expenses.stale")
+                        StatusSlip(
+                            kind = StatusKind.Older,
+                            message = stringResource(R.string.recibo_stale),
+                            modifier = Modifier.testTag("category.expenses.stale"),
+                            action = StatusAction(StatusSlipDefaults.retryLabel) {
+                                onAction(CategoryExpensesAction.Retry)
+                            }
                         )
                     }
                 }
                 if (state.rows.isEmpty()) {
                     item {
-                        EmptySlip(
-                            stringResource(R.string.category_expenses_empty),
-                            stringResource(R.string.category_expenses_empty_body),
-                            SelloIcon.ReceiptLong
+                        StatusSlip(
+                            kind = StatusKind.Empty(
+                                SelloIcon.ReceiptLong,
+                                stringResource(R.string.category_expenses_empty)
+                            ),
+                            message = stringResource(R.string.category_expenses_empty_body)
                         )
                     }
                 }
@@ -126,29 +136,44 @@ fun CategoryExpensesScreen(
                         val tag = Modifier.testTag(CATEGORY_EXPENSES_PROBLEM_TAG)
                         if (problem == DeleteProblem.Unknown) {
                             // Asked again with the same operation, never sent again.
-                            ErrorSlip(
-                                message,
-                                { onAction(CategoryExpensesAction.CheckDelete) },
-                                tag,
-                                title = stringResource(
-                                    R.string.category_expenses_delete_unknown_title
+                            StatusSlip(
+                                kind = StatusKind.Unknown(
+                                    stringResource(
+                                        R.string.category_expenses_delete_unknown_title
+                                    )
                                 ),
-                                retryLabel = stringResource(R.string.expense_edit_check_deleted),
-                                loading = state.checking
+                                message = message,
+                                modifier = tag,
+                                action = StatusAction(
+                                    stringResource(R.string.expense_edit_check_deleted),
+                                    busy = state.checking
+                                ) {
+                                    onAction(CategoryExpensesAction.CheckDelete)
+                                }
                             )
                         } else {
-                            // A delete that did not happen, never titled as a failed read.
-                            ErrorSlip(
-                                message,
-                                { onAction(CategoryExpensesAction.Retry) },
-                                tag,
-                                title = stringResource(
-                                    if (problem == DeleteProblem.Gone) {
-                                        R.string.category_expenses_delete_gone_title
-                                    } else {
-                                        R.string.category_expenses_delete_not_done_title
-                                    }
-                                )
+                            // A delete that did not happen, never titled as a failed read:
+                            // the expense is gone already, or it is still there. The
+                            // action reads the list again.
+                            StatusSlip(
+                                kind = if (problem == DeleteProblem.Gone) {
+                                    StatusKind.Gone(
+                                        stringResource(R.string.category_expenses_delete_gone_title)
+                                    )
+                                } else {
+                                    StatusKind.ActionFailed(
+                                        stringResource(
+                                            R.string.category_expenses_delete_not_done_title
+                                        )
+                                    )
+                                },
+                                message = message,
+                                modifier = tag,
+                                action = StatusAction(
+                                    stringResource(R.string.category_expenses_reload)
+                                ) {
+                                    onAction(CategoryExpensesAction.Retry)
+                                }
                             )
                         }
                     }
@@ -190,9 +215,13 @@ fun CategoryExpensesScreen(
                 }
                 if (state.pageFailed) {
                     item(key = "page-error") {
-                        ErrorSlip(stringResource(R.string.category_detail_more_failed), {
-                            onAction(CategoryExpensesAction.Retry)
-                        })
+                        StatusSlip(
+                            kind = StatusKind.LoadFailed(),
+                            message = stringResource(R.string.category_detail_more_failed),
+                            action = StatusAction(StatusSlipDefaults.retryLabel) {
+                                onAction(CategoryExpensesAction.Retry)
+                            }
+                        )
                     }
                 }
                 if (state.more) {

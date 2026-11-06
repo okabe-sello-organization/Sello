@@ -1,5 +1,7 @@
 package com.software.sello.feature.recibo
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -15,11 +17,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
 import com.software.sello.designsystem.component.ButtonKind
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.ScheduleRow
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.date.DateLabels
@@ -48,114 +53,127 @@ internal fun CategoryFixedPayments(
             modifier.testTag(CATEGORY_DETAIL_FIXED_LOADING_TAG)
         )
 
-        DetailFixedState.Failed -> ErrorSlip(
+        DetailFixedState.Failed -> StatusSlip(
+            kind = StatusKind.LoadFailed(stringResource(R.string.schedules_failed_title)),
             message = stringResource(R.string.category_detail_fixed_failed, month),
-            onRetry = { onAction(CategoryDetailAction.Retry) },
-            title = stringResource(R.string.schedules_failed_title),
-            modifier = modifier.testTag(CATEGORY_DETAIL_FIXED_FAILED_TAG)
+            modifier = modifier.testTag(CATEGORY_DETAIL_FIXED_FAILED_TAG),
+            action = StatusAction(StatusSlipDefaults.retryLabel) {
+                onAction(CategoryDetailAction.Retry)
+            }
         )
 
-        is DetailFixedState.Ready -> Slip(
-            modifier.fillMaxWidth().testTag(CATEGORY_DETAIL_FIXED_TAG)
+        is DetailFixedState.Ready -> Column(
+            modifier,
+            verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md)
         ) {
-            Text(
-                stringResource(R.string.category_detail_fixed_title),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.semantics { heading() }
-            )
+            // Above the slip it speaks of, as every other older list says it.
             if (fixed.stale) {
-                Text(
-                    stringResource(R.string.category_detail_fixed_stale),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = SelloTheme.colors.semantic.warn,
-                    modifier = Modifier
-                        .padding(top = SelloTheme.spacing.xs)
-                        .testTag(CATEGORY_DETAIL_FIXED_STALE_TAG)
-                )
-                SelloButton(
-                    text = stringResource(R.string.recibo_stale_retry),
-                    onClick = { onAction(CategoryDetailAction.Retry) },
-                    kind = ButtonKind.Text
+                StatusSlip(
+                    kind = StatusKind.Older,
+                    message = stringResource(R.string.category_detail_fixed_stale),
+                    modifier = Modifier.testTag(CATEGORY_DETAIL_FIXED_STALE_TAG),
+                    action = StatusAction(StatusSlipDefaults.retryLabel) {
+                        onAction(CategoryDetailAction.Retry)
+                    }
                 )
             }
-            Group(stringResource(R.string.category_detail_fixed_coming, month), first = true)
-            if (fixed.upcoming.isEmpty()) {
-                Text(
-                    stringResource(R.string.category_detail_fixed_none_left, month),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = SelloTheme.colors.inkSoft,
-                    modifier = Modifier.testTag(CATEGORY_DETAIL_FIXED_NONE_LEFT_TAG)
-                )
-            }
-            fixed.upcoming.forEachIndexed { index, payment ->
-                val day = dates.day(payment.date, state.today)
-                // The day already says "Hoy" for today; tomorrow says so too.
-                val caption = if (payment.date == state.today.plusDays(1)) {
-                    stringResource(R.string.schedules_due_tomorrow, day)
-                } else {
-                    day
-                }
-                ScheduleRow(
-                    name = payment.name,
-                    caption = caption,
-                    amount = payment.amount,
-                    icon = SelloIcon.Event,
-                    onClick = { onOpenSchedule(payment.scheduleId) },
-                    spoken = stringResource(
-                        R.string.upcoming_row_spoken,
-                        payment.name,
-                        payment.amount.spoken,
-                        caption
-                    ),
-                    modifier = Modifier.testTag(
-                        "$CATEGORY_DETAIL_FIXED_TAG:coming:${payment.scheduleId}.${payment.date}"
-                    ),
-                    last = index == fixed.upcoming.lastIndex
-                )
-            }
-            if (fixed.later.isNotEmpty()) {
-                Group(stringResource(R.string.category_detail_fixed_later), first = false)
-            }
-            fixed.later.forEachIndexed { index, schedule ->
-                val rule = repeatRuleLabel(schedule.rule, schedule.start)
-                val status = schedule.pausedFrom?.let {
-                    stringResource(R.string.schedules_paused_since, dates.day(it, state.today))
-                } ?: schedule.next?.let {
-                    stringResource(R.string.schedules_next, dates.day(it, state.today))
-                }
-                val caption = listOfNotNull(rule, status).joinToString(" · ")
-                ScheduleRow(
-                    name = schedule.name,
-                    caption = caption,
-                    amount = schedule.amount,
-                    icon = if (schedule.pausedFrom !=
-                        null
-                    ) {
-                        SelloIcon.Pause
-                    } else {
-                        SelloIcon.Autorenew
-                    },
-                    onClick = { onOpenSchedule(schedule.id) },
-                    spoken = stringResource(
-                        R.string.upcoming_row_spoken,
-                        schedule.name,
-                        schedule.amount.spoken,
-                        caption
-                    ),
-                    modifier = Modifier.testTag("$CATEGORY_DETAIL_FIXED_TAG:later:${schedule.id}"),
-                    dimmed = schedule.pausedFrom != null,
-                    last = index == fixed.later.lastIndex
-                )
-            }
-            SelloButton(
-                text = stringResource(R.string.upcoming_all_schedules),
-                onClick = onAllSchedules,
-                kind = ButtonKind.Text,
-                // Starts at the slip's content edge, under the rows (design .text-link).
-                contentPadding = PaddingValues(0.dp),
-                modifier = Modifier.testTag(CATEGORY_DETAIL_FIXED_ALL_TAG)
+            FixedPaymentsSlip(fixed, state, month, dates, onOpenSchedule, onAllSchedules)
+        }
+    }
+}
+
+@Composable
+private fun FixedPaymentsSlip(
+    fixed: DetailFixedState.Ready,
+    state: CategoryDetailState.Ready,
+    month: String,
+    dates: DateLabels,
+    onOpenSchedule: (String) -> Unit,
+    onAllSchedules: () -> Unit
+) {
+    Slip(Modifier.fillMaxWidth().testTag(CATEGORY_DETAIL_FIXED_TAG)) {
+        Text(
+            stringResource(R.string.category_detail_fixed_title),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.semantics { heading() }
+        )
+        Group(stringResource(R.string.category_detail_fixed_coming, month), first = true)
+        if (fixed.upcoming.isEmpty()) {
+            Text(
+                stringResource(R.string.category_detail_fixed_none_left, month),
+                style = MaterialTheme.typography.bodyMedium,
+                color = SelloTheme.colors.inkSoft,
+                modifier = Modifier.testTag(CATEGORY_DETAIL_FIXED_NONE_LEFT_TAG)
             )
         }
+        fixed.upcoming.forEachIndexed { index, payment ->
+            val day = dates.day(payment.date, state.today)
+            // The day already says "Hoy" for today; tomorrow says so too.
+            val caption = if (payment.date == state.today.plusDays(1)) {
+                stringResource(R.string.schedules_due_tomorrow, day)
+            } else {
+                day
+            }
+            ScheduleRow(
+                name = payment.name,
+                caption = caption,
+                amount = payment.amount,
+                icon = SelloIcon.Event,
+                onClick = { onOpenSchedule(payment.scheduleId) },
+                spoken = stringResource(
+                    R.string.upcoming_row_spoken,
+                    payment.name,
+                    payment.amount.spoken,
+                    caption
+                ),
+                modifier = Modifier.testTag(
+                    "$CATEGORY_DETAIL_FIXED_TAG:coming:${payment.scheduleId}.${payment.date}"
+                ),
+                last = index == fixed.upcoming.lastIndex
+            )
+        }
+        if (fixed.later.isNotEmpty()) {
+            Group(stringResource(R.string.category_detail_fixed_later), first = false)
+        }
+        fixed.later.forEachIndexed { index, schedule ->
+            val rule = repeatRuleLabel(schedule.rule, schedule.start)
+            val status = schedule.pausedFrom?.let {
+                stringResource(R.string.schedules_paused_since, dates.day(it, state.today))
+            } ?: schedule.next?.let {
+                stringResource(R.string.schedules_next, dates.day(it, state.today))
+            }
+            val caption = listOfNotNull(rule, status).joinToString(" · ")
+            ScheduleRow(
+                name = schedule.name,
+                caption = caption,
+                amount = schedule.amount,
+                icon = if (schedule.pausedFrom !=
+                    null
+                ) {
+                    SelloIcon.Pause
+                } else {
+                    SelloIcon.Autorenew
+                },
+                onClick = { onOpenSchedule(schedule.id) },
+                spoken = stringResource(
+                    R.string.upcoming_row_spoken,
+                    schedule.name,
+                    schedule.amount.spoken,
+                    caption
+                ),
+                modifier = Modifier.testTag("$CATEGORY_DETAIL_FIXED_TAG:later:${schedule.id}"),
+                dimmed = schedule.pausedFrom != null,
+                last = index == fixed.later.lastIndex
+            )
+        }
+        SelloButton(
+            text = stringResource(R.string.upcoming_all_schedules),
+            onClick = onAllSchedules,
+            kind = ButtonKind.Text,
+            // Starts at the slip's content edge, under the rows (design .text-link).
+            contentPadding = PaddingValues(0.dp),
+            modifier = Modifier.testTag(CATEGORY_DETAIL_FIXED_ALL_TAG)
+        )
     }
 }
 

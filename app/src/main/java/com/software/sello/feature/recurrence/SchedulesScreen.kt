@@ -28,7 +28,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.software.sello.R
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.component.ScheduleRow
@@ -37,6 +36,10 @@ import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.component.SplitBar
 import com.software.sello.designsystem.component.SplitSegment
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.component.StubButton
 import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.icon.SelloIcon
@@ -46,7 +49,6 @@ import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.income.incomeSourceLabel
 import com.software.sello.presentation.month.monthNames
-import com.software.sello.presentation.read.StaleSlip
 import com.software.sello.presentation.recurrence.repeatRuleLabel
 import java.time.LocalDate
 import java.time.YearMonth
@@ -105,12 +107,13 @@ fun SchedulesScreen(
             }
 
             SchedulesState.Failed -> item {
-                ErrorSlip(
+                StatusSlip(
+                    kind = StatusKind.LoadFailed(stringResource(R.string.schedules_failed_title)),
                     message = stringResource(R.string.schedules_failed),
-                    onRetry = { onAction(SchedulesAction.Retry) },
-                    title = stringResource(R.string.schedules_failed_title),
-                    icon = SelloIcon.Error,
-                    modifier = Modifier.testTag("schedules.failed")
+                    modifier = Modifier.testTag("schedules.failed"),
+                    action = StatusAction(StatusSlipDefaults.retryLabel) {
+                        onAction(SchedulesAction.Retry)
+                    }
                 )
             }
 
@@ -118,10 +121,13 @@ fun SchedulesScreen(
                 // A refresh failed: this is the month as last read.
                 if (state.stale) {
                     item {
-                        StaleSlip(
-                            stringResource(R.string.recibo_stale),
-                            { onAction(SchedulesAction.Retry) },
-                            Modifier.testTag("schedules.stale")
+                        StatusSlip(
+                            kind = StatusKind.Older,
+                            message = stringResource(R.string.recibo_stale),
+                            modifier = Modifier.testTag("schedules.stale"),
+                            action = StatusAction(StatusSlipDefaults.retryLabel) {
+                                onAction(SchedulesAction.Retry)
+                            }
                         )
                     }
                 }

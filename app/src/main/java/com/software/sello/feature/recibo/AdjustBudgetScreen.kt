@@ -39,7 +39,6 @@ import com.software.sello.designsystem.component.AmountKeypad
 import com.software.sello.designsystem.component.AnswerSlip
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.CategoryCircle
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FactLine
 import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.component.MoneySign
@@ -52,13 +51,16 @@ import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloChip
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.month.monthNames
-import com.software.sello.presentation.read.StaleSlip
 import java.util.Locale
 
 /** The screen and its sheet, each from its own view model; Back closes the sheet first. */
@@ -126,18 +128,23 @@ fun AdjustBudgetScreen(
                     SlipSkeleton()
                 }
 
-                AdjustBudgetState.Failed -> ErrorSlip(
+                AdjustBudgetState.Failed -> StatusSlip(
+                    kind = StatusKind.LoadFailed(stringResource(R.string.adjust_failed_title)),
                     message = stringResource(R.string.adjust_failed),
-                    onRetry = { onAction(AdjustBudgetAction.Retry) },
-                    title = stringResource(R.string.adjust_failed_title),
-                    icon = SelloIcon.Error
+                    action = StatusAction(StatusSlipDefaults.retryLabel) {
+                        onAction(AdjustBudgetAction.Retry)
+                    }
                 )
 
                 is AdjustBudgetState.Ready -> {
                     if (state.stale) {
-                        StaleSlip(stringResource(R.string.recibo_stale), {
-                            onAction(AdjustBudgetAction.Retry)
-                        })
+                        StatusSlip(
+                            kind = StatusKind.Older,
+                            message = stringResource(R.string.recibo_stale),
+                            action = StatusAction(StatusSlipDefaults.retryLabel) {
+                                onAction(AdjustBudgetAction.Retry)
+                            }
+                        )
                     }
                     MonthSlip(state, onReserved = { onAction(AdjustBudgetAction.OpenReserved) })
                     CategoriesSlip(state) { row ->
@@ -359,19 +366,14 @@ private fun LimitSheet(sheet: LimitSheetState, onSheet: (LimitSheetAction) -> Un
             return@RepeatSheet
         }
         if (sheet.stale) {
-            Text(
-                stringResource(R.string.recibo_stale),
-                style = MaterialTheme.typography.bodySmall,
-                color = colors.semantic.loss,
-                modifier = Modifier
-                    .testTag("limit.sheet.stale")
-                    .semantics { liveRegion = LiveRegionMode.Polite }
-            )
-            SelloButton(
-                stringResource(R.string.recibo_stale_retry),
-                { onSheet(LimitSheetAction.Retry) },
-                kind = ButtonKind.Text,
-                enabled = !sheet.busy
+            StatusSlip(
+                kind = StatusKind.Older,
+                message = stringResource(R.string.recibo_stale),
+                modifier = Modifier.testTag("limit.sheet.stale"),
+                // Busy while a save runs: said, and a press is ignored.
+                action = StatusAction(StatusSlipDefaults.retryLabel, busy = sheet.busy) {
+                    onSheet(LimitSheetAction.Retry)
+                }
             )
         }
         SegmentedSwitch(

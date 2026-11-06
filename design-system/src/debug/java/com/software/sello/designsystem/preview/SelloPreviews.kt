@@ -21,8 +21,6 @@ import com.software.sello.designsystem.component.ChartPeriod
 import com.software.sello.designsystem.component.ChartPoint
 import com.software.sello.designsystem.component.ChipFlow
 import com.software.sello.designsystem.component.ColumnsChart
-import com.software.sello.designsystem.component.EmptySlip
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FieldPill
 import com.software.sello.designsystem.component.FormField
 import com.software.sello.designsystem.component.LeaderLine
@@ -40,6 +38,9 @@ import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.component.Stamp
 import com.software.sello.designsystem.component.StampInk
 import com.software.sello.designsystem.component.StampSize
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
 import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.component.TotalLine
 import com.software.sello.designsystem.icon.SelloIcon
@@ -113,12 +114,14 @@ private fun PaperAndLinesPreview() = Stage {
 @SelloPreviews
 @Composable
 private fun FeedbackPreview() = Stage {
-    EmptySlip("Dale forma a tu mes", "Crea una categoría.", SelloIcon.ReceiptLong)
-    ErrorSlip(
+    StatusSlip(
+        StatusKind.Empty(SelloIcon.ReceiptLong, "Dale forma a tu mes"),
+        "Crea una categoría."
+    )
+    StatusSlip(
+        StatusKind.LoadFailed("No pudimos leer tu mes"),
         "Tus registros siguen guardados.",
-        {},
-        title = "No pudimos leer tu mes",
-        icon = SelloIcon.Error
+        action = StatusAction("Reintentar") {}
     )
     SelloNotice("Gasto borrado", actionLabel = "Deshacer", onAction = {})
     SlipSkeleton()

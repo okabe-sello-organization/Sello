@@ -38,8 +38,6 @@ import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ChartPeriod
 import com.software.sello.designsystem.component.ChartReference
 import com.software.sello.designsystem.component.ColumnsChart
-import com.software.sello.designsystem.component.EmptySlip
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.component.MoneyStyle
 import com.software.sello.designsystem.component.MoneyText
@@ -50,6 +48,10 @@ import com.software.sello.designsystem.component.SlipStub
 import com.software.sello.designsystem.component.SplitBar
 import com.software.sello.designsystem.component.SplitSegment
 import com.software.sello.designsystem.component.StampInk
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.component.StubButton
 import com.software.sello.designsystem.component.SuggestionNote
 import com.software.sello.designsystem.component.TearLine
@@ -85,10 +87,13 @@ fun ResumenScreen(
             }
 
             ResumenState.Failed -> ResumenPane(content) {
-                ErrorSlip(
-                    stringResource(R.string.resumen_load_failed),
-                    { onAction(ResumenAction.Retry) },
-                    Modifier.testTag("resumen.failed")
+                StatusSlip(
+                    kind = StatusKind.LoadFailed(),
+                    message = stringResource(R.string.resumen_load_failed),
+                    modifier = Modifier.testTag("resumen.failed"),
+                    action = StatusAction(StatusSlipDefaults.retryLabel) {
+                        onAction(ResumenAction.Retry)
+                    }
                 )
             }
 
@@ -137,10 +142,11 @@ private fun SummarySlips(
     onCategory: (String) -> Unit
 ) {
     if (state.stale) {
-        ErrorSlip(
-            stringResource(R.string.resumen_stale, state.asOf),
-            { onAction(ResumenAction.Retry) },
-            Modifier.testTag("resumen.stale")
+        StatusSlip(
+            kind = StatusKind.Older,
+            message = stringResource(R.string.resumen_stale, state.asOf),
+            modifier = Modifier.testTag("resumen.stale"),
+            action = StatusAction(StatusSlipDefaults.retryLabel) { onAction(ResumenAction.Retry) }
         )
     }
     Hero(state.hero, state.insufficientHistory)
@@ -336,13 +342,14 @@ private fun ChartSlips(
     onAdjustLimit: (String) -> Unit
 ) {
     if (state.empty) {
-        EmptySlip(
-            stringResource(R.string.resumen_empty),
-            stringResource(R.string.resumen_empty_body),
-            SelloIcon.Insights,
-            Modifier.fillMaxWidth().testTag("resumen.empty"),
-            stringResource(R.string.resumen_record_expense),
-            onExpense
+        StatusSlip(
+            kind = StatusKind.Empty(SelloIcon.Insights, stringResource(R.string.resumen_empty)),
+            message = stringResource(R.string.resumen_empty_body),
+            modifier = Modifier.fillMaxWidth().testTag("resumen.empty"),
+            action = StatusAction(
+                stringResource(R.string.resumen_record_expense),
+                onClick = onExpense
+            )
         )
         return
     }

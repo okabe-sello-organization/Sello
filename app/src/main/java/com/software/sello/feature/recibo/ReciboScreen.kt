@@ -54,8 +54,6 @@ import androidx.compose.ui.unit.dp
 import com.software.sello.R
 import com.software.sello.designsystem.component.AnswerSlip
 import com.software.sello.designsystem.component.BandChip
-import com.software.sello.designsystem.component.EmptySlip
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.Footnote
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyStyle
@@ -65,6 +63,10 @@ import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.component.Stamp
 import com.software.sello.designsystem.component.StampInk
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.component.dashedOutline
 import com.software.sello.designsystem.icon.SelloIcon
@@ -74,7 +76,6 @@ import com.software.sello.presentation.carry.CarryDirection
 import com.software.sello.presentation.carry.CarryProblemSlip
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.month.monthNames
-import com.software.sello.presentation.read.StaleSlip
 import kotlinx.coroutines.launch
 
 /**
@@ -112,13 +113,16 @@ fun ReciboScreen(
             }
 
             ReciboState.FirstRun -> {
-                EmptySlip(
-                    title = stringResource(R.string.recibo_first_run_title),
-                    body = stringResource(R.string.recibo_first_run_body),
+                StatusSlip(
+                    kind = StatusKind.Empty(
+                        SelloIcon.ReceiptLong,
+                        stringResource(R.string.recibo_first_run_title)
+                    ),
+                    message = stringResource(R.string.recibo_first_run_body),
                     modifier = Modifier.testTag(RECIBO_FIRST_RUN_TAG),
-                    actionLabel = stringResource(R.string.recibo_create_category),
-                    onAction = { onAction(ReciboAction.CreateCategory) },
-                    icon = SelloIcon.ReceiptLong
+                    action = StatusAction(stringResource(R.string.recibo_create_category)) {
+                        onAction(ReciboAction.CreateCategory)
+                    }
                 )
                 // A goal needs no category: Recibo shows it here too (rule 12).
                 goal()
@@ -131,14 +135,19 @@ fun ReciboScreen(
                         onRetry = { onAction(ReciboAction.Retry) },
                         onSetLimit = { id, month ->
                             onAction(ReciboAction.SetMonthLimit(id, month))
-                        }
+                        },
+                        olderFiguresShown = true
                     )
                 }
-                if (state.stale) {
-                    StaleSlip(
-                        stringResource(R.string.recibo_stale),
-                        { onAction(ReciboAction.Retry) },
-                        Modifier.testTag(RECIBO_STALE_TAG)
+                // A carry problem is the older figures' one notice; otherwise this says it.
+                if (state.stale && state.carryProblem == null) {
+                    StatusSlip(
+                        kind = StatusKind.Older,
+                        message = stringResource(R.string.recibo_stale),
+                        modifier = Modifier.testTag(RECIBO_STALE_TAG),
+                        action = StatusAction(StatusSlipDefaults.retryLabel) {
+                            onAction(ReciboAction.Retry)
+                        }
                     )
                 }
                 SummarySlip(
@@ -167,12 +176,13 @@ fun ReciboScreen(
                 onSetLimit = { id, month -> onAction(ReciboAction.SetMonthLimit(id, month)) }
             )
 
-            ReciboState.Failed -> ErrorSlip(
+            ReciboState.Failed -> StatusSlip(
+                kind = StatusKind.LoadFailed(stringResource(R.string.recibo_failed_title)),
                 message = stringResource(R.string.recibo_failed),
-                onRetry = { onAction(ReciboAction.Retry) },
                 modifier = Modifier.testTag(RECIBO_FAILED_TAG),
-                title = stringResource(R.string.recibo_failed_title),
-                icon = SelloIcon.Error
+                action = StatusAction(StatusSlipDefaults.retryLabel) {
+                    onAction(ReciboAction.Retry)
+                }
             )
         }
     }

@@ -4,7 +4,11 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
@@ -13,6 +17,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -171,6 +176,20 @@ class AdjustBudgetScreenTest {
         rule.onNodeWithText("Reintentar").performScrollTo().press()
 
         assertEquals(listOf<LimitSheetAction>(LimitSheetAction.Retry), sheetActions)
+    }
+
+    @Test
+    fun whileTheSheetSavesItsOlderNoticeRetrySaysItIsBusyAndIgnoresAPress() {
+        sheet = openSheet.copy(stale = true, busy = true)
+        show(ready)
+
+        rule.onNode(hasText("Reintentar") and hasAnyAncestor(hasTestTag("limit.sheet.stale")))
+            .performScrollTo()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "En curso"))
+            .assertIsNotEnabled()
+            .performClick()
+
+        assertEquals(emptyList<LimitSheetAction>(), sheetActions)
     }
 
     @Test

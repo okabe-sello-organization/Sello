@@ -221,7 +221,7 @@ class StartupFailureScreenTest {
 
         rule.onNodeWithTag(STARTUP_RESTORE_INTERRUPTED_TAG).performScrollTo().assertIsDisplayed()
         rule.onNodeWithText("La restauración no terminó").assertIsDisplayed()
-        rule.onNodeWithText("Continuar").performScrollTo().performClick()
+        rule.onNodeWithText("Abrir Sello de nuevo").performScrollTo().performClick()
 
         assertEquals(listOf<StartupFailureAction>(StartupFailureAction.Leave), actions)
     }

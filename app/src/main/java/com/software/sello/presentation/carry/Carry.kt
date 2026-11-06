@@ -12,11 +12,13 @@ import com.software.sello.designsystem.component.CarryCorrectionContent as Carry
 import com.software.sello.designsystem.component.CarryCorrectionGroup
 import com.software.sello.designsystem.component.CarryCorrectionLine
 import com.software.sello.designsystem.component.CarryLine
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.LineEmphasis
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
-import com.software.sello.designsystem.icon.SelloIcon
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.domain.model.CarryBreakdown as CarryParts
 import com.software.sello.domain.model.CarryMonth
 import com.software.sello.domain.model.CarryVerdict
@@ -443,14 +445,18 @@ fun carryProblem(
 
 /**
  * The failure in words, with the one action that can repair it: giving the month its limit
- * ([onSetLimit], with the category and month), or reading again ([onRetry]).
+ * ([onSetLimit], with the category and month), or reading again ([onRetry]). With
+ * [olderFiguresShown], the last good figures are shown under it: it is their one Older
+ * notice, saying what could not be calculated and that the figures are the last read.
+ * Without, nothing could be read.
  */
 @Composable
 fun CarryProblemSlip(
     problem: CarryProblem,
     onRetry: () -> Unit,
     onSetLimit: (categoryId: String, month: YearMonth) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    olderFiguresShown: Boolean = false
 ) {
     val dates = dateLabels()
     val name = problem.name
@@ -459,34 +465,55 @@ fun CarryProblemSlip(
     } else {
         stringResource(R.string.carry_failed_title_of, name)
     }
+    val kind = if (olderFiguresShown) StatusKind.Older else StatusKind.LoadFailed(title)
     val who = name ?: stringResource(R.string.carry_failed_someone)
     val month = problem.month
     when {
-        problem.kind == CarryProblemKind.NoBase && month != null -> ErrorSlip(
-            message = stringResource(R.string.carry_failed_no_base, dates.monthYear(month), who),
-            onRetry = { onSetLimit(problem.categoryId, month) },
+        problem.kind == CarryProblemKind.NoBase && month != null -> StatusSlip(
+            kind = kind,
+            message = carrySaid(
+                olderFiguresShown,
+                title,
+                stringResource(R.string.carry_failed_no_base, dates.monthYear(month), who)
+            ),
             modifier = modifier.testTag(CARRY_PROBLEM_TAG),
-            title = title,
-            icon = SelloIcon.Error,
-            retryLabel = stringResource(R.string.carry_failed_set_limit, dates.monthYear(month))
+            action = StatusAction(
+                stringResource(R.string.carry_failed_set_limit, dates.monthYear(month))
+            ) {
+                onSetLimit(problem.categoryId, month)
+            }
         )
 
-        problem.kind == CarryProblemKind.Missing -> ErrorSlip(
-            message = stringResource(R.string.carry_failed_missing, who),
-            onRetry = onRetry,
+        problem.kind == CarryProblemKind.Missing -> StatusSlip(
+            kind = kind,
+            message = carrySaid(
+                olderFiguresShown,
+                title,
+                stringResource(R.string.carry_failed_missing, who)
+            ),
             modifier = modifier.testTag(CARRY_PROBLEM_TAG),
-            title = title,
-            icon = SelloIcon.Error
+            action = StatusAction(StatusSlipDefaults.retryLabel, onClick = onRetry)
         )
 
-        else -> ErrorSlip(
-            message = stringResource(R.string.carry_failed_damaged, who),
-            onRetry = onRetry,
+        else -> StatusSlip(
+            kind = kind,
+            message = carrySaid(
+                olderFiguresShown,
+                title,
+                stringResource(R.string.carry_failed_damaged, who)
+            ),
             modifier = modifier.testTag(CARRY_PROBLEM_TAG),
-            title = title,
-            icon = SelloIcon.Error
+            action = StatusAction(StatusSlipDefaults.retryLabel, onClick = onRetry)
         )
     }
 }
+
+/**
+ * The problem's sentence. Over older figures, its title then that they are the last read
+ * (Older shows no title); the detail is left to the slip shown when nothing was read.
+ */
+@Composable
+private fun carrySaid(olderFiguresShown: Boolean, title: String, body: String): String =
+    if (olderFiguresShown) stringResource(R.string.carry_failed_older, title) else body
 
 const val CARRY_PROBLEM_TAG = "carry:problem"

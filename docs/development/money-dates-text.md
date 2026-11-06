@@ -55,7 +55,7 @@ Formatting and drawing have different owners:
   are for chart axes only.
 - `MoneyText` in `:design-system` only draws a `MoneyTextValue`. It does not know
   `Money`, compute or round.
-- A failed read has no `MoneyTextValue`. Show `ErrorSlip`, never a zero.
+- A failed read has no `MoneyTextValue`. Show a `StatusSlip` (LoadFailed, or Older over the last good figures), never a zero.
 
 ## Entering an amount
 

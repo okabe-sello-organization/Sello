@@ -29,7 +29,6 @@ import com.software.sello.R
 import com.software.sello.designsystem.component.AnswerSlip
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ButtonTone
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.MovementBalance
@@ -40,6 +39,10 @@ import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.component.StampInk
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
@@ -73,20 +76,24 @@ fun InvestmentDetailScreen(
             InvestmentDetailState.Loading, InvestmentDetailState.Gone ->
                 SlipSkeleton(Modifier.testTag("investment.loading"))
 
-            InvestmentDetailState.Failed -> ErrorSlip(
-                stringResource(R.string.inversiones_failed_body),
-                { onAction(InvestmentDetailAction.Retry) },
-                Modifier.testTag("investment.failed"),
-                title = stringResource(R.string.investment_failed_title),
-                icon = SelloIcon.Error
+            InvestmentDetailState.Failed -> StatusSlip(
+                kind = StatusKind.LoadFailed(stringResource(R.string.investment_failed_title)),
+                message = stringResource(R.string.inversiones_failed_body),
+                modifier = Modifier.testTag("investment.failed"),
+                action = StatusAction(StatusSlipDefaults.retryLabel) {
+                    onAction(InvestmentDetailAction.Retry)
+                }
             )
 
             is InvestmentDetailState.Ready -> {
                 if (state.stale) {
-                    ErrorSlip(
-                        stringResource(R.string.investment_stale),
-                        { onAction(InvestmentDetailAction.Retry) },
-                        Modifier.testTag("investment.stale")
+                    StatusSlip(
+                        kind = StatusKind.Older,
+                        message = stringResource(R.string.investment_stale),
+                        modifier = Modifier.testTag("investment.stale"),
+                        action = StatusAction(StatusSlipDefaults.retryLabel) {
+                            onAction(InvestmentDetailAction.Retry)
+                        }
                     )
                 }
                 Answer(state, dates, onAction)
