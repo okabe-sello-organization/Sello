@@ -141,6 +141,16 @@ private fun signText(sign: MoneySign) = when (sign) {
     MoneySign.Minus -> TRUE_MINUS
 }
 
+/**
+ * The amount as a sentence writes it, with the sign [MoneyText] draws: "+80.000",
+ * "\u2212150.000" (a true minus), or "937.200". No currency code: the sentence names
+ * the currency if it needs to. With [showPlus] false a gain is written bare ("80.000")
+ * and only a negative figure keeps its sign, for sentences that state a limit or a
+ * balance rather than a change.
+ */
+fun MoneyTextValue.signedText(showPlus: Boolean = true): String =
+    (if (sign == MoneySign.Plus && !showPlus) "" else signText(sign)) + digits
+
 private fun markText(value: MoneyTextValue, style: MoneyStyle) =
     if (style == MoneyStyle.Line || value.symbol.isEmpty()) "" else value.symbol + MARK_GAP
 
