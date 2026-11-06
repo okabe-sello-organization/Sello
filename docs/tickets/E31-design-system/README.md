@@ -1,6 +1,6 @@
 # SELLO-E31 — Design system from the built app
 
-- **Status:** In Progress
+- **Status:** Done
 - **Increment:** Post-MVP
 - **Goal:** One design reference per feature, made from the built app with real screenshots, and the app consistent where the same thing was built differently.
 - **Exit:** The pages under `docs/design/system/` are the design source; the findings page documents misuse, copies and hard-coded values; the old references (v2, the v1.1 snapshot and the screen briefs) are deleted; screenshots cover every screen and state the pages list (SELLO-178).

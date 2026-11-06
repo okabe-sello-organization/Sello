@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** In Progress
+- **Status:** Done
 - **Depends on:** SELLO-177
 - **Gate:** G1
 
@@ -41,4 +41,14 @@ dark, so no page shows a gap.
   landscape and tablet windows.
 - Not capturable on the JVM, said on the pages: system bars, the loading window at
   start-up, the compact title chip (only at widths Sello does not support).
+- Second pull request: 200 new baselines (100 states, light and dark) for what the
+  first left and every table row still without one: Varios movimientos, the notice bar
+  over Recibo, the correction question's undo, changed and busy forms, the bulk carry
+  correction, category detail, deletion and editor states, the replace sheet, Recibo's
+  finished month, reserved, Revisar, archived and reached-goal row, Resumen's closed
+  month, selected columns, carry and suggestion, Lo que Sello anotó, start-up's preview
+  and restoring, and Recibo and Resumen in two panes (landscape, as shell-rail-beside).
+  No existing baseline changed. Every state table names a baseline; a restored draft
+  drawn as its filled form points to that capture. The Gaps boxes keep only what cannot
+  be captured and notes that are not about screenshots. Found on the way: #394.
 

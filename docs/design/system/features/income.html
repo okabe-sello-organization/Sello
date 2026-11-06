@@ -111,7 +111,7 @@
             <tr><td>Data replaced</td><td>As soon as a restore or reset changes the history: "Tus datos cambiaron. No se guardó el ingreso; sal y vuelve a abrirlo." and the form is frozen.</td>
               <td><code>IncomeFormViewModel.kt:196</code></td><td><code>income-form-replaced</code></td></tr>
             <tr><td>Restored draft</td><td>Amount, source, Otro's name, note, open composer and Se repite come back from <code>SavedStateHandle</code>; a save in flight is asked about.</td>
-              <td><code>IncomeFormViewModel.kt:135</code>, <code>:213</code></td><td>no screenshot</td></tr>
+              <td><code>IncomeFormViewModel.kt:135</code>, <code>:213</code></td><td>Drawn as the filled form, so not captured again: <code>income-form</code></td></tr>
             <tr><td>Saved</td><td>Closes with a long-press haptic, once per recorded income.</td>
               <td><code>IncomeFormScreen.kt:104</code></td><td>—</td></tr>
           </tbody>
@@ -164,7 +164,7 @@
         <li>Se repite and the following incomes: <code>RepeatChoiceSheet</code> and <code>FollowingChoice</code> with
           <code>income = true</code> (<code>IncomeFormScreen.kt:234</code>, <code>:238</code>).</li>
       </ul>
-      <p>No screenshots.</p>
+      <p>Screenshots: <code>income-form-discard</code>, <code>income-form-note</code>, <code>income-form-date-picker</code>, <code>income-form-repeat-sheet</code>, <code>income-form-following</code>.</p>
     </section>
 
     <section id="screen-history">
@@ -188,6 +188,7 @@
       <figure data-shot="income-history-over" data-module="app" data-caption="More assigned than came in"></figure>
       <figure data-shot="income-history-plan" data-module="app" data-caption="The month&#x27;s plan"></figure>
       <figure data-shot="income-history-plan-failed" data-module="app" data-caption="The plan could not be read"></figure>
+      <figure data-shot="income-history-more-loading" data-module="app" data-caption="Ver más ingresos loading"></figure>
 
       <h3>Layout</h3>
       <p>Drawn inside the shell (<code>app/src/main/java/com/software/sello/navigation/IncomeDestinations.kt:45</code>): a back
@@ -229,7 +230,7 @@
             <tr><td>Stale</td><td>An <code>ErrorSlip</code> titled "No se pudo cargar" with "No pudimos leer tus ingresos de nuevo. Te mostramos los de la última lectura." and "Reintentar", above the figures as last read.</td>
               <td><code>IncomeHistoryScreen.kt:175</code></td><td>income-history-stale</td></tr>
             <tr><td>Busy (more)</td><td>"Ver más ingresos" shows its spinner.</td>
-              <td><code>IncomeHistoryScreen.kt:144</code></td><td>no screenshot</td></tr>
+              <td><code>IncomeHistoryScreen.kt:144</code></td><td><code>income-history-more-loading</code></td></tr>
             <tr><td>Page failed</td><td>An ErrorSlip "No pudimos leer los ingresos. Inténtalo de nuevo." inside the list, retrying the page.</td>
               <td><code>IncomeHistoryScreen.kt:139</code></td><td><code>income-history-page-failed</code></td></tr>
             <tr><td>Plan failed</td><td>An ErrorSlip "No pudimos leer lo que esperas recibir. Tus registros siguen guardados." in the plan's place.</td>
@@ -335,7 +336,6 @@
       <h2>Gaps</h2>
       <div class="gaps">
         <ul>
-          <li>Form: restored draft (drawn as the form with its values): no screenshot.</li>
           <li>The history baselines show the screen without the shell's title, ribbon and dock.</li>
         </ul>
       </div>

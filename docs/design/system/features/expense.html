@@ -83,6 +83,7 @@
       <figure data-shot="expense-entry-switch" data-module="app" data-caption="A new expense: the &quot;Gasto | Ingreso&quot; switch and Se repite&#x27;s row"></figure>
       <figure data-shot="expense-entry-repeat-on" data-module="app" data-caption="Se repite on: the row says the rule and the next date"></figure>
       <figure data-shot="expense-entry-repeat-sheet" data-module="app" data-caption="Se repite&#x27;s sheet open over the form"></figure>
+      <figure data-shot="expense-entry-following-saved" data-module="app" data-caption="Correcting: the following payments changed, this one not"></figure>
 
       <h3>Layout</h3>
       <p>The whole form is an <a href="../components.html#c-EntryLayout"><code>EntryLayout</code></a>
@@ -139,11 +140,11 @@
             <tr><td>Refused</td><td>An error message above the button, the draft kept: "No se guardó. Tu borrador sigue aquí.", "Esa categoría ya no acepta gastos…", "La fecha no puede ser posterior a hoy…", "Tus datos cambiaron mientras tanto…", "No se guardó: con este cambio Sello no podría calcular lo que sobra o falta…". When correcting, each says "El gasto quedó como estaba". "Este gasto ya no existe…" and "Este gasto cambió mientras lo corregías…" freeze the form.</td>
               <td><code>ExpenseEntryScreen.kt:743</code></td><td><code>expense-entry-refused</code></td></tr>
             <tr><td>Following saved, this not</td><td>Under the error: "Los siguientes ya cambiaron; este todavía no. Vuelve a guardar."</td>
-              <td><code>ExpenseEntryScreen.kt:542</code></td><td>no screenshot</td></tr>
+              <td><code>ExpenseEntryScreen.kt:542</code></td><td><code>expense-entry-following-saved</code></td></tr>
             <tr><td>Past months (correcting)</td><td>A hint: "Corregir este gasto cambia las cifras de septiembre." and, once, the notice "Puedes corregir un gasto de meses anteriores." with "Entendido".</td>
               <td><code>ExpenseEntryScreen.kt:489</code>, <code>:504</code></td><td><code>expense-entry-past-month</code></td></tr>
             <tr><td>Restored draft</td><td>After process death the draft, the open composer and Se repite come back from <code>SavedStateHandle</code>; "today" stays the day it was started; a save in flight is asked about, never sent again.</td>
-              <td><code>ExpenseEntryViewModel.kt:198</code>, <code>:271</code></td><td>no screenshot</td></tr>
+              <td><code>ExpenseEntryViewModel.kt:198</code>, <code>:271</code></td><td>Drawn as the filled form, so not captured again: <code>expense-entry</code></td></tr>
             <tr><td>Saved</td><td>The form closes with a long-press haptic, once per recorded expense; the caller shows the notice.</td>
               <td><code>ExpenseEntryScreen.kt:137</code></td><td>—</td></tr>
           </tbody>
@@ -185,7 +186,7 @@
         "Descartar" is in brand blue (<code>ExpenseEntryScreen.kt:290</code>). New: "¿Descartar este gasto?" /
         "Lo que escribiste no se guardará." / "Seguir anotando". Correcting: "¿Descartar los cambios?" /
         "El gasto queda como estaba." / "Seguir editando". "Descartar" sends <code>DiscardConfirmed</code>, the other
-        button <code>KeepEditing</code>. No screenshot.</p>
+        button <code>KeepEditing</code>. Screenshot: <code>expense-entry-discard</code>.</p>
     </section>
 
     <section id="dialog-date">
@@ -195,7 +196,7 @@
       <p>Material <code>DatePickerDialog</code> with a <a href="../components.html#c-SelloButton"><code>SelloButton</code></a>
         "Aceptar" (<code>expense_entry_date_confirm</code>) (<code>ExpenseEntryScreen.kt:673</code>). Days after today
         cannot be picked; while Se repite is on, only today or later. Whole days in UTC, no time or zone. Dismiss sends
-        <code>CloseDatePicker</code>. No screenshot.</p>
+        <code>CloseDatePicker</code>. Screenshot: <code>expense-entry-date-picker</code>.</p>
     </section>
 
     <section id="sheet-note">
@@ -206,7 +207,7 @@
         (<code>ExpenseEntryScreen.kt:626</code>). Its context line reads "Gasto en <b>Alimentación</b> · <b>48.700</b>"
         with the category icon (or a receipt icon), a counter "%1$d/%2$d" up to 60, the hint "Opcional", and
         "Listo" / "Cancelar". Over 60 characters it says "Máximo 60 caracteres. Tu texto sigue aquí." and cannot finish;
-        a line break gives "La nota no puede tener saltos de línea." No screenshot.</p>
+        a line break gives "La nota no puede tener saltos de línea." Screenshot: <code>expense-entry-note</code>.</p>
     </section>
 
     <section id="dialog-correction">
@@ -227,7 +228,7 @@
           with "Solo este", "Este y los siguientes", "Volver a editar" when a scheduled expense is corrected
           (<code>ExpenseEntryScreen.kt:351</code>).</li>
       </ul>
-      <p>No screenshots in this feature.</p>
+      <p>Screenshots: <code>expense-entry-correction</code>, <code>expense-entry-following</code>, <code>expense-entry-following-busy</code>.</p>
     </section>
 
     <section id="components">
@@ -288,7 +289,7 @@
           (<code>app/src/main/java/com/software/sello/presentation/movement/MovementForm.kt:53</code>) and its copy
           <code>IncomePane</code> (<code>app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:250</code>):
           the expense one drops the <code>lg</code> inner padding and spaces by <code>md</code>, so its skeleton and
-          ErrorSlip reach the screen edge. No screenshots of either. Finding: <a href="../findings.html#C03">C03</a>.</li>
+          ErrorSlip reach the screen edge: compare <code>expense-entry-loading</code>, <code>expense-entry-failed</code> with <code>income-form-loading</code>, <code>income-form-failed</code>. Finding: <a href="../findings.html#C03">C03</a>.</li>
         <li><code>DayPicker</code> (<code>ExpenseEntryScreen.kt:673</code>) against <code>MovementDatePicker</code>
           (<code>MovementForm.kt:144</code>): the same dialog plus the Se repite range rule. Income and Anotar varios have
           their own copies too. Finding: <a href="../findings.html#C01">C01</a>.</li>
@@ -310,9 +311,7 @@
     <section id="gaps">
       <h2>Gaps</h2>
       <div class="gaps">
-        <ul>
-          <li>Restored draft (drawn as the form with its values) and "Following saved, this not": no screenshot.</li>
-        </ul>
+        <p>None: every state on this page has a screenshot.</p>
       </div>
     </section>
   </main>

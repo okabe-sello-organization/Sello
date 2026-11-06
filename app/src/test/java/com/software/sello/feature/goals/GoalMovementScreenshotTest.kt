@@ -152,4 +152,28 @@ class GoalMovementScreenshotTest {
     @Test fun noteLight() = shot("note", composing, Look())
 
     @Test fun noteDark() = shot("note", composing, Look(dark = true))
+
+    /** Twelve digits typed: the most an amount takes, said under it. */
+    private val atLimit = aporte.copy(amount = plain("999.999.999.999"), atLimit = true)
+
+    @Test fun atLimitLight() = shot("at-limit", atLimit, Look())
+
+    @Test fun atLimitDark() = shot("at-limit", atLimit, Look(dark = true))
+
+    /** Text pasted that is not a whole amount: kept as pasted, with why. */
+    private val pasted = aporte.copy(amount = null, amountText = "350.000,50")
+
+    @Test fun pastedLight() = shot("pasted", pasted, Look())
+
+    @Test fun pastedDark() = shot("pasted", pasted, Look(dark = true))
+
+    /** Correcting this aporte down would leave the retiro of 400.000 on 20 oct short. */
+    private val blocked = correcting.copy(
+        amount = plain("100.000"),
+        blockedBy = BlockingWithdrawal(plain("400.000"), LocalDate.of(2026, 10, 20))
+    )
+
+    @Test fun blockedLight() = shot("blocked", blocked, Look())
+
+    @Test fun blockedDark() = shot("blocked", blocked, Look(dark = true))
 }

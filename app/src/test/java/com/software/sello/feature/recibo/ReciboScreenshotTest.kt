@@ -27,18 +27,27 @@ import com.software.sello.feature.goals.GoalDetailError
 import com.software.sello.feature.goals.ReciboGoal
 import com.software.sello.feature.goals.ReciboGoalPill
 import com.software.sello.feature.goals.ReciboGoalState
+import com.software.sello.feature.goals.ReciboReachedGoal
+import com.software.sello.navigation.CategoryEditAction
+import com.software.sello.navigation.CorrectionNoticeBar
+import com.software.sello.navigation.ShellDetail
 import com.software.sello.navigation.ShellScreen
+import com.software.sello.navigation.ShellState
 import com.software.sello.navigation.ShellTab
 import com.software.sello.navigation.appTabs
 import com.software.sello.navigation.octoberShell
 import com.software.sello.presentation.carry.CarryProblem
 import com.software.sello.presentation.carry.CarryProblemKind
+import com.software.sello.presentation.corrections.CorrectionNotice
+import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.month.monthNames
 import com.software.sello.showSello
+import java.time.LocalDate
 import java.time.YearMonth
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
@@ -263,14 +272,22 @@ class ReciboScreenshotTest {
         Look(dark = true)
     )
 
-    private fun shot(name: String, state: ReciboState, look: Look, goal: ReciboGoalState? = null) {
+    private fun shot(
+        name: String,
+        state: ReciboState,
+        look: Look,
+        goal: ReciboGoalState? = null,
+        notice: CorrectionNotice? = null,
+        shell: ShellState = octoberShell
+    ) {
         rule.showSello(look) {
             // As ReciboDestinations.kt frames the tab: the month bar, the settings action, Anotar.
             ShellScreen(
-                octoberShell,
+                shell,
                 monthNames(),
                 {},
                 navigation = appTabs(ShellTab.Recibo),
+                notice = { if (notice != null) CorrectionNoticeBar(notice) {} },
                 actions = {
                     IconButton(onClick = {}) {
                         Icon(SelloIcon.Settings.painter(), stringResource(R.string.settings_open))
@@ -333,7 +350,259 @@ class ReciboScreenshotTest {
     private val marking =
         ReciboGoalState.Shown(listOf(celular), null, CompletionState.Busy, stale = false)
 
+    /** Celular nuevo reached 100 % elsewhere: the green row offers Marcar como lograda. */
+    private val reached = ReciboGoalState.Shown(
+        listOf(viaje),
+        ReciboReachedGoal("celular", "Celular nuevo", "phone_iphone")
+    )
+
+    @Test fun goalsReachedLight() = shot("goals-reached", overspent, Look(), reached)
+
+    @Test fun goalsReachedDark() = shot("goals-reached", overspent, Look(dark = true), reached)
+
     @Test fun goalsBusyLight() = shot("goals-busy", overspent, Look(), marking)
 
     @Test fun goalsBusyDark() = shot("goals-busy", overspent, Look(dark = true), marking)
+
+    // ---------- The correction notice bar over Recibo (shell.html#screen-notice) ----------
+
+    private val notices = mapOf(
+        // A deletion that changed three later months' limits, still undoable.
+        "deleted-carry" to CorrectionNotice.Deleted(canUndo = true, carryMonths = 3),
+        "undoing" to CorrectionNotice.Deleted(canUndo = true, undoing = true),
+        "undo-failed" to CorrectionNotice.Deleted(canUndo = true, undoFailed = true),
+        "unknown" to CorrectionNotice.DeleteUnknown(),
+        "checking" to CorrectionNotice.DeleteUnknown(checking = true),
+        "refused" to CorrectionNotice.NotDeleted,
+        "undo-blocked" to CorrectionNotice.UndoBlocked,
+        "restored" to CorrectionNotice.Restored,
+        // Deshacer asked after its time was over: the deletion stands.
+        "too-late" to CorrectionNotice.UndoTooLate,
+        "recorded" to CorrectionNotice.ExpenseRecorded(plain("48.700"), "Comida"),
+        // Borrar categoría done: the editor and the detail closed onto Recibo.
+        "category-deleted" to CorrectionNotice.CategoryDeleted("Café", 34, movedTo = "Comida"),
+        // The limit sheet saved: what limit was set.
+        "limit-adjusted" to CorrectionNotice.LimitAdjusted(
+            "Café",
+            plain("150.000"),
+            YearMonth.of(2026, 10),
+            fromThisMonth = false
+        )
+    )
+
+    private fun notice(name: String, look: Look) =
+        shot("notice-$name", overspent, look, notice = notices.getValue(name))
+
+    @Test fun noticeDeletedCarryLight() = notice("deleted-carry", Look())
+
+    @Test fun noticeDeletedCarryDark() = notice("deleted-carry", Look(dark = true))
+
+    @Test fun noticeUndoingLight() = notice("undoing", Look())
+
+    @Test fun noticeUndoingDark() = notice("undoing", Look(dark = true))
+
+    @Test fun noticeUndoFailedLight() = notice("undo-failed", Look())
+
+    @Test fun noticeUndoFailedDark() = notice("undo-failed", Look(dark = true))
+
+    @Test fun noticeUnknownLight() = notice("unknown", Look())
+
+    @Test fun noticeUnknownDark() = notice("unknown", Look(dark = true))
+
+    @Test fun noticeCheckingLight() = notice("checking", Look())
+
+    @Test fun noticeCheckingDark() = notice("checking", Look(dark = true))
+
+    @Test fun noticeRefusedLight() = notice("refused", Look())
+
+    @Test fun noticeRefusedDark() = notice("refused", Look(dark = true))
+
+    @Test fun noticeUndoBlockedLight() = notice("undo-blocked", Look())
+
+    @Test fun noticeUndoBlockedDark() = notice("undo-blocked", Look(dark = true))
+
+    @Test fun noticeTooLateLight() = notice("too-late", Look())
+
+    @Test fun noticeTooLateDark() = notice("too-late", Look(dark = true))
+
+    @Test fun noticeRestoredLight() = notice("restored", Look())
+
+    @Test fun noticeRestoredDark() = notice("restored", Look(dark = true))
+
+    @Test fun noticeCategoryDeletedLight() = notice("category-deleted", Look())
+
+    @Test fun noticeCategoryDeletedDark() = notice("category-deleted", Look(dark = true))
+
+    @Test fun noticeLimitAdjustedLight() = notice("limit-adjusted", Look())
+
+    @Test fun noticeLimitAdjustedDark() = notice("limit-adjusted", Look(dark = true))
+
+    @Test fun noticeRecordedLight() = notice("recorded", Look())
+
+    @Test fun noticeRecordedDark() = notice("recorded", Look(dark = true))
+
+    // ---------- Recibo's other months and sections (recibo.html#screen-recibo) ----------
+
+    /** September 2026 seen from October: finished, the ribbon over it. */
+    private val september = octoberShell.copy(selectedMonth = YearMonth.of(2026, 9))
+
+    /** September closed within its limit: 1.200.000 − 1.080.000 = 120.000 left over. */
+    private val finished = ReciboState.Month(
+        ReciboSummary(
+            ReciboAnswerLabel.Remaining,
+            plain("120.000"),
+            ReciboStamp.WithinLimit,
+            closed = ReciboClosedMonth(plain("1.080.000"), plain("1.200.000"))
+        ),
+        listOf(
+            category(
+                id = "a",
+                name = "Alimentación",
+                headline = ReciboHeadline.LeftOver,
+                amount = plain("160.000"),
+                stamp = ReciboStamp.WithinLimit,
+                limit = "900.000",
+                fraction = 0.82f
+            ),
+            category(
+                id = "b",
+                name = "Transporte",
+                headline = ReciboHeadline.Overspent,
+                amount = plain("40.000"),
+                stamp = ReciboStamp.OverLimit,
+                limit = "200.000",
+                fraction = 1f,
+                over = true
+            ),
+            category(
+                id = "c",
+                name = "Entretenimiento",
+                headline = ReciboHeadline.LeftOver,
+                amount = plain("0"),
+                stamp = ReciboStamp.WithinLimit,
+                limit = "100.000",
+                fraction = 1f
+            )
+        ),
+        stale = false
+    )
+
+    @Test fun finishedLight() = shot("finished", finished, Look(), shell = september)
+
+    @Test
+    fun finishedDark() = shot("finished", finished, Look(dark = true), shell = september)
+
+    private val onTrack = overspent.categories.take(2) + overspent.categories[3]
+
+    /** 1.200.000 − 838.000 = 362.000 left; 50.000 of it after the 312.000 reserved for 2 payments. */
+    private val reserved = ReciboState.Month(
+        ReciboSummary(
+            ReciboAnswerLabel.Remaining,
+            plain("50.000"),
+            ReciboStamp.OnTrack,
+            perDay = ReciboPerDay(plain("5.000"), 10),
+            reserved = ReciboReserved(plain("312.000"), 2)
+        ),
+        onTrack,
+        stale = false
+    )
+
+    @Test fun reservedLight() = shot("reserved", reserved, Look())
+
+    @Test fun reservedDark() = shot("reserved", reserved, Look(dark = true))
+
+    /** 800.000 left and 950.000 reserved: 950.000 − 800.000 = 150.000 short. */
+    private val review = ReciboState.Month(
+        ReciboSummary(
+            ReciboAnswerLabel.ShortForPayments,
+            plain("150.000"),
+            ReciboStamp.Review,
+            adjustable = true,
+            reserved = ReciboReserved(plain("950.000"), 3),
+            shortfall = ReciboShortfall(plain("800.000"), over = false, reserved = plain("950.000"))
+        ),
+        onTrack,
+        stale = false
+    )
+
+    @Test fun reviewLight() = shot("review", review, Look())
+
+    @Test fun reviewDark() = shot("review", review, Look(dark = true))
+
+    /** Mascotas archived this month, with what it spent before: under its own heading. */
+    private val withArchived = overspent.copy(
+        categories = overspent.categories + category(
+            id = "e",
+            name = "Mascotas",
+            headline = ReciboHeadline.Spent,
+            amount = plain("35.000"),
+            stamp = ReciboStamp.Paused,
+            limit = null,
+            fraction = null
+        ).copy(archived = true, iconKey = "pets")
+    )
+
+    @Test fun archivedLight() = shot("archived", withArchived, Look())
+
+    @Test fun archivedDark() = shot("archived", withArchived, Look(dark = true))
+
+    /**
+     * Landscape (891 × 412): Recibo with Alimentación's detail beside it, as
+     * ReciboDestinations.kt lays out two panes; the open cell is tinted.
+     */
+    private fun twoPanes(look: Look) {
+        // 900.000 − 287.600 left = 612.400 spent.
+        val food = overspent.categories.first().copy(spent = plain("612.400"))
+        val detail = CategoryDetailState.Ready(
+            category = food,
+            month = YearMonth.of(2026, 10),
+            today = LocalDate.of(2026, 10, 22),
+            stale = false,
+            canRecord = true,
+            expenses = ExpenseListState.Rows(
+                listOf(
+                    ExpenseRow("1", LocalDate.of(2026, 10, 21), "Mercado", plain("48.700"), false),
+                    ExpenseRow("2", LocalDate.of(2026, 10, 18), null, plain("33.500"), false)
+                ),
+                more = true
+            )
+        )
+        rule.showSello(look) {
+            ShellScreen(
+                octoberShell.copy(detailCategoryId = food.id),
+                monthNames(),
+                {},
+                navigation = appTabs(ShellTab.Recibo),
+                actions = {
+                    IconButton(onClick = {}) {
+                        Icon(SelloIcon.Settings.painter(), stringResource(R.string.settings_open))
+                    }
+                },
+                detail = ShellDetail(food.name, actions = {
+                    CategoryEditAction(true) {}
+                }) { padding ->
+                    CategoryDetailScreen(
+                        state = detail,
+                        months = monthNames(),
+                        dates = dateLabels(),
+                        showName = true,
+                        onAction = {},
+                        onRecordHere = {},
+                        contentPadding = padding
+                    )
+                }
+            ) { padding ->
+                ReciboScreen(overspent, {}, padding, selectedCategoryId = food.id)
+            }
+        }
+        rule.captureStill("src/test/screenshots/recibo-two-panes-${look.label}.png")
+    }
+
+    @Test
+    @Config(qualifiers = "w891dp-h412dp-mdpi")
+    fun twoPanesLight() = twoPanes(Look())
+
+    @Test
+    @Config(qualifiers = "w891dp-h412dp-mdpi")
+    fun twoPanesDark() = twoPanes(Look(dark = true))
 }

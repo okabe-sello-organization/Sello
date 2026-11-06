@@ -198,4 +198,18 @@ class BackupScreenshotTest {
 
     @Test
     fun unreadableDark() = capture("restore-unreadable", Look(dark = true), step = unreadable)
+
+    /** The record could not be read and none was read before: said, with Intentar de nuevo. */
+    private val unreadableRecord = ready.copy(last = null, recordFailed = true)
+
+    @Test fun recordUnreadableLight() = capture("unreadable", Look(), unreadableRecord)
+
+    @Test
+    fun recordUnreadableDark() = capture("unreadable", Look(dark = true), unreadableRecord)
+
+    private val justSaved = ready.copy(justSaved = true)
+
+    @Test fun justSavedLight() = capture("just-saved", Look(), justSaved)
+
+    @Test fun justSavedDark() = capture("just-saved", Look(dark = true), justSaved)
 }

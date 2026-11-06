@@ -205,4 +205,17 @@ class SettingsScreenshotTest {
     @Test fun exportSlipLight() = capture("export-slip", Look(), open = EXPORT_ROW_TAG)
 
     @Test fun exportSlipDark() = capture("export-slip", Look(dark = true), open = EXPORT_ROW_TAG)
+
+    @Test fun dataLoadingLight() = capture("data-loading", Look(), backup = BackupState())
+
+    @Test
+    fun dataLoadingDark() = capture("data-loading", Look(dark = true), backup = BackupState())
+
+    /** A save just confirmed: the Guardado stamp, landed. */
+    private val justSaved = recent.copy(last = last("2026-10-22T15:00:00Z"), justSaved = true)
+
+    @Test fun dataJustSavedLight() = capture("data-just-saved", Look(), backup = justSaved)
+
+    @Test
+    fun dataJustSavedDark() = capture("data-just-saved", Look(dark = true), backup = justSaved)
 }

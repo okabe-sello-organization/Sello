@@ -9,6 +9,8 @@ import com.software.sello.captureStill
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloInk
+import com.software.sello.presentation.carry.CarryDirection
+import com.software.sello.presentation.carry.CarryFigures
 import com.software.sello.showSello
 import java.time.YearMonth
 import org.junit.Rule
@@ -219,4 +221,86 @@ class AdjustBudgetScreenshotTest {
         file = "adjust-budget-stale-${Look(dark = true).label}",
         state = ready.copy(stale = true)
     )
+
+    /**
+     * Café carries −20.000 from September: base 50.000, month limit 30.000, 90.000 spent;
+     * the month's limit with carry 980.000 (1.000.000 − 20.000), 1.080.000 spent.
+     */
+    private val carried = ready.copy(
+        summary = ready.summary.copy(amount = minus("100.000")),
+        limit = plain("980.000"),
+        limited = listOf(
+            cafe.copy(
+                limit = plain("30.000"),
+                remaining = minus("60.000"),
+                overBy = plain("60.000"),
+                carried = true
+            )
+        ),
+        carry = CarryFigures(
+            base = plain("1.000.000"),
+            carry = minus("20.000"),
+            carryMagnitude = plain("20.000"),
+            direction = CarryDirection.Deficit,
+            capacity = plain("980.000"),
+            spent = plain("1.080.000"),
+            chainStart = YearMonth.of(2026, 9),
+            source = YearMonth.of(2026, 9)
+        )
+    )
+
+    @Test fun carryClaro() = capture(Look(), file = "adjust-budget-carry-claro", state = carried)
+
+    @Test
+    fun carryOscuro() =
+        capture(Look(dark = true), file = "adjust-budget-carry-oscuro", state = carried)
+
+    // The limit sheet's other refusals, each said in loss ink under the amount.
+
+    private val refusals = mapOf(
+        "conflict" to LimitSheetError.Conflict,
+        "data-changed" to LimitSheetError.DataChanged,
+        "gone" to LimitSheetError.CategoryGone,
+        "archived" to LimitSheetError.Archived,
+        "month-ended" to LimitSheetError.MonthEnded,
+        "above-cap" to LimitSheetError.LimitAboveCap,
+        "carry-unavailable" to LimitSheetError.CarryUnavailable
+    )
+
+    /** Above the cap and carry not worked out are refused only while the category carries. */
+    private val carryOnly = setOf("above-cap", "carry-unavailable")
+
+    private fun refusal(name: String, dark: Boolean) = limitSheet(
+        name,
+        (if (name in carryOnly) carrying else sheet).copy(error = refusals.getValue(name)),
+        dark
+    )
+
+    @Test fun conflictClaro() = refusal("conflict", dark = false)
+
+    @Test fun conflictOscuro() = refusal("conflict", dark = true)
+
+    @Test fun dataChangedClaro() = refusal("data-changed", dark = false)
+
+    @Test fun dataChangedOscuro() = refusal("data-changed", dark = true)
+
+    @Test fun goneClaro() = refusal("gone", dark = false)
+
+    @Test fun goneOscuro() = refusal("gone", dark = true)
+
+    @Test fun archivedClaro() = refusal("archived", dark = false)
+
+    @Test fun archivedOscuro() = refusal("archived", dark = true)
+
+    @Test fun monthEndedClaro() = refusal("month-ended", dark = false)
+
+    @Test fun monthEndedOscuro() = refusal("month-ended", dark = true)
+
+    @Test fun aboveCapClaro() = refusal("above-cap", dark = false)
+
+    @Test fun aboveCapOscuro() = refusal("above-cap", dark = true)
+
+    @Test fun carryUnavailableClaro() = refusal("carry-unavailable", dark = false)
+
+    @Test fun carryUnavailableOscuro() = refusal("carry-unavailable", dark = true)
 }

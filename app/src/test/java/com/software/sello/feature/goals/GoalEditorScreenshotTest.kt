@@ -146,4 +146,35 @@ class GoalEditorScreenshotTest {
     @Test fun deleteLight() = shot("delete", delete, Look())
 
     @Test fun deleteDark() = shot("delete", delete, Look(dark = true))
+
+    /** Nueva meta as it opens: nothing chosen, the hints in order. */
+    private val empty = GoalEditorState(loading = false)
+
+    @Test fun emptyLight() = shot("empty", empty, Look())
+
+    @Test fun emptyDark() = shot("empty", empty, Look(dark = true))
+
+    /** A pasted name past 40 characters, kept with why it cannot be saved. */
+    private val tooLong = planned.copy(
+        name = "Viaje a la costa con toda la familia en diciembre",
+        nameLength = 49,
+        nameError = GoalNameError.TooLong
+    )
+
+    @Test fun tooLongLight() = shot("too-long", tooLong, Look())
+
+    @Test fun tooLongDark() = shot("too-long", tooLong, Look(dark = true))
+
+    @Test fun busyLight() = shot("busy", planned.copy(busy = true), Look())
+
+    @Test fun busyDark() = shot("busy", planned.copy(busy = true), Look(dark = true))
+
+    /** ¿Ya la lograste? could not be saved: said inside that slip. */
+    private val completionFailed =
+        editing.copy(completion = CompletionState.Failed(GoalDetailError.NotSaved))
+
+    @Test fun completionFailedLight() = shot("completion-failed", completionFailed, Look())
+
+    @Test
+    fun completionFailedDark() = shot("completion-failed", completionFailed, Look(dark = true))
 }

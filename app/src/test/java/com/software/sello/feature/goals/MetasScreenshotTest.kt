@@ -1,12 +1,20 @@
 package com.software.sello.feature.goals
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
+import com.software.sello.R
 import com.software.sello.captureStill
+import com.software.sello.designsystem.component.BandChip
+import com.software.sello.designsystem.component.ButtonTone
+import com.software.sello.designsystem.component.MoneySign
+import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.designsystem.component.SelloDock
+import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.domain.model.Goal
 import com.software.sello.domain.model.GoalHistory
@@ -15,6 +23,7 @@ import com.software.sello.domain.model.GoalMovement
 import com.software.sello.domain.model.GoalMovementId
 import com.software.sello.domain.model.GoalMovementKind
 import com.software.sello.domain.model.GoalName
+import com.software.sello.domain.model.GoalPlace
 import com.software.sello.domain.model.GoalTargetChange
 import com.software.sello.domain.model.IconKey
 import com.software.sello.domain.model.Money
@@ -27,8 +36,11 @@ import com.software.sello.domain.port.GoalSummary
 import com.software.sello.domain.port.ReadState
 import com.software.sello.navigation.ShellScreen
 import com.software.sello.navigation.ShellTab
+import com.software.sello.navigation.StampNoticeBar
 import com.software.sello.navigation.appTabs
 import com.software.sello.navigation.octoberShell
+import com.software.sello.presentation.corrections.CorrectionNotice
+import com.software.sello.presentation.corrections.GoalCelebration
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.month.monthNames
 import com.software.sello.revealed
@@ -201,4 +213,49 @@ class MetasScreenshotTest {
     @Test fun completedLight() = shot("completed", metas, Look(), reveal = true)
 
     @Test fun completedDark() = shot("completed", metas, Look(dark = true), reveal = true)
+
+    /**
+     * An aporte made in Aportar earned Viaje a la costa's 50 % stamp: on Metas the ticket
+     * takes the notice bar, its stamp already down. Framed as MetasDestination draws it.
+     */
+    private fun ticket(look: Look) {
+        val earned = CorrectionNotice.GoalMovementRecorded(
+            withdrawal = false,
+            amount = MoneyTextValue(MoneySign.None, "", "350.000", "350.000 pesos"),
+            celebration = GoalCelebration(
+                goalId = "viaje",
+                goalName = "Viaje a la costa",
+                earned = listOf(GoalPlace.Half),
+                relit = emptyList(),
+                reachedMeta = false,
+                missing = MoneyTextValue(MoneySign.None, "", "1.290.000", "1.290.000 pesos")
+            )
+        )
+        rule.showSello(look) {
+            ShellScreen(
+                octoberShell,
+                monthNames(),
+                {},
+                navigation = appTabs(ShellTab.Metas),
+                titleOnly = stringResource(R.string.metas_title),
+                notice = { StampNoticeBar(earned, {}) { false } },
+                titleChip = { compact ->
+                    BandChip(stringResource(R.string.metas_create), {}, compact = compact)
+                },
+                entryDock = false,
+                dock = SelloDock(
+                    stringResource(R.string.metas_dock_contribute),
+                    stringResource(R.string.metas_dock_contribute),
+                    {},
+                    tone = ButtonTone.Gain,
+                    icon = SelloIcon.Flag
+                )
+            ) { padding -> MetasScreen(metas, {}, dateLabels(), padding) }
+        }
+        rule.captureStill("src/test/screenshots/metas-ticket-${look.label}.png")
+    }
+
+    @Test fun ticketLight() = ticket(Look())
+
+    @Test fun ticketDark() = ticket(Look(dark = true))
 }

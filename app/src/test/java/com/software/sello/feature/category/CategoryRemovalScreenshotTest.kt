@@ -8,6 +8,10 @@ import com.software.sello.Look
 import com.software.sello.captureStill
 import com.software.sello.designsystem.component.MORE_MENU_TAG
 import com.software.sello.designsystem.theme.SelloInk
+import com.software.sello.presentation.carry.CarryChangeGroup
+import com.software.sello.presentation.carry.CarryChangeRow
+import com.software.sello.presentation.carry.CarryCorrectionList
+import com.software.sello.presentation.carry.ChangeKind
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.showSello
 import com.software.sello.testing.pesos
@@ -266,4 +270,104 @@ class CategoryRemovalScreenshotTest {
         editing.copy(removal = RemovalState("Café", RemovalStep.Checking(false), busy = true)),
         Look(dark = true)
     )
+
+    @Test fun counting() = capture("category-removal-counting", removal(RemovalStep.Counting))
+
+    @Test
+    fun countingDark() =
+        capture("category-removal-counting", removal(RemovalStep.Counting), Look(dark = true))
+
+    private val pickLoading = removal(RemovalStep.Pick(counts, october, targets = null))
+
+    @Test fun pickLoading() = capture("category-removal-pick-loading", pickLoading)
+
+    @Test
+    fun pickLoadingDark() = capture("category-removal-pick-loading", pickLoading, Look(dark = true))
+
+    private val pickFailed =
+        removal(RemovalStep.Pick(counts, october, targets = null, failed = true))
+
+    @Test fun pickFailed() = capture("category-removal-pick-failed", pickFailed)
+
+    @Test
+    fun pickFailedDark() = capture("category-removal-pick-failed", pickFailed, Look(dark = true))
+
+    private val noOther = removal(RemovalStep.Pick(counts, october, targets = emptyList()))
+
+    @Test fun noOtherCategory() = capture("category-removal-no-other", noOther)
+
+    @Test
+    fun noOtherCategoryDark() = capture("category-removal-no-other", noOther, Look(dark = true))
+
+    /**
+     * Comida carries from September (base 200.000, 150.000 spent, 50.000 carried): moving
+     * Café's 60.000 of September into it takes October's limit with carry from 250.000 to
+     * 190.000, and what is left from 170.000 to 110.000.
+     */
+    private val correction = removal(
+        RemovalStep.Correction(
+            "Comida",
+            CarryCorrectionList(
+                months = 1,
+                groups = listOf(
+                    CarryChangeGroup(
+                        "Comida",
+                        "restaurant",
+                        listOf(
+                            CarryChangeRow(
+                                month = october,
+                                kind = ChangeKind.Later,
+                                before = pesos("250.000"),
+                                after = pesos("190.000"),
+                                change = pesos("60.000", minus = true),
+                                remainingBefore = pesos("170.000"),
+                                remainingAfter = pesos("110.000"),
+                                verdictBefore = null,
+                                verdictAfter = null
+                            )
+                        )
+                    )
+                ),
+                totalUnchanged = false
+            ),
+            changed = false
+        )
+    )
+
+    @Test fun carryCorrection() = capture("category-removal-correction", correction)
+
+    @Test
+    fun carryCorrectionDark() =
+        capture("category-removal-correction", correction, Look(dark = true))
+
+    private val targetCarry =
+        removal(RemovalStep.Problem(RemovalProblem.TargetCarry("Comida")))
+
+    @Test fun targetCarry() = capture("category-removal-target-carry", targetCarry)
+
+    @Test
+    fun targetCarryDark() = capture("category-removal-target-carry", targetCarry, Look(dark = true))
+
+    /** Moving into Comida, confirmed and being written: the button's spinner. */
+    private val moving = editing.copy(
+        removal = RemovalState(
+            "Café",
+            RemovalStep.Move(
+                counts,
+                MoveFacts(
+                    target = "Comida",
+                    month = october,
+                    targetSpent = pesos("80.000"),
+                    targetSpentAfter = pesos("140.000"),
+                    sourceLimit = RemovalLimit.Finite(pesos("50.000")),
+                    targetLimit = RemovalLimit.Finite(pesos("200.000"))
+                )
+            ),
+            busy = true
+        )
+    )
+
+    @Test fun busy() = capture("category-removal-busy", moving)
+
+    @Test fun busyDark() = capture("category-removal-busy", moving, Look(dark = true))
 }

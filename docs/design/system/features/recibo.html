@@ -52,6 +52,11 @@
       <figure data-shot="recibo-stale" data-module="app" data-caption="Older figures under the notice"></figure>
       <figure data-shot="recibo-carry-problem" data-module="app" data-caption="A carry problem over the month"></figure>
       <figure data-shot="recibo-carry-failed" data-module="app" data-caption="Carry failed: nothing to show"></figure>
+      <figure data-shot="recibo-finished" data-module="app" data-caption="September, finished: Cumplido and Mes cerrado"></figure>
+      <figure data-shot="recibo-reserved" data-module="app" data-caption="Payments reserved: the footnote under the per-day figure"></figure>
+      <figure data-shot="recibo-review" data-module="app" data-caption="Revisar: what the reserved payments need beyond what is left"></figure>
+      <figure data-shot="recibo-archived" data-module="app" data-caption="An archived category under Archivadas"></figure>
+      <figure data-shot="recibo-two-panes" data-module="app" data-caption="Landscape (891 × 412): Recibo with the detail beside it"></figure>
 
       <h3>Layout</h3>
       <p>Inside the shell with tabs, the month in the title, a settings action (<code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:300</code>), the Anotar dock and a notice bar (a correction just made first, otherwise catch-up's, <code>ReciboDestinations.kt:290</code>). One scrolling column, slips spaced <code>spacing.md</code> (<code>app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:98</code>).</p>
@@ -81,17 +86,17 @@
             <tr><td>Loading</td><td>Two <code>SlipSkeleton</code>s. The app's start counts as drawn once this state ends.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:106</code></td><td><code>recibo-loading</code></td></tr>
             <tr><td>Empty (first run)</td><td><a href="../components.html#c-EmptySlip"><code>EmptySlip</code></a> "Dale forma a tu mes" with the ReceiptLong icon and "Crear categoría"; the goal slot still shows under it.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:114</code></td><td><code>recibo-first-run</code></td></tr>
             <tr><td>Month in progress</td><td>Answer slip with per-day figure; categories grid.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:127</code></td><td>recibo</td></tr>
-            <tr><td>Excedido / Revisar</td><td>Amount with a minus in loss ink, stamp "Excedido" (or "Revisar" in warn ink with the shortfall facts), "Ajustar presupuesto ›".</td><td><code>app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:212</code></td><td>recibo (Excedido)</td></tr>
-            <tr><td>Finished month</td><td>Stamp "Cumplido" or "Excedido", "Mes cerrado · gastaste … de …." instead of the per-day figure; no adjust link.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:203</code></td><td>no screenshot</td></tr>
-            <tr><td>Reserved payments</td><td>The "Incluye … separado para …" footnote under the per-day figure.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:211</code></td><td>no screenshot on Recibo (same footnote in category-fixed-review)</td></tr>
+            <tr><td>Excedido / Revisar</td><td>Amount with a minus in loss ink, stamp "Excedido" (or "Revisar" in warn ink with the shortfall facts), "Ajustar presupuesto ›".</td><td><code>app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:212</code></td><td><code>recibo</code> (Excedido), <code>recibo-review</code></td></tr>
+            <tr><td>Finished month</td><td>Stamp "Cumplido" or "Excedido", "Mes cerrado · gastaste … de …." instead of the per-day figure; no adjust link.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:203</code></td><td><code>recibo-finished</code></td></tr>
+            <tr><td>Reserved payments</td><td>The "Incluye … separado para …" footnote under the per-day figure.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:211</code></td><td><code>recibo-reserved</code></td></tr>
             <tr><td>Carry</td><td>MonthCarrySum under the per-day figure; carrying cells wear ↻ and show their carry.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:210</code></td><td>carry-recibo, carry-deficit, carry-recibo-millions</td></tr>
             <tr><td>Invitation</td><td>The dashed line under the answer.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:149</code></td><td>recibo-invitation</td></tr>
-            <tr><td>Archived categories</td><td>Grey circles under the "Archivadas" heading, after the active ones.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:494</code></td><td>no screenshot</td></tr>
+            <tr><td>Archived categories</td><td>Grey circles under the "Archivadas" heading, after the active ones.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:494</code></td><td><code>recibo-archived</code></td></tr>
             <tr><td>Stale (older figures)</td><td>StaleSlip "No pudimos actualizar. Esto es lo último que se leyó y puede no estar al día." with "Reintentar" above the last good month.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:137</code></td><td><code>recibo-stale</code></td></tr>
             <tr><td>Carry problem with figures</td><td>CarryProblemSlip above the last good month.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:128</code></td><td><code>recibo-carry-problem</code></td></tr>
             <tr><td>Carry failed (nothing earlier)</td><td>Only the CarryProblemSlip, naming the category when the month's categories can be read.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:164</code>, <code>app/src/main/java/com/software/sello/feature/recibo/ReciboViewModel.kt:137</code></td><td><code>recibo-carry-failed</code></td></tr>
             <tr><td>Error (nothing ever loaded)</td><td><a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a> "No pudimos leer tu mes" / "Tus registros siguen guardados. Vuelve a intentarlo." with "Reintentar".</td><td><code>app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:170</code></td><td><code>recibo-failed</code></td></tr>
-            <tr><td>Two panes</td><td>Recibo left, category detail right (the first category when none was chosen); the open cell tinted.</td><td><code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:277</code></td><td>no screenshot</td></tr>
+            <tr><td>Two panes</td><td>Recibo left, category detail right (the first category when none was chosen); the open cell tinted.</td><td><code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:277</code></td><td><code>recibo-two-panes</code> (landscape, 891 × 412)</td></tr>
             <tr><td>Busy, unknown outcome, refused, restored draft</td><td>Do not exist: Recibo writes nothing except remembering the invitation as handled, which hides the line at once even if storing it fails.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/ReciboViewModel.kt:168</code></td><td>—</td></tr>
           </tbody>
         </table>
@@ -198,6 +203,7 @@
       <figure data-shot="adjust-budget-loading" data-module="app" data-caption="Loading"></figure>
       <figure data-shot="adjust-budget-failed" data-module="app" data-caption="Nothing could be read"></figure>
       <figure data-shot="adjust-budget-stale" data-module="app" data-caption="Older figures under the notice"></figure>
+      <figure data-shot="adjust-budget-carry" data-module="app" data-caption="Carry: the month limit with base and carry"></figure>
 
       <h3>Layout</h3>
       <p>Its own screen inside the shell: title "Ajustar presupuesto", back arrow, no tabs, no ribbon, no dock (<code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:202</code>). For the month it was opened on. Scrolling column spaced <code>spacing.md</code>; the limit sheet is drawn over it (<code>app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:106</code>).</p>
@@ -215,7 +221,7 @@
             <tr><td>Loading</td><td>Two SlipSkeletons.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:124</code></td><td><code>adjust-budget-loading</code></td></tr>
             <tr><td>Error (nothing ever loaded)</td><td>ErrorSlip "No pudimos leer tu presupuesto" / "Sello no muestra una cifra que no pudo leer. Vuelve a intentarlo."</td><td><code>app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:129</code></td><td><code>adjust-budget-failed</code></td></tr>
             <tr><td>Ready</td><td>Month slip and categories.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:136</code></td><td>adjust-budget</td></tr>
-            <tr><td>Carry</td><td>The limit line becomes the capacity with base and carry as its caption; carrying rows say "gastaste X · límite del mes Y".</td><td><code>app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:179</code></td><td>no screenshot</td></tr>
+            <tr><td>Carry</td><td>The limit line becomes the capacity with base and carry as its caption; carrying rows say "gastaste X · límite del mes Y".</td><td><code>app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:179</code></td><td><code>adjust-budget-carry</code></td></tr>
             <tr><td>Stale (older figures)</td><td>StaleSlip above the last good figures.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:137</code></td><td><code>adjust-budget-stale</code></td></tr>
             <tr><td>Empty</td><td>Does not exist as its own state: with no category the slip shows only its heading and caption.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:200</code></td><td>—</td></tr>
             <tr><td>Busy, unknown outcome, refused, restored draft</td><td>Belong to the limit sheet below.</td><td>—</td><td>—</td></tr>
@@ -250,6 +256,13 @@
       <figure data-shot="limit-sheet-unknown" data-module="app" data-caption="The save outcome is not known"></figure>
       <figure data-shot="limit-sheet-refused" data-module="app" data-caption="Not saved"></figure>
       <figure data-shot="limit-sheet-carry" data-module="app" data-caption="Carrying: Límite base"></figure>
+      <figure data-shot="limit-sheet-conflict" data-module="app" data-caption="Refused: the category changed meanwhile"></figure>
+      <figure data-shot="limit-sheet-data-changed" data-module="app" data-caption="Refused: the data was replaced"></figure>
+      <figure data-shot="limit-sheet-gone" data-module="app" data-caption="Refused: the category is gone"></figure>
+      <figure data-shot="limit-sheet-archived" data-module="app" data-caption="Refused: the category was archived"></figure>
+      <figure data-shot="limit-sheet-month-ended" data-module="app" data-caption="Refused: the month ended"></figure>
+      <figure data-shot="limit-sheet-above-cap" data-module="app" data-caption="Refused: a base above the cap while carrying"></figure>
+      <figure data-shot="limit-sheet-carry-unavailable" data-module="app" data-caption="Refused: carry could not be worked out"></figure>
 
       <h3>Layout</h3>
       <p>A <a href="../components.html#c-RepeatSheet"><code>RepeatSheet</code></a> over Ajustar presupuesto, titled "Límite de Café" (or "Límite base de …" while it carries) (<code>app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:302</code>).</p>
@@ -270,15 +283,15 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Loading</td><td>Not drawn: <code>loading</code> is in the state but the sheet does not read it; while the category is read the title has no name, the spent line is empty, the amount shows "0" and Save is disabled.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/LimitSheetViewModel.kt:166</code></td><td>no screenshot</td></tr>
+            <tr><td>Loading</td><td>Not drawn: <code>loading</code> is in the state but the sheet does not read it; while the category is read the title has no name, the spent line is empty, the amount shows "0" and Save is disabled.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/LimitSheetViewModel.kt:166</code></td><td>Nothing of its own to capture: the sheet does not draw it (#374)</td></tr>
             <tr><td>Error (category could not be read)</td><td>"No pudimos leer esta categoría. Vuelve a intentarlo." in loss ink and "Reintentar"; nothing else.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:352</code></td><td><code>limit-sheet-failed</code></td></tr>
             <tr><td>Ready / typing</td><td>Switch, amount, chips, fact, Save enabled when the amount is valid and different.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:377</code></td><td>limit-sheet-stale-claro (with the stale line)</td></tr>
             <tr><td>Stale (older figures)</td><td>bodySmall loss-ink "No pudimos actualizar. …" and a text button "Reintentar" under the header; chips and fact as last read.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:361</code></td><td>limit-sheet-stale-claro</td></tr>
             <tr><td>Busy (saving)</td><td>Save reads "Guardando…" with its loading indicator; switch, chips, keypad and close are disabled.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:483</code></td><td><code>limit-sheet-busy</code></td></tr>
             <tr><td>Unknown outcome</td><td>Warn-ink "Aún no sabemos si se guardó."; Save becomes "Comprobar si se guardó"; inputs locked.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:480</code></td><td><code>limit-sheet-unknown</code></td></tr>
-            <tr><td>Refused</td><td>Loss-ink line: not saved, conflict, data changed, category gone, archived, month ended, base above the cap, carry could not be calculated. Typing a new amount clears "No se guardó".</td><td><code>app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:553</code></td><td><code>limit-sheet-refused</code></td></tr>
-            <tr><td>Saved</td><td>The sheet closes and the shell's correction notice says what limit was set.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/LimitSheetViewModel.kt:376</code></td><td>no screenshot</td></tr>
-            <tr><td>Restored draft</td><td>The open category, scope, typed digits, chosen chip and a pending operation survive process death; a pending save is checked on return, never resent.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/LimitSheetViewModel.kt:83</code></td><td>no screenshot</td></tr>
+            <tr><td>Refused</td><td>Loss-ink line: not saved, conflict, data changed, category gone, archived, month ended, base above the cap, carry could not be calculated. Typing a new amount clears "No se guardó".</td><td><code>app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:553</code></td><td><code>limit-sheet-refused</code>, <code>limit-sheet-conflict</code>, <code>limit-sheet-data-changed</code>, <code>limit-sheet-gone</code>, <code>limit-sheet-archived</code>, <code>limit-sheet-month-ended</code>, <code>limit-sheet-above-cap</code>, <code>limit-sheet-carry-unavailable</code></td></tr>
+            <tr><td>Saved</td><td>The sheet closes and the shell's correction notice says what limit was set.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/LimitSheetViewModel.kt:376</code></td><td><code>recibo-notice-limit-adjusted</code></td></tr>
+            <tr><td>Restored draft</td><td>The open category, scope, typed digits, chosen chip and a pending operation survive process death; a pending save is checked on return, never resent.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/LimitSheetViewModel.kt:83</code></td><td>Drawn as the filled form, so not captured again: <code>limit-sheet-ready</code></td></tr>
           </tbody>
         </table>
       </div>
@@ -371,9 +384,6 @@
       <h2>Gaps</h2>
       <div class="gaps">
         <ul>
-          <li>Recibo: finished month, reserved footnote, Revisar, archived section, two panes (see the Shell page's landscape capture): no screenshot.</li>
-          <li>Ajustar presupuesto: carry: no screenshot.</li>
-          <li>Limit sheet: each refusal other than Not saved: no screenshot.</li>
           <li>The limit sheet draws no loading state (<code>LimitSheetState.loading</code> is never read by the screen) and lets the keypad type while the category is read; confirmed from the code, not from a capture.</li>
         </ul>
       </div>

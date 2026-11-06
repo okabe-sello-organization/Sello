@@ -44,6 +44,12 @@
       <figure data-shot="resumen-first-month" data-module="app" data-caption="The first month: not enough history"></figure>
       <figure data-shot="resumen-no-income" data-module="app" data-caption="No income this month"></figure>
       <figure data-shot="resumen-overspent" data-module="app" data-caption="Spent more than came in"></figure>
+      <figure data-shot="resumen-closed" data-module="app" data-caption="September, closed: whole months compared"></figure>
+      <figure data-shot="resumen-history-selected" data-module="app" data-caption="A month column selected"></figure>
+      <figure data-shot="resumen-weekday-selected" data-module="app" data-caption="A weekday column selected"></figure>
+      <figure data-shot="resumen-carry" data-module="app" data-caption="A carried month selected: base, carry and month limit"></figure>
+      <figure data-shot="resumen-suggestion" data-module="app" data-caption="The suggestion"></figure>
+      <figure data-shot="resumen-two-panes" data-module="app" data-caption="Landscape (891 × 412): two panes"></figure>
 
       <h3>Layout</h3>
       <p>Inside the shell (tabs, month in the title, no Anotar dock, the correction notice bar when there is one). One scrolling column, slips spaced <code>spacing.lg</code> with an extra <code>spacing.lg</code> above and below (<code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:80</code>). Where <code>selloWindowLayout</code> says two panes and the width is at least 600 dp, the summary slips and the chart slips are two scrolling columns side by side (<code>ResumenScreen.kt:96</code>).</p>
@@ -72,18 +78,18 @@
             <tr><td>Loading</td><td>One <code>SlipSkeleton</code>.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:83</code></td><td><code>resumen-loading</code></td></tr>
             <tr><td>Error (nothing ever loaded)</td><td>ErrorSlip, default title "No se pudo cargar", message "No pudimos leer el resumen. Intenta de nuevo.", outlined "Reintentar".</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:87</code></td><td><code>resumen-failed</code></td></tr>
             <tr><td>Ready, month in progress</td><td>Hero "¿Cómo va este mes?" with the same-days comparison; income slip; charts.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:95</code></td><td>resumen</td></tr>
-            <tr><td>Ready, closed month</td><td>Hero "¿Cómo cerró septiembre?", whole months compared or what was spent in it.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:467</code></td><td>no screenshot</td></tr>
+            <tr><td>Ready, closed month</td><td>Hero "¿Cómo cerró septiembre?", whole months compared or what was spent in it.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:467</code></td><td><code>resumen-closed</code></td></tr>
             <tr><td>First month (insufficient history)</td><td>Hero without comparison plus "Cuando completes otro mes podrás comparar los mismos días."; the chart slip adds "Con un mes más de datos verás aquí tu historia entre meses. …"</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:488</code>, <code>ResumenScreen.kt:437</code></td><td><code>resumen-first-month</code></td></tr>
             <tr><td>Stale (older figures)</td><td>An ErrorSlip "No pudimos actualizar. Estas cifras son de la última lectura, hasta el …" above the last good figures, with "Reintentar".</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:139</code></td><td><code>resumen-stale</code></td></tr>
             <tr><td>Empty (no history)</td><td>The summary slips, then EmptySlip "Aún no hay gastos" with "Anotar un gasto" instead of the charts.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:338</code></td><td><code>resumen-empty</code></td></tr>
             <tr><td>No income</td><td>"Aún no anotas ingresos en …" and "Sello funciona sin ingresos. …"; the ranking and a Total line; the Ingresos stub says "Ninguno en …".</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:168</code></td><td><code>resumen-no-income</code></td></tr>
             <tr><td>Overspent income</td><td>"Ingresos menos gastos" in loss ink and "Anotaste … de ingresos y … de gastos."</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:257</code></td><td><code>resumen-overspent</code></td></tr>
-            <tr><td>Next fixed unknown</td><td>The "Fijos" stub shows no fact while the schedules are loading or failed; never "none".</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:309</code></td><td>no screenshot</td></tr>
-            <tr><td>Column selected</td><td>The column's label and amount over the month chart (with its limit or carry), or the weekday's average; cleared after 3 seconds.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:375</code>, <code>app/src/main/java/com/software/sello/feature/resumen/ResumenViewModel.kt:150</code></td><td>no screenshot</td></tr>
-            <tr><td>Carry month</td><td>The limit line reads "Límite del mes …"; a selected carried month shows base, carry and capacity.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:384</code></td><td>no screenshot</td></tr>
-            <tr><td>Suggestion</td><td>SuggestionNote "Una sugerencia"; hidden for this month once dismissed (it comes back next month if it still applies).</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:440</code></td><td>no screenshot</td></tr>
-            <tr><td>Two panes</td><td>Summary slips left, chart slips right, each scrolling.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:96</code></td><td>no screenshot</td></tr>
-            <tr><td>Restored after process death</td><td>The selected column survives in <code>SavedStateHandle</code> and its 3-second timer restarts.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenViewModel.kt:113</code></td><td>no screenshot</td></tr>
+            <tr><td>Next fixed unknown</td><td>The "Fijos" stub shows no fact while the schedules are loading or failed; never "none".</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:309</code></td><td><code>resumen</code> (its Fijos stub has no fact)</td></tr>
+            <tr><td>Column selected</td><td>The column's label and amount over the month chart (with its limit or carry), or the weekday's average; cleared after 3 seconds.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:375</code>, <code>app/src/main/java/com/software/sello/feature/resumen/ResumenViewModel.kt:150</code></td><td><code>resumen-history-selected</code>, <code>resumen-weekday-selected</code></td></tr>
+            <tr><td>Carry month</td><td>The limit line reads "Límite del mes …"; a selected carried month shows base, carry and capacity.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:384</code></td><td><code>resumen-carry</code></td></tr>
+            <tr><td>Suggestion</td><td>SuggestionNote "Una sugerencia"; hidden for this month once dismissed (it comes back next month if it still applies).</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:440</code></td><td><code>resumen-suggestion</code></td></tr>
+            <tr><td>Two panes</td><td>Summary slips left, chart slips right, each scrolling.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:96</code></td><td><code>resumen-two-panes</code> (landscape, 891 × 412)</td></tr>
+            <tr><td>Restored after process death</td><td>The selected column survives in <code>SavedStateHandle</code> and its 3-second timer restarts.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenViewModel.kt:113</code></td><td>Drawn as before: <code>resumen-history-selected</code></td></tr>
             <tr><td>Busy, unknown outcome, refused</td><td>Do not exist: the only write is dismissing the suggestion, which is fire-and-forget; the note goes when the stored preference says so.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenViewModel.kt:128</code></td><td>—</td></tr>
           </tbody>
         </table>
@@ -171,7 +177,6 @@
       <h2>Gaps</h2>
       <div class="gaps">
         <ul>
-          <li>Closed month, a selected column (either chart), carried month, suggestion, two panes: no screenshot.</li>
           <li>Whether a failed suggestion dismissal tells the person anything: the code ignores the write's result (<code>ResumenViewModel.kt:128</code>); the note stays until the stored preference changes.</li>
         </ul>
       </div>

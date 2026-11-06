@@ -199,4 +199,28 @@ class GoalStarSheetTest {
         show(picked = "bici", error = GoalDetailError.NotSaved, look = Look(dark = true))
         rule.captureStill("src/test/screenshots/goal-replace-refused-oscuro.png")
     }
+
+    @Test
+    fun busyLight() {
+        show(picked = "bici", busy = true)
+        rule.captureStill("src/test/screenshots/goal-replace-busy-claro.png")
+    }
+
+    @Test
+    fun busyDark() {
+        show(picked = "bici", busy = true, look = Look(dark = true))
+        rule.captureStill("src/test/screenshots/goal-replace-busy-oscuro.png")
+    }
+
+    @Test
+    fun unknownLight() {
+        show(picked = "bici", error = GoalDetailError.Unknown)
+        rule.captureStill("src/test/screenshots/goal-replace-unknown-claro.png")
+    }
+
+    @Test
+    fun unknownDark() {
+        show(picked = "bici", error = GoalDetailError.Unknown, look = Look(dark = true))
+        rule.captureStill("src/test/screenshots/goal-replace-unknown-oscuro.png")
+    }
 }
