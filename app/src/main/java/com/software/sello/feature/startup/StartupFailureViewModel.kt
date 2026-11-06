@@ -43,10 +43,10 @@ class StartupFailureViewModel(
         if (now.restoreBegun) return afterRestore(action)
         when (action) {
             StartupFailureAction.Retry -> {
-                mutable.update { it.copy(busy = true) }
+                mutable.update { it.copy(working = StartupWork.Retrying) }
                 viewModelScope.launch {
                     val opened = recovery.retry()
-                    mutable.update { it.copy(busy = false, stillFailing = !opened) }
+                    mutable.update { it.copy(working = null, stillFailing = !opened) }
                 }
             }
 
@@ -61,12 +61,12 @@ class StartupFailureViewModel(
             }
 
             StartupFailureAction.Confirm -> if (now.confirming && now.canConfirm) {
-                mutable.update { it.copy(busy = true) }
+                mutable.update { it.copy(working = StartupWork.SettingAside) }
                 viewModelScope.launch {
                     val moved = recovery.setAside()
                     warning(open = false)
                     mutable.update {
-                        it.copy(busy = false, startedOver = moved, notSetAside = !moved)
+                        it.copy(working = null, startedOver = moved, notSetAside = !moved)
                     }
                 }
             }

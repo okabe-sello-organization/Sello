@@ -164,7 +164,7 @@ class StartupFailureViewModelTest {
         viewModel.onAction(StartupFailureAction.Retry)
         viewModel.onAction(StartupFailureAction.StartOver)
 
-        assertTrue(viewModel.state.value.busy)
+        assertEquals(StartupWork.Retrying, viewModel.state.value.working)
         assertFalse(viewModel.state.value.confirming)
         assertEquals(1, recovery.retries)
 
@@ -182,7 +182,7 @@ class StartupFailureViewModelTest {
         viewModel.onAction(StartupFailureAction.Confirm)
         viewModel.onAction(StartupFailureAction.Retry)
 
-        assertTrue(viewModel.state.value.busy)
+        assertEquals(StartupWork.SettingAside, viewModel.state.value.working)
         assertFalse(viewModel.state.value.startedOver)
         assertEquals(1, recovery.setAsides)
         assertEquals(0, recovery.retries)
@@ -190,6 +190,57 @@ class StartupFailureViewModelTest {
         recovery.diskGate!!.complete(Unit)
         assertFalse(viewModel.state.value.busy)
         assertTrue(viewModel.state.value.startedOver)
+    }
+
+    @Test
+    fun whileSettingAsideTheWordCannotBeChangedNorTheWarningClosed() {
+        recovery.diskGate = CompletableDeferred()
+        val viewModel = viewModel()
+
+        viewModel.confirmWith("BORRAR")
+        viewModel.onAction(StartupFailureAction.Typed("BORRA"))
+        viewModel.onAction(StartupFailureAction.Cancel)
+
+        assertTrue(viewModel.state.value.confirming)
+        assertEquals("BORRAR", viewModel.state.value.typed)
+        assertEquals("BORRAR", saved.get<String>("startup.typed"))
+    }
+
+    /**
+     * The move does not outlive the process. What comes back is what was saved: the open
+     * warning with its word, nothing under way. The data opens again at start, so this
+     * screen shows only if the data still did not open, and confirming again is the
+     * person's own press.
+     */
+    @Test
+    fun aProcessDeathWhileSettingAsideBringsBackTheWarningNotBusy() {
+        recovery.diskGate = CompletableDeferred()
+        viewModel().confirmWith("BORRAR")
+        val keptByTheSystem = SavedStateHandle(
+            saved.keys().associateWith { key -> saved.get<Any>(key) }
+        )
+
+        val restored = viewModel(keptByTheSystem).state.value
+
+        assertEquals(
+            StartupFailureState(confirming = true, typed = "BORRAR"),
+            restored
+        )
+        assertEquals(1, recovery.setAsides)
+    }
+
+    @Test
+    fun aProcessDeathWhileTryingAgainBringsBackTheChoicesNotBusy() {
+        recovery.diskGate = CompletableDeferred()
+        viewModel().onAction(StartupFailureAction.Retry)
+        val keptByTheSystem = SavedStateHandle(
+            saved.keys().associateWith { key -> saved.get<Any>(key) }
+        )
+
+        val restored = viewModel(keptByTheSystem).state.value
+
+        assertEquals(StartupFailureState(), restored)
+        assertEquals(1, recovery.retries)
     }
 
     @Test

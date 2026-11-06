@@ -147,4 +147,20 @@ class StartupFailureScreenshotTest {
     @Test fun restoringLight() = shot("restoring", restoring, Look())
 
     @Test fun restoringDark() = shot("restoring", restoring, Look(dark = true))
+
+    private val retrying = StartupFailureState(working = StartupWork.Retrying)
+
+    @Test fun retryingLight() = shot("retrying", retrying, Look())
+
+    @Test fun retryingDark() = shot("retrying", retrying, Look(dark = true))
+
+    private val settingAside = StartupFailureState(
+        working = StartupWork.SettingAside,
+        confirming = true,
+        typed = "BORRAR"
+    )
+
+    @Test fun settingAsideLight() = shot("setting-aside", settingAside, Look())
+
+    @Test fun settingAsideDark() = shot("setting-aside", settingAside, Look(dark = true))
 }
