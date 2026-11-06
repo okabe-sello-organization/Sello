@@ -1,10 +1,14 @@
 package com.software.sello.designsystem.component
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import com.software.sello.designsystem.theme.SelloAlpha
 import kotlin.math.abs
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -33,17 +37,51 @@ class MoneyTextRenderTest {
     }
 
     @Test
-    fun linesInsideASlipDropTheSymbolButKeepTheSign() {
+    fun pesoLinesCarryNoMarkAndKeepTheSign() {
         assertEquals("18.400", drawn(value(MoneySign.None, "18.400"), MoneyStyle.Line))
         assertEquals("\u221221.500", drawn(value(MoneySign.Minus, "21.500"), MoneyStyle.Line))
         assertEquals("+850.000", drawn(value(MoneySign.Plus, "850.000"), MoneyStyle.Line))
     }
 
     @Test
+    fun dollarLinesKeepTheCodeBetweenSignAndFigure() {
+        assertEquals(
+            "USD\u00A01.050,50",
+            drawn(value(MoneySign.None, "1.050,50", "USD"), MoneyStyle.Line)
+        )
+        assertEquals(
+            "\u2212USD\u00A050,50",
+            drawn(value(MoneySign.Minus, "50,50", "USD"), MoneyStyle.Line)
+        )
+        assertEquals(
+            "+USD\u00A050,50",
+            drawn(value(MoneySign.Plus, "50,50", "USD"), MoneyStyle.Line)
+        )
+    }
+
+    @Test
+    fun aLineDrawsTheCodeInlineAtTheFiguresSizeAndWeightInSoftInk() {
+        val ink = Color(0xFF202020)
+        val text = moneyAnnotatedString(
+            value(MoneySign.Plus, "50,50", "USD"),
+            MoneyStyle.Line,
+            style,
+            ink
+        )
+        val code = text.spanStyles.single { text.text.substring(it.start, it.end) == "USD" }
+        assertEquals(TextUnit.Unspecified, code.item.fontSize)
+        assertNull(code.item.baselineShift)
+        assertNull(code.item.fontWeight)
+        assertEquals(ink.copy(alpha = SelloAlpha().secondary), code.item.color)
+    }
+
+    @Test
     fun plainTextMatchesWhatIsDrawn() {
         for (moneyStyle in MoneyStyle.entries) {
-            val v = value(MoneySign.Minus, "1.234.567")
-            assertEquals(drawn(v, moneyStyle), moneyPlainText(v, moneyStyle))
+            for (symbol in listOf("", "USD")) {
+                val v = value(MoneySign.Minus, "1.234.567", symbol)
+                assertEquals(drawn(v, moneyStyle), moneyPlainText(v))
+            }
         }
     }
 

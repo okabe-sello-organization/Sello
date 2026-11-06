@@ -52,6 +52,10 @@ class MoneySemanticsTest {
                         Modifier.testTag("usd"),
                         MoneyStyle.Title
                     )
+                    MoneyText(
+                        MoneyTextValue(MoneySign.Minus, "USD", "50,50", "menos 50,50 dólares"),
+                        Modifier.testTag("usdLine")
+                    )
                 }
             }
         ) {
@@ -63,6 +67,8 @@ class MoneySemanticsTest {
             rule.onNodeWithTag("line").assertTextEquals("+850.000")
             rule.onNodeWithTag("usd").assertContentDescriptionEquals("2.340,00 USD")
             rule.onNodeWithTag("usd").assertTextEquals("USD\u00A02.340,00")
+            rule.onNodeWithTag("usdLine").assertContentDescriptionEquals("menos 50,50 dólares")
+            rule.onNodeWithTag("usdLine").assertTextEquals("\u2212USD\u00A050,50")
         }
     }
 

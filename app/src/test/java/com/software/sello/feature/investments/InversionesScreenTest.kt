@@ -355,7 +355,7 @@ class InversionesScreenTest {
         rule.onNodeWithTag("inversiones.bar").assertContentDescriptionEquals(
             "Parqueadero, 66 %. Fondo de acciones, 18 %. Acciones EE. UU., 15 %"
         )
-        rule.onNodeWithText("1.050,50", useUnmergedTree = true).assertExists()
+        rule.onNodeWithText("USD\u00A01.050,50", useUnmergedTree = true).assertExists()
         rule.onNodeWithText("+5,1 %", useUnmergedTree = true).assertExists()
         rule.onNodeWithText("Criptomoneda · sin valor anotado", useUnmergedTree = true)
             .assertExists()
@@ -465,7 +465,7 @@ class InversionesScreenTest {
             }
             // 999.999.999.998 + USD 9.999.999.999,99 × 4.150,25 (41.502.499.999.958,4975 → …958).
             whole("42.502.499.999.956", "inversiones.total")
-            whole("9.999.999.999,99", "inversiones.rows")
+            whole("USD\u00A09.999.999.999,99", "inversiones.rows")
             whole("999.999.999.998", "inversiones.rows")
         }
     }
