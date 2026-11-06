@@ -209,6 +209,20 @@ class MetasScreenshotTest {
 
     @Test fun busyDark() = shot("busy", busy, Look(dark = true))
 
+    /** Marcar como lograda was refused: said above the goals, the button pressable again. */
+    private val refused = busy.copy(completion = CompletionState.Failed(GoalDetailError.NotSaved))
+
+    @Test fun refusedLight() = shot("refused", refused, Look())
+
+    @Test fun refusedDark() = shot("refused", refused, Look(dark = true))
+
+    /** Its outcome is not known: Comprobar si se guardó, and the button locked until then. */
+    private val unknown = busy.copy(completion = CompletionState.Failed(GoalDetailError.Unknown))
+
+    @Test fun unknownLight() = shot("unknown", unknown, Look())
+
+    @Test fun unknownDark() = shot("unknown", unknown, Look(dark = true))
+
     /** The completed goals, below the active ones. */
     @Test fun completedLight() = shot("completed", metas, Look(), reveal = true)
 

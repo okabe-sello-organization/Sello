@@ -46,6 +46,8 @@
       <figure data-shot="metas-empty" data-module="app" data-caption="No goals"></figure>
       <figure data-shot="metas-stale" data-module="app" data-caption="Older figures under the notice"></figure>
       <figure data-shot="metas-busy" data-module="app" data-caption="Marcar como lograda being saved"></figure>
+      <figure data-shot="metas-refused" data-module="app" data-caption="Marcar como lograda refused: said above the goals, Reintentar"></figure>
+      <figure data-shot="metas-unknown" data-module="app" data-caption="Marcar como lograda with an unknown outcome: Comprobar si se guardó, the button locked"></figure>
       <figure data-shot="metas-completed" data-module="app" data-caption="The completed goals below the active ones"></figure>
       <figure data-shot="metas-ticket" data-module="app" data-caption="An aporte made elsewhere earned a stamp: the ticket in the notice bar"></figure>
 
@@ -53,10 +55,11 @@
       <ol>
         <li>Band from <code>ShellScreen</code> titled "Metas" (never a month), with the <a href="../components.html#c-BandChip"><code>BandChip</code></a> "Nueva meta" beside the title once there is any goal (<code>GoalDestinations.kt:90</code>).</li>
         <li>A <code>LazyColumn</code> with <code>SelloSpacing.lg</code> between items (<code>app/src/main/java/com/software/sello/feature/goals/MetasScreen.kt:79</code>).</li>
-        <li>The total as an <a href="../components.html#c-AnswerSlip"><code>AnswerSlip</code></a>: "Guardado en metas", the saved amount, no stamp, <code>StampInk.Good</code>, and under it a green "+ 2.160.000 en octubre" line when anything came in this month (<code>MetasScreen.kt:226</code>).</li>
-        <li>One <code>GoalCard</code> per active goal, highest completion first (<code>MetasScreen.kt:131</code>); a reached goal carries a full-width green "Marcar como lograda" <a href="../components.html#c-SelloButton"><code>SelloButton</code></a> under its card (<code>MetasScreen.kt:148</code>).</li>
-        <li>"Anotar varios", a text <code>SelloButton</code> with the receipt icon, after the active goals and only while there is one (<code>MetasScreen.kt:162</code>).</li>
-        <li>One <code>CompletedGoalRow</code> per completed goal; its "LOGRADA" <a href="../components.html#c-Stamp"><code>Stamp</code></a> comes down once per visit as the row first appears, without a haptic (<code>MetasScreen.kt:175</code>).</li>
+        <li>The total as an <a href="../components.html#c-AnswerSlip"><code>AnswerSlip</code></a>: "Guardado en metas", the saved amount, no stamp, <code>StampInk.Good</code>, and under it a green "+ 2.160.000 en octubre" line when anything came in this month (<code>MetasScreen.kt:240</code>).</li>
+        <li>A save problem (<code>GoalSaveProblem</code>) first, when Marcar como lograda did not finish, as on the goal's page (<code>MetasScreen.kt:114</code>).</li>
+        <li>One <code>GoalCard</code> per active goal, highest completion first (<code>MetasScreen.kt:142</code>); a reached goal carries a full-width green "Marcar como lograda" <a href="../components.html#c-SelloButton"><code>SelloButton</code></a> under its card (<code>MetasScreen.kt:159</code>).</li>
+        <li>"Anotar varios", a text <code>SelloButton</code> with the receipt icon, after the active goals and only while there is one (<code>MetasScreen.kt:176</code>).</li>
+        <li>One <code>CompletedGoalRow</code> per completed goal; its "LOGRADA" <a href="../components.html#c-Stamp"><code>Stamp</code></a> comes down once per visit as the row first appears, without a haptic (<code>MetasScreen.kt:189</code>).</li>
         <li>Dock: green with the flag (<code>goalDock</code>, <code>GoalDestinations.kt:226</code>) — "Crear una meta" with no goals, "Aportar a una meta" otherwise; none while loading or failed.</li>
       </ol>
 
@@ -67,12 +70,13 @@
           <tbody>
             <tr><td>Loading</td><td>Two <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a>s (3 and 2 lines); no dock, no band chip.</td><td><code>MetasScreen.kt:90</code></td><td><code>metas-loading</code></td></tr>
             <tr><td>Error (nothing loaded)</td><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> LoadFailed "No pudimos leer tus metas" / "Tus registros siguen guardados. Vuelve a intentarlo." with "Reintentar". Never shown as no goals.</td><td><code>MetasScreen.kt:100</code></td><td><code>metas-failed</code></td></tr>
-            <tr><td>Empty</td><td><code>EmptyMetas</code>: an Empty <a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> with the Flag icon, "Ponle nombre a algo que quieras" and the body sentence, then four empty stamp places under it; no button on the slip — the dock says "Crear una meta".</td><td><code>MetasScreen.kt:199</code></td><td><code>metas-empty</code></td></tr>
-            <tr><td>Stale</td><td>A <a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> Older (no title) with "No pudimos leer tus metas de nuevo. Te mostramos las de la última lectura." above the last good goals.</td><td><code>MetasScreen.kt:112</code></td><td><code>metas-stale</code></td></tr>
-            <tr><td>Busy</td><td>Marcar como lograda shows its spinner on every reached card while the completion is sent; cards stay tappable.</td><td><code>MetasScreen.kt:156</code></td><td><code>metas-busy</code></td></tr>
+            <tr><td>Empty</td><td><code>EmptyMetas</code>: an Empty <a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> with the Flag icon, "Ponle nombre a algo que quieras" and the body sentence, then four empty stamp places under it; no button on the slip — the dock says "Crear una meta".</td><td><code>MetasScreen.kt:213</code></td><td><code>metas-empty</code></td></tr>
+            <tr><td>Stale</td><td>A <a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> Older (no title) with "No pudimos leer tus metas de nuevo. Te mostramos las de la última lectura." above the last good goals.</td><td><code>MetasScreen.kt:123</code></td><td><code>metas-stale</code></td></tr>
+            <tr><td>Busy</td><td>Marcar como lograda shows its spinner on every reached card while the completion is sent; cards stay tappable.</td><td><code>MetasScreen.kt:170</code></td><td><code>metas-busy</code></td></tr>
             <tr><td>Celebrating</td><td>The Lograda moment over the tab (see <a href="#screen-celebrations">Celebrations</a>).</td><td><code>GoalDestinations.kt:124</code></td><td><code>goal-detail-lograda</code> (the same moment)</td></tr>
-            <tr><td>Refused / unknown outcome</td><td>No notice on Metas: <code>CompletionState.Failed</code> only re-enables the button. With an unknown outcome a second press does nothing (the completer waits on the pending submission), so nothing tells the person to check. See finding "A save that did not finish…".</td><td><code>MetasScreen.kt:154</code>, <code>app/src/main/java/com/software/sello/feature/goals/GoalCompleter.kt:93</code></td><td>Nothing to capture: Metas draws no notice for it (#380)</td></tr>
-            <tr><td>Restored after process death</td><td>The completion's pending operation is recovered (asked about, not resent) from <code>SavedStateHandle</code>; landed stamps are kept with <code>rememberSaveable</code>.</td><td><code>GoalCompleter.kt:86</code>, <code>MetasScreen.kt:76</code></td><td>Nothing to capture: drawn as Metas before (<code>metas</code>)</td></tr>
+            <tr><td>Refused</td><td><code>GoalSaveProblem</code> above the goals, as on the goal's page: "No se guardó" + "No se guardó el cambio. Puedes intentarlo de nuevo." + outlined "Reintentar". "Marcar como lograda" stays pressable: nothing was written, so a press is a new attempt.</td><td><code>MetasScreen.kt:114</code></td><td><code>metas-refused</code></td></tr>
+            <tr><td>Unknown outcome</td><td><code>GoalSaveProblem</code> above the goals: "Falta comprobar si se guardó" + the warning line + outlined "Comprobar si se guardó", which asks about the same completion and never sends it again. "Marcar como lograda" is disabled until the check answers.</td><td><code>MetasScreen.kt:114</code>, <code>MetasScreen.kt:167</code></td><td><code>metas-unknown</code></td></tr>
+            <tr><td>Restored after process death</td><td>The completion's pending operation is recovered (asked about, not resent) from <code>SavedStateHandle</code>; if storage still cannot say, the unknown outcome is shown as above. Landed stamps are kept with <code>rememberSaveable</code>.</td><td><code>GoalCompleter.kt:86</code>, <code>MetasScreen.kt:76</code></td><td>Nothing new to capture: drawn as Metas before (<code>metas</code>) or unknown (<code>metas-unknown</code>)</td></tr>
             <tr><td>Stamp earned elsewhere</td><td>After a save on another screen, the notice bar shows a <code>CelebrationTicket</code> (a <a href="../components.html#c-StampTicket"><code>StampTicket</code></a>) instead of a plain correction notice.</td><td><code>GoalDestinations.kt:260</code>, <code>app/src/main/java/com/software/sello/feature/goals/GoalCelebrations.kt:78</code></td><td><code>metas-ticket</code></td></tr>
           </tbody>
         </table>
@@ -82,7 +86,7 @@
       <ul>
         <li>Goal card or completed row → <code>MetasAction.Open(id)</code>; the destination navigates to the goal.</li>
         <li>"Marcar como lograda" → <code>MetasAction.MarkComplete(id)</code>, only for a reached card; on a confirmed save the Lograda moment opens.</li>
-        <li>"Reintentar" (error or stale) → <code>MetasAction.Retry</code>: reads again and clears a failed completion.</li>
+        <li>"Reintentar" (error, stale or refused) and "Comprobar si se guardó" → <code>MetasAction.Retry</code>: reads again, and clears a refused completion or asks about an unknown one.</li>
         <li>"Nueva meta" chip, dock, "Anotar varios" → navigation only (see Entry points).</li>
       </ul>
 
@@ -93,6 +97,7 @@
         <li>"Ponle nombre a algo que quieras" (<code>metas_empty_title</code>), "Un viaje, un fondo para imprevistos, algo para ti. Tú decides la meta y cuánto aportar." (<code>metas_empty_body</code>)</li>
         <li>"No pudimos leer tus metas" (<code>metas_failed_title</code>), "Tus registros siguen guardados. Vuelve a intentarlo." (<code>metas_failed_body</code>), "No pudimos leer tus metas de nuevo. Te mostramos las de la última lectura." (<code>metas_stale</code>)</li>
         <li>"%d %%" (<code>goal_percent</code>), "de %s" (<code>goal_target_of</code>), "Sin fecha" (<code>goal_no_date</code>), "Lograda" (<code>goal_completed_stamp</code>), "%1$s, %2$s" (<code>goal_completed_detail</code>), "Marcar como lograda" (<code>goal_mark_complete</code>)</li>
+        <li>The save problem's copy is the goal page's (see its Key copy): <code>goal_save_failed_title</code>, <code>goal_save_unknown_title</code>, <code>goal_error_not_saved</code>, <code>goal_error_unknown</code>, <code>goal_error_retry</code>, <code>expense_entry_check_again</code>.</li>
       </ul>
     </section>
 
@@ -529,7 +534,7 @@
             <tr><td><code>CompletedGoalRow</code> (feature-local)</td><td><code>GoalComponents.kt:358</code></td><td>One per completed goal</td><td>Icon in ink, name, detail, LOGRADA stamp</td></tr>
             <tr><td><code>GoalPill</code>, <code>ReachedRow</code> (feature-local)</td><td><code>GoalComponents.kt:76</code>, <code>GoalComponents.kt:167</code></td><td>Recibo's goal slot</td><td>"The pill itself is the progress bar"</td></tr>
             <tr><td><code>GoalPinPill</code> (feature-local)</td><td><code>GoalComponents.kt:387</code></td><td>Star on the goal's band, <code>Role.Switch</code></td><td>"A star turned on and off: a switch"</td></tr>
-            <tr><td><code>GoalSaveProblem</code> (feature-local)</td><td><code>GoalSaveProblem.kt:29</code></td><td>Detail and Recibo</td><td>"Titled as a save, never as a failed read"</td></tr>
+            <tr><td><code>GoalSaveProblem</code> (feature-local)</td><td><code>GoalSaveProblem.kt:29</code></td><td>Detail, Recibo and Metas</td><td>"Titled as a save, never as a failed read"</td></tr>
             <tr><td><code>ReplaceStarSheet</code>, <code>ChoiceRow</code>, <code>SheetError</code> (feature-local)</td><td><code>GoalStarSheet.kt:58</code></td><td>Sixth star</td><td>Pick saves at once; a problem keeps the pick</td></tr>
             <tr><td><code>CelebrationOverlay</code>, <code>CelebrationTicket</code> (feature-local)</td><td><code>CelebrationOverlay.kt:174</code>, <code>GoalCelebrations.kt:78</code></td><td>Lograda moment; stamp ticket</td><td>Timeline taken from the locked reference</td></tr>
           </tbody>

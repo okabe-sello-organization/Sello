@@ -11,6 +11,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
@@ -420,5 +423,68 @@ class MetasScreenTest {
 
         rule.onNodeWithText("85 %").assertExists()
         onHero("75 por ciento, logrado").assertExists()
+    }
+
+    /** Celular nuevo at its target (450.000 + 750.000 = 1.200.000) with [completion] on Metas. */
+    private fun showReached(completion: CompletionState, actions: MutableList<MetasAction>) {
+        val reached = goal(2, "Celular nuevo", 1_200_000, listOf(450_000, 750_000))
+        val ready = ReadState.Ready(GoalBoard(1, 1, listOf(reached), emptySet(), emptyList()))
+        val metas = (GoalsRenderModel(money).metas(ready, today) as MetasState.Ready)
+            .copy(completion = completion)
+        rule.showSello(Look(density = 1f)) {
+            MetasScreen(metas, { actions += it }, dateLabels(), PaddingValues(16.dp))
+        }
+    }
+
+    private val celular = "00000000-0000-4000-9000-000000000002"
+
+    @Test
+    fun aRefusedMarcarComoLogradaIsSaidAndReintentarClearsIt() {
+        val actions = mutableListOf<MetasAction>()
+        showReached(CompletionState.Failed(GoalDetailError.NotSaved), actions)
+
+        rule.onNodeWithText("No se guardó").assertExists()
+        rule.onNodeWithText("No se guardó el cambio. Puedes intentarlo de nuevo.").assertExists()
+        rule.onNodeWithText("Reintentar").performClick()
+        assertEquals(listOf<MetasAction>(MetasAction.Retry), actions)
+        // Certain nothing was written: marking again is a new attempt.
+        rule.onNodeWithTag("metas.markComplete.$celular").assertIsEnabled()
+    }
+
+    @Test
+    fun anUnknownMarcarComoLogradaOffersTheCheckAndLocksTheButtonUntilThen() {
+        val actions = mutableListOf<MetasAction>()
+        showReached(CompletionState.Failed(GoalDetailError.Unknown), actions)
+
+        rule.onNodeWithText("Falta comprobar si se guardó").assertExists()
+        rule.onNodeWithText("No sabemos si se guardó el cambio. Compruébalo antes de seguir.")
+            .assertExists()
+        rule.onNodeWithTag("metas.markComplete.$celular").assertIsNotEnabled()
+        rule.onNodeWithText("Comprobar si se guardó").performClick()
+        assertEquals(listOf<MetasAction>(MetasAction.Retry), actions)
+    }
+
+    @Test
+    fun aFailureThatArrivesWhileMetasIsShownComesIntoView() {
+        val reached = goal(4, "Celular nuevo", 1_200_000, listOf(450_000, 750_000))
+        val ready = ReadState.Ready(
+            GoalBoard(1, 1, listOf(reached) + board.goals, emptySet(), emptyList())
+        )
+        val metas = GoalsRenderModel(money).metas(ready, today) as MetasState.Ready
+        var completion by mutableStateOf<CompletionState>(CompletionState.Busy)
+        rule.showSello(Look(density = 1f)) {
+            Box(Modifier.requiredSize(412.dp, 891.dp)) {
+                MetasScreen(
+                    metas.copy(completion = completion),
+                    {},
+                    dateLabels(),
+                    PaddingValues(16.dp)
+                )
+            }
+        }
+
+        completion = CompletionState.Failed(GoalDetailError.Unknown)
+
+        rule.onNodeWithTag(METAS_COMPLETION_PROBLEM_TAG).assertIsDisplayed()
     }
 }

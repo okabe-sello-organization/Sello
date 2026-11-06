@@ -109,6 +109,17 @@ fun MetasScreen(
             }
 
             is MetasState.Ready -> {
+                // A Marcar como lograda that did not finish, said as the goal's own page
+                // says it: Reintentar after a refusal, Comprobar si se guardó when unknown.
+                (state.completion as? CompletionState.Failed)?.let { failed ->
+                    item(key = METAS_COMPLETION_PROBLEM_TAG) {
+                        GoalSaveProblem(
+                            failed.error,
+                            { onAction(MetasAction.Retry) },
+                            Modifier.testTag(METAS_COMPLETION_PROBLEM_TAG)
+                        )
+                    }
+                }
                 if (state.stale) {
                     item {
                         StatusSlip(
@@ -151,8 +162,11 @@ fun MetasScreen(
                                 Modifier.fillMaxWidth().padding(top = SelloTheme.spacing.sm)
                                     .testTag("metas.markComplete.${goal.id}"),
                                 icon = SelloIcon.Check,
+                                // Never pressable while an unknown outcome waits for
+                                // its check: the completer would send nothing.
                                 enabled = state.completion == CompletionState.Idle ||
-                                    state.completion is CompletionState.Failed,
+                                    state.completion ==
+                                    CompletionState.Failed(GoalDetailError.NotSaved),
                                 loading = state.completion == CompletionState.Busy,
                                 tone = ButtonTone.Gain
                             )
@@ -267,3 +281,4 @@ const val METAS_LIST_TAG = "metas.list"
 const val METAS_TOTAL_TAG = "metas.total"
 const val METAS_CREATE_TAG = "metas.create"
 const val METAS_BULK_TAG = "metas.bulk"
+const val METAS_COMPLETION_PROBLEM_TAG = "metas.completion.problem"
