@@ -436,21 +436,26 @@ class CarryScreenshotTest {
         CarryCorrectionText(money).list(sc25Back, mapOf(comida.id to comida))
     }
 
-    /** Recibo on 10 abr 2027, Comida carrying from ene: the screen the question opens over. */
-    private val abrRecibo by lazy {
-        carryMonthOf(
-            "2027-04-10",
-            listOf(
-                categoryIn(1, "Comida", 100_000, icon = "restaurant"),
-                categoryIn(2, "Transporte", 50_000)
-            ),
-            listOf(
-                storedExpense(140, 1, "2027-04-05", 30_000),
-                storedExpense(141, 2, "2027-04-06", 10_000)
-            ),
-            mapOf(1 to ene)
-        )
-    }
+    /**
+     * Recibo on 10 abr 2027 with SC25's Comida (base 100.000, carrying from ene): ene's
+     * 20.000, feb's 70.000 and mar's 250.000 leave abr a carry of −40.000 and a month limit
+     * of 60.000. With ene's 20.000 [deleted], the carry is −20.000 and the limit 80.000, as
+     * the lists say. Transporte 50.000 with 10.000 spent does not carry.
+     */
+    private fun abrRecibo(deleted: Boolean) = carryMonthOf(
+        "2027-04-10",
+        listOf(
+            categoryIn(1, "Comida", 100_000, icon = "restaurant"),
+            categoryIn(2, "Transporte", 50_000)
+        ),
+        listOfNotNull(
+            storedExpense(140, 1, "2027-01-10", 20_000).takeIf { !deleted },
+            storedExpense(141, 1, "2027-02-05", 70_000),
+            storedExpense(142, 1, "2027-03-05", 250_000),
+            storedExpense(143, 2, "2027-04-06", 10_000)
+        ),
+        mapOf(1 to ene)
+    )
 
     private val abrShell = ShellState(
         currentMonth = abr,
@@ -462,6 +467,8 @@ class CarryScreenshotTest {
 
     /** The correction question over Recibo's own frame (ReciboDestinations.kt), as SelloAppRoot shows it. */
     private fun question(name: String, question: CorrectionQuestion, look: Look) {
+        // Undoing comes after the deletion: Recibo already reads without ene's 20.000.
+        val month = abrRecibo(deleted = question.kind == CorrectionKind.Undo)
         rule.showSello(look) {
             ShellScreen(
                 abrShell,
@@ -474,7 +481,7 @@ class CarryScreenshotTest {
                     }
                 }
             ) { padding ->
-                ReciboScreen(render.recibo(ReadState.Ready(abrRecibo)), {}, padding)
+                ReciboScreen(render.recibo(ReadState.Ready(month)), {}, padding)
             }
             CorrectionQuestionSlip(question, {}, {})
         }

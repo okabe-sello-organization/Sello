@@ -282,24 +282,79 @@ class CategoryDetailScreenshotTest {
     @Test fun archivedOscuro() = shot("archived", archivedFood, dark = true)
 
     /** September, finished: 900.000 − 812.000 = 88.000 left over, seen on 21 October. */
+    private val mercado =
+        ExpenseRow("4", LocalDate.of(2026, 9, 28), "Mercado", plain("112.000"), false)
+
+    private fun week(number: Int, from: Int, until: Int, digits: String, value: Long) = DetailWeek(
+        number,
+        LocalDate.of(2026, 9, from),
+        LocalDate.of(2026, 9, until),
+        plain(digits),
+        value,
+        false,
+        null,
+        value
+    )
+
+    private fun month(month: Int, digits: String, value: Long) = DetailHistoryMonth(
+        YearMonth.of(2026, month),
+        plain(digits),
+        value,
+        plain("900.000"),
+        900_000
+    )
+
+    /**
+     * September, finished, seen on 21 October: 13 expenses of 806.000 against 900.000, so
+     * 94.000 left over. A finished month has no allowance (CategoryInsightsPolicy). Against
+     * August's 775.000: 31.000 / 775.000 = +4,0 %. 806.000 / 13 = 62.000 per expense; five
+     * weeks 150.000 + 185.300 + 160.000 + 230.700 + 80.000 = 806.000, 806.000 / 5 = 161.200
+     * a week; July to September (760.000 + 775.000 + 806.000) / 3 = 780.333.
+     */
     private val september = ready.copy(
         category = food.copy(
             figure = BudgetFigure(
                 ReciboHeadline.LeftOver,
-                plain("88.000"),
+                plain("94.000"),
                 ReciboStamp.WithinLimit
             ),
-            cellAmount = plain("88.000"),
-            spent = plain("812.000"),
+            cellAmount = plain("94.000"),
+            spent = plain("806.000"),
             fraction = 0.9f
         ),
         month = YearMonth.of(2026, 9),
         expenses = ExpenseListState.Rows(
             listOf(
-                ExpenseRow("4", LocalDate.of(2026, 9, 28), "Mercado", plain("112.000"), false),
+                mercado,
                 ExpenseRow("5", LocalDate.of(2026, 9, 14), null, plain("45.300"), false)
             ),
             more = true
+        ),
+        insights = DetailInsightsState.Ready(
+            DetailInsights(
+                allowance = null,
+                comparisonMonth = YearMonth.of(2026, 8),
+                comparison = "+4,0 %",
+                comparisonDirection = DetailComparisonDirection.Higher,
+                elapsedDays = 30,
+                averageExpense = plain("62.000"),
+                largest = mercado,
+                weekday = DayOfWeek.MONDAY,
+                weeklyAverage = plain("161.200"),
+                weeks = listOf(
+                    week(1, 1, 7, "150.000", 150_000),
+                    week(2, 8, 14, "185.300", 185_300),
+                    week(3, 15, 21, "160.000", 160_000),
+                    week(4, 22, 28, "230.700", 230_700),
+                    week(5, 29, 30, "80.000", 80_000)
+                ),
+                historicalAverage = plain("780.333"),
+                history = listOf(
+                    month(7, "760.000", 760_000),
+                    month(8, "775.000", 775_000),
+                    month(9, "806.000", 806_000)
+                )
+            )
         )
     )
 

@@ -267,8 +267,14 @@ class AdjustBudgetScreenshotTest {
         "carry-unavailable" to LimitSheetError.CarryUnavailable
     )
 
-    private fun refusal(name: String, dark: Boolean) =
-        limitSheet(name, sheet.copy(error = refusals.getValue(name)), dark)
+    /** Above the cap and carry not worked out are refused only while the category carries. */
+    private val carryOnly = setOf("above-cap", "carry-unavailable")
+
+    private fun refusal(name: String, dark: Boolean) = limitSheet(
+        name,
+        (if (name in carryOnly) carrying else sheet).copy(error = refusals.getValue(name)),
+        dark
+    )
 
     @Test fun conflictClaro() = refusal("conflict", dark = false)
 

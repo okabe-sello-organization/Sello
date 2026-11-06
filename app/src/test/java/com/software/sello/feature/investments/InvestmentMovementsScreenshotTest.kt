@@ -198,7 +198,6 @@ class InvestmentMovementsScreenshotTest {
         // Ecopetrol 1.000.000, Fondo 300.000, Acciones USD 250,50 − 50,00 = 200,50:
         // 200,50 × 4.000,00 = 802.000; 1.000.000 + 300.000 + 802.000 = 2.102.000.
         "mixed" to receipt(mixed, 2, pesos("2.102.000"), total = mixedInPesos),
-        // No rate: 1.300.000 and USD 200,50, each on its own.
         // Thirty aportes of 100.000 on 1–30 oct: 3.000.000, and no Otro renglón.
         "full" to receipt(
             (1..30).map {
@@ -228,6 +227,7 @@ class InvestmentMovementsScreenshotTest {
             contributed = null,
             today = today
         ),
+        // No rate: 1.300.000 and USD 200,50, each on its own.
         "mixed-no-rate" to receipt(
             mixed,
             2,

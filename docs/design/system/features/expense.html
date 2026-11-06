@@ -186,7 +186,7 @@
         "Descartar" is in brand blue (<code>ExpenseEntryScreen.kt:290</code>). New: "¿Descartar este gasto?" /
         "Lo que escribiste no se guardará." / "Seguir anotando". Correcting: "¿Descartar los cambios?" /
         "El gasto queda como estaba." / "Seguir editando". "Descartar" sends <code>DiscardConfirmed</code>, the other
-        button <code>KeepEditing</code>. No screenshot.</p>
+        button <code>KeepEditing</code>. Screenshot: <code>expense-entry-discard</code>.</p>
     </section>
 
     <section id="dialog-date">
@@ -196,7 +196,7 @@
       <p>Material <code>DatePickerDialog</code> with a <a href="../components.html#c-SelloButton"><code>SelloButton</code></a>
         "Aceptar" (<code>expense_entry_date_confirm</code>) (<code>ExpenseEntryScreen.kt:673</code>). Days after today
         cannot be picked; while Se repite is on, only today or later. Whole days in UTC, no time or zone. Dismiss sends
-        <code>CloseDatePicker</code>. No screenshot.</p>
+        <code>CloseDatePicker</code>. Screenshot: <code>expense-entry-date-picker</code>.</p>
     </section>
 
     <section id="sheet-note">
@@ -207,7 +207,7 @@
         (<code>ExpenseEntryScreen.kt:626</code>). Its context line reads "Gasto en <b>Alimentación</b> · <b>48.700</b>"
         with the category icon (or a receipt icon), a counter "%1$d/%2$d" up to 60, the hint "Opcional", and
         "Listo" / "Cancelar". Over 60 characters it says "Máximo 60 caracteres. Tu texto sigue aquí." and cannot finish;
-        a line break gives "La nota no puede tener saltos de línea." No screenshot.</p>
+        a line break gives "La nota no puede tener saltos de línea." Screenshot: <code>expense-entry-note</code>.</p>
     </section>
 
     <section id="dialog-correction">
@@ -228,7 +228,7 @@
           with "Solo este", "Este y los siguientes", "Volver a editar" when a scheduled expense is corrected
           (<code>ExpenseEntryScreen.kt:351</code>).</li>
       </ul>
-      <p>No screenshots in this feature.</p>
+      <p>Screenshots: <code>expense-entry-correction</code>, <code>expense-entry-following</code>, <code>expense-entry-following-busy</code>.</p>
     </section>
 
     <section id="components">
@@ -289,7 +289,7 @@
           (<code>app/src/main/java/com/software/sello/presentation/movement/MovementForm.kt:53</code>) and its copy
           <code>IncomePane</code> (<code>app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:250</code>):
           the expense one drops the <code>lg</code> inner padding and spaces by <code>md</code>, so its skeleton and
-          ErrorSlip reach the screen edge. No screenshots of either. Finding: <a href="../findings.html#C03">C03</a>.</li>
+          ErrorSlip reach the screen edge: compare <code>expense-entry-loading</code>, <code>expense-entry-failed</code> with <code>income-form-loading</code>, <code>income-form-failed</code>. Finding: <a href="../findings.html#C03">C03</a>.</li>
         <li><code>DayPicker</code> (<code>ExpenseEntryScreen.kt:673</code>) against <code>MovementDatePicker</code>
           (<code>MovementForm.kt:144</code>): the same dialog plus the Se repite range rule. Income and Anotar varios have
           their own copies too. Finding: <a href="../findings.html#C01">C01</a>.</li>
