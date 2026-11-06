@@ -2,6 +2,10 @@
     <string name="sello_cancel">Cancelar</string>
     <string name="sello_retry">Reintentar</string>
     <string name="sello_error_title">No se pudo cargar</string>
+    <string name="sello_check">Comprobar</string>
+    <string name="sello_back">Volver</string>
+    <string name="sello_status_gone_title">Ya no está</string>
+    <string name="sello_busy">En curso</string>
     <string name="sello_loading">Cargando</string>
     <string name="sello_backspace">Borrar</string>
     <string name="sello_decimal_comma">Coma decimal</string>
