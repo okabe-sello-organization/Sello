@@ -53,6 +53,10 @@ object SelloTheme {
         @Composable @ReadOnlyComposable
         get() = LocalSelloSpacing.current
 
+    val alpha: SelloAlpha
+        @Composable @ReadOnlyComposable
+        get() = LocalSelloAlpha.current
+
     /** When true, every animation cuts to its end state. */
     val reducedMotion: Boolean
         @Composable @ReadOnlyComposable

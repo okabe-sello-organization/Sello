@@ -13,7 +13,7 @@
       <p class="kicker">Sello design system</p>
       <h1>Components</h1>
       <p class="lede">Every public <code>@Composable</code> in
-        <code>design-system/src/main/java/com/software/sello/designsystem/</code> (73 names; overloads
+        <code>design-system/src/main/java/com/software/sello/designsystem/</code> (74 names; overloads
         share an entry), grouped by what they are for.</p>
     </div>
   </header>
@@ -43,7 +43,7 @@
 <li><a href="#g-money">Money, lines and verdicts</a> <span class="muted">(5)</span></li>
 <li><a href="#g-frame">Frame and navigation</a> <span class="muted">(7)</span></li>
 <li><a href="#g-entry">Entry forms</a> <span class="muted">(11)</span></li>
-<li><a href="#g-choices">Buttons and choices</a> <span class="muted">(10)</span></li>
+<li><a href="#g-choices">Buttons and choices</a> <span class="muted">(11)</span></li>
 <li><a href="#g-feedback">Feedback, dialogs and sheets</a> <span class="muted">(11)</span></li>
 <li><a href="#g-categories">Categories and carry</a> <span class="muted">(4)</span></li>
 <li><a href="#g-charts">Charts</a> <span class="muted">(2)</span></li>
@@ -53,7 +53,7 @@
 <li><a href="#g-theme">Theme and helpers</a> <span class="muted">(6)</span></li>
       </ul>
       <div class="gaps">
-        <p>Of 73 components, 25 have a component capture of their own, 41 are shown inside a screen baseline, and 7 are not shown at all: <a href="#c-rememberSelectedFirst"><code>rememberSelectedFirst</code></a>, <a href="#c-SelloTheme"><code>SelloTheme</code></a>, <a href="#c-systemReducedMotion"><code>systemReducedMotion</code></a>, <a href="#c-StatusBarInk"><code>StatusBarInk</code></a>, <a href="#c-statusBarLightIconsUnder"><code>statusBarLightIconsUnder</code></a>, <a href="#c-DialogBarIcons"><code>DialogBarIcons</code></a>, <a href="#c-painter"><code>painter</code></a> (theme and helper functions with nothing of their own to draw). No component capture has a dark version except the bulk receipt and the status slip.</p>
+        <p>Of 74 components, 25 have a component capture of their own, 41 are shown inside a screen baseline, and 8 are not shown at all: <a href="#c-SelloIconButton"><code>SelloIconButton</code></a> (no capture yet), <a href="#c-rememberSelectedFirst"><code>rememberSelectedFirst</code></a>, <a href="#c-SelloTheme"><code>SelloTheme</code></a>, <a href="#c-systemReducedMotion"><code>systemReducedMotion</code></a>, <a href="#c-StatusBarInk"><code>StatusBarInk</code></a>, <a href="#c-statusBarLightIconsUnder"><code>statusBarLightIconsUnder</code></a>, <a href="#c-DialogBarIcons"><code>DialogBarIcons</code></a>, <a href="#c-painter"><code>painter</code></a> (theme and helper functions with nothing of their own to draw). No component capture has a dark version except the bulk receipt and the status slip.</p>
       </div>
     </section>
 <section id="g-surfaces">
@@ -149,7 +149,7 @@
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-PlanSlip">
-<h3><code>PlanSlip</code> <span class="src"><code>component/Plan.kt:66</code></span></h3>
+<h3><code>PlanSlip</code> <span class="src"><code>component/Plan.kt:81</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>A plan beside the records, not on the desk's paper: a dashed outline on the background, <code>tag</code> in the brand's small capitals as its heading and <code>caption</code> at the other end, then <code>content</code>, usually receipt lines and <code>ExpectedChip</code>s.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/income.html">income · 1</a></dd>
@@ -166,7 +166,7 @@
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-ExpectedChip">
-<h3><code>ExpectedChip</code> <span class="src"><code>component/Plan.kt:116</code></span></h3>
+<h3><code>ExpectedChip</code> <span class="src"><code>component/Plan.kt:131</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>One amount still expected, such as "Salario · vie 30 oct · 1.000.000": a dashed pill with a calendar, <code>text</code> soft and the <code>amount</code> in ink. It is information, not a choice: it cannot be tapped. <code>spoken</code> is the whole sentence a screen reader says, with the amount spoken exactly.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/income.html">income · 1</a></dd>
@@ -219,6 +219,7 @@
 <dl>
 <dt>Purpose</dt><dd>The only way an amount is drawn: tabular figures, a raised currency code, tightened thousands points and a true minus. A figure too wide for its place wraps between groups, never clips; Hero first steps down to Total.</dd>
 <dt>Variants</dt><dd><code>style</code>: <code>MoneyStyle.Hero</code> 60 sp, <code>Total</code> 44, <code>Card</code> 32, <code>Title</code> 19, <code>Line</code> 14 (drops the currency code). <code>MoneyTextValue.sign</code>: <code>None</code>, <code>Plus</code>, <code>Minus</code>.</dd>
+<dt>Signed text</dt><dd><code>MoneyTextValue.signedText(showPlus = true)</code> (<code>component/MoneyText.kt:151</code>) writes an amount inside a sentence with the same sign rule: "+80.000", "&minus;150.000" with a true minus (U+2212), "937.200"; no currency code. With <code>showPlus = false</code> a gain is written bare and only a negative figure keeps its sign, for a sentence that states a limit or a balance rather than a change. Screens use it instead of writing their own sign helper.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/category.html">category · 2</a> <a class="tag" href="features/goals.html">goals · 2</a> <a class="tag" href="features/income.html">income · 8</a> <a class="tag" href="features/investments.html">investments · 12</a> <a class="tag" href="features/recibo.html">recibo · 25</a> <a class="tag" href="features/recurrence.html">recurrence · 3</a> <a class="tag" href="features/resumen.html">resumen · 10</a> <span class="muted">Inside the design system: <code>BulkReceipt.kt</code>, <code>Carry.kt</code>, <code>Goals.kt</code>, <code>Paper.kt</code>, <code>Plan.kt</code>, <code>Recurrence.kt</code>.</span></dd>
 </dl>
 <pre><code>fun MoneyText(
@@ -693,6 +694,24 @@ fun LeaderLine(
 )</code></pre>
 <figure data-module="design-system" data-files="components-buttons-and-chips.png" data-caption="Component capture: components-buttons-and-chips.png (design-system)"></figure>
 <div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
+</article>
+<article class="component" id="c-SelloIconButton">
+<h3><code>SelloIconButton</code> <span class="src"><code>component/SelloIconButton.kt:26</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>An icon that acts: back, close, edit, settings. Its target is at least 48 dp square whatever the icon's size. <code>contentDescription</code> is what a screen reader says; it is required, because the icon is the only label. <code>tint</code> defaults to the content colour the surrounding bar or slip sets; disabled, it fades to <code>SelloTheme.alpha.disabled</code>.</dd>
+<dt>Variants</dt><dd><code>enabled</code>; <code>tint</code> (default: the content colour); <code>iconSize</code> (default: the icon's own 24 dp).</dd>
+<dt>Used by</dt><dd><span class="muted">Not used yet: screens still call Material <code>IconButton</code> with an <code>Icon</code> (about 18 places in <code>:app</code>, 5 in <code>:design-system</code>); SELLO-189 moves them.</span></dd>
+</dl>
+<pre><code>fun SelloIconButton(
+    icon: SelloIcon,
+    contentDescription: String,
+    onClick: () -&gt; Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    tint: Color = Color.Unspecified,
+    iconSize: Dp? = null
+)</code></pre>
+<div class="gaps"><p>No component capture yet: adding it to a component sheet would change an existing baseline in a pull request that must change none.</p></div>
 </article>
 <article class="component" id="c-ButtonPair">
 <h3><code>ButtonPair</code> <span class="src"><code>component/Recurrence.kt:238</code></span></h3>
