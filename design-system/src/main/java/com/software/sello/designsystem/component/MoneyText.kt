@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.em
 import com.software.sello.designsystem.theme.SelloAlpha
 import com.software.sello.designsystem.theme.SelloTheme
@@ -33,8 +34,8 @@ enum class MoneySign { None, Plus, Minus }
  * An amount already formatted by the application: the design system draws it and
  * never computes, rounds or abbreviates it.
  *
- * @param symbol the currency code drawn small and raised before the figure, such as
- * `USD`; empty for pesos, which carry no mark.
+ * @param symbol the currency code drawn before the figure, such as `USD`; empty for
+ * pesos, which carry no mark.
  * @param digits the full grouped figure without sign or symbol, such as `937.200`.
  * @param spoken what a screen reader says, with the currency: `937.200 pesos`.
  */
@@ -46,12 +47,15 @@ data class MoneyTextValue(
     val spoken: String
 )
 
-/** Hero 60sp, Total 44sp, Card 32sp, Title 19sp, Line 14sp. Line drops the currency code. */
+/**
+ * Hero 60sp, Total 44sp, Card 32sp, Title 19sp, Line 14sp. Line draws the currency code
+ * inline at the figure's size; the others draw it small and raised.
+ */
 enum class MoneyStyle { Hero, Total, Card, Title, Line }
 
 /**
- * The only way an amount is drawn: tabular figures, a raised currency code, tightened
- * thousands points and a true minus. A figure too wide for its place wraps between
+ * The only way an amount is drawn: tabular figures, a soft currency code after the sign,
+ * tightened thousands points and a true minus. A figure too wide for its place wraps between
  * groups, never clips; Hero first steps down to Total.
  */
 @Composable
@@ -68,7 +72,7 @@ fun MoneyText(
     val ink = color.takeOrElse { LocalContentColor.current }
     val semantics = modifier.clearAndSetSemantics {
         contentDescription = value.spoken
-        text = AnnotatedString(moneyPlainText(value, style))
+        text = AnnotatedString(moneyPlainText(value))
     }
     if (textStyle != null) {
         val tabularStyle = textStyle.copy(
@@ -134,8 +138,10 @@ private const val MARK_GAP_EXTRA_EM = 0.2f
 private const val DECIMAL_COMMA = ','
 
 /**
- * The raised currency code: [SelloWeights.soft] at [SelloAlpha.secondary], 0.56 of the figure's
- * size, untracked. Read from the token defaults: the string is built outside composition.
+ * The currency code, at [SelloAlpha.secondary] and untracked. Raised, it is 0.56 of the
+ * figure's size in [SelloWeights.soft]; on a [MoneyStyle.Line], where that would be too small
+ * to read, it sits inline at the figure's own size and weight. Read from the token defaults:
+ * the string is built outside composition.
  */
 private val MarkWeight = SelloWeights().soft
 private val MarkAlpha = SelloAlpha().secondary
@@ -161,12 +167,12 @@ private fun signText(sign: MoneySign) = when (sign) {
 fun MoneyTextValue.signedText(showPlus: Boolean = true): String =
     (if (sign == MoneySign.Plus && !showPlus) "" else signText(sign)) + digits
 
-private fun markText(value: MoneyTextValue, style: MoneyStyle) =
-    if (style == MoneyStyle.Line || value.symbol.isEmpty()) "" else value.symbol + MARK_GAP
+private fun markText(value: MoneyTextValue) =
+    if (value.symbol.isEmpty()) "" else value.symbol + MARK_GAP
 
 /** The figure as plain characters, for tests and semantics. */
-internal fun moneyPlainText(value: MoneyTextValue, style: MoneyStyle): String =
-    signText(value.sign) + markText(value, style) + value.digits
+internal fun moneyPlainText(value: MoneyTextValue): String =
+    signText(value.sign) + markText(value) + value.digits
 
 internal fun moneyAnnotatedString(
     value: MoneyTextValue,
@@ -177,11 +183,12 @@ internal fun moneyAnnotatedString(
     val tracking = if (textStyle.letterSpacing.isEm) textStyle.letterSpacing.value else 0f
     val tight = SpanStyle(letterSpacing = (tracking - POINT_TIGHTENING_EM).em)
     append(signText(value.sign))
-    if (style != MoneyStyle.Line && value.symbol.isNotEmpty()) {
+    if (value.symbol.isNotEmpty()) {
+        val raised = style != MoneyStyle.Line
         val mark = SpanStyle(
-            fontSize = MarkSize,
-            fontWeight = MarkWeight,
-            baselineShift = BaselineShift(0.5f),
+            fontSize = if (raised) MarkSize else TextUnit.Unspecified,
+            fontWeight = if (raised) MarkWeight else null,
+            baselineShift = if (raised) BaselineShift(0.5f) else null,
             letterSpacing = NoTracking,
             color = if (ink.isSpecified) ink.copy(alpha = ink.alpha * MarkAlpha) else ink
         )

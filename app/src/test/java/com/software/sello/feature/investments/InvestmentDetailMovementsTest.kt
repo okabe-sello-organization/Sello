@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -71,18 +72,21 @@ class InvestmentDetailMovementsTest {
 
     private fun movementId(n: Int) = "00000000-0000-4000-8000-%012d".format(n)
 
-    /** IN37, Ecopetrol: the March 2026 dividend carries the note "Trimestre I". */
-    private fun summary(): InvestmentSummary {
+    /**
+     * IN37, Ecopetrol: the March 2026 dividend carries the note "Trimestre I". In
+     * [Currency.USD] the same units are cents.
+     */
+    private fun summary(currency: Currency = Currency.COP): InvestmentSummary {
         val movements = listOf(
-            movement(1, Contribution, 2_000_000, "2025-03-02"),
-            movement(2, Valuation, 2_000_000, "2025-03-02"),
-            movement(3, Contribution, 1_000_000, "2025-07-03"),
-            movement(4, Valuation, 3_010_000, "2025-07-03"),
-            movement(5, Valuation, 2_900_000, "2025-12-01"),
-            movement(6, Dividend, 89_000, "2026-03-15", "Trimestre I"),
-            movement(7, Valuation, 3_120_000, "2026-04-02"),
-            movement(8, Dividend, 89_000, "2026-09-15"),
-            movement(9, Valuation, 3_050_000, "2026-10-09")
+            movement(1, Contribution, 2_000_000, "2025-03-02", currency = currency),
+            movement(2, Valuation, 2_000_000, "2025-03-02", currency = currency),
+            movement(3, Contribution, 1_000_000, "2025-07-03", currency = currency),
+            movement(4, Valuation, 3_010_000, "2025-07-03", currency = currency),
+            movement(5, Valuation, 2_900_000, "2025-12-01", currency = currency),
+            movement(6, Dividend, 89_000, "2026-03-15", "Trimestre I", currency),
+            movement(7, Valuation, 3_120_000, "2026-04-02", currency = currency),
+            movement(8, Dividend, 89_000, "2026-09-15", currency = currency),
+            movement(9, Valuation, 3_050_000, "2026-10-09", currency = currency)
         )
         val history = InvestmentHistory(
             Investment(
@@ -90,7 +94,7 @@ class InvestmentDetailMovementsTest {
                 InvestmentName.of("Ecopetrol").value(),
                 null,
                 IconKey.of("trending_up").value(),
-                Currency.COP,
+                currency,
                 1,
                 Instant.EPOCH,
                 Instant.EPOCH
@@ -103,11 +107,12 @@ class InvestmentDetailMovementsTest {
     private fun movement(
         n: Int,
         kind: InvestmentMovementKind,
-        pesos: Long,
+        units: Long,
         date: String,
-        note: String? = null
+        note: String? = null,
+        currency: Currency = Currency.COP
     ): InvestmentMovement {
-        val money = Money.cop(pesos)
+        val money = Money(units, currency)
         return InvestmentMovement(
             InvestmentMovementId.of(movementId(n)).value(),
             kind,
@@ -268,8 +273,8 @@ class InvestmentDetailMovementsTest {
         )
     }
 
-    private fun ready(): InvestmentDetailState.Ready {
-        val summary = summary()
+    private fun ready(currency: Currency = Currency.COP): InvestmentDetailState.Ready {
+        val summary = summary(currency)
         val board = InvestmentBoard(
             1,
             1,
@@ -299,4 +304,45 @@ class InvestmentDetailMovementsTest {
     @Test fun noValueClaro() = shot("no-value", noValue(), dark = false)
 
     @Test fun noValueOscuro() = shot("no-value", noValue(), dark = true)
+
+    /**
+     * Issue 383: a dollar investment's lines say USD, as its hero does. Aportes 20.000,00 +
+     * 10.000,00; no retiros; dividendos 890,00 twice; ganancia 30.500,00 + 0 + 1.780,00 −
+     * 30.000,00.
+     */
+    @Test
+    fun aDollarInvestmentWritesUsdOnEveryLine() {
+        rule.showSello(Look()) {
+            InvestmentDetailScreen(ready(Currency.USD), {}, dateLabels(), PaddingValues(16.dp))
+        }
+
+        listOf(
+            "Aportaste" to "USD\u00A030.000,00",
+            "Retiraste" to "USD\u00A00,00",
+            "Dividendos y rentas" to "USD\u00A01.780,00",
+            "Ganancia" to "+USD\u00A02.280,00"
+        ).forEach { (label, amount) ->
+            rule.onNode(hasText(label) and hasText(amount)).assertExists()
+        }
+        rule.onNodeWithTag("investment.chart.picked")
+            .assert(hasText("USD\u00A030.500,00", substring = true))
+    }
+
+    @Test
+    fun aDollarInvestmentWithNoValueWritesUsdOnAportaste() {
+        rule.showSello(Look()) {
+            InvestmentDetailScreen(
+                ready(Currency.USD).copy(value = null, valuedOn = null, gain = null, chart = null),
+                {},
+                dateLabels(),
+                PaddingValues(16.dp)
+            )
+        }
+
+        rule.onNode(hasText("Aportaste") and hasText("USD\u00A030.000,00")).assertExists()
+    }
+
+    @Test fun dollarsClaro() = shot("usd", ready(Currency.USD), dark = false)
+
+    @Test fun dollarsOscuro() = shot("usd", ready(Currency.USD), dark = true)
 }
