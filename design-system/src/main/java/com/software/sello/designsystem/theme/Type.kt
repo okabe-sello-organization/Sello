@@ -73,12 +73,63 @@ val SelloTypography = Typography(
     labelSmall = text(12.0, 14, 600)
 )
 
-/** Text styles outside Material's roles. */
+/**
+ * Text styles outside Material's roles: the stamps, and the combinations of a role with
+ * another size or weight that several places repeat. Each is named for what it sets, and
+ * is the Material role with only the listed change, so a screen that switches to it from
+ * a hand-written `copy` draws the same text.
+ */
 @Immutable
 data class SelloType(
     val stampSmall: TextStyle = stamp(15),
     val stampLarge: TextStyle = stamp(34),
-    val stampHero: TextStyle = stamp(52)
+    val stampHero: TextStyle = stamp(52),
+    /** The title on the top band: headlineSmall at 24sp. */
+    val barTitle: TextStyle = SelloTypography.headlineSmall.copy(fontSize = 24.sp),
+    /** A dialog slip's title: headlineSmall at 22sp. */
+    val dialogTitle: TextStyle = SelloTypography.headlineSmall.copy(fontSize = 22.sp),
+    /** A digit on the amount keypad: titleLarge at 22sp on a 26sp line. */
+    val keypadKey: TextStyle = SelloTypography.titleLarge.copy(
+        fontSize = 22.sp,
+        lineHeight = 26.sp
+    ),
+    /** A button's label: labelLarge at 15sp. */
+    val buttonLabel: TextStyle = SelloTypography.labelLarge.copy(fontSize = 15.sp),
+    /** The name on a list row (a category, goal, investment, schedule or choice). */
+    val rowTitle: TextStyle = SelloTypography.bodyLarge.copy(fontWeight = FontWeight.W800),
+    /** The title of a compact line: a bulk line, a change row, a chip on the band. */
+    val lineTitle: TextStyle = SelloTypography.bodyMedium.copy(fontWeight = FontWeight.W800),
+    /** The heading over a group of rows. */
+    val groupLabel: TextStyle = SelloTypography.labelMedium.copy(fontWeight = FontWeight.W800),
+    /** A chip's or a pill's label. */
+    val chipLabel: TextStyle = SelloTypography.bodyMedium.copy(fontWeight = FontWeight.W600),
+    /** A figure beside a title, such as a goal's percentage on its pill. */
+    val figure: TextStyle = SelloTypography.titleMedium.copy(fontWeight = FontWeight.W900),
+    /** The figure that leads a card, such as a goal's percentage on its card. */
+    val figureLarge: TextStyle = SelloTypography.headlineSmall.copy(
+        fontWeight = FontWeight.W900
+    ),
+    /** The weights by role, for a span or an amount that keeps its own style. */
+    val weight: SelloWeights = SelloWeights()
+)
+
+/**
+ * The weights the bundled font is set in, by role. The Material roles already carry
+ * them; these are for a [androidx.compose.ui.text.SpanStyle] inside a sentence or a
+ * `fontWeight` on an amount.
+ */
+@Immutable
+data class SelloWeights(
+    /** Running text. */
+    val regular: FontWeight = FontWeight.W400,
+    /** A quiet label: a chip, a year beside its month, typed text in a field. */
+    val soft: FontWeight = FontWeight.W600,
+    /** A value on a line, or a fact stressed in a sentence. */
+    val strong: FontWeight = FontWeight.W700,
+    /** A name or a title, or a word stressed in a heading or note. */
+    val emphasis: FontWeight = FontWeight.W800,
+    /** The figure a card or line leads with. */
+    val figure: FontWeight = FontWeight.W900
 )
 
 private fun stamp(size: Int) = TextStyle(
