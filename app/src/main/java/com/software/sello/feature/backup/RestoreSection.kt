@@ -178,7 +178,12 @@ private fun Preview(
             Text(
                 text = stringResource(it),
                 style = MaterialTheme.typography.bodyMedium,
-                color = SelloTheme.colors.semantic.warn,
+                // Figures that changed are a doubt to check; a restore that did not happen is a problem.
+                color = if (it == R.string.restore_preview_refreshed) {
+                    SelloTheme.colors.semantic.warn
+                } else {
+                    SelloTheme.colors.semantic.loss
+                },
                 modifier = Modifier.padding(top = SelloTheme.spacing.sm)
                     .semantics { liveRegion = LiveRegionMode.Polite }
             )
