@@ -59,7 +59,7 @@ class GoalComponentsTest {
                     "lun 20 oct",
                     MoneyTextValue(MoneySign.Minus, "", "400.000", "menos 400.000 pesos"),
                     Modifier.testTag("retiro"),
-                    icon = SelloIcon.ArrowBack,
+                    icon = SelloIcon.Remove,
                     tone = MovementTone.Out,
                     rule = false
                 )
