@@ -64,10 +64,25 @@
               data-caption="Ready, Violeta ink"></figure>
       <figure data-shot="expense-entry-varios" data-module="app"
               data-caption="Opened where Anotar varios is reachable: the Otro gasto slip under the amount"></figure>
-      <figure data-shot="expense-entry-stale" data-module="app" data-variants="cobalto-light-font1.0"
+      <figure data-shot="expense-entry-stale" data-module="app"
               data-caption="Stale: a refresh failed, the categories are those last read"></figure>
-      <figure data-shot="expense-entry-delete-unknown" data-module="app" data-variants="cobalto-light-font1.0"
+      <figure data-shot="expense-entry-delete-unknown" data-module="app"
               data-caption="Editar gasto after a deletion whose outcome is unknown"></figure>
+      <figure data-shot="expense-entry-loading" data-module="app" data-caption="Loading"></figure>
+      <figure data-shot="expense-entry-failed" data-module="app" data-caption="Nothing could be read"></figure>
+      <figure data-shot="expense-entry-busy" data-module="app" data-caption="Saving"></figure>
+      <figure data-shot="expense-entry-unknown" data-module="app" data-caption="The save outcome is not known"></figure>
+      <figure data-shot="expense-entry-refused" data-module="app" data-caption="Not saved"></figure>
+      <figure data-shot="expense-entry-missing" data-module="app" data-caption="No category chosen: what is missing is said"></figure>
+      <figure data-shot="expense-entry-amount-refused" data-module="app" data-caption="Thirteen digits pasted: kept, with why"></figure>
+      <figure data-shot="expense-entry-past-month" data-module="app" data-caption="Correcting an August expense: the past-months line"></figure>
+      <figure data-shot="expense-entry-announcement" data-module="app" data-caption="The one-time past-month announcement"></figure>
+      <figure data-shot="expense-entry-announcement-busy" data-module="app" data-caption="The announcement while its dismissal is saved"></figure>
+      <figure data-shot="expense-entry-announcement-failed" data-module="app" data-caption="The announcement after its dismissal failed"></figure>
+      <figure data-shot="expense-entry-editing" data-module="app" data-caption="&quot;Editar gasto&quot; ready to save"></figure>
+      <figure data-shot="expense-entry-switch" data-module="app" data-caption="A new expense: the &quot;Gasto | Ingreso&quot; switch and Se repite&#x27;s row"></figure>
+      <figure data-shot="expense-entry-repeat-on" data-module="app" data-caption="Se repite on: the row says the rule and the next date"></figure>
+      <figure data-shot="expense-entry-repeat-sheet" data-module="app" data-caption="Se repite&#x27;s sheet open over the form"></figure>
 
       <h3>Layout</h3>
       <p>The whole form is an <a href="../components.html#c-EntryLayout"><code>EntryLayout</code></a>
@@ -114,13 +129,13 @@
             <tr><td>Amount refused</td><td>The slip's label is replaced by the reason ("Eso no es un monto…", "El monto debe ser mayor que cero.", "El monto es mayor que el máximo…") and the pasted text stays as it was; "Máximo 12 dígitos" with a shake when a key is refused.</td>
               <td><code>ExpenseEntryScreen.kt:390</code></td><td>no screenshot</td></tr>
             <tr><td>Stale</td><td><code>StaleSlip</code> "No pudimos actualizar. Esto es lo último que se leyó y puede no estar al día." with "Reintentar" above the chips; the draft stays.</td>
-              <td><code>ExpenseEntryScreen.kt:432</code></td><td>expense-entry-stale (light only)</td></tr>
+              <td><code>ExpenseEntryScreen.kt:432</code></td><td>expense-entry-stale</td></tr>
             <tr><td>Busy</td><td>The button reads "Guardando…" with its spinner; chips, pill, note, switch and pad are off. The X stays enabled but Back is ignored.</td>
               <td><code>ExpenseEntryScreen.kt:589</code>, <code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryViewModel.kt:486</code></td><td>no screenshot</td></tr>
             <tr><td>Unknown outcome (save)</td><td>Warning "Aún no sabemos si se guardó. Compruébalo antes de volver a anotar." and the only button "Comprobar si se guardó"; the draft is frozen.</td>
               <td><code>ExpenseEntryScreen.kt:570</code></td><td>no screenshot</td></tr>
             <tr><td>Unknown outcome (deletion)</td><td>Warning "Aún no sabemos si se borró…" and "Comprobar si se borró"; "Borrar" is off.</td>
-              <td><code>ExpenseEntryScreen.kt:573</code></td><td>expense-entry-delete-unknown (light only)</td></tr>
+              <td><code>ExpenseEntryScreen.kt:573</code></td><td>expense-entry-delete-unknown</td></tr>
             <tr><td>Refused</td><td>An error message above the button, the draft kept: "No se guardó. Tu borrador sigue aquí.", "Esa categoría ya no acepta gastos…", "La fecha no puede ser posterior a hoy…", "Tus datos cambiaron mientras tanto…", "No se guardó: con este cambio Sello no podría calcular lo que sobra o falta…". When correcting, each says "El gasto quedó como estaba". "Este gasto ya no existe…" and "Este gasto cambió mientras lo corregías…" freeze the form.</td>
               <td><code>ExpenseEntryScreen.kt:743</code></td><td>no screenshot</td></tr>
             <tr><td>Following saved, this not</td><td>Under the error: "Los siguientes ya cambiaron; este todavía no. Vuelve a guardar."</td>
@@ -164,6 +179,8 @@
 
     <section id="dialog-discard">
       <h2>Dialog: discard the draft</h2>
+
+      <figure data-shot="expense-entry-discard" data-module="app" data-caption="The discard dialog"></figure>
       <p>A <a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a> with <code>destructive = false</code>, so
         "Descartar" is in brand blue (<code>ExpenseEntryScreen.kt:290</code>). New: "¿Descartar este gasto?" /
         "Lo que escribiste no se guardará." / "Seguir anotando". Correcting: "¿Descartar los cambios?" /
@@ -173,6 +190,8 @@
 
     <section id="dialog-date">
       <h2>Dialog: date picker</h2>
+
+      <figure data-shot="expense-entry-date-picker" data-module="app" data-caption="The date picker (the JVM screen runs in English, so the picker&#x27;s own words are English)"></figure>
       <p>Material <code>DatePickerDialog</code> with a <a href="../components.html#c-SelloButton"><code>SelloButton</code></a>
         "Aceptar" (<code>expense_entry_date_confirm</code>) (<code>ExpenseEntryScreen.kt:673</code>). Days after today
         cannot be picked; while Se repite is on, only today or later. Whole days in UTC, no time or zone. Dismiss sends
@@ -181,6 +200,8 @@
 
     <section id="sheet-note">
       <h2>Sheet: note composer</h2>
+
+      <figure data-shot="expense-entry-note" data-module="app" data-caption="The note composer"></figure>
       <p><a href="../components.html#c-NoteComposer"><code>NoteComposer</code></a> docked above the keyboard
         (<code>ExpenseEntryScreen.kt:626</code>). Its context line reads "Gasto en <b>Alimentación</b> · <b>48.700</b>"
         with the category icon (or a receipt icon), a counter "%1$d/%2$d" up to 60, the hint "Opcional", and
@@ -190,6 +211,10 @@
 
     <section id="dialog-correction">
       <h2>Dialogs: correction list, Se repite and the following payments</h2>
+
+      <figure data-shot="expense-entry-correction" data-module="app" data-caption="The correction list: two later months change"></figure>
+      <figure data-shot="expense-entry-following" data-module="app" data-caption="¿Cambiar también los siguientes?"></figure>
+      <figure data-shot="expense-entry-following-busy" data-module="app" data-caption="The following-payments question while saving"></figure>
       <ul>
         <li>Carry correction: a <a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a> holding
           <code>CarryCorrectionContent</code> (<code>app/src/main/java/com/software/sello/presentation/carry/Carry.kt:318</code>),
@@ -277,12 +302,7 @@
       <h2>Gaps</h2>
       <div class="gaps">
         <ul>
-          <li>Loading, error (nothing read), busy, unknown save outcome, refused, missing, amount refused, past months,
-            restored draft: no screenshot.</li>
-          <li>Stale and delete-unknown: light Cobalto only, no dark screenshot.</li>
-          <li>"Editar gasto" ready to save, the "Gasto | Ingreso" switch and Se repite's row: no screenshot (the baselines
-            are drawn without <code>onIncome</code> and the row is below the fold).</li>
-          <li>Discard, date picker, note composer, correction list and following-payments dialogs: no screenshot.</li>
+          <li>Missing (the expense was deleted meanwhile) and restored draft (drawn as the form with its values): no screenshot.</li>
         </ul>
       </div>
     </section>

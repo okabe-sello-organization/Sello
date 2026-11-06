@@ -40,6 +40,7 @@
       <figure data-shot="shell-past-month" data-module="app" data-caption="Recibo's frame over a past month: month bar, ribbon, content, dock, tab bar"></figure>
       <figure data-shot="shell-past-month" data-module="app" data-variants="violeta-light-font1.0" data-caption="The same in Violeta"></figure>
       <figure data-module="app" data-files="components-bars-and-keypad.png" data-caption="TitleBar (Inversiones) and MonthBar (Octubre 2026) on their own"></figure>
+      <figure data-shot="shell-current-month" data-module="app" data-caption="Over the current month: no ribbon"></figure>
 
       <h3>Layout</h3>
       <ol>
@@ -90,6 +91,7 @@
       <h2>Screen: Tab frame with a title (Metas, Inversiones)</h2>
 
       <figure data-module="app" data-files="components-bars-and-keypad.png" data-caption="TitleBar, top, as Inversiones has it"></figure>
+      <figure data-shot="shell-titled" data-module="app" data-caption="Metas: the title, &quot;Nueva meta&quot; and the green dock"></figure>
 
       <h3>Layout</h3>
       <ol>
@@ -130,6 +132,15 @@
 
     <section id="screen-pushed-frame">
       <h2>Screen: Pushed screen frame</h2>
+
+      <figure data-shot="shell-screen-title" data-module="app" data-caption="screenTitle: &quot;Configuración · Octubre 2026&quot;"></figure>
+      <figure data-shot="shell-title-label" data-module="app" data-caption="titleLabel: &quot;Ingresos de octubre&quot;"></figure>
+      <figure data-shot="shell-subtitle" data-module="app" data-caption="showMonthAsSubtitle: &quot;Todos los gastos&quot; over &quot;Octubre 2026&quot;"></figure>
+      <figure data-shot="shell-title-only" data-module="app" data-caption="titleOnly: &quot;Pagos e ingresos fijos&quot;"></figure>
+      <figure data-shot="shell-archived-dock" data-module="app" data-caption="The archived dock"></figure>
+      <figure data-shot="shell-waiting-dock" data-module="app" data-caption="Anotar disabled while archived is not known"></figure>
+      <figure data-shot="settings-loaded" data-module="app" data-caption="A real one: Configuración"></figure>
+      <figure data-shot="goal-detail-framed" data-module="app" data-caption="A goal: titleOnly with its band"></figure>
       <p>Every screen pushed on top of a tab that still uses <code>ShellScreen</code> (Configuración, Respaldo, Borrar datos, Ingresos, Todos los gastos, a category from Resumen, Pagos previstos, Ajustar presupuesto, Pagos e ingresos fijos, Lo que Sello anotó, a goal, an investment, Dólar). No screenshot shows this frame.</p>
 
       <h3>Layout</h3>
@@ -183,6 +194,9 @@
 
     <section id="screen-category-detail">
       <h2>Screen: A category's detail inside Recibo</h2>
+
+      <figure data-shot="shell-detail" data-module="app" data-caption="One pane: the detail with its own title row"></figure>
+      <figure data-shot="shell-rail-beside" data-module="app" data-caption="Landscape (891 × 412): the rail, the detail beside Recibo"></figure>
       <p>Recibo hosts its category detail in the frame itself (<code>ShellDetail</code>), not as a route, so the open category survives rotation, resizing and process death. No screenshot shows the frame; <code>category-detail</code> shows its content only (see <a href="category.html#screen-detail">Category detail</a>).</p>
 
       <h3>Layout</h3>
@@ -223,6 +237,8 @@
 
       <figure data-shot="shell-picker" data-module="app" data-caption="Open as a bottom sheet over Recibo, current month October, September selected"></figure>
       <figure data-shot="shell-picker" data-module="app" data-variants="violeta-light-font1.0" data-caption="Violeta"></figure>
+      <figure data-shot="shell-picker-earliest" data-module="app" data-caption="At the earliest year, 2000"></figure>
+      <figure data-shot="shell-side-panel" data-module="app" data-caption="A large window (1280 × 800): the picker as a side panel"></figure>
 
       <h3>Layout</h3>
       <ol>
@@ -315,7 +331,8 @@
     <section id="screen-correction-question">
       <h2>Dialog: Correction question (later months change)</h2>
 
-      <figure data-shot="carry-delete" data-module="app" data-variants="cobalto-light-font1.0" data-caption="&quot;¿Borrar este gasto?&quot; listing the three later months whose limit changes"></figure>
+      <figure data-shot="carry-delete" data-module="app" data-caption="&quot;¿Borrar este gasto?&quot; listing the three later months whose limit changes"></figure>
+      <figure data-shot="expense-entry-correction" data-module="app" data-caption="The same list inside Anotar"></figure>
 
       <h3>Layout</h3>
       <ol>
@@ -328,7 +345,7 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Asking (delete)</td><td>"¿Borrar este gasto?", "Borrar" in red.</td><td><code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:472</code></td><td><code>carry-delete</code> (light only)</td></tr>
+            <tr><td>Asking (delete)</td><td>"¿Borrar este gasto?", "Borrar" in red.</td><td><code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:472</code></td><td><code>carry-delete</code></td></tr>
             <tr><td>Asking (undo)</td><td>"¿Deshacer el borrado?", "Deshacer".</td><td><code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:481</code></td><td>no screenshot</td></tr>
             <tr><td>Changed meanwhile</td><td>The list read again because the data moved.</td><td><code>app/src/main/java/com/software/sello/presentation/corrections/Corrections.kt:324</code></td><td>no screenshot</td></tr>
             <tr><td>Busy</td><td>Spinner in the action; nothing can be pressed or dismissed.</td><td><code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:494</code></td><td>no screenshot</td></tr>
@@ -350,6 +367,10 @@
 
     <section id="screen-announcements">
       <h2>One-time correction announcements</h2>
+
+      <figure data-shot="expense-entry-announcement" data-module="app" data-caption="Shown, in Anotar"></figure>
+      <figure data-shot="expense-entry-announcement-busy" data-module="app" data-caption="Busy"></figure>
+      <figure data-shot="expense-entry-announcement-failed" data-module="app" data-caption="Failed"></figure>
       <p>Two notices, each shown until the person dismisses it once, owned by <code>CorrectionAnnouncementsViewModel</code> (<code>app/src/main/java/com/software/sello/presentation/corrections/CorrectionAnnouncementsViewModel.kt</code>) and drawn by the screens: in the expense form when correcting a past month's expense, <code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:504</code>, and in a past month's category detail, <code>app/src/main/java/com/software/sello/feature/recibo/CategoryDetailScreen.kt:165</code>. Both are a <a href="../components.html#c-SelloNotice"><code>SelloNotice</code></a> in the content.</p>
       <div class="table-wrap">
         <table>
@@ -512,8 +533,8 @@
           </tbody>
         </table>
       </div>
-      <figure data-shot="schedules-stale" data-module="app" data-variants="cobalto-light-font1.0" data-caption="StaleSlip (Pagos e ingresos fijos)"></figure>
-      <figure data-shot="recibo-goals-stale" data-module="app" data-variants="cobalto-light-font1.0" data-caption="ErrorSlip used for older figures (Recibo's goals)"></figure>
+      <figure data-shot="schedules-stale" data-module="app" data-caption="StaleSlip (Pagos e ingresos fijos)"></figure>
+      <figure data-shot="recibo-goals-stale" data-module="app" data-caption="ErrorSlip used for older figures (Recibo's goals)"></figure>
       <figure data-module="app" data-files="limit-sheet-stale-claro.png,investment-movements-stale-claro.png" data-caption="Loose text in the limit sheet; a field hint in Varios movimientos"></figure>
       <p class="muted">Findings: <a href="../findings.html#F01">F01</a>, <a href="../findings.html#F02">F02</a>, <a href="../findings.html#F08">F08</a>, <a href="../findings.html#F28">F28</a>.</p>
 
@@ -536,15 +557,9 @@
       <h2>Gaps</h2>
       <div class="gaps">
         <ul>
-          <li>Tab frame over the current month (no ribbon): no screenshot of <code>MonthBar</code> in the frame without the ribbon.</li>
-          <li>Metas and Inversiones frame with chip and dock, and the compact chip: no screenshot (only the bare <code>TitleBar</code> in <code>components-bars-and-keypad.png</code>, light only).</li>
-          <li>Pushed screen frame in each of its four title forms, the archived and waiting docks: no screenshot.</li>
-          <li>Category detail inside Recibo, one pane and beside: no screenshot of the frame.</li>
-          <li>Rail, side-panel picker and two-pane layouts: no screenshot.</li>
-          <li>Month picker at the earliest year: no screenshot.</li>
-          <li>Correction notice bar in the app (busy, undo failed, unknown, refused, statements, confirmations, stamp ticket): no screenshot; only the design-system capture of "Gasto borrado".</li>
-          <li>Correction question: light only, no dark screenshot; the undo form, the changed list and busy: no screenshot.</li>
-          <li>One-time announcements (shown, busy, failed): no screenshot.</li>
+          <li>The compact title chip (the round "+" alone) only appears when the title would not fit, at widths Sello does not support: no screenshot.</li>
+          <li>Correction notice bar in the app (busy, undo failed, unknown, refused, statements, confirmations): no screenshot; only the design-system capture of "Gasto borrado".</li>
+          <li>Correction question: the undo form, the changed list and busy: no screenshot.</li>
           <li>System bars cannot be shown by JVM screenshots.</li>
           <li>Restored state after process death is confirmed from the saved keys in <code>ShellViewModel</code>, not from a screenshot.</li>
         </ul>

@@ -50,8 +50,17 @@
               data-caption="Ready, Violeta ink"></figure>
       <figure data-shot="income-form-varios" data-module="app"
               data-caption="Opened where Anotar varios is reachable: the Otro ingreso slip"></figure>
-      <figure data-shot="income-form-stale" data-module="app" data-variants="cobalto-light-font1.0"
+      <figure data-shot="income-form-stale" data-module="app"
               data-caption="Stale: a refresh failed, the draft stays"></figure>
+      <figure data-shot="income-form-loading" data-module="app" data-caption="Loading"></figure>
+      <figure data-shot="income-form-failed" data-module="app" data-caption="Nothing could be read"></figure>
+      <figure data-shot="income-form-busy" data-module="app" data-caption="Saving"></figure>
+      <figure data-shot="income-form-unknown" data-module="app" data-caption="The save outcome is not known"></figure>
+      <figure data-shot="income-form-refused" data-module="app" data-caption="Not saved"></figure>
+      <figure data-shot="income-form-otro" data-module="app" data-caption="Otro chosen: its name line and what is missing"></figure>
+      <figure data-shot="income-form-amount-refused" data-module="app" data-caption="Thirteen digits pasted"></figure>
+      <figure data-shot="income-form-replaced" data-module="app" data-caption="The data was replaced meanwhile"></figure>
+      <figure data-shot="income-form-editing" data-module="app" data-caption="&quot;Editar ingreso&quot; of August with the past-months line"></figure>
 
       <h3>Layout</h3>
       <p>The same <a href="../components.html#c-EntryLayout"><code>EntryLayout</code></a> and brand band as
@@ -92,7 +101,7 @@
             <tr><td>Amount refused</td><td>The slip label becomes "Escribe un monto entero entre 1 y 999.999.999.999 COP." (one text for every problem) or "Máximo 12 dígitos".</td>
               <td><code>IncomeFormScreen.kt:267</code></td><td>no screenshot</td></tr>
             <tr><td>Stale</td><td><code>StaleSlip</code> with the shared "No pudimos actualizar…" and "Reintentar".</td>
-              <td><code>IncomeFormScreen.kt:297</code></td><td>income-form-stale (light only)</td></tr>
+              <td><code>IncomeFormScreen.kt:297</code></td><td>income-form-stale</td></tr>
             <tr><td>Busy</td><td>"Guardando…" with spinner; chips, pill, lines, switch and pad off; the X stays enabled but Back is ignored.</td>
               <td><code>IncomeFormScreen.kt:424</code>, <code>app/src/main/java/com/software/sello/feature/income/IncomeFormViewModel.kt:324</code></td><td>no screenshot</td></tr>
             <tr><td>Unknown outcome</td><td>Warning "Aún no sabemos si se guardó. Compruébalo antes de volver a anotar." and a green "Comprobar si se guardó". The same text follows a deletion whose outcome is unknown.</td>
@@ -136,6 +145,12 @@
 
     <section id="dialogs-form">
       <h2>Dialogs and sheets of the form</h2>
+
+      <figure data-shot="income-form-discard" data-module="app" data-caption="The discard dialog"></figure>
+      <figure data-shot="income-form-note" data-module="app" data-caption="The note composer"></figure>
+      <figure data-shot="income-form-date-picker" data-module="app" data-caption="The date picker"></figure>
+      <figure data-shot="income-form-repeat-sheet" data-module="app" data-caption="Se repite&#x27;s sheet"></figure>
+      <figure data-shot="income-form-following" data-module="app" data-caption="¿Cambiar también los siguientes?"></figure>
       <ul>
         <li>Discard: <a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a> with its defaults, so
           "Descartar" is loss red and the other button is "Cancelar"; the same title for a new and a corrected income
@@ -165,6 +180,14 @@
               data-caption="Stale: figures as last read under an ErrorSlip"></figure>
       <figure data-shot="income-history-varios" data-module="app"
               data-caption="With Anotar varios under the total"></figure>
+      <figure data-shot="income-history-loading" data-module="app" data-caption="Loading"></figure>
+      <figure data-shot="income-history-failed" data-module="app" data-caption="Nothing could be read"></figure>
+      <figure data-shot="income-history-empty" data-module="app" data-caption="No incomes this month"></figure>
+      <figure data-shot="income-history-hero-pending" data-module="app" data-caption="The list read, the hero waiting"></figure>
+      <figure data-shot="income-history-page-failed" data-module="app" data-caption="The next page could not be read"></figure>
+      <figure data-shot="income-history-over" data-module="app" data-caption="More assigned than came in"></figure>
+      <figure data-shot="income-history-plan" data-module="app" data-caption="The month&#x27;s plan"></figure>
+      <figure data-shot="income-history-plan-failed" data-module="app" data-caption="The plan could not be read"></figure>
 
       <h3>Layout</h3>
       <p>Drawn inside the shell (<code>app/src/main/java/com/software/sello/navigation/IncomeDestinations.kt:45</code>): a back
@@ -302,12 +325,7 @@
       <h2>Gaps</h2>
       <div class="gaps">
         <ul>
-          <li>Form: loading, error, busy, unknown outcome, refused, missing, amount refused, data replaced, restored draft,
-            Otro's name line, "Editar ingreso" and the past-months line: no screenshot.</li>
-          <li>Form stale: light Cobalto only, no dark screenshot.</li>
-          <li>Form dialogs (discard, composer, date, Se repite, following incomes): no screenshot.</li>
-          <li>History: loading, error, empty, hero pending, page failed, plan, plan failed, over basis: no screenshot
-            (the baselines are drawn with <code>IncomePlanState.None</code>).</li>
+          <li>Form: missing (the income was deleted meanwhile) and restored draft: no screenshot.</li>
           <li>The history baselines show the screen without the shell's title, ribbon and dock.</li>
         </ul>
       </div>

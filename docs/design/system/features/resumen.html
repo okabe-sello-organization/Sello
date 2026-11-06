@@ -37,6 +37,13 @@
 
       <figure data-shot="resumen" data-module="app" data-caption="Month in progress on day 3, compared with the month before, with income"></figure>
       <figure data-shot="resumen" data-module="app" data-variants="violeta-light-font1.0" data-caption="Violeta ink"></figure>
+      <figure data-shot="resumen-loading" data-module="app" data-caption="Loading, in its frame"></figure>
+      <figure data-shot="resumen-failed" data-module="app" data-caption="Nothing could be read"></figure>
+      <figure data-shot="resumen-stale" data-module="app" data-caption="Older figures under the notice"></figure>
+      <figure data-shot="resumen-empty" data-module="app" data-caption="No expenses yet"></figure>
+      <figure data-shot="resumen-first-month" data-module="app" data-caption="The first month: not enough history"></figure>
+      <figure data-shot="resumen-no-income" data-module="app" data-caption="No income this month"></figure>
+      <figure data-shot="resumen-overspent" data-module="app" data-caption="Spent more than came in"></figure>
 
       <h3>Layout</h3>
       <p>Inside the shell (tabs, month in the title, no Anotar dock, the correction notice bar when there is one). One scrolling column, slips spaced <code>spacing.lg</code> with an extra <code>spacing.lg</code> above and below (<code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:80</code>). Where <code>selloWindowLayout</code> says two panes and the width is at least 600 dp, the summary slips and the chart slips are two scrolling columns side by side (<code>ResumenScreen.kt:96</code>).</p>
@@ -153,10 +160,7 @@
       <h2>Gaps</h2>
       <div class="gaps">
         <ul>
-          <li>Loading, error, stale: no screenshot.</li>
-          <li>Closed month, first month, no income, overspent income, empty history: no screenshot.</li>
-          <li>A selected column (either chart), carried month, suggestion, two panes: no screenshot.</li>
-          <li>The month-by-month and weekday slips are below the fold of the current 320 × 640 captures; whether they show in the 412 × 891 re-recording is not confirmed.</li>
+          <li>Closed month, a selected column (either chart), carried month, suggestion, two panes: no screenshot.</li>
           <li>Whether a failed suggestion dismissal tells the person anything: the code ignores the write's result (<code>ResumenViewModel.kt:128</code>); the note stays until the stored preference changes.</li>
         </ul>
       </div>

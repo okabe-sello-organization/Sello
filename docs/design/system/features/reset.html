@@ -38,6 +38,16 @@
               data-caption="First confirmation: the counts, Continuar and Cancelar"></figure>
       <figure data-shot="reset" data-module="app" data-variants="violeta-light-font1.0"
               data-caption="First confirmation, Violeta ink"></figure>
+      <figure data-shot="reset-counting" data-module="app" data-caption="Counting, in its frame"></figure>
+      <figure data-shot="reset-unreadable" data-module="app" data-caption="The counts could not be read"></figure>
+      <figure data-shot="reset-refreshed" data-module="app" data-caption="The counts read again: the refreshed note"></figure>
+      <figure data-shot="reset-word" data-module="app" data-caption="The word step, empty"></figure>
+      <figure data-shot="reset-word-typed" data-module="app" data-caption="The word step with BORRAR typed"></figure>
+      <figure data-shot="reset-erasing" data-module="app" data-caption="Erasing"></figure>
+      <figure data-shot="reset-failed" data-module="app" data-caption="Failed"></figure>
+      <figure data-shot="reset-unknown" data-module="app" data-caption="The outcome is not known"></figure>
+      <figure data-shot="reset-erased" data-module="app" data-caption="Erased"></figure>
+      <figure data-shot="reset-pending" data-module="app" data-caption="Erased, preferences still pending"></figure>
 
       <h3>Layout</h3>
       <p>One scrolling <code>Column</code> with <code>spacing.md</code> gaps holding exactly one slip for the current step (<code>app/src/main/java/com/software/sello/feature/reset/ResetScreen.kt:90</code>).</p>
@@ -130,7 +140,6 @@
       <h2>Gaps</h2>
       <div class="gaps">
         <ul>
-          <li>Only the first confirmation has a baseline (Cobalto light and dark, Violeta light). No screenshot of loading, unreadable counts, the refreshed note, the word step (empty or typed), erasing, failed, unknown outcome, erased, or preferences pending.</li>
           <li>The first-run values in <code>reset_pending_*</code> are written into the strings ("Sistema, Cobalto", "Más usadas, de mayor a menor", "Pesos (COP), Mayor valor"), not read from the preference defaults; this page could not confirm from the code that they match those defaults.</li>
         </ul>
       </div>

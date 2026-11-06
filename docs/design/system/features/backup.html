@@ -34,6 +34,14 @@
 
     <section id="screen-tus-datos">
       <h2>Screen: Tus datos (on Configuración)</h2>
+
+      <figure data-shot="settings-data-never" data-module="app" data-caption="Tus datos: never backed up"></figure>
+      <figure data-shot="settings-data-old" data-module="app" data-caption="Tus datos: the last backup is old"></figure>
+      <figure data-shot="settings-data-unreadable" data-module="app" data-caption="Tus datos: the backup record could not be read, no stamp"></figure>
+      <figure data-shot="settings-data-saving" data-module="app" data-caption="Tus datos: saving"></figure>
+      <figure data-shot="settings-data-failed" data-module="app" data-caption="Tus datos: the save failed"></figure>
+      <figure data-shot="settings-data-unknown" data-module="app" data-caption="Tus datos: the save outcome is not known"></figure>
+      <figure data-shot="settings-disclosure" data-module="app" data-caption="The disclosure before choosing where to save"></figure>
       <p class="note">No baseline exists for this card in any state (see <a href="#gaps">Gaps</a>).</p>
 
       <h3>Layout</h3>
@@ -91,6 +99,11 @@
 
     <section id="screen-export">
       <h2>Dialog: Exportar tus datos</h2>
+
+      <figure data-shot="settings-export-slip" data-module="app" data-caption="The Exportar slip: CSV or JSON, Compartir or Guardar"></figure>
+      <figure data-shot="settings-export-working" data-module="app" data-caption="Export under way"></figure>
+      <figure data-shot="settings-export-saved" data-module="app" data-caption="Export saved, its file named"></figure>
+      <figure data-shot="settings-export-failed" data-module="app" data-caption="Export failed"></figure>
       <p class="note">No baseline.</p>
       <h3>Layout</h3>
       <ol>
@@ -128,6 +141,22 @@
 
     <section id="screen-respaldo">
       <h2>Screen: Respaldo</h2>
+
+      <figure data-shot="backup-ready" data-module="app" data-caption="Respaldo in its frame: Último respaldo, the disclosure, Crear otro respaldo, Restaurar"></figure>
+      <figure data-shot="backup-never" data-module="app" data-caption="No backup yet"></figure>
+      <figure data-shot="backup-loading" data-module="app" data-caption="Loading"></figure>
+      <figure data-shot="backup-saving" data-module="app" data-caption="Saving"></figure>
+      <figure data-shot="backup-failed" data-module="app" data-caption="The save failed"></figure>
+      <figure data-shot="backup-unknown" data-module="app" data-caption="The save outcome is not known"></figure>
+      <figure data-shot="backup-restore-checking" data-module="app" data-caption="Restore: checking the chosen file"></figure>
+      <figure data-shot="backup-restore-rejected" data-module="app" data-caption="Restore: the file is not a backup"></figure>
+      <figure data-shot="backup-restore-failed" data-module="app" data-caption="Restore: failed, nothing replaced"></figure>
+      <figure data-shot="backup-restore-refreshed" data-module="app" data-caption="Restore: the preview counted again after the data changed"></figure>
+      <figure data-shot="backup-restore-legacy" data-module="app" data-caption="Restore: a FinanceTracker backup with its report"></figure>
+      <figure data-shot="backup-restore-replacing" data-module="app" data-caption="Restore: replacing"></figure>
+      <figure data-shot="backup-restore-restored" data-module="app" data-caption="Restore: restored, the only thing on screen"></figure>
+      <figure data-shot="backup-restore-pending" data-module="app" data-caption="Restore: restored, preferences still to apply"></figure>
+      <figure data-shot="backup-restore-unreadable" data-module="app" data-caption="Restore: restored, the backup&#x27;s preferences unreadable"></figure>
       <p class="note">Only the restore section has baselines, captured on their own in Cobalto light (<code>FeatureComponentsScreenshotTest</code>); the screen as a whole has none.</p>
 
       <h3>Layout</h3>
@@ -253,10 +282,6 @@
       <h2>Gaps</h2>
       <div class="gaps">
         <ul>
-          <li>Tus datos card: no screenshot of any state (never, recent, old, unreadable, saving, export working/saved, failures).</li>
-          <li>Disclosure dialog and Exportar dialog: no screenshot.</li>
-          <li>Respaldo: no screenshot of the screen; only the two restore captures above, Cobalto light only, no dark screenshot.</li>
-          <li>Restore: no screenshot of Idle, Checking, Rejected, Failed, Replacing, the refreshed note, preferences pending or unreadable, or the FinanceTracker report.</li>
           <li>Start-up's use of <code>RestoredSlip</code> belongs to the Start-up page.</li>
         </ul>
       </div>

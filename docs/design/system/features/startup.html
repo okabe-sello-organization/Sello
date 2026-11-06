@@ -59,6 +59,14 @@
 
       <figure data-shot="startup-failure" data-module="app" data-caption="First shown: the explanation and three choices"></figure>
       <figure data-shot="startup-failure" data-module="app" data-variants="violeta-light-font1.0" data-caption="Violeta ink (always the default theme in the app; the test renders it for coverage)"></figure>
+      <figure data-shot="startup-failure-still-failing" data-module="app" data-caption="Still failing after a retry"></figure>
+      <figure data-shot="startup-failure-not-set-aside" data-module="app" data-caption="Could not be set aside"></figure>
+      <figure data-shot="startup-failure-start-over" data-module="app" data-caption="The start-over warning"></figure>
+      <figure data-shot="startup-failure-start-over-typed" data-module="app" data-caption="The start-over warning with BORRAR typed"></figure>
+      <figure data-shot="startup-failure-checking" data-module="app" data-caption="Checking a file"></figure>
+      <figure data-shot="startup-failure-rejected" data-module="app" data-caption="A rejected file"></figure>
+      <figure data-shot="startup-failure-interrupted" data-module="app" data-caption="A restore interrupted"></figure>
+      <figure data-shot="startup-failure-restored" data-module="app" data-caption="Restored"></figure>
 
       <h3>Layout</h3>
       <ol>
@@ -153,12 +161,10 @@
       <h2>Gaps</h2>
       <div class="gaps">
         <ul>
-          <li>Loading at start: no screenshot.</li>
-          <li>Still failing, not set aside: no screenshot.</li>
-          <li>Start-over warning (empty and with BORRAR typed): no screenshot.</li>
-          <li>Checking a file, rejected file, preview, restoring, interrupted, restored: no screenshot on this screen.</li>
+          <li>Loading at start: drawn before Sello's theme and screens exist, so a JVM screen test has nothing to show.</li>
+          <li>Preview and restoring on this screen: no screenshot (they need a checked backup file).</li>
           <li>Busy (retry or set-aside running): not drawn at all, so there is nothing to capture; see the findings.</li>
-          <li><code>startup-failure</code> is captured in Cobalto and Violeta, light and dark, but the real screen always uses the default theme (<code>app/src/main/java/com/software/sello/MainActivity.kt:74</code>); only the default light/dark captures match what a person can see.</li>
+          <li>startup-failure is captured in Cobalto and Violeta, light and dark, but the real screen always uses the default theme (<code>app/src/main/java/com/software/sello/MainActivity.kt:74</code>); only the default light/dark captures match what a person can see.</li>
         </ul>
       </div>
     </section>

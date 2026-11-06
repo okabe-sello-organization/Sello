@@ -61,7 +61,7 @@
               data-caption="At the 30-line limit"></figure>
       <figure data-shot="bulk-expenses-failed-read" data-module="app"
               data-caption="Categories never read: message and Reintentar in place of the chips"></figure>
-      <figure data-shot="bulk-expenses-stale" data-module="app" data-variants="claro"
+      <figure data-shot="bulk-expenses-stale" data-module="app"
               data-caption="Stale: categories as last read"></figure>
       <figure data-shot="bulk-incomes-three-lines" data-module="app"
               data-caption="Three income lines in gain green with a plus"></figure>
@@ -71,6 +71,14 @@
               data-caption="Incomes, unknown outcome"></figure>
       <figure data-shot="bulk-receipt-removing" data-module="design-system"
               data-caption="The receipt while a line is swiped away (design-system capture)"></figure>
+      <figure data-shot="bulk-expenses-loading" data-module="app" data-caption="Loading"></figure>
+      <figure data-shot="bulk-expenses-digit-limit" data-module="app" data-caption="At the digit limit"></figure>
+      <figure data-shot="bulk-expenses-removed" data-module="app" data-caption="A line removed: the notice with Deshacer"></figure>
+      <figure data-shot="bulk-expenses-one-line" data-module="app" data-caption="A one-line receipt"></figure>
+      <figure data-shot="bulk-incomes-failed-read" data-module="app" data-caption="Incomes: the read failed"></figure>
+      <figure data-shot="bulk-incomes-stale" data-module="app" data-caption="Incomes: older figures"></figure>
+      <figure data-shot="bulk-incomes-saving" data-module="app" data-caption="Incomes: saving"></figure>
+      <figure data-shot="bulk-incomes-refused" data-module="app" data-caption="Incomes: not saved"></figure>
 
       <h3>Layout</h3>
       <p>A plain <code>Column</code> spaced by a hard-coded <code>8.dp</code>
@@ -118,7 +126,7 @@
             <tr><td>Digit limit</td><td>"Máximo 12 dígitos" as a hint above the button.</td>
               <td><code>BulkEntryScreen.kt:415</code></td><td>no screenshot</td></tr>
             <tr><td>Stale</td><td><code>StaleSlip</code> "No pudimos actualizar…" and "Reintentar" under the heading; the lines stay.</td>
-              <td><code>BulkEntryScreen.kt:314</code></td><td>bulk-expenses-stale (light only)</td></tr>
+              <td><code>BulkEntryScreen.kt:314</code></td><td>bulk-expenses-stale</td></tr>
             <tr><td>Busy</td><td>"Guardando…" with spinner, no "+"; the X, lines, chips and pad are off.</td>
               <td><code>BulkEntryScreen.kt:116</code>, <code>:441</code></td><td>bulk-expenses-saving</td></tr>
             <tr><td>Unknown outcome</td><td>Warning "Aún no sabemos si se guardó. Compruébalo antes de volver a anotar." and the only button "Comprobar si se guardó"; nothing can change; Back is ignored.</td>
@@ -163,6 +171,7 @@
       <h2>Sheet: note and Otro's name</h2>
       <figure data-shot="bulk-incomes-otro-name" data-module="app"
               data-caption="Naming Otro on line 3: the composer docked above the keyboard"></figure>
+      <figure data-shot="bulk-expenses-note" data-module="app" data-caption="The note composer"></figure>
       <p>One <a href="../components.html#c-NoteComposer"><code>NoteComposer</code></a> for the highlighted line
         (<code>BulkEntryScreen.kt:466</code>, <code>:520</code>). The note's context reads "Renglón 3 · <b>Comida</b> ·
         <b>32.500</b>" (60 characters, hint "Opcional"); Otro's reads "Renglón 3 · Origen <b>Otro</b> · nombre"
@@ -172,6 +181,9 @@
 
     <section id="dialogs">
       <h2>Dialogs</h2>
+
+      <figure data-shot="bulk-expenses-discard" data-module="app" data-caption="The discard dialog"></figure>
+      <figure data-shot="bulk-expenses-date-picker" data-module="app" data-caption="The date picker"></figure>
       <ul>
         <li>Discard: <a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a>, destructive (loss red
           "Descartar"), title "¿Descartar 3 renglones?", "Se borra lo que escribiste en este recibo. Esto no se puede
@@ -247,10 +259,8 @@
       <h2>Gaps</h2>
       <div class="gaps">
         <ul>
-          <li>Loading, digit limit, line removed (the notice), restored draft, a one-line receipt: no screenshot.</li>
-          <li>Stale: light only, no dark screenshot.</li>
-          <li>Incomes: failed read, stale, saving, refused: no screenshot.</li>
-          <li>Discard, carry correction and date dialogs, and the note composer: no screenshot.</li>
+          <li>The carry correction dialog: no screenshot yet (it needs a correction list built for a receipt).</li>
+          <li>Restored draft: drawn the same as the form with its values; no separate screenshot.</li>
         </ul>
       </div>
     </section>

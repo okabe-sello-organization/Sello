@@ -33,6 +33,12 @@
 
     <section id="screen-settings">
       <h2>Screen: Configuración</h2>
+
+      <figure data-shot="settings-loaded" data-module="app" data-caption="Loaded in its frame: Tus datos first (backup two days old), then Lo que se repite, Apariencia"></figure>
+      <figure data-shot="settings-loading" data-module="app" data-caption="Loading: one skeleton slip"></figure>
+      <figure data-shot="settings-failed" data-module="app" data-caption="A preference could not be read: the ErrorSlip over the last good values"></figure>
+      <figure data-shot="settings-busy" data-module="app" data-caption="A write under way; counts and the rate unreadable"></figure>
+      <figure data-shot="settings-order-slip" data-module="app" data-caption="The OptionSlip for Orden de las categorías, open"></figure>
       <p class="note">There is no screenshot test for this screen: no baseline exists for any of its states (see <a href="#gaps">Gaps</a>).</p>
 
       <h3>Layout</h3>
@@ -171,8 +177,7 @@
       <h2>Gaps</h2>
       <div class="gaps">
         <ul>
-          <li>No screenshot test exists for Configuración: no baseline for loaded, loading, stale/error, busy, an open OptionSlip, or the Tus datos card in any state. <code>app/src/test/java/com/software/sello/feature/settings/SettingsScreenTest.kt</code> checks only the order of sections.</li>
-          <li>No screenshot of <code>InkSwatches</code> (its behaviour is tested in <code>InkSwatchesTest.kt</code>).</li>
+          <li>No screenshot of <code>InkSwatches</code> on its own (its behaviour is tested in <code>InkSwatchesTest.kt</code>; it shows in settings-loaded).</li>
           <li>The ErrorSlip's default title "No se pudo cargar" is also shown after a failed write, where nothing failed to load; the message itself covers both. Could not confirm from the code whether this is intended.</li>
           <li>The entry dock (record an expense) shows on Configuración, while Respaldo and Borrar datos hide it (<code>entryDock = false</code>); the code gives no reason. Left to the Shell page.</li>
         </ul>

@@ -254,7 +254,7 @@ window.SELLO_FINDINGS = [
      },
      {
       "module": "app",
-      "file": "goal-editor-unresolved.png"
+      "file": "goal-editor-unresolved-cobalto-light-font1.0.png"
      }
     ]
    },
@@ -316,7 +316,7 @@ window.SELLO_FINDINGS = [
      },
      {
       "module": "app",
-      "file": "investment-editor-unresolved.png"
+      "file": "investment-editor-unresolved-cobalto-light-font1.0.png"
      }
     ]
    },
@@ -350,7 +350,7 @@ window.SELLO_FINDINGS = [
     "shots": [
      {
       "module": "app",
-      "file": "goal-editor-unresolved.png"
+      "file": "goal-editor-unresolved-cobalto-light-font1.0.png"
      }
     ]
    },
@@ -1015,7 +1015,7 @@ window.SELLO_FINDINGS = [
      },
      {
       "module": "app",
-      "file": "investment-editor-editing-menu.png"
+      "file": "investment-editor-editing-menu-cobalto-light-font1.0.png"
      }
     ]
    }
@@ -3102,7 +3102,7 @@ window.SELLO_FINDINGS = [
     "shots": [
      {
       "module": "app",
-      "file": "investment-editor-unresolved.png"
+      "file": "investment-editor-unresolved-cobalto-light-font1.0.png"
      }
     ]
    },
@@ -3151,7 +3151,7 @@ window.SELLO_FINDINGS = [
      },
      {
       "module": "app",
-      "file": "inversiones-foot-cobalto-light.png"
+      "file": "inversiones-foot-cobalto-light-font1.0.png"
      }
     ]
    },
@@ -3474,7 +3474,7 @@ window.SELLO_FINDINGS = [
     "shots": [
      {
       "module": "app",
-      "file": "inversiones-foot-cobalto-light.png"
+      "file": "inversiones-foot-cobalto-light-font1.0.png"
      }
     ]
    },
@@ -4174,7 +4174,7 @@ window.SELLO_FINDINGS = [
     "shots": [
      {
       "module": "app",
-      "file": "inversiones-foot-cobalto-light.png"
+      "file": "inversiones-foot-cobalto-light-font1.0.png"
      }
     ]
    }
