@@ -36,6 +36,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.onClick
@@ -183,10 +184,10 @@ internal fun ReachedRow(
             listOf(name to nameStyle, message to messageStyle, actionLabel to actionStyle)
                 .map { (text, style) -> measurer.measure(text, style).size.width.toDp() }
         }
-        // Start padding, icon and gaps, the wider text, the action with its padding and room
-        // for its busy spinner (so the row never changes shape while it saves), end padding.
+        // Start padding, icon and gaps, the wider text, the action and its padding, end padding.
+        // Busy, the action keeps this width, so the row never changes shape while it saves.
         val inline = 14.dp + 22.dp + 10.dp + maxOf(widths[0], widths[1]) + 10.dp +
-            widths[2] + 28.dp + BusySpinnerRoom + 6.dp <= maxWidth
+            widths[2] + 28.dp + 6.dp <= maxWidth
         val shape = if (inline) CircleShape else SelloTheme.shapes.control
         val texts = @Composable { textModifier: Modifier ->
             Column(textModifier.semantics(mergeDescendants = true) {}) {
@@ -204,14 +205,30 @@ internal fun ReachedRow(
             Icon(SelloIcon.Check.painter(), null, Modifier.size(22.dp), tint = colors.semantic.gain)
         }
         val action = @Composable {
-            // Narrow side padding, so the name keeps more room; busy, a spinner leads the label.
-            SelloButton(
-                text = actionLabel,
-                onClick = onComplete,
-                tone = ButtonTone.Gain,
-                loading = busy,
-                contentPadding = PaddingValues(horizontal = 14.dp)
-            )
+            // Narrow side padding, so the name keeps its room. Busy, the spinner takes the
+            // label's place inside the idle button's width: the row keeps its shape.
+            Box(contentAlignment = Alignment.Center) {
+                SelloButton(
+                    text = actionLabel,
+                    onClick = if (busy) ({}) else onComplete,
+                    tone = ButtonTone.Gain,
+                    enabled = !busy,
+                    contentPadding = PaddingValues(horizontal = 14.dp),
+                    // While busy it only gives the width: never seen, read or pressed.
+                    modifier = if (busy) Modifier.alpha(0f).clearAndSetSemantics {} else Modifier
+                )
+                if (busy) {
+                    SelloButton(
+                        text = "",
+                        onClick = onComplete,
+                        tone = ButtonTone.Gain,
+                        loading = true,
+                        contentPadding = PaddingValues(0.dp),
+                        modifier = Modifier.matchParentSize()
+                            .semantics { contentDescription = actionLabel }
+                    )
+                }
+            }
         }
         val surface = Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(shape)
             .background(colors.semantic.gainSoft)
@@ -384,8 +401,5 @@ internal fun GoalPinPill(
         Text(label, color = colors.onBand, fontWeight = FontWeight.W800)
     }
 }
-
-/** SelloButton's busy spinner and the gap after it: 20 dp + 8 dp. */
-private val BusySpinnerRoom = 28.dp
 
 const val GOAL_CARD_STAMPS_TAG = "goal.card.stamps"

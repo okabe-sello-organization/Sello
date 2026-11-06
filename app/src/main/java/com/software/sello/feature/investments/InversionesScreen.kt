@@ -191,6 +191,8 @@ private fun Total(
         }
         val from = dates.shortDay(total.valuedFrom, state.today)
         val to = dates.shortDay(total.valuedTo, state.today)
+        // A line that cannot open is as tall as its text; the foot spaces it out itself.
+        val quiet = Modifier.padding(vertical = SelloTheme.spacing.sm)
         Footnote(
             if (from == to) {
                 bold(stringResource(R.string.inversiones_valued_on, from), from)
@@ -198,14 +200,14 @@ private fun Total(
                 bold(stringResource(R.string.inversiones_valued_between, from, to), from, to)
             },
             onClick = null,
-            modifier = Modifier.testTag("inversiones.valued")
+            modifier = quiet.testTag("inversiones.valued")
         )
         rate?.let {
             val day = dates.shortDay(it.date, state.today)
             Footnote(
                 bold(stringResource(R.string.inversiones_rate_line, it.rate, day), it.rate),
                 onOpenRate,
-                Modifier.testTag("inversiones.rate"),
+                (if (onOpenRate == null) quiet else Modifier).testTag("inversiones.rate"),
                 SelloIcon.Autorenew
             )
         }
