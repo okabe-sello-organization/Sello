@@ -110,24 +110,6 @@ class IncomeFormScreenTest {
     }
 
     @Test
-    fun aCorrectionOfAPastMonthNamesItInLowerCaseWithoutTheYear() {
-        val months = listOf(YearMonth.of(2026, 9))
-        showForm(ready.copy(editing = true, pastMonths = months), mutableListOf())
-
-        rule.onNodeWithTag("income.pastMonths")
-            .assertTextEquals("Esta corrección afecta los ingresos de septiembre.")
-    }
-
-    @Test
-    fun aCorrectionMovingBetweenTwoPastMonthsNamesBothAsTheExpenseFormDoes() {
-        val months = listOf(YearMonth.of(2026, 9), YearMonth.of(2026, 8))
-        showForm(ready.copy(editing = true, pastMonths = months), mutableListOf())
-
-        rule.onNodeWithTag("income.pastMonths")
-            .assertTextEquals("Esta corrección afecta los ingresos de septiembre y de agosto.")
-    }
-
-    @Test
     fun theFormIsGreenWithAPlusAndOffersSourcesAsWordsWithTheirOwnAction() {
         val actions = mutableListOf<IncomeFormAction>()
         showForm(ready, actions)
@@ -199,5 +181,23 @@ class IncomeFormScreenTest {
 
         rule.onNodeWithText("Máximo 12 dígitos").assertIsDisplayed()
         rule.onNodeWithText("Ingreso en pesos").assertDoesNotExist()
+    }
+
+    @Test
+    fun aCorrectionOfAPastMonthNamesItInLowerCaseWithoutTheYear() {
+        val months = listOf(YearMonth.of(2026, 9))
+        showForm(ready.copy(editing = true, pastMonths = months), mutableListOf())
+
+        rule.onNodeWithTag("income.pastMonths")
+            .assertTextEquals("Esta corrección afecta los ingresos de septiembre.")
+    }
+
+    @Test
+    fun aCorrectionMovingBetweenTwoPastMonthsNamesBothAsTheExpenseFormDoes() {
+        val months = listOf(YearMonth.of(2026, 9), YearMonth.of(2026, 8))
+        showForm(ready.copy(editing = true, pastMonths = months), mutableListOf())
+
+        rule.onNodeWithTag("income.pastMonths")
+            .assertTextEquals("Esta corrección afecta los ingresos de septiembre y de agosto.")
     }
 }
