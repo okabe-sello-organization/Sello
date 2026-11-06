@@ -54,9 +54,16 @@ class MetasViewModel(
         )
 
     val state: StateFlow<MetasState> =
-        combine(board, clock.today, completer.state) { board, today, completion ->
+        combine(
+            board,
+            clock.today,
+            completer.state,
+            completer.failures
+        ) { board, today, completion, failures ->
             when (val metas = render.metas(board, today.date)) {
-                is MetasState.Ready -> metas.copy(completion = completion)
+                is MetasState.Ready ->
+                    metas.copy(completion = completion, completionFailures = failures)
+
                 else -> metas
             }
         }.stateIn(

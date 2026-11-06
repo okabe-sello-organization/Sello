@@ -4,13 +4,20 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
@@ -23,6 +30,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
@@ -53,6 +61,8 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.policy.GoalPolicy
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.FinancialDay
 import com.software.sello.domain.port.GoalBoard
@@ -420,5 +430,142 @@ class MetasScreenTest {
 
         rule.onNodeWithText("85 %").assertExists()
         onHero("75 por ciento, logrado").assertExists()
+    }
+
+    /** Celular nuevo at its target (450.000 + 750.000 = 1.200.000) with [completion] on Metas. */
+    private fun showReached(completion: CompletionState, actions: MutableList<MetasAction>) {
+        val reached = goal(2, "Celular nuevo", 1_200_000, listOf(450_000, 750_000))
+        val ready = ReadState.Ready(GoalBoard(1, 1, listOf(reached), emptySet(), emptyList()))
+        val metas = (GoalsRenderModel(money).metas(ready, today) as MetasState.Ready)
+            .copy(completion = completion)
+        rule.showSello(Look(density = 1f)) {
+            MetasScreen(metas, { actions += it }, dateLabels(), PaddingValues(16.dp))
+        }
+    }
+
+    private val celular = "00000000-0000-4000-9000-000000000002"
+
+    @Test
+    fun aRefusedMarcarComoLogradaIsSaidAndReintentarClearsIt() {
+        val actions = mutableListOf<MetasAction>()
+        showReached(CompletionState.Failed(GoalDetailError.NotSaved), actions)
+
+        rule.onNodeWithText("No se guardó").assertExists()
+        rule.onNodeWithText("No se guardó el cambio. Puedes intentarlo de nuevo.").assertExists()
+        rule.onNodeWithText("Reintentar").performClick()
+        assertEquals(listOf<MetasAction>(MetasAction.Retry), actions)
+        // Certain nothing was written: marking again is a new attempt.
+        rule.onNodeWithTag("metas.markComplete.$celular").assertIsEnabled()
+    }
+
+    @Test
+    fun anUnknownMarcarComoLogradaOffersTheCheckAndLocksTheButtonUntilThen() {
+        val actions = mutableListOf<MetasAction>()
+        showReached(CompletionState.Failed(GoalDetailError.Unknown), actions)
+
+        rule.onNodeWithText("Falta comprobar si se guardó").assertExists()
+        // The title is read aloud when it appears; the line is a FieldMessageText, read
+        // aloud on its own.
+        rule.onNode(
+            SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite) and
+                hasText("Falta comprobar si se guardó"),
+            useUnmergedTree = true
+        ).assertExists()
+        rule.onNodeWithText("No sabemos si se guardó el cambio. Compruébalo antes de seguir.")
+            .assertExists()
+        rule.onNodeWithTag("metas.markComplete.$celular").assertIsNotEnabled()
+        rule.onNodeWithText("Comprobar si se guardó").performClick()
+        assertEquals(listOf<MetasAction>(MetasAction.Retry), actions)
+    }
+
+    /** Metas sending a completion, the reached card first; [completion] set by the test. */
+    private fun showSending(): (CompletionState) -> Unit {
+        val reached = goal(4, "Celular nuevo", 1_200_000, listOf(450_000, 750_000))
+        val ready = ReadState.Ready(
+            GoalBoard(1, 1, listOf(reached) + board.goals, emptySet(), emptyList())
+        )
+        val metas = GoalsRenderModel(money).metas(ready, today) as MetasState.Ready
+        var completion by mutableStateOf<CompletionState>(CompletionState.Busy)
+        rule.showSello(Look(density = 1f)) {
+            Box(Modifier.requiredSize(412.dp, 891.dp)) {
+                MetasScreen(
+                    metas.copy(completion = completion),
+                    {},
+                    dateLabels(),
+                    PaddingValues(16.dp)
+                )
+            }
+        }
+        return { completion = it }
+    }
+
+    @Test
+    fun aFailureThatArrivesWhileMetasIsShownComesIntoView() {
+        val complete = showSending()
+
+        complete(CompletionState.Failed(GoalDetailError.Unknown))
+
+        rule.onNodeWithTag(METAS_COMPLETION_PROBLEM_TAG).assertIsDisplayed()
+    }
+
+    @Test
+    fun aFailureThatArrivesAfterAScrollIsBroughtIntoView() {
+        val complete = showSending()
+        // The reached card scrolled up to the top, the total out of view.
+        rule.onNodeWithTag(METAS_LIST_TAG).performScrollToIndex(1)
+
+        complete(CompletionState.Failed(GoalDetailError.Unknown))
+
+        rule.onNodeWithTag(METAS_COMPLETION_PROBLEM_TAG).assertIsDisplayed()
+    }
+
+    @Test
+    fun aSecondRefusalInTheSameFrameIsBroughtIntoViewAgain() {
+        // Celular nuevo at its target; storage refuses both completions at once.
+        val reached = goal(4, "Celular nuevo", 1_200_000, listOf(450_000, 750_000))
+        val ids = RecordIdSource { "00000000-0000-4000-a000-000000000001" }
+        val commands = HandGoalCommands()
+        repeat(2) {
+            commands.queue += CommandOutcome.Rejected(CommandRejection.VersionConflict(5))
+        }
+        val ready = ReadState.Ready(
+            GoalBoard(1, 1, listOf(reached) + board.goals, emptySet(), emptyList())
+        )
+        val model = MetasViewModel(
+            SavedStateHandle(),
+            Reads(ready),
+            commands,
+            clock,
+            money,
+            ids,
+            Corrections(
+                HandExpenseCommands(),
+                HandIncomeCommands(),
+                commands,
+                HandInvestmentCommands(),
+                { Duration.ZERO },
+                ids,
+                CoroutineScope(Dispatchers.Main),
+                HandCategoryReads(),
+                money
+            )
+        ) { false }
+        rule.showSello(Look(density = 1f)) {
+            val state by model.state.collectAsState()
+            Box(Modifier.requiredSize(412.dp, 891.dp)) {
+                MetasScreen(state, model::onAction, dateLabels(), PaddingValues(16.dp))
+            }
+        }
+        val button = "metas.markComplete.00000000-0000-4000-9000-000000000004"
+        rule.onNodeWithTag(button).performClick()
+        rule.onNodeWithTag(METAS_COMPLETION_PROBLEM_TAG).assertIsDisplayed()
+
+        // Back down to the card and pressed again: refused again with no frame between.
+        rule.onNodeWithTag(METAS_LIST_TAG).performScrollToIndex(2)
+        rule.onNodeWithTag(button).performClick()
+        rule.waitForIdle()
+
+        assertEquals(2, commands.sent.size)
+        rule.onNodeWithTag(METAS_COMPLETION_PROBLEM_TAG).assertIsDisplayed()
     }
 }

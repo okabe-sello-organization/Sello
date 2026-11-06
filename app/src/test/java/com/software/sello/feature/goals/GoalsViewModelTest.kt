@@ -1,6 +1,10 @@
 package com.software.sello.feature.goals
 
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.software.sello.domain.model.Goal
 import com.software.sello.domain.model.GoalHistory
 import com.software.sello.domain.model.GoalId
@@ -37,6 +41,7 @@ import com.software.sello.feature.income.HandIncomeCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
+import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.testing.testMoney
 import java.time.Instant
@@ -57,6 +62,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -151,8 +157,8 @@ class GoalsViewModelTest {
         source: HandGoalReads = reads
     ) = GoalDetailViewModel(saved, source, commands, clock, money, ids, corrections) { false }
 
-    private fun metas(source: HandGoalReads = reads) =
-        MetasViewModel(SavedStateHandle(), source, commands, clock, money, ids, corrections) {
+    private fun metas(source: HandGoalReads = reads, saved: SavedStateHandle = SavedStateHandle()) =
+        MetasViewModel(saved, source, commands, clock, money, ids, corrections) {
             false
         }
 
@@ -781,6 +787,156 @@ class GoalsViewModelTest {
 
         val sent = commands.sent.single() as CompleteGoal
         assertEquals(GoalId.of(viajeId).value() to 4L, sent.goalId to sent.expectedVersion)
+    }
+
+    // #380: a Marcar como lograda on Metas that did not finish is said and checked there.
+
+    private fun metasCompletion(model: MetasViewModel) =
+        (model.state.value as MetasState.Ready).completion
+
+    private fun unknownCompletion() {
+        commands.next = CommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
+        commands.found = Outcome.Failure(failure)
+    }
+
+    /** What storage keeps for a completion: its receipt names the completion's own operation. */
+    private fun completed(operation: OperationId) = CommittedGoal(
+        OperationReceipt(operation, OperationKind.CompleteGoal, 3, 11, Instant.EPOCH),
+        GoalId.of(viajeId).value(),
+        null
+    )
+
+    @Test
+    fun metasAnUnknownCompletionSendsNothingMoreAndComprobarFindsItSaved() = runTest {
+        reads.board.value = board(summary(viajeId, 3_060_000, 3_000_000))
+        val model = metas()
+        watch(model)
+        unknownCompletion()
+
+        model.onAction(MetasAction.MarkComplete(viajeId))
+        model.onAction(MetasAction.MarkComplete(viajeId))
+
+        val operation = commands.sent.single().operationId
+        assertEquals(CompletionState.Failed(GoalDetailError.Unknown), metasCompletion(model))
+
+        // Comprobar si se guardó asks with the same operation; nothing is sent again.
+        commands.found = Outcome.Success(completed(operation))
+        model.onAction(MetasAction.Retry)
+
+        assertEquals(1, commands.sent.size)
+        assertEquals(listOf(operation, operation), commands.asked)
+        assertEquals(CompletionState.Idle, metasCompletion(model))
+        assertTrue(corrections.notice.value is CorrectionNotice.GoalCompleted)
+    }
+
+    @Test
+    fun metasAnUnknownCompletionFoundNotSavedSaysSoAndReintentarSendsANewOne() = runTest {
+        reads.board.value = board(summary(viajeId, 3_060_000, 3_000_000))
+        val model = metas()
+        watch(model)
+        unknownCompletion()
+        model.onAction(MetasAction.MarkComplete(viajeId))
+        val first = commands.sent.single().operationId
+
+        commands.found = Outcome.Success(null)
+        model.onAction(MetasAction.Retry)
+
+        assertEquals(listOf(first, first), commands.asked)
+        assertEquals(CompletionState.Failed(GoalDetailError.NotSaved), metasCompletion(model))
+
+        model.onAction(MetasAction.Retry)
+        assertEquals(CompletionState.Idle, metasCompletion(model))
+        model.onAction(MetasAction.MarkComplete(viajeId))
+
+        assertEquals(2, commands.sent.size)
+        assertNotEquals(first, commands.sent.last().operationId)
+        assertTrue(metasCompletion(model) is CompletionState.Celebrating)
+    }
+
+    @Test
+    fun metasAnUnknownCompletionStillUnknownWhenCheckedStaysToBeChecked() = runTest {
+        reads.board.value = board(summary(viajeId, 3_060_000, 3_000_000))
+        val model = metas()
+        watch(model)
+        unknownCompletion()
+        model.onAction(MetasAction.MarkComplete(viajeId))
+
+        model.onAction(MetasAction.Retry)
+
+        assertEquals(1, commands.sent.size)
+        assertEquals(CompletionState.Failed(GoalDetailError.Unknown), metasCompletion(model))
+    }
+
+    @Test
+    fun afterProcessDeathMetasShowsAnUnknownCompletionAndChecksItWithoutSendingAgain() = runTest {
+        reads.board.value = board(summary(viajeId, 3_060_000, 3_000_000))
+        val saved = SavedStateHandle()
+        val before = metas(saved = saved)
+        watch(before)
+        unknownCompletion()
+        before.onAction(MetasAction.MarkComplete(viajeId))
+        val operation = commands.sent.single().operationId
+
+        // Recreated from what was saved; storage still cannot answer.
+        val restored = metas(saved = saved)
+        watch(restored)
+
+        assertEquals(CompletionState.Failed(GoalDetailError.Unknown), metasCompletion(restored))
+        restored.onAction(MetasAction.MarkComplete(viajeId))
+        assertEquals(1, commands.sent.size)
+
+        commands.found = Outcome.Success(completed(operation))
+        restored.onAction(MetasAction.Retry)
+
+        assertEquals(1, commands.sent.size)
+        assertEquals(listOf(operation, operation, operation), commands.asked)
+        assertEquals(CompletionState.Idle, metasCompletion(restored))
+    }
+
+    @Test
+    fun metasCountsEachRefusalSoARepeatIsToldApart() = runTest {
+        reads.board.value = board(summary(viajeId, 3_060_000, 3_000_000))
+        val model = metas()
+        watch(model)
+        repeat(2) {
+            commands.queue += CommandOutcome.Rejected(CommandRejection.VersionConflict(5))
+        }
+
+        model.onAction(MetasAction.MarkComplete(viajeId))
+        val first = model.state.value as MetasState.Ready
+        model.onAction(MetasAction.MarkComplete(viajeId))
+        val second = model.state.value as MetasState.Ready
+
+        assertEquals(2, commands.sent.size)
+        assertEquals(first.completion, second.completion)
+        assertEquals(1 to 2, first.completionFailures to second.completionFailures)
+    }
+
+    @Test
+    fun aCompletionCancelledMidSendKeepsItsOperationToBeAskedAboutNotSentAgain() = runTest {
+        reads.board.value = board(summary(viajeId, 3_060_000, 3_000_000))
+        val saved = SavedStateHandle()
+        val store = ViewModelStore()
+        val model = ViewModelProvider.create(
+            store,
+            viewModelFactory { initializer { metas(saved = saved) } }
+        )[MetasViewModel::class]
+        watch(model)
+        commands.pause = true
+        model.onAction(MetasAction.MarkComplete(viajeId))
+        val operation = commands.sent.single().operationId
+
+        // The view model's scope is cancelled while the completion is in flight; a new
+        // one reading the same saved state asks about that operation.
+        store.clear()
+        commands.pause = false
+        commands.found = Outcome.Success(null)
+        val back = metas(saved = saved)
+        watch(back)
+
+        assertEquals(1, commands.sent.size)
+        assertEquals(listOf(operation), commands.asked)
+        assertEquals(CompletionState.Failed(GoalDetailError.NotSaved), metasCompletion(back))
     }
 
     private fun committed() = CommandOutcome.Committed(

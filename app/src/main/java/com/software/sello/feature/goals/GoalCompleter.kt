@@ -22,6 +22,7 @@ import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** The goal to mark lograda, as it was read, with what its plate will say. */
@@ -77,6 +78,13 @@ class GoalCompleter(
 ) {
     private val mutable = MutableStateFlow<CompletionState>(CompletionState.Idle)
     val state: StateFlow<CompletionState> = mutable
+    private val failed = MutableStateFlow(0)
+
+    /**
+     * How many times a completion ended in [CompletionState.Failed] here. A repeat failure
+     * equals the one before it, so a screen tells them apart by this count.
+     */
+    val failures: StateFlow<Int> = failed
     private val submission = Submission(saved, OPERATION, ids)
 
     /** The completion the big moment on show celebrates. */
@@ -140,7 +148,7 @@ class GoalCompleter(
 
     /** [target] is the completion sent from here; null when it is only being asked about. */
     private fun settle(target: CompletionTarget?, settled: Settled<CommittedGoal, GoalRejection>?) {
-        mutable.value = when (settled) {
+        val next = when (settled) {
             null -> CompletionState.Idle
 
             // Only a completion seen to commit here earns the big moment.
@@ -172,6 +180,8 @@ class GoalCompleter(
             is Settled.Rejected, Settled.NotCommitted ->
                 CompletionState.Failed(GoalDetailError.NotSaved)
         }
+        if (next is CompletionState.Failed) failed.update { it + 1 }
+        mutable.value = next
     }
 
     private companion object {

@@ -8,7 +8,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import com.software.sello.R
 import com.software.sello.designsystem.component.ButtonKind
@@ -42,7 +44,12 @@ internal fun GoalSaveProblem(
                         R.string.goal_save_failed_title
                     }
                 ),
-                Modifier.semantics { heading() },
+                // Read aloud when it appears, as a StatusSlip's text; the line under it is
+                // a FieldMessageText, read aloud on its own.
+                Modifier.semantics {
+                    heading()
+                    liveRegion = LiveRegionMode.Polite
+                },
                 style = MaterialTheme.typography.titleMedium,
                 color = SelloTheme.colors.ink
             )

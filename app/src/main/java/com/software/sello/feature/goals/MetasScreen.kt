@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -76,8 +77,17 @@ fun MetasScreen(
     val landed: SnapshotStateList<String> = rememberSaveable(
         saver = listSaver(save = { it.toList() }, restore = { it.toMutableStateList() })
     ) { mutableListOf<String>().toMutableStateList() }
+    val list = rememberLazyListState()
+    // A completion that did not finish is said first in the list; bring it into view, since
+    // the button pressed may be scrolled well below it. Keyed on the failure's count, so a
+    // refusal that repeats the one on screen scrolls too.
+    val failure = (state as? MetasState.Ready)
+        ?.takeIf { it.completion is CompletionState.Failed }
+        ?.completionFailures
+    LaunchedEffect(failure) { if (failure != null) list.animateScrollToItem(0) }
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag(METAS_LIST_TAG),
+        state = list,
         contentPadding = PaddingValues(
             start = padding.calculateStartPadding(direction),
             top = padding.calculateTopPadding() + spacing.lg,
@@ -109,6 +119,18 @@ fun MetasScreen(
             }
 
             is MetasState.Ready -> {
+                // A Marcar como lograda that did not finish, said as the goal's own page
+                // says it: Reintentar after a refusal, Comprobar si se guardó when unknown.
+                (state.completion as? CompletionState.Failed)?.let { failed ->
+                    // Drawn anew for each failure, so its title is announced again.
+                    item(key = "$METAS_COMPLETION_PROBLEM_TAG.${state.completionFailures}") {
+                        GoalSaveProblem(
+                            failed.error,
+                            { onAction(MetasAction.Retry) },
+                            Modifier.testTag(METAS_COMPLETION_PROBLEM_TAG)
+                        )
+                    }
+                }
                 if (state.stale) {
                     item {
                         StatusSlip(
@@ -151,8 +173,11 @@ fun MetasScreen(
                                 Modifier.fillMaxWidth().padding(top = SelloTheme.spacing.sm)
                                     .testTag("metas.markComplete.${goal.id}"),
                                 icon = SelloIcon.Check,
+                                // Never pressable while an unknown outcome waits for
+                                // its check: the completer would send nothing.
                                 enabled = state.completion == CompletionState.Idle ||
-                                    state.completion is CompletionState.Failed,
+                                    state.completion ==
+                                    CompletionState.Failed(GoalDetailError.NotSaved),
                                 loading = state.completion == CompletionState.Busy,
                                 tone = ButtonTone.Gain
                             )
@@ -267,3 +292,4 @@ const val METAS_LIST_TAG = "metas.list"
 const val METAS_TOTAL_TAG = "metas.total"
 const val METAS_CREATE_TAG = "metas.create"
 const val METAS_BULK_TAG = "metas.bulk"
+const val METAS_COMPLETION_PROBLEM_TAG = "metas.completion.problem"
