@@ -33,7 +33,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -47,7 +46,6 @@ import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.ChipFlow
 import com.software.sello.designsystem.component.ChipRows
-import com.software.sello.designsystem.component.ConfirmSlip
 import com.software.sello.designsystem.component.EntryAmountSlip
 import com.software.sello.designsystem.component.EntryLayout
 import com.software.sello.designsystem.component.EntryLine
@@ -83,6 +81,7 @@ import com.software.sello.domain.model.SourceName
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.income.incomeSourceLabel
 import com.software.sello.presentation.month.monthNames
+import com.software.sello.presentation.movement.MovementDiscardSlip
 import com.software.sello.presentation.recurrence.FollowingChoice
 import com.software.sello.presentation.recurrence.RepeatAction
 import com.software.sello.presentation.recurrence.RepeatChoiceSheet
@@ -225,10 +224,8 @@ fun IncomeFormScreen(
         }
     }
     if (state.confirmDiscard) {
-        ConfirmSlip(
+        MovementDiscardSlip(
             title = stringResource(R.string.income_discard_title),
-            message = AnnotatedString(stringResource(R.string.expense_entry_discard_message)),
-            confirmLabel = stringResource(R.string.expense_entry_discard_confirm),
             onConfirm = { onAction(IncomeFormAction.DiscardConfirmed) },
             onDismiss = { onAction(IncomeFormAction.KeepEditing) }
         )

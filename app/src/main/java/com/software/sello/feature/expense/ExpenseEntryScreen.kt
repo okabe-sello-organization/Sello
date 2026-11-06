@@ -41,7 +41,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -72,6 +71,7 @@ import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.component.MoneyStyle
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.MoreSlip
+import com.software.sello.designsystem.component.MovementDiscardSlip
 import com.software.sello.designsystem.component.NoteComposer
 import com.software.sello.designsystem.component.SegmentedSwitch
 import com.software.sello.designsystem.component.SelloButton
@@ -294,7 +294,7 @@ fun ExpenseEntryScreen(
     }
     if (state.confirmDiscard) {
         val editing = state.editing
-        ConfirmSlip(
+        MovementDiscardSlip(
             title = stringResource(
                 if (editing) {
                     R.string.expense_edit_discard_title
@@ -302,19 +302,16 @@ fun ExpenseEntryScreen(
                     R.string.expense_entry_discard_title
                 }
             ),
-            message = AnnotatedString(
-                stringResource(
-                    if (editing) {
-                        R.string.expense_edit_discard_message
-                    } else {
-                        R.string.expense_entry_discard_message
-                    }
-                )
+            message = stringResource(
+                if (editing) {
+                    R.string.expense_edit_discard_message
+                } else {
+                    R.string.expense_entry_discard_message
+                }
             ),
             confirmLabel = stringResource(R.string.expense_entry_discard_confirm),
             onConfirm = { onAction(ExpenseEntryAction.DiscardConfirmed) },
             onDismiss = { onAction(ExpenseEntryAction.KeepEditing) },
-            destructive = false,
             dismissLabel = stringResource(
                 if (editing) {
                     R.string.expense_edit_discard_keep

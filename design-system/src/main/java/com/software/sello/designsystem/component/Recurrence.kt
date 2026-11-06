@@ -233,6 +233,8 @@ private fun DatePill(text: String, modifier: Modifier = Modifier) {
 /**
  * Two buttons side by side, sharing the width by [firstWeight] and [secondWeight], or
  * one above the other at full width when a word of either label would not fit its share.
+ * [first] is the outlined answer, such as Cancelar, and [second] the filled action. Side
+ * by side the action is on the right; one above the other it is on top, Cancelar under it.
  */
 @Composable
 fun ButtonPair(
@@ -268,9 +270,9 @@ fun ButtonPair(
             val full = Constraints.fixedWidth(width)
             val placedA = a.measure(full)
             val placedB = b.measure(full)
-            layout(width, placedA.height + space + placedB.height) {
-                placedA.placeRelative(0, 0)
-                placedB.placeRelative(0, placedA.height + space)
+            layout(width, placedB.height + space + placedA.height) {
+                placedB.placeRelative(0, 0)
+                placedA.placeRelative(0, placedB.height + space)
             }
         }
     }

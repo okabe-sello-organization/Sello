@@ -33,6 +33,7 @@ import com.software.sello.R
 import com.software.sello.designsystem.component.Bullet
 import com.software.sello.designsystem.component.BulletList
 import com.software.sello.designsystem.component.ButtonKind
+import com.software.sello.designsystem.component.ButtonPair
 import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.FormField
 import com.software.sello.designsystem.component.RestoreBody
@@ -176,19 +177,27 @@ private fun Counts(
             )
         )
         RestoreBody(stringResource(R.string.reset_backups_stay))
-        SelloButton(
-            text = stringResource(R.string.reset_continue),
-            onClick = { onAction(ResetAction.Continue) },
-            tone = ButtonTone.Loss,
-            modifier = Modifier.fillMaxWidth().padding(top = SelloTheme.spacing.md)
-                .testTag(RESET_CONTINUE_TAG)
-        )
-        SelloButton(
-            text = stringResource(R.string.reset_cancel),
-            onClick = onClose,
-            kind = ButtonKind.Outlined,
-            modifier = Modifier.fillMaxWidth().padding(top = SelloTheme.spacing.sm)
-                .testTag(RESET_CLOSE_TAG)
+        ButtonPair(
+            firstWeight = 1f,
+            secondWeight = 2f,
+            gap = SelloTheme.spacing.md,
+            modifier = Modifier.padding(top = SelloTheme.spacing.md),
+            first = {
+                SelloButton(
+                    text = stringResource(R.string.reset_cancel),
+                    onClick = onClose,
+                    kind = ButtonKind.Outlined,
+                    modifier = Modifier.testTag(RESET_CLOSE_TAG)
+                )
+            },
+            second = {
+                SelloButton(
+                    text = stringResource(R.string.reset_continue),
+                    onClick = { onAction(ResetAction.Continue) },
+                    tone = ButtonTone.Loss,
+                    modifier = Modifier.testTag(RESET_CONTINUE_TAG)
+                )
+            }
         )
     }
 }
@@ -211,22 +220,32 @@ private fun Word(state: ResetState, erasing: Boolean, onAction: (ResetAction) ->
                 imeAction = ImeAction.Done
             )
         )
-        SelloButton(
-            text = stringResource(if (erasing) R.string.reset_erasing else R.string.reset_confirm),
-            onClick = { onAction(ResetAction.Confirm) },
-            tone = ButtonTone.Loss,
-            loading = erasing,
-            enabled = !erasing && state.canConfirm,
-            modifier = Modifier.fillMaxWidth().padding(top = SelloTheme.spacing.md)
-                .testTag(RESET_CONFIRM_TAG)
-        )
-        SelloButton(
-            text = stringResource(R.string.reset_cancel),
-            onClick = { onAction(ResetAction.Cancel) },
-            kind = ButtonKind.Outlined,
-            enabled = !erasing,
-            modifier = Modifier.fillMaxWidth().padding(top = SelloTheme.spacing.sm)
-                .testTag(RESET_CANCEL_TAG)
+        ButtonPair(
+            firstWeight = 1f,
+            secondWeight = 2f,
+            gap = SelloTheme.spacing.md,
+            modifier = Modifier.padding(top = SelloTheme.spacing.md),
+            first = {
+                SelloButton(
+                    text = stringResource(R.string.reset_cancel),
+                    onClick = { onAction(ResetAction.Cancel) },
+                    kind = ButtonKind.Outlined,
+                    enabled = !erasing,
+                    modifier = Modifier.testTag(RESET_CANCEL_TAG)
+                )
+            },
+            second = {
+                SelloButton(
+                    text = stringResource(
+                        if (erasing) R.string.reset_erasing else R.string.reset_confirm
+                    ),
+                    onClick = { onAction(ResetAction.Confirm) },
+                    tone = ButtonTone.Loss,
+                    loading = erasing,
+                    enabled = !erasing && state.canConfirm,
+                    modifier = Modifier.testTag(RESET_CONFIRM_TAG)
+                )
+            }
         )
     }
 }

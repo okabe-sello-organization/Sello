@@ -128,23 +128,6 @@ window.SELLO_FINDINGS = {
    ],
    "places": [
     {
-     "id": "M03-1",
-     "file": "app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:292",
-     "area": "expense",
-     "features": [
-      "expense"
-     ],
-     "what": "Discard slip passes destructive = false: 'Descartar' is brand blue.",
-     "why": "Throwing away a typed expense cannot be undone; the same Descartar is loss red on every other form.",
-     "unsure": false,
-     "shots": [
-      {
-       "module": "app",
-       "file": "expense-entry-discard-cobalto-light-font1.0.png"
-      }
-     ]
-    },
-    {
      "id": "M03-2",
      "file": "app/src/main/java/com/software/sello/feature/recurrence/ScheduleEditorScreen.kt:187",
      "area": "recurrence",
@@ -158,27 +141,6 @@ window.SELLO_FINDINGS = {
       {
        "module": "app",
        "file": "schedule-editor-discard-cobalto-light-font1.0.png"
-      }
-     ]
-    },
-    {
-     "id": "M03-4",
-     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:476",
-     "area": "category",
-     "features": [
-      "category"
-     ],
-     "what": "ProblemSlip uses ConfirmSlip to report that nothing was deleted or moved, with 'Revisar'/'Elegir otra'/'Reintentar' as the confirm action.",
-     "why": "KDoc: a confirmation of something that cannot be undone; here it is an error report with one way forward.",
-     "unsure": true,
-     "shots": [
-      {
-       "module": "app",
-       "file": "category-removal-changed-cobalto-light-font1.0.png"
-      },
-      {
-       "module": "app",
-       "file": "category-removal-storage-cobalto-light-font1.0.png"
       }
      ]
     }
@@ -441,16 +403,6 @@ window.SELLO_FINDINGS = {
        "file": "settings-loaded-cobalto-light-font1.0.png"
       }
      ]
-    },
-    {
-     "id": "M08-2",
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Recurrence.kt:273",
-     "area": "design-system",
-     "features": [],
-     "what": "When ButtonPair stacks (ConfirmSlip with content, ChoiceSlip), the dismiss/Cancelar goes on top and the action under it.",
-     "why": "Inline confirmations stacked by hand put the loss action on top and Cancelar under it (ResetScreen.kt:173/180, RestoreSection.kt:183/194, StartupFailureScreen.kt:260/271), so the order flips when a ConfirmSlip's labels do not fit.",
-     "unsure": true,
-     "shots": []
     }
    ]
   },
@@ -1216,52 +1168,6 @@ window.SELLO_FINDINGS = {
    ]
   },
   {
-   "id": "C05",
-   "component": "MovementDiscardSlip",
-   "ref": "components.html#c-MovementDiscardSlip",
-   "shared": "design-system/src/main/java/com/software/sello/designsystem/component/Movement.kt:81",
-   "copies": [
-    {
-     "id": "C05-1",
-     "file": "app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:223",
-     "area": "income",
-     "features": [
-      "income"
-     ],
-     "differs": "identical: ConfirmSlip with expense_entry_discard_message and expense_entry_discard_confirm, only its own title.",
-     "identical": true,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "income-form-discard-cobalto-light-font1.0.png"
-      }
-     ]
-    },
-    {
-     "id": "C05-2",
-     "file": "app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:292",
-     "area": "expense",
-     "features": [
-      "expense"
-     ],
-     "differs": "the same message and Descartar for a new expense, but destructive = false (brand action where MovementDiscardSlip uses loss), its own keep labels, and another message while editing.",
-     "identical": false,
-     "drift": "Descartar in brand ink where the shared slip uses loss (destructive = false).",
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "expense-entry-discard-cobalto-light-font1.0.png"
-      }
-     ]
-    }
-   ]
-  },
-  {
    "id": "C08",
    "component": "MoreMenu",
    "ref": "components.html#c-MoreMenu",
@@ -1294,41 +1200,6 @@ window.SELLO_FINDINGS = {
      "unsure": false,
      "doubt": null,
      "shots": []
-    }
-   ]
-  },
-  {
-   "id": "C09",
-   "component": "ConfirmSlip",
-   "ref": "components.html#c-ConfirmSlip",
-   "shared": "design-system/src/main/java/com/software/sello/designsystem/component/Feedback.kt:124",
-   "copies": [
-    {
-     "id": "C09-1",
-     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:557",
-     "area": "category",
-     "features": [
-      "category"
-     ],
-     "differs": "RemovalDialog: the same Dialog, 0.55 dim (its own SCRIM_DIM copy), PlainPadding slip, 22 sp headlineSmall title, scrolling content and TearLine(20 dp); instead of Cancelar plus a confirm it takes one custom action or none, and Back or a tap outside is never blocked while busy.",
-     "identical": false,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "category-removal-choose-cobalto-light-font1.0.png"
-      },
-      {
-       "module": "app",
-       "file": "category-removal-checking-cobalto-light-font1.0.png"
-      },
-      {
-       "module": "app",
-       "file": "category-removal-count-cobalto-light-font1.0.png"
-      }
-     ]
     }
    ]
   },
@@ -1373,23 +1244,6 @@ window.SELLO_FINDINGS = {
       {
        "module": "app",
        "file": "startup-failure-start-over-cobalto-light-font1.0.png"
-      }
-     ]
-    },
-    {
-     "id": "C10-3",
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Feedback.kt:95",
-     "area": "design-system (ConfirmSlip with message)",
-     "features": [],
-     "differs": "the message ConfirmSlip's own Row with 1:1 weights and spacing.md; never stacks (the content ConfirmSlip and both ChoiceSlips use ButtonPair).",
-     "identical": false,
-     "drift": null,
-     "unsure": false,
-     "doubt": null,
-     "shots": [
-      {
-       "module": "app",
-       "file": "expense-entry-discard-cobalto-light-font1.0.png"
       }
      ]
     }
@@ -1849,7 +1703,7 @@ window.SELLO_FINDINGS = {
    "copies": [
     {
      "id": "C21-1",
-     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:858",
+     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:814",
      "area": "category",
      "features": [
       "category"
@@ -2179,7 +2033,7 @@ window.SELLO_FINDINGS = {
    ],
    "places": [
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Recurrence.kt:282",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Recurrence.kt:284",
      "area": "design-system:Recurrence",
      "features": [
       "recurrence"
@@ -2479,44 +2333,10 @@ window.SELLO_FINDINGS = {
      "note": "SelloColors.toMaterialColorScheme: Material scrim slot fixed to black (also used by ModalBottomSheet and DatePickerDialog defaults)"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Feedback.kt:81",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Feedback.kt:78",
      "area": "design-system:Feedback",
      "features": [],
-     "note": "ConfirmSlip: ConfirmSlip window dim (platform dims with black at SCRIM_ALPHA)"
-    },
-    {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Feedback.kt:139",
-     "area": "design-system:Feedback",
-     "features": [],
-     "note": "ConfirmSlip: ConfirmSlip (second overload) window dim"
-    },
-    {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Feedback.kt:210",
-     "area": "design-system:Feedback",
-     "features": [],
-     "note": "ChoiceSlip: ChoiceSlip window dim"
-    },
-    {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Feedback.kt:288",
-     "area": "design-system:Feedback",
-     "features": [],
-     "note": "ChoiceSlip: ChoiceSlip (second overload) window dim"
-    },
-    {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Settings.kt:154",
-     "area": "design-system:Settings",
-     "features": [
-      "settings"
-     ],
-     "note": "OptionSlip: OptionSlip window dim"
-    },
-    {
-     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:567",
-     "area": "category",
-     "features": [
-      "category"
-     ],
-     "note": "RemovalDialog: RemovalDialog window dim (own SCRIM_DIM copy of SCRIM_ALPHA)"
+     "note": "DialogSlip: the window dim of every dialog slip (platform dims with black at SCRIM_ALPHA)"
     }
    ]
   },
@@ -3230,50 +3050,16 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:576",
-     "area": "category",
-     "features": [
-      "category"
-     ],
-     "note": "RemovalDialog: style = MaterialTheme.typography.headlineSmall.copy(fontSize = 22.sp),"
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Feedback.kt:88",
+     "area": "design-system:Feedback",
+     "features": [],
+     "note": "DialogSlip: style = MaterialTheme.typography.headlineSmall.copy(fontSize = 22.sp),"
     },
     {
      "file": "design-system/src/main/java/com/software/sello/designsystem/component/AmountKeypad.kt:143",
      "area": "design-system:AmountKeypad",
      "features": [],
      "note": "KeyLabel: style = MaterialTheme.typography.titleLarge.copy(fontSize = 22.sp, lineHeight = 26.sp),"
-    },
-    {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Feedback.kt:89",
-     "area": "design-system:Feedback",
-     "features": [],
-     "note": "ConfirmSlip: style = MaterialTheme.typography.headlineSmall.copy(fontSize = 22.sp),"
-    },
-    {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Feedback.kt:149",
-     "area": "design-system:Feedback",
-     "features": [],
-     "note": "ConfirmSlip: style = MaterialTheme.typography.headlineSmall.copy(fontSize = 22.sp),"
-    },
-    {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Feedback.kt:220",
-     "area": "design-system:Feedback",
-     "features": [],
-     "note": "ChoiceSlip: style = MaterialTheme.typography.headlineSmall.copy(fontSize = 22.sp),"
-    },
-    {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Feedback.kt:297",
-     "area": "design-system:Feedback",
-     "features": [],
-     "note": "ChoiceSlip: style = MaterialTheme.typography.headlineSmall.copy(fontSize = 22.sp),"
-    },
-    {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Settings.kt:164",
-     "area": "design-system:Settings",
-     "features": [
-      "settings"
-     ],
-     "note": "OptionSlip: style = MaterialTheme.typography.headlineSmall.copy(fontSize = 22.sp),"
     }
    ]
   },
@@ -3698,7 +3484,7 @@ window.SELLO_FINDINGS = {
      "note": "ChangeRow: fontWeight = if (emphasized) FontWeight.W800 else FontWeight.W400,"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Settings.kt:204",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Settings.kt:183",
      "area": "design-system:Settings",
      "features": [
       "settings"
@@ -4070,7 +3856,7 @@ window.SELLO_FINDINGS = {
      "note": "DatePill: style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.W700),"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Settings.kt:204",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Settings.kt:183",
      "area": "design-system:Settings",
      "features": [
       "settings"
@@ -4184,7 +3970,7 @@ window.SELLO_FINDINGS = {
      "note": "ChoiceRow: style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.W800),"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:867",
+     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:823",
      "area": "category",
      "features": [
       "category"
@@ -6346,20 +6132,10 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:567",
-     "area": "category",
-     "features": [
-      "category"
-     ],
-     "note": "RemovalDialog: uses SCRIM_DIM: SideEffect { window?.setDimAmount(SCRIM_DIM) }"
-    },
-    {
-     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:874",
-     "area": "category",
-     "features": [
-      "category"
-     ],
-     "note": "file-level constant: SCRIM_DIM defined"
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Feedback.kt:78",
+     "area": "design-system:Feedback",
+     "features": [],
+     "note": "DialogSlip: uses SCRIM_ALPHA: SideEffect { window?.setDimAmount(SCRIM_ALPHA) }"
     },
     {
      "file": "app/src/main/java/com/software/sello/feature/investments/InvestmentEditorScreen.kt:538",
@@ -6378,50 +6154,18 @@ window.SELLO_FINDINGS = {
      "note": "file-level constant: IDLE_ALPHA defined"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Feedback.kt:81",
-     "area": "design-system:Feedback",
-     "features": [],
-     "note": "ConfirmSlip: uses SCRIM_ALPHA: SideEffect { window?.setDimAmount(SCRIM_ALPHA) }"
-    },
-    {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Feedback.kt:139",
-     "area": "design-system:Feedback",
-     "features": [],
-     "note": "ConfirmSlip: uses SCRIM_ALPHA: SideEffect { window?.setDimAmount(SCRIM_ALPHA) }"
-    },
-    {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Feedback.kt:210",
-     "area": "design-system:Feedback",
-     "features": [],
-     "note": "ChoiceSlip: uses SCRIM_ALPHA: SideEffect { window?.setDimAmount(SCRIM_ALPHA) }"
-    },
-    {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Feedback.kt:288",
-     "area": "design-system:Feedback",
-     "features": [],
-     "note": "ChoiceSlip: uses SCRIM_ALPHA: SideEffect { window?.setDimAmount(SCRIM_ALPHA) }"
-    },
-    {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Feedback.kt:345",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Feedback.kt:323",
      "area": "design-system:Feedback",
      "features": [],
      "note": "file-level constant: SCRIM_ALPHA defined"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Recurrence.kt:282",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Recurrence.kt:284",
      "area": "design-system:Recurrence",
      "features": [
       "recurrence"
      ],
      "note": "file-level constant: private val Scrim = Color(0xFF050814).copy(alpha = 0.55f)"
-    },
-    {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Settings.kt:154",
-     "area": "design-system:Settings",
-     "features": [
-      "settings"
-     ],
-     "note": "OptionSlip: uses SCRIM_ALPHA from Feedback.kt"
     }
    ]
   },
@@ -6460,13 +6204,13 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Feedback.kt:355",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Feedback.kt:333",
      "area": "design-system:Feedback",
      "features": [],
      "note": "SlipSkeleton: uses SKELETON_REST_ALPHA: SKELETON_REST_ALPHA"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Feedback.kt:388",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Feedback.kt:366",
      "area": "design-system:Feedback",
      "features": [],
      "note": "file-level constant: SKELETON_REST_ALPHA defined"

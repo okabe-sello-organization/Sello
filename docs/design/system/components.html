@@ -13,7 +13,7 @@
       <p class="kicker">Sello design system</p>
       <h1>Components</h1>
       <p class="lede">Every public <code>@Composable</code> in
-        <code>design-system/src/main/java/com/software/sello/designsystem/</code> (74 names; overloads
+        <code>design-system/src/main/java/com/software/sello/designsystem/</code> (75 names; overloads
         share an entry), grouped by what they are for.</p>
     </div>
   </header>
@@ -44,7 +44,7 @@
 <li><a href="#g-frame">Frame and navigation</a> <span class="muted">(7)</span></li>
 <li><a href="#g-entry">Entry forms</a> <span class="muted">(11)</span></li>
 <li><a href="#g-choices">Buttons and choices</a> <span class="muted">(11)</span></li>
-<li><a href="#g-feedback">Feedback, dialogs and sheets</a> <span class="muted">(18)</span></li>
+<li><a href="#g-feedback">Feedback, dialogs and sheets</a> <span class="muted">(19)</span></li>
 <li><a href="#g-categories">Categories and carry</a> <span class="muted">(5)</span></li>
 <li><a href="#g-charts">Charts</a> <span class="muted">(2)</span></li>
 <li><a href="#g-goals">Goals and movements</a> <span class="muted">(11)</span></li>
@@ -53,7 +53,7 @@
 <li><a href="#g-theme">Theme and helpers</a> <span class="muted">(6)</span></li>
       </ul>
       <div class="gaps">
-        <p>Of 88 components, 25 have a component capture of their own, 55 are shown inside a screen baseline, and 8 are not shown at all: <a href="#c-SelloIconButton"><code>SelloIconButton</code></a> (no capture yet), <a href="#c-rememberSelectedFirst"><code>rememberSelectedFirst</code></a>, <a href="#c-SelloTheme"><code>SelloTheme</code></a>, <a href="#c-systemReducedMotion"><code>systemReducedMotion</code></a>, <a href="#c-StatusBarInk"><code>StatusBarInk</code></a>, <a href="#c-statusBarLightIconsUnder"><code>statusBarLightIconsUnder</code></a>, <a href="#c-DialogBarIcons"><code>DialogBarIcons</code></a>, <a href="#c-painter"><code>painter</code></a> (theme and helper functions with nothing of their own to draw). No component capture has a dark version except the bulk receipt and the status slip.</p>
+        <p>Of 89 components, 25 have a component capture of their own, 56 are shown inside a screen baseline, and 8 are not shown at all: <a href="#c-SelloIconButton"><code>SelloIconButton</code></a> (no capture yet), <a href="#c-rememberSelectedFirst"><code>rememberSelectedFirst</code></a>, <a href="#c-SelloTheme"><code>SelloTheme</code></a>, <a href="#c-systemReducedMotion"><code>systemReducedMotion</code></a>, <a href="#c-StatusBarInk"><code>StatusBarInk</code></a>, <a href="#c-statusBarLightIconsUnder"><code>statusBarLightIconsUnder</code></a>, <a href="#c-DialogBarIcons"><code>DialogBarIcons</code></a>, <a href="#c-painter"><code>painter</code></a> (theme and helper functions with nothing of their own to draw). No component capture has a dark version except the bulk receipt and the status slip.</p>
       </div>
     </section>
 <section id="g-surfaces">
@@ -714,10 +714,11 @@ fun LeaderLine(
 <div class="gaps"><p>No component capture yet: adding it to a component sheet would change an existing baseline in a pull request that must change none.</p></div>
 </article>
 <article class="component" id="c-ButtonPair">
-<h3><code>ButtonPair</code> <span class="src"><code>component/Recurrence.kt:238</code></span></h3>
+<h3><code>ButtonPair</code> <span class="src"><code>component/Recurrence.kt:240</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>Two buttons side by side, sharing the width by <code>firstWeight</code> and <code>secondWeight</code>, or one above the other at full width when a word of either label would not fit its share.</dd>
-<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 1</a> <span class="muted">Inside the design system: <code>Feedback.kt</code>, <code>RepeatParts.kt</code>.</span></dd>
+<dt>Purpose</dt><dd>Two buttons side by side, sharing the width by <code>firstWeight</code> and <code>secondWeight</code>, or one above the other at full width when a word of either label would not fit its share. <code>first</code> is the outlined answer, such as Cancelar, and <code>second</code> the filled action. Side by side the action is on the right; one above the other it is on top, Cancelar under it.</dd>
+<dt>Button order</dt><dd>One rule everywhere (owner decision M08-2): stacked, the action on top and Cancelar under it. Every two-button confirmation uses it, in dialogs (<code>ConfirmSlip</code>, <code>ChoiceSlip</code>) and on screens (Borrar datos, Restaurar, start-up restore), so the order never flips when a label stops fitting.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 2</a> <a class="tag" href="features/reset.html">reset · 2</a> <a class="tag" href="features/startup.html">startup · 1</a> <span class="muted">Inside the design system: <code>Feedback.kt</code>, <code>RepeatParts.kt</code>.</span></dd>
 </dl>
 <pre><code>fun ButtonPair(
     firstWeight: Float,
@@ -728,8 +729,10 @@ fun LeaderLine(
     second: @Composable () -&gt; Unit
 )</code></pre>
 
-<p class="muted">Also visible in screen baselines: <code>category-editor-discard</code>.</p>
+<p class="muted">Also visible in screen baselines: <code>category-editor-discard</code> (side by side), <code>carry-drop</code> and <code>reset</code> (stacked).</p>
 <figure data-shot="category-editor-discard" data-module="app" data-caption="Seen in The discard slip: Seguir editando and Descartar"></figure>
+<figure data-shot="carry-drop" data-module="app" data-caption="Stacked in a dialog: Apagar on top, Cancelar under it"></figure>
+<figure data-shot="reset" data-module="app" data-caption="Stacked on a screen: Continuar on top, Cancelar under it"></figure>
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-SelloChip">
@@ -901,12 +904,33 @@ fun LeaderLine(
 <figure data-module="design-system" data-files="components-feedback.png" data-caption="Component capture: components-feedback.png (design-system)"></figure>
 <div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
 </article>
-<article class="component" id="c-ConfirmSlip">
-<h3><code>ConfirmSlip</code> <span class="src"><code>component/Feedback.kt:68</code>, <code>component/Feedback.kt:124</code></span></h3>
+<article class="component" id="c-DialogSlip">
+<h3><code>DialogSlip</code> <span class="src"><code>component/Feedback.kt:68</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>A confirmation for something that cannot be undone. <code>message</code> says what is affected and how much, with the consequence in bold. Back and a tap outside cancel. While <code>busy</code> the action shows a spinner and nothing can be pressed or dismissed, so the action is requested once. A slip whose labels are long can narrow <code>buttonPadding</code> so each stays on one line.<br><code>ConfirmSlip</code> with any <code>content</code> under the title, such as points to read before saving a file. The content scrolls when the slip would not fit; the buttons stay in view and go one above the other when a label would not fit. The action stays off until <code>confirmEnabled</code>, such as until a word that confirms it is typed.</dd>
+<dt>Purpose</dt><dd>The frame every dialog slip shares: plain paper over a 55 % dim, <code>title</code> as its heading, <code>content</code> under it, scrolling when the slip would not fit, and <code>buttons</code>, when there are any, under a tear line where they stay in view. Back and a tap outside are <code>onDismissRequest</code>; a caller that must not be dismissed, such as while busy, passes one that does nothing. <code>ConfirmSlip</code>, <code>ChoiceSlip</code> and <code>OptionSlip</code> are drawn with it; use it for a slip with one answer or none, and put two answers in a <code>ButtonPair</code>.</dd>
+<dt>Anatomy</dt><dd>Frame (dialog, dim, the caller's text size, plain <code>Slip</code>), title (<code>headlineSmall</code> at 22 sp, a heading and the pane title), body slot (scrolls), button area (tear line, then the buttons). The four dialog components and the category removal steps differ only in what they put in the body and the button area.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/category.html">category · 1</a> <span class="muted">(<code>RemovalDialog</code>: counting, choosing, checking, what went wrong) Inside the design system: <code>Feedback.kt</code>, <code>Settings.kt</code>.</span></dd>
+</dl>
+<pre><code>fun DialogSlip(
+    title: String,
+    onDismissRequest: () -&gt; Unit,
+    modifier: Modifier = Modifier,
+    buttons: (@Composable ColumnScope.() -&gt; Unit)? = null,
+    content: @Composable ColumnScope.() -&gt; Unit
+)</code></pre>
+
+<p class="muted">Also visible in screen baselines: <code>category-removal-choose</code>, <code>category-removal-target</code>.</p>
+<figure data-shot="category-removal-choose" data-module="app" data-caption="One answer: the counts, the choices and Cancelar"></figure>
+<figure data-shot="category-removal-target" data-module="app" data-caption="What went wrong: an ActionFailed StatusSlip with its way forward, then Cancelar"></figure>
+<div class="gaps"><p>No component capture.</p></div>
+</article>
+<article class="component" id="c-ConfirmSlip">
+<h3><code>ConfirmSlip</code> <span class="src"><code>component/Feedback.kt:113</code>, <code>component/Feedback.kt:152</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A confirmation for something that cannot be undone. <code>message</code> says what is affected and how much, with the consequence in bold. Back and a tap outside cancel. While <code>busy</code> the action shows a spinner and nothing can be pressed or dismissed, so the action is requested once. The two buttons share the width; when a word of a label would not fit they go one above the other, the action on top. A slip whose labels are long can narrow <code>buttonPadding</code> so each stays on one line.<br><code>ConfirmSlip</code> with any <code>content</code> under the title, such as points to read before saving a file. The content scrolls when the slip would not fit; the buttons stay in view and go one above the other, the action on top, when a label would not fit. The action stays off until <code>confirmEnabled</code>, such as until a word that confirms it is typed.</dd>
+<dt>Frame</dt><dd>A <code>DialogSlip</code> whose button area is a <code>ButtonPair</code>: outlined <code>dismissLabel</code> and the action, in loss ink when <code>destructive</code>; 1:1 with a <code>message</code>, 1:2 with <code>content</code>.</dd>
 <dt>Variants</dt><dd>Two overloads: a <code>message</code> (<code>AnnotatedString</code>) or any <code>content</code> with <code>confirmEnabled</code>. <code>destructive</code> (default true), <code>busy</code>.</dd>
-<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 1</a> <a class="tag" href="features/bulk.html">bulk · 2</a> <a class="tag" href="features/category.html">category · 10</a> <a class="tag" href="features/expense.html">expense · 2</a> <a class="tag" href="features/goals.html">goals · 4</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 2</a> <a class="tag" href="features/shell.html">shell · 1</a> <a class="tag" href="features/recurrence.html">recurrence · 2</a> <span class="muted">Inside the design system: <code>Movement.kt</code>.</span></dd>
+<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 1</a> <a class="tag" href="features/bulk.html">bulk · 2</a> <a class="tag" href="features/category.html">category · 9</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 4</a> <a class="tag" href="features/investments.html">investments · 2</a> <a class="tag" href="features/shell.html">shell · 1</a> <a class="tag" href="features/recurrence.html">recurrence · 2</a> <span class="muted">Inside the design system: <code>Movement.kt</code>.</span></dd>
 </dl>
 <pre><code>fun ConfirmSlip(
     title: String,
@@ -933,14 +957,15 @@ fun ConfirmSlip(
     content: @Composable ColumnScope.() -&gt; Unit
 )</code></pre>
 
-<p class="muted">Also visible in screen baselines: <code>category-editor-discard</code>.</p>
+<p class="muted">Also visible in screen baselines: <code>category-editor-discard</code>, <code>carry-drop</code> (stacked).</p>
 <figure data-shot="category-editor-discard" data-module="app" data-caption="Seen in ¿Descartar los cambios?"></figure>
+<figure data-shot="carry-drop" data-module="app" data-caption="Stacked: Apagar on top, Cancelar under it"></figure>
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-ChoiceSlip">
-<h3><code>ChoiceSlip</code> <span class="src"><code>component/Feedback.kt:194</code>, <code>component/Feedback.kt:272</code></span></h3>
+<h3><code>ChoiceSlip</code> <span class="src"><code>component/Feedback.kt:233</code>, <code>component/Feedback.kt:264</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>A question with two answers, neither of them destructive, such as whether a change applies to the next ones too: <code>firstLabel</code> outlined, <code>secondLabel</code> filled, and <code>backLabel</code> under them to go back without answering. The slip is <code>ConfirmSlip</code>'s. Back and a tap outside are <code>onBack</code>. The answers stand one above the other when they do not fit side by side. While <code>busy</code> the answer given shows a spinner and nothing can be pressed or dismissed, so it is requested once.<br><code>ChoiceSlip</code> with any <code>content</code> under the title, such as a choice of format and the points to read before acting. The content scrolls when the slip would not fit; the answers stay in view.</dd>
+<dt>Purpose</dt><dd>A question with two answers, neither of them destructive, such as whether a change applies to the next ones too: <code>firstLabel</code> outlined, <code>secondLabel</code> filled, and <code>backLabel</code> under them to go back without answering. The slip is <code>DialogSlip</code>. Back and a tap outside are <code>onBack</code>. The answers stand one above the other, the filled one on top, when they do not fit side by side. While <code>busy</code> the answer given shows a spinner and nothing can be pressed or dismissed, so it is requested once.<br><code>ChoiceSlip</code> with any <code>content</code> under the title, such as a choice of format and the points to read before acting. The content scrolls when the slip would not fit; the answers stay in view.</dd>
 <dt>Variants</dt><dd>Two overloads: a <code>message</code> or any scrolling <code>content</code>. First answer outlined, second filled, back as text. <code>busy</code>.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 1</a> <span class="muted">Inside the design system: <code>RepeatParts.kt</code>.</span></dd>
 </dl>
@@ -974,9 +999,10 @@ fun ChoiceSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-OptionSlip">
-<h3><code>OptionSlip</code> <span class="src"><code>component/Settings.kt:142</code></span></h3>
+<h3><code>OptionSlip</code> <span class="src"><code>component/Settings.kt:130</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>Choosing one of a few <code>options</code>, such as the order of the categories: a dialog slip with <code>title</code>, one radio row per option with <code>selectedIndex</code> marked, and Cancelar. A choice is reported with <code>onSelect</code>; Back, a tap outside and Cancelar are <code>onDismiss</code>. The rows scroll when they do not fit.</dd>
+<dt>Purpose</dt><dd>Choosing one of a few <code>options</code>, such as the order of the categories: a <code>DialogSlip</code> with <code>title</code>, one radio row per option with <code>selectedIndex</code> marked, and Cancelar. A choice is reported with <code>onSelect</code>; Back, a tap outside and Cancelar are <code>onDismiss</code>. The rows scroll when they do not fit.</dd>
+<dt>Frame</dt><dd>The shared <code>DialogSlip</code>: the radio rows are its body, Cancelar (text, at the end) its button area under the tear line.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/settings.html">settings · 4</a></dd>
 </dl>
 <pre><code>fun OptionSlip(
@@ -1555,18 +1581,19 @@ fun ChoiceSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-MovementDiscardSlip">
-<h3><code>MovementDiscardSlip</code> <span class="src"><code>component/Movement.kt:81</code></span></h3>
+<h3><code>MovementDiscardSlip</code> <span class="src"><code>component/Movement.kt:86</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>Asks before a typed movement is thrown away: <code>message</code>, then <code>confirmLabel</code> or keep.</dd>
-<dt>Inputs</dt><dd>The form's own title, the message and the confirm label.</dd>
-<dt>Used by</dt><dd>Through the app's wrapper of the same name (<code>presentation/movement/MovementForm.kt</code>), which supplies the copy: <a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/investments.html">investments · 2</a></dd>
+<dt>Purpose</dt><dd>Asks before a typed movement is thrown away: <code>message</code>, then <code>confirmLabel</code> in loss ink, or <code>dismissLabel</code> to keep it. It is a <code>ConfirmSlip</code>.</dd>
+<dt>Inputs</dt><dd>The form's own title, the message, the confirm label and, when the form has its own, the keep label (default Cancelar).</dd>
+<dt>Used by</dt><dd>Through the app's wrapper of the same name (<code>presentation/movement/MovementForm.kt</code>), which supplies the copy: <a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 2</a>; directly, with its own words and "Seguir anotando"/"Seguir editando": <a class="tag" href="features/expense.html">expense · 1</a></dd>
 </dl>
 <pre><code>fun MovementDiscardSlip(
     title: String,
     message: String,
     confirmLabel: String,
     onConfirm: () -&gt; Unit,
-    onDismiss: () -&gt; Unit
+    onDismiss: () -&gt; Unit,
+    dismissLabel: String = stringResource(R.string.sello_cancel)
 )</code></pre>
 
 <p class="muted">Also visible in screen baselines: <code>goal-movement-discard</code>.</p>
