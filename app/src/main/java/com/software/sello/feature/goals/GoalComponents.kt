@@ -244,7 +244,12 @@ internal fun ReachedRow(
         if (inline) {
             Row(
                 // 4 dp above and below the pill's 48 dp touch area: it is drawn 44 dp high, 6 dp in.
-                surface.padding(start = 14.dp, top = 4.dp, end = 6.dp, bottom = 4.dp),
+                surface.padding(
+                    start = 14.dp,
+                    top = SelloTheme.spacing.xs,
+                    end = 6.dp,
+                    bottom = SelloTheme.spacing.xs
+                ),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {

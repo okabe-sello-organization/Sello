@@ -185,7 +185,7 @@
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-FactLine">
-<h3><code>FactLine</code> <span class="src"><code>component/Paper.kt:587</code></span></h3>
+<h3><code>FactLine</code> <span class="src"><code>component/Paper.kt:617</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>No KDoc. From the code: one paragraph of <code>bodyLarge</code> text in <code>inkSoft</code>, taking an <code>AnnotatedString</code> so facts can be bold.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/goals.html">goals · 7</a> <a class="tag" href="features/investments.html">investments · 8</a> <a class="tag" href="features/recibo.html">recibo · 1</a></dd>
@@ -1074,7 +1074,7 @@ fun StatusSlip(
 <figure data-module="app" data-files="goal-detail-missing-claro.png" data-caption="Gone: a goal deleted meanwhile"></figure>
 </article>
 <article class="component" id="c-SlipSkeleton">
-<h3><code>SlipSkeleton</code> <span class="src"><code>component/Feedback.kt:445</code></span></h3>
+<h3><code>SlipSkeleton</code> <span class="src"><code>component/Feedback.kt:329</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The loading state of a slip: bars where figures will be. Callers show it only when loading lasts long enough to notice. With reduced motion the bars do not pulse.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 2</a> <a class="tag" href="features/bulk.html">bulk · 1</a> <a class="tag" href="features/category.html">category · 1</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 6</a> <a class="tag" href="features/income.html">income · 4</a> <a class="tag" href="features/investments.html">investments · 8</a> <a class="tag" href="features/recibo.html">recibo · 10</a> <a class="tag" href="features/recurrence.html">recurrence · 3</a> <a class="tag" href="features/reset.html">reset · 1</a> <a class="tag" href="features/resumen.html">resumen · 1</a> <a class="tag" href="features/settings.html">settings · 1</a></dd>
@@ -1134,7 +1134,7 @@ fun StatusSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-RepeatChoiceSheet">
-<h3><code>RepeatChoiceSheet</code> <span class="src"><code>component/RepeatParts.kt:131</code></span></h3>
+<h3><code>RepeatChoiceSheet</code> <span class="src"><code>component/RepeatParts.kt:122</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The sheet that chooses how it repeats: the kind (<code>kind</code> of <code>RepeatSheetLabels.kinds</code>), then the days or the interval, the end (<code>endDate</code> is the dated chip's text, chosen when <code>ended</code>), when the first one comes (<code>next</code>), and Quitar or Listo, which waits for <code>doneEnabled</code>. The screen shows it while it is open and owns Back.</dd>
 <dt>Inputs</dt><dd>Its words (<code>RepeatSheetLabels</code>), the chosen kind by position, the spacing (<code>RepeatSpacing.MonthDays</code> or <code>Interval</code>), the end chip's text, the next-date line and one lambda per answer.</dd>
@@ -1166,7 +1166,7 @@ fun StatusSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-RepeatRow">
-<h3><code>RepeatRow</code> <span class="src"><code>component/RepeatParts.kt:72</code></span></h3>
+<h3><code>RepeatRow</code> <span class="src"><code>component/RepeatParts.kt:63</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>Se repite's row under the note, read as <code>spoken</code>: with an <code>action</code> ("Cambiar"), <code>text</code> says the rule and its next date; without one, <code>text</code> is an invitation like Agregar nota ("Repetir este gasto").</dd>
 <dt>Inputs</dt><dd>The row's text and spoken text, and the action word ("Cambiar") once it repeats; none for the invitation.</dd>
@@ -1186,7 +1186,7 @@ fun StatusSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-FollowingChoice">
-<h3><code>FollowingChoice</code> <span class="src"><code>component/RepeatParts.kt:277</code></span></h3>
+<h3><code>FollowingChoice</code> <span class="src"><code>component/RepeatParts.kt:234</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>Asked when saving new terms on an entry a schedule recorded, with <code>name</code> (the schedule) in bold between <code>lead</code> and <code>rest</code>: <code>onlyThisLabel</code> ("Solo este"), or <code>alsoLabel</code> ("Este y los siguientes"), and <code>backLabel</code> ("Volver a editar").</dd>
 <dt>Inputs</dt><dd>The title, the message split around the schedule's <code>name</code> (drawn bold) and the three labels.</dd>
@@ -1468,7 +1468,7 @@ fun StatusSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-StampTicket">
-<h3><code>StampTicket</code> <span class="src"><code>component/Goals.kt:423</code></span></h3>
+<h3><code>StampTicket</code> <span class="src"><code>component/Goals.kt:417</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The paper ticket a save notice becomes when a stamp is earned where the goal's own stamps are not in view: the stamps on the left, a dashed tear, then <code>title</code> and <code>detail</code>. Two stamps sit smaller, side by side; with <code>land</code> they come down in turn.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/goals.html">goals · 1</a></dd>
@@ -1538,7 +1538,7 @@ fun StatusSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-MovementNoteComposer">
-<h3><code>MovementNoteComposer</code> <span class="src"><code>component/Movement.kt:103</code></span></h3>
+<h3><code>MovementNoteComposer</code> <span class="src"><code>component/Movement.kt:111</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The note composer over the form, its context the movement's <code>kind</code> and, once there is one, its signed <code>figure</code> in bold. <code>spoken</code> names what the note is for when read aloud, followed by <code>amountSpoken</code>. <code>counter</code>, <code>hint</code>, <code>error</code> and the two labels are the <code>NoteComposer</code>'s, already written.</dd>
 <dt>Inputs</dt><dd>The movement's kind and signed figure, the draft, and the composer's counter, hint, error and labels, already written; the app maps a note problem to its message.</dd>
@@ -1636,7 +1636,7 @@ fun StatusSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-SettingRow">
-<h3><code>SettingRow</code> <span class="src"><code>component/Settings.kt:61</code></span></h3>
+<h3><code>SettingRow</code> <span class="src"><code>component/Settings.kt:49</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>One line of Configuración: <code>icon</code>, <code>title</code> with an optional <code>caption</code> under it, and <code>value</code> at the end. With <code>onClick</code> the whole row is one button and a chevron says it leads somewhere, unless it is the <code>SettingTone.Loss</code> row, which is red instead. A dashed rule above separates it from the row before; the first row under a heading has none. When they don't fit on one line, the title and value share the width and each wraps.</dd>
 <dt>Variants</dt><dd><code>tone</code>: <code>SettingTone.Normal</code> or <code>Loss</code> (red, no chevron). With or without <code>onClick</code>, <code>caption</code>, <code>value</code>, <code>divider</code>.</dd>
@@ -1675,7 +1675,7 @@ fun StatusSlip(
 <section id="g-bulk">
 <h2>Bulk receipt</h2>
 <article class="component" id="c-BulkReceipt">
-<h3><code>BulkReceipt</code> <span class="src"><code>component/BulkReceipt.kt:164</code></span></h3>
+<h3><code>BulkReceipt</code> <span class="src"><code>component/BulkReceipt.kt:162</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The bulk receipt of Anotar varios: a pinked slip with the <code>caption</code> and <code>headerEnd</code> (the receipt's date) on top, the <code>lines</code>, a tear line and a foot with **Otro renglón** and the <code>total</code>. It takes the height its <code>modifier</code> gives it: the lines scroll inside, fading at the edge that hides more, while the header and the foot stay. Tapping a line calls <code>onSelect</code>; the <code>highlighted</code> one is edged in ink, shows a caret and carries <code>highlightedFoot</code> (a goal's or investment's date pill). <code>onRemove</code> runs from a swipe towards the start past 40 % of the line, from its long-press menu or from the action a screen reader offers; the last line offers none of them. Each line is read as one item: its place, title, detail, amount and reason; the date pill is reached on its own. While not <code>enabled</code> nothing responds and no line is highlighted.</dd>
 <dt>Variants</dt><dd><code>BulkLine.markTone</code>: <code>BulkMarkTone.Category</code>, <code>Gain</code>, <code>Neutral</code>, <code>Value</code>. <code>BulkAmountTone.Ink</code> or <code>Gain</code>. Marks as in <code>MovementRow</code>: Add, Remove (−) for a retiro, Insights. <code>BulkCaption.Count</code> or <code>Problem</code>. A line with a <code>reason</code> is outlined in loss. At most <code>BULK_RECEIPT_MAX_LINES</code> = 30 lines.</dd>

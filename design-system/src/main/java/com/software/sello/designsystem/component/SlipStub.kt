@@ -102,7 +102,7 @@ fun StubButton(
                 icon.painter(),
                 contentDescription = null,
                 tint = colors.brand,
-                modifier = Modifier.padding(end = 8.dp).size(24.dp)
+                modifier = Modifier.padding(end = SelloTheme.spacing.sm).size(24.dp)
             )
             Column(Modifier.clearAndSetSemantics {}) {
                 Text(title, fontWeight = SelloTheme.type.weight.emphasis, color = colors.brand)
