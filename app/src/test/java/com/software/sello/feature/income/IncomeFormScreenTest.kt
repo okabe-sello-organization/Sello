@@ -18,6 +18,7 @@ import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.component.REPEAT_ROW_TAG
 import com.software.sello.showSello
 import java.time.LocalDate
+import java.time.YearMonth
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -206,5 +207,23 @@ class IncomeFormScreenTest {
 
         rule.onNodeWithText("Máximo 12 dígitos").assertIsDisplayed()
         rule.onNodeWithText("Ingreso en pesos").assertDoesNotExist()
+    }
+
+    @Test
+    fun aCorrectionOfAPastMonthNamesItInLowerCaseWithoutTheYear() {
+        val months = listOf(YearMonth.of(2026, 9))
+        showForm(ready.copy(editing = true, pastMonths = months), mutableListOf())
+
+        rule.onNodeWithTag("income.pastMonths")
+            .assertTextEquals("Esta corrección afecta los ingresos de septiembre.")
+    }
+
+    @Test
+    fun aCorrectionMovingBetweenTwoPastMonthsNamesBothAsTheExpenseFormDoes() {
+        val months = listOf(YearMonth.of(2026, 9), YearMonth.of(2026, 8))
+        showForm(ready.copy(editing = true, pastMonths = months), mutableListOf())
+
+        rule.onNodeWithTag("income.pastMonths")
+            .assertTextEquals("Esta corrección afecta los ingresos de septiembre y de agosto.")
     }
 }
