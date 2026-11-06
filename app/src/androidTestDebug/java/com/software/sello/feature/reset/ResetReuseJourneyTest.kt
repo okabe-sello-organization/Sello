@@ -3,9 +3,10 @@ package com.software.sello.feature.reset
 import android.content.Context
 import android.content.Intent
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsNotEnabled
-import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
@@ -16,7 +17,6 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
-import androidx.compose.ui.text.AnnotatedString
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -156,15 +156,12 @@ class ResetReuseJourneyTest {
         assertEquals(listOf(listOf("Mercado"), listOf("7000", "8000"), listOf("1")), history())
 
         word.performTextReplacement("BORRAR")
-        // On CI the check failed while the dump of the same node printed BORRAR; the cause
-        // isn't proven (the keyboard rewriting the text is one candidate). Wait for the
-        // word, then for the button it enables.
-        rule.await(
-            hasContentDescription("Escribe BORRAR para confirmar") and
-                SemanticsMatcher.expectValue(
-                    SemanticsProperties.EditableText,
-                    AnnotatedString("BORRAR")
-                )
+        // The text alone: the system keyboard may take the word as the one it is composing,
+        // and the field then reports it with an underline, which is not part of the word.
+        word.assert(
+            SemanticsMatcher("typed word is exactly BORRAR") {
+                it.config.getOrNull(SemanticsProperties.EditableText)?.text == "BORRAR"
+            }
         )
         rule.await(hasTestTag(RESET_CONFIRM_TAG) and isEnabled())
         // Pressed, not clicked by position: the keyboard may still be on its way and move
