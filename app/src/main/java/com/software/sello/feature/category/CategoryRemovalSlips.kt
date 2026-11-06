@@ -463,43 +463,60 @@ private fun ProblemSlip(
         is RemovalProblem.NotSaved, RemovalProblem.CannotCount -> R.string.category_delete_retry
     }
     val nothing = stringResource(R.string.category_delete_nothing)
-    val why = when (problem) {
+    val why: AnnotatedString = when (problem) {
         is RemovalProblem.Changed -> {
             val before = problem.before
             val now = problem.now
-            val counts = if (before != null &&
+            val review = stringResource(R.string.category_delete_changed_review)
+            if (before != null &&
                 (before.expenses != now.expenses || before.total != now.total)
             ) {
-                pluralStringResource(
-                    R.plurals.category_delete_changed_counts,
-                    now.expenses,
-                    name,
-                    countText(now.expenses),
-                    now.total.shown(),
-                    countText(before.expenses),
-                    before.total.shown()
+                val count = expensesText(now.expenses)
+                val total = now.total.shown()
+                bold(
+                    pluralStringResource(
+                        R.plurals.category_delete_changed_counts,
+                        now.expenses,
+                        name,
+                        countText(now.expenses),
+                        total,
+                        countText(before.expenses),
+                        before.total.shown()
+                    ) + " " + review,
+                    count,
+                    total
                 )
             } else {
-                stringResource(R.string.category_delete_changed_body, name)
+                AnnotatedString(
+                    stringResource(R.string.category_delete_changed_body, name) + " " + review
+                )
             }
-            counts + " " + stringResource(R.string.category_delete_changed_review)
         }
 
-        is RemovalProblem.TargetClosed ->
+        is RemovalProblem.TargetClosed -> AnnotatedString(
             stringResource(R.string.category_delete_target_body, problem.target, name)
+        )
 
-        is RemovalProblem.TargetCarry ->
+        is RemovalProblem.TargetCarry -> AnnotatedString(
             stringResource(R.string.category_delete_carry_body, problem.target, name)
+        )
 
-        is RemovalProblem.NotSaved -> problem.counts?.let {
-            stringResource(R.string.category_delete_storage_body, name, keeps(it))
-        } ?: stringResource(R.string.category_delete_storage_body_plain, name)
+        is RemovalProblem.NotSaved -> AnnotatedString(
+            problem.counts?.let {
+                stringResource(R.string.category_delete_storage_body, name, keeps(it))
+            } ?: stringResource(R.string.category_delete_storage_body_plain, name)
+        )
 
-        RemovalProblem.CannotCount -> stringResource(R.string.category_delete_count_body, name)
+        RemovalProblem.CannotCount ->
+            AnnotatedString(stringResource(R.string.category_delete_count_body, name))
     }
     // It did not happen: an action that failed, inside the dialog, with its one way
     // forward. Counting failed before anything was offered: nothing could be deleted.
-    val message = if (problem == RemovalProblem.CannotCount) why else "$nothing $why"
+    val message = if (problem == RemovalProblem.CannotCount) {
+        why
+    } else {
+        bold("$nothing ", nothing) + why
+    }
     RemovalDialog(
         title = title,
         onDismiss = { if (!busy) onAction(RemovalAction.Dismiss) },

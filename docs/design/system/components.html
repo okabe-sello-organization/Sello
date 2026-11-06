@@ -714,7 +714,7 @@ fun LeaderLine(
 <div class="gaps"><p>No component capture yet: adding it to a component sheet would change an existing baseline in a pull request that must change none.</p></div>
 </article>
 <article class="component" id="c-ButtonPair">
-<h3><code>ButtonPair</code> <span class="src"><code>component/Recurrence.kt:240</code></span></h3>
+<h3><code>ButtonPair</code> <span class="src"><code>component/Recurrence.kt:241</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>Two buttons side by side, sharing the width by <code>firstWeight</code> and <code>secondWeight</code>, or one above the other at full width when a word of either label would not fit its share. <code>first</code> is the outlined answer, such as Cancelar, and <code>second</code> the filled action. Side by side the action is on the right; one above the other it is on top, Cancelar under it.</dd>
 <dt>Button order</dt><dd>One rule everywhere (owner decision M08-2): stacked, the action on top and Cancelar under it. Every two-button confirmation uses it, in dialogs (<code>ConfirmSlip</code>, <code>ChoiceSlip</code>) and on screens (Borrar datos, Restaurar, start-up restore), so the order never flips when a label stops fitting.</dd>
@@ -1019,9 +1019,9 @@ fun ChoiceSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-StatusSlip">
-<h3><code>StatusSlip</code> <span class="src"><code>component/Status.kt:108</code></span></h3>
+<h3><code>StatusSlip</code> <span class="src"><code>component/Status.kt:109</code>, <code>component/Status.kt:123</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>A slip that says what kind of news it brings. Its required <code>kind</code> decides the icon, ink, layout and button and carries the title, so the compiler checks each kind gets the words it needs (Empty a title, Older none, the others an optional one). A caller adds the <code>message</code> and at most one <code>StatusAction</code> (label, <code>busy</code>, <code>onClick</code>); <code>StatusSlipDefaults</code> has the usual labels. A busy action shows a spinner, says "En curso" to TalkBack and ignores presses; every action is at least 48 dp tall. It replaced <code>EmptySlip</code>, <code>ErrorSlip</code> and the app's <code>StaleSlip</code> (SELLO-184): every screen picks the kind that means its state.</dd>
+<dt>Purpose</dt><dd>A slip that says what kind of news it brings. Its required <code>kind</code> decides the icon, ink, layout and button and carries the title, so the compiler checks each kind gets the words it needs (Empty a title, Older none, the others an optional one). A caller adds the <code>message</code> and at most one <code>StatusAction</code> (label, <code>busy</code>, <code>onClick</code>); <code>StatusSlipDefaults</code> has the usual labels. A busy action shows a spinner, says "En curso" to TalkBack and ignores presses; every action is at least 48 dp tall. It replaced <code>EmptySlip</code>, <code>ErrorSlip</code> and the app's <code>StaleSlip</code> (SELLO-184): every screen picks the kind that means its state. A <code>message</code> may be an <code>AnnotatedString</code> with styled parts, such as figures in bold; the kind's ink still colours the whole sentence.</dd>
 <dt>Kinds</dt><dd>
 <table>
 <thead><tr><th>Kind</th><th>When</th><th>Looks</th><th>Default words</th></tr></thead>
@@ -1039,6 +1039,13 @@ fun ChoiceSlip(
 <pre><code>fun StatusSlip(
     kind: StatusKind,
     message: String,
+    modifier: Modifier = Modifier,
+    action: StatusAction? = null
+)
+
+fun StatusSlip(
+    kind: StatusKind,
+    message: AnnotatedString,
     modifier: Modifier = Modifier,
     action: StatusAction? = null
 )</code></pre>

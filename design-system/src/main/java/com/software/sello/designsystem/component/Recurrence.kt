@@ -235,6 +235,7 @@ private fun DatePill(text: String, modifier: Modifier = Modifier) {
  * one above the other at full width when a word of either label would not fit its share.
  * [first] is the outlined answer, such as Cancelar, and [second] the filled action. Side
  * by side the action is on the right; one above the other it is on top, Cancelar under it.
+ * TalkBack and the keyboard go through them in the order they are seen.
  */
 @Composable
 fun ButtonPair(
@@ -271,6 +272,7 @@ fun ButtonPair(
             val placedA = a.measure(full)
             val placedB = b.measure(full)
             layout(width, placedB.height + space + placedA.height) {
+                // Placed first, so the keyboard reaches the action first, as it is seen.
                 placedB.placeRelative(0, 0)
                 placedA.placeRelative(0, placedB.height + space)
             }

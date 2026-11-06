@@ -1703,7 +1703,7 @@ window.SELLO_FINDINGS = {
    "copies": [
     {
      "id": "C21-1",
-     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:814",
+     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:831",
      "area": "category",
      "features": [
       "category"
@@ -2033,7 +2033,7 @@ window.SELLO_FINDINGS = {
    ],
    "places": [
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Recurrence.kt:284",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Recurrence.kt:286",
      "area": "design-system:Recurrence",
      "features": [
       "recurrence"
@@ -3970,7 +3970,7 @@ window.SELLO_FINDINGS = {
      "note": "ChoiceRow: style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.W800),"
     },
     {
-     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:823",
+     "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:840",
      "area": "category",
      "features": [
       "category"
@@ -6160,7 +6160,7 @@ window.SELLO_FINDINGS = {
      "note": "file-level constant: SCRIM_ALPHA defined"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Recurrence.kt:284",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Recurrence.kt:286",
      "area": "design-system:Recurrence",
      "features": [
       "recurrence"
