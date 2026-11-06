@@ -13,7 +13,7 @@
       <p class="kicker">Sello design system</p>
       <h1>Components</h1>
       <p class="lede">Every public <code>@Composable</code> in
-        <code>design-system/src/main/java/com/software/sello/designsystem/</code> (73 names; overloads
+        <code>design-system/src/main/java/com/software/sello/designsystem/</code> (74 names; overloads
         share an entry), grouped by what they are for.</p>
     </div>
   </header>
@@ -31,9 +31,9 @@
           files that call it.</li>
         <li><strong>Screenshots</strong> are the dedicated component captures in
           <code>design-system/src/test/screenshots/components-*.png</code>,
-          <code>bulk-receipt-*</code> and the app's <code>components-*.png</code>. These are Cobalto light only and
-          412 dp wide (<code>components-frame.png</code> is a whole 412 × 891 screen); the bulk receipt has
-          light and dark. Where a part has no capture of its own, a screen
+          <code>bulk-receipt-*</code>, <code>status-slip-*</code> and the app's <code>components-*.png</code>. These are Cobalto light only and
+          412 dp wide (<code>components-frame.png</code> is a whole 412 × 891 screen); the bulk receipt and
+          the status slip have light and dark. Where a part has no capture of its own, a screen
           baseline in which it is plainly visible is shown instead, if one was found.</li>
         <li>Link to a component from a feature page with <code>../components.html#c-Name</code>.</li>
       </ul>
@@ -44,7 +44,7 @@
 <li><a href="#g-frame">Frame and navigation</a> <span class="muted">(7)</span></li>
 <li><a href="#g-entry">Entry forms</a> <span class="muted">(11)</span></li>
 <li><a href="#g-choices">Buttons and choices</a> <span class="muted">(11)</span></li>
-<li><a href="#g-feedback">Feedback, dialogs and sheets</a> <span class="muted">(17)</span></li>
+<li><a href="#g-feedback">Feedback, dialogs and sheets</a> <span class="muted">(18)</span></li>
 <li><a href="#g-categories">Categories and carry</a> <span class="muted">(5)</span></li>
 <li><a href="#g-charts">Charts</a> <span class="muted">(2)</span></li>
 <li><a href="#g-goals">Goals and movements</a> <span class="muted">(11)</span></li>
@@ -53,7 +53,7 @@
 <li><a href="#g-theme">Theme and helpers</a> <span class="muted">(6)</span></li>
       </ul>
       <div class="gaps">
-        <p>Of 87 components, 24 have a component capture of their own, 55 are shown inside a screen baseline, and 8 are not shown at all: <a href="#c-SelloIconButton"><code>SelloIconButton</code></a> (no capture yet), <a href="#c-rememberSelectedFirst"><code>rememberSelectedFirst</code></a>, <a href="#c-SelloTheme"><code>SelloTheme</code></a>, <a href="#c-systemReducedMotion"><code>systemReducedMotion</code></a>, <a href="#c-StatusBarInk"><code>StatusBarInk</code></a>, <a href="#c-statusBarLightIconsUnder"><code>statusBarLightIconsUnder</code></a>, <a href="#c-DialogBarIcons"><code>DialogBarIcons</code></a>, <a href="#c-painter"><code>painter</code></a> (theme and helper functions with nothing of their own to draw). No component capture has a dark version except the bulk receipt.</p>
+        <p>Of 88 components, 25 have a component capture of their own, 55 are shown inside a screen baseline, and 8 are not shown at all: <a href="#c-SelloIconButton"><code>SelloIconButton</code></a> (no capture yet), <a href="#c-rememberSelectedFirst"><code>rememberSelectedFirst</code></a>, <a href="#c-SelloTheme"><code>SelloTheme</code></a>, <a href="#c-systemReducedMotion"><code>systemReducedMotion</code></a>, <a href="#c-StatusBarInk"><code>StatusBarInk</code></a>, <a href="#c-statusBarLightIconsUnder"><code>statusBarLightIconsUnder</code></a>, <a href="#c-DialogBarIcons"><code>DialogBarIcons</code></a>, <a href="#c-painter"><code>painter</code></a> (theme and helper functions with nothing of their own to draw). No component capture has a dark version except the bulk receipt and the status slip.</p>
       </div>
     </section>
 <section id="g-surfaces">
@@ -991,6 +991,38 @@ fun ChoiceSlip(
 <p class="muted">Also visible in screen baselines: <code>settings-order-slip</code>.</p>
 <figure data-shot="settings-order-slip" data-module="app" data-caption="Seen in Orden de las categorías"></figure>
 <div class="gaps"><p>No component capture.</p></div>
+</article>
+<article class="component" id="c-StatusSlip">
+<h3><code>StatusSlip</code> <span class="src"><code>component/Status.kt:108</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A slip that says what kind of news it brings. Its required <code>kind</code> decides the icon, ink, layout and button and carries the title, so the compiler checks each kind gets the words it needs (Empty a title, Older none, the others an optional one). A caller adds the <code>message</code> and at most one <code>StatusAction</code> (label, <code>busy</code>, <code>onClick</code>); <code>StatusSlipDefaults</code> has the usual labels. A busy action shows a spinner, says "En curso" to TalkBack and ignores presses; every action is at least 48 dp tall. It replaces <a href="#c-EmptySlip"><code>EmptySlip</code></a>, <a href="#c-ErrorSlip"><code>ErrorSlip</code></a> and the app's <code>StaleSlip</code> (SELLO-184 moves the screens over).</dd>
+<dt>Kinds</dt><dd>
+<table>
+<thead><tr><th>Kind</th><th>When</th><th>Looks</th><th>Default words</th></tr></thead>
+<tbody>
+<tr><td><code>Empty(icon, title)</code></td><td>Nothing to show yet</td><td>Centred under the caller's icon in brand; sentence in inkSoft; outlined action</td><td>Title required</td></tr>
+<tr><td><code>LoadFailed(title?)</code></td><td>Content could not be read and nothing older is shown. Never above figures</td><td>Centred under Error in brand; sentence in inkSoft; outlined retry; read aloud</td><td>"No se pudo cargar"; <code>retryLabel</code> "Reintentar"</td></tr>
+<tr><td><code>Older</code></td><td>Figures still shown are the last read</td><td>Flat inline slip, no title; sentence in warn; text-button retry lined up with the sentence; read aloud</td><td><code>retryLabel</code></td></tr>
+<tr><td><code>ActionFailed(title?)</code></td><td>A save, export or backup failed</td><td>Flat inline slip; Error icon and sentence in loss; outlined retry; read aloud</td><td><code>retryLabel</code></td></tr>
+<tr><td><code>Unknown(title?)</code></td><td>The outcome of an action is not known yet; never says it failed</td><td>Flat inline slip; Info icon and sentence in warn; outlined check; read aloud</td><td><code>checkLabel</code> "Comprobar"</td></tr>
+<tr><td><code>Gone(title?)</code></td><td>The thing no longer exists</td><td>Centred under Block in brand; sentence in inkSoft; optional outlined way back; read aloud</td><td>"Ya no está"; <code>backLabel</code> "Volver"</td></tr>
+</tbody>
+</table></dd>
+<dt>Used by</dt><dd>No screen yet.</dd>
+</dl>
+<pre><code>fun StatusSlip(
+    kind: StatusKind,
+    message: String,
+    modifier: Modifier = Modifier,
+    action: StatusAction? = null
+)</code></pre>
+<figure data-shot="status-slip-empty" data-module="design-system" data-variants="claro,oscuro" data-caption="Empty"></figure>
+<figure data-shot="status-slip-load-failed" data-module="design-system" data-variants="claro,oscuro" data-caption="LoadFailed"></figure>
+<figure data-shot="status-slip-older" data-module="design-system" data-variants="claro,oscuro" data-caption="Older"></figure>
+<figure data-shot="status-slip-action-failed" data-module="design-system" data-variants="claro,oscuro" data-caption="ActionFailed"></figure>
+<figure data-shot="status-slip-unknown" data-module="design-system" data-variants="claro,oscuro" data-caption="Unknown"></figure>
+<figure data-shot="status-slip-gone" data-module="design-system" data-variants="claro,oscuro" data-caption="Gone"></figure>
+<figure data-shot="status-slip-busy" data-module="design-system" data-variants="claro,oscuro" data-caption="Busy: LoadFailed and Unknown while their action runs"></figure>
 </article>
 <article class="component" id="c-EmptySlip">
 <h3><code>EmptySlip</code> <span class="src"><code>component/Feedback.kt:352</code></span></h3>
