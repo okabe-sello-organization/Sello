@@ -207,6 +207,13 @@ class BackupScreenshotTest {
     @Test
     fun recordUnreadableDark() = capture("unreadable", Look(dark = true), unreadableRecord)
 
+    /** The record could not be read again: the last one read, marked as older, with Reintentar. */
+    private val olderRecord = ready.copy(recordFailed = true)
+
+    @Test fun recordOlderLight() = capture("older", Look(), olderRecord)
+
+    @Test fun recordOlderDark() = capture("older", Look(dark = true), olderRecord)
+
     private val justSaved = ready.copy(justSaved = true)
 
     @Test fun justSavedLight() = capture("just-saved", Look(), justSaved)

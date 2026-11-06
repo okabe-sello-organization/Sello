@@ -922,6 +922,7 @@
     <string name="backup_size">Archivo</string>
     <string name="backup_moment">%1$s, %2$s</string>
     <string name="backup_record_failed">No pudimos leer cuándo fue tu último respaldo. Puedes crear uno igual.</string>
+    <string name="backup_record_stale">No pudimos leer tu último respaldo de nuevo. Te mostramos el de la última lectura.</string>
     <string name="backup_disclosure_title">Antes de guardar</string>
     <string name="backup_disclosure_readable_lead">Cualquiera que abra el archivo puede leerlo.</string>
     <string name="backup_disclosure_readable">Muestra tus montos, categorías y notas. No tiene contraseña ni cifrado.</string>

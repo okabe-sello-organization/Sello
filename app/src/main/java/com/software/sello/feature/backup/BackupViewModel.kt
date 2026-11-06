@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -41,8 +42,24 @@ class BackupViewModel(
     /** The name to suggest while the picker is waiting to be opened, then null. */
     private val pickerRequest = MutableStateFlow<String?>(null)
 
+    /**
+     * The record as last known. Every observation, such as a Retry's or one started when the
+     * screen comes back, starts with no last good record; this keeps the one already shown,
+     * so a failed read never forgets it. A save this process finished or abandoned while the
+     * record could not be read settles it, as the record that save wrote.
+     */
+    private var lastGood: BackupRecord? = null
+
     private val record: Flow<PreferenceRead<BackupRecord>> =
-        retry.flatMapLatest { records.observeBackups() }
+        retry.flatMapLatest { records.observeBackups() }.map { read ->
+            // Every read passes here, so the one kept is never older than the observation's
+            // own, and it may have been settled by a save since.
+            when (read) {
+                is PreferenceRead.Ready -> lastGood = read.value
+                is PreferenceRead.Failed -> lastGood = lastGood ?: read.lastGood
+            }
+            read
+        }
 
     val state: StateFlow<BackupState> = combine(
         record,
@@ -52,7 +69,10 @@ class BackupViewModel(
     ) { read, progress, (picking, request), today ->
         val (stored, failed) = when (read) {
             is PreferenceRead.Ready -> read.value to false
-            is PreferenceRead.Failed -> (read.lastGood ?: BackupRecord()) to true
+
+            is PreferenceRead.Failed ->
+                // The kept record, not the read's: a new save outcome alone runs this again.
+                (settled(lastGood, progress)?.also { lastGood = it } ?: BackupRecord()) to true
         }
         val saving = progress == BackupProgress.Saving
         BackupState(
@@ -79,6 +99,18 @@ class BackupViewModel(
             BackupAction.RetryRecord -> retry.update { it + 1 }
         }
     }
+
+    /**
+     * [record], read before this process's save ended, brought up to date by that save: a
+     * finished one wrote itself as the last backup and an abandoned one cleared its start, so
+     * neither is an unknown outcome.
+     */
+    private fun settled(record: BackupRecord?, progress: BackupProgress): BackupRecord? =
+        when (progress) {
+            is BackupProgress.Saved -> BackupRecord(progress.backup, unfinished = false)
+            is BackupProgress.Failed -> record?.copy(unfinished = false)
+            BackupProgress.Idle, BackupProgress.Saving -> record
+        }
 
     private fun create() {
         if (choosing.value || state.value.saving) return
@@ -131,4 +163,10 @@ data class BackupState(
     val failure: BackupFailure? = null
 ) {
     val busy: Boolean get() = loading || choosing || saving
+
+    /**
+     * The record could not be read again and [last] is the one read before: shown, marked
+     * as older. Not after a save this process just made, whose figures are its own.
+     */
+    val recordOlder: Boolean get() = recordFailed && last != null && !justSaved
 }

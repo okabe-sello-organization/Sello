@@ -62,7 +62,13 @@ class HandBackupRecords(initial: BackupRecord = BackupRecord()) : BackupRecords 
     var unreadable = false
     val reads = MutableStateFlow<PreferenceRead<BackupRecord>>(PreferenceRead.Ready(initial))
 
-    override fun observeBackups(): Flow<PreferenceRead<BackupRecord>> = reads
+    /** How many times the record has been observed: a Retry observes it again. */
+    var observations = 0
+
+    override fun observeBackups(): Flow<PreferenceRead<BackupRecord>> {
+        observations++
+        return reads
+    }
 
     override suspend fun backupStarted(): PreferenceWrite =
         set(stored.value.copy(unfinished = true))
@@ -73,9 +79,19 @@ class HandBackupRecords(initial: BackupRecord = BackupRecord()) : BackupRecords 
     override suspend fun backupAbandoned(): PreferenceWrite =
         set(stored.value.copy(unfinished = false))
 
-    fun failReads() {
+    /**
+     * Reads fail from now on. [lastGood] is what this observation read before: a new
+     * observation, such as a Retry's, starts with none.
+     */
+    fun failReads(lastGood: BackupRecord? = null) {
         unreadable = true
-        reads.value = PreferenceRead.Failed(PreferenceFailure.Unavailable, null)
+        reads.value = PreferenceRead.Failed(PreferenceFailure.Unavailable, lastGood)
+    }
+
+    /** Reads work again and read what is stored. */
+    fun readAgain() {
+        unreadable = false
+        reads.value = PreferenceRead.Ready(stored.value)
     }
 
     private fun set(record: BackupRecord): PreferenceWrite {

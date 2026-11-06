@@ -43,6 +43,7 @@ import com.software.sello.designsystem.component.StampInk
 import com.software.sello.designsystem.component.StatusAction
 import com.software.sello.designsystem.component.StatusKind
 import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.count.countText
 import com.software.sello.presentation.date.dateLabels
@@ -108,6 +109,16 @@ fun BackupScreen(
         if (restoreFirst || restoreOnly) restore()
         if (restoreOnly) return@Column
         BackupProblems(state) { onAction(BackupAction.Create) }
+        if (state.recordOlder) {
+            StatusSlip(
+                kind = StatusKind.Older,
+                message = stringResource(R.string.backup_record_stale),
+                modifier = Modifier.testTag(BACKUP_OLDER_TAG),
+                action = StatusAction(StatusSlipDefaults.retryLabel) {
+                    onAction(BackupAction.RetryRecord)
+                }
+            )
+        }
         LastBackupSlip(state, onAction)
         Disclosure()
         SelloButton(
@@ -277,3 +288,4 @@ const val BACKUP_DISCLOSURE_TAG = "backup:disclosure"
 const val BACKUP_CREATE_TAG = "backup:create"
 const val BACKUP_FAILED_TAG = "backup:failed"
 const val BACKUP_UNKNOWN_TAG = "backup:unknown"
+const val BACKUP_OLDER_TAG = "backup:older"
