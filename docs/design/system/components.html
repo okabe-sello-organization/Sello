@@ -31,8 +31,9 @@
           files that call it.</li>
         <li><strong>Screenshots</strong> are the dedicated component captures in
           <code>design-system/src/test/screenshots/components-*.png</code>,
-          <code>bulk-receipt-*</code> and the app's <code>components-*.png</code>. These are Cobalto light only,
-          320 dp wide; the bulk receipt has light and dark. Where a part has no capture of its own, a screen
+          <code>bulk-receipt-*</code> and the app's <code>components-*.png</code>. These are Cobalto light only and
+          412 dp wide (<code>components-frame.png</code> is a whole 412 × 891 screen); the bulk receipt has
+          light and dark. Where a part has no capture of its own, a screen
           baseline in which it is plainly visible is shown instead, if one was found.</li>
         <li>Link to a component from a feature page with <code>../components.html#c-Name</code>.</li>
       </ul>
@@ -52,8 +53,7 @@
 <li><a href="#g-theme">Theme and helpers</a> <span class="muted">(6)</span></li>
       </ul>
       <div class="gaps">
-        <p>42 components have no component capture of their own: <a href="#c-Slip"><code>Slip</code></a>, <a href="#c-SlipStub"><code>SlipStub</code></a>, <a href="#c-StubButton"><code>StubButton</code></a>, <a href="#c-TearLine"><code>TearLine</code></a>, <a href="#c-AnswerSlip"><code>AnswerSlip</code></a>, <a href="#c-PlanSlip"><code>PlanSlip</code></a>, <a href="#c-ExpectedChip"><code>ExpectedChip</code></a>, <a href="#c-FactLine"><code>FactLine</code></a>, <a href="#c-Footnote"><code>Footnote</code></a>, <a href="#c-FittedMoneyText"><code>FittedMoneyText</code></a>, <a href="#c-LeaderLine"><code>LeaderLine</code></a>, <a href="#c-TotalLine"><code>TotalLine</code></a>, <a href="#c-SelloNavigationRail"><code>SelloNavigationRail</code></a>, <a href="#c-BandChip"><code>BandChip</code></a>, <a href="#c-MonthGrid"><code>MonthGrid</code></a>, <a href="#c-MoreMenu"><code>MoreMenu</code></a>, <a href="#c-EntryLayout"><code>EntryLayout</code></a>, <a href="#c-EntryHeading"><code>EntryHeading</code></a>, <a href="#c-EntryLine"><code>EntryLine</code></a>, <a href="#c-NoteComposer"><code>NoteComposer</code></a>, <a href="#c-FormField"><code>FormField</code></a>, <a href="#c-FieldMessageText"><code>FieldMessageText</code></a>, <a href="#c-SegmentedSwitch"><code>SegmentedSwitch</code></a>, <a href="#c-ButtonPair"><code>ButtonPair</code></a>, <a href="#c-ChipRows"><code>ChipRows</code></a>, <a href="#c-IconChoiceGrid"><code>IconChoiceGrid</code></a>, <a href="#c-IconPickerCircle"><code>IconPickerCircle</code></a>, <a href="#c-IconChoiceSheetContent"><code>IconChoiceSheetContent</code></a>, <a href="#c-rememberSelectedFirst"><code>rememberSelectedFirst</code></a>, <a href="#c-ConfirmSlip"><code>ConfirmSlip</code></a>, <a href="#c-ChoiceSlip"><code>ChoiceSlip</code></a>, <a href="#c-OptionSlip"><code>OptionSlip</code></a>, <a href="#c-SuggestionNote"><code>SuggestionNote</code></a>, <a href="#c-BulletList"><code>BulletList</code></a>, <a href="#c-RepeatSheet"><code>RepeatSheet</code></a>, <a href="#c-SplitBar"><code>SplitBar</code></a>, <a href="#c-MovementRow"><code>MovementRow</code></a>, <a href="#c-MovementMonthLine"><code>MovementMonthLine</code></a>, <a href="#c-MilestoneRow"><code>MilestoneRow</code></a>, <a href="#c-StampTicket"><code>StampTicket</code></a>, <a href="#c-ScheduleRow"><code>ScheduleRow</code></a>, <a href="#c-SettingRow"><code>SettingRow</code></a>. No component capture
-          has a dark version except the bulk receipt.</p>
+        <p>Of 72 components, 24 have a component capture of their own, 41 are shown inside a screen baseline, and 7 are not shown at all: <a href="#c-rememberSelectedFirst"><code>rememberSelectedFirst</code></a>, <a href="#c-SelloTheme"><code>SelloTheme</code></a>, <a href="#c-systemReducedMotion"><code>systemReducedMotion</code></a>, <a href="#c-StatusBarInk"><code>StatusBarInk</code></a>, <a href="#c-statusBarLightIconsUnder"><code>statusBarLightIconsUnder</code></a>, <a href="#c-DialogBarIcons"><code>DialogBarIcons</code></a>, <a href="#c-painter"><code>painter</code></a> (theme and helper functions with nothing of their own to draw). No component capture has a dark version except the bulk receipt.</p>
       </div>
     </section>
 <section id="g-surfaces">
@@ -74,7 +74,9 @@
     content: @Composable ColumnScope.() -&gt; Unit
 )</code></pre>
 
-<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+<p class="muted">Also visible in screen baselines: <code>recibo</code>.</p>
+<figure data-shot="recibo" data-module="app" data-caption="Seen in Recibo: every slip on the desk"></figure>
+<div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-SlipStub">
 <h3><code>SlipStub</code> <span class="src"><code>component/SlipStub.kt:44</code></span></h3>
@@ -88,7 +90,9 @@
     modifier: Modifier = Modifier
 )</code></pre>
 
-<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+<p class="muted">Also visible in screen baselines: <code>resumen-closed</code>.</p>
+<figure data-shot="resumen-closed" data-module="app" data-caption="Seen in Resumen: the Ingresos | Fijos stub"></figure>
+<div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-StubButton">
 <h3><code>StubButton</code> <span class="src"><code>component/SlipStub.kt:75</code></span></h3>
@@ -107,7 +111,9 @@
     minHeight: Dp = 56.dp
 )</code></pre>
 
-<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+<p class="muted">Also visible in screen baselines: <code>resumen-closed</code>.</p>
+<figure data-shot="resumen-closed" data-module="app" data-caption="Seen in Resumen: Ingresos and Fijos, the stub's two buttons"></figure>
+<div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-TearLine">
 <h3><code>TearLine</code> <span class="src"><code>component/TearLine.kt:22</code></span></h3>
@@ -155,7 +161,9 @@
     content: @Composable ColumnScope.() -&gt; Unit
 )</code></pre>
 
-<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+<p class="muted">Also visible in screen baselines: <code>income-history-plan</code>.</p>
+<figure data-shot="income-history-plan" data-module="app" data-caption="Seen in Ingresos de octubre: Plan del mes"></figure>
+<div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-ExpectedChip">
 <h3><code>ExpectedChip</code> <span class="src"><code>component/Plan.kt:116</code></span></h3>
@@ -170,7 +178,9 @@
     modifier: Modifier = Modifier
 )</code></pre>
 
-<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+<p class="muted">Also visible in screen baselines: <code>income-history-plan</code>.</p>
+<figure data-shot="income-history-plan" data-module="app" data-caption="Seen in Ingresos de octubre: the dashed Salario chip in Plan del mes"></figure>
+<div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-FactLine">
 <h3><code>FactLine</code> <span class="src"><code>component/Paper.kt:573</code></span></h3>
@@ -180,7 +190,9 @@
 </dl>
 <pre><code>fun FactLine(text: AnnotatedString, modifier: Modifier = Modifier)</code></pre>
 
-<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+<p class="muted">Also visible in screen baselines: <code>goal-detail-framed</code>.</p>
+<figure data-shot="goal-detail-framed" data-module="app" data-caption="Seen in Goal detail: the line under Sellos"></figure>
+<div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-Footnote">
 <h3><code>Footnote</code> <span class="src"><code>component/Paper.kt:583</code></span></h3>
@@ -195,7 +207,9 @@
     icon: SelloIcon = SelloIcon.Event
 )</code></pre>
 
-<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+<p class="muted">Also visible in screen baselines: <code>recibo-reserved</code>.</p>
+<figure data-shot="recibo-reserved" data-module="app" data-caption="Seen in Recibo: the &quot;Incluye … separado&quot; footnote"></figure>
+<div class="gaps"><p>No component capture.</p></div>
 </article>
 </section>
 <section id="g-money">
@@ -235,7 +249,9 @@
     onTextLayout: (androidx.compose.ui.text.TextLayoutResult) -&gt; Unit = {}
 )</code></pre>
 
-<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+<p class="muted">Also visible in screen baselines: <code>goal-detail-framed</code>.</p>
+<figure data-shot="goal-detail-framed" data-module="app" data-caption="Seen in Goal detail: Ya guardaste 1.310.000"></figure>
+<div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-LeaderLine">
 <h3><code>LeaderLine</code> <span class="src"><code>component/Lines.kt:47</code>, <code>component/Lines.kt:115</code></span></h3>
@@ -359,7 +375,9 @@ fun LeaderLine(
     dock: SelloDock? = null
 )</code></pre>
 
-<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+<p class="muted">Also visible in screen baselines: <code>shell-rail-beside</code>.</p>
+<figure data-shot="shell-rail-beside" data-module="app" data-caption="Seen in Landscape frame: the rail at the left"></figure>
+<div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-EntryDock">
 <h3><code>EntryDock</code> <span class="src"><code>component/Controls.kt:78</code></span></h3>
@@ -450,7 +468,9 @@ fun LeaderLine(
     more: (@Composable () -&gt; Unit)? = null
 )</code></pre>
 
-<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+<p class="muted">Also visible in screen baselines: <code>expense-entry</code>.</p>
+<figure data-shot="expense-entry" data-module="app" data-caption="Seen in Anotar: the amount, chips and lines over the keypad"></figure>
+<div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-EntryAmountSlip">
 <h3><code>EntryAmountSlip</code> <span class="src"><code>component/Paper.kt:145</code></span></h3>
@@ -525,7 +545,9 @@ fun LeaderLine(
 </dl>
 <pre><code>fun EntryHeading(text: String, modifier: Modifier = Modifier)</code></pre>
 
-<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+<p class="muted">Also visible in screen baselines: <code>bulk-expenses-three-lines</code>.</p>
+<figure data-shot="bulk-expenses-three-lines" data-module="app" data-caption="Seen in Varios gastos: CATEGORÍA · RENGLÓN 3"></figure>
+<div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-EntryLine">
 <h3><code>EntryLine</code> <span class="src"><code>component/Controls.kt:301</code></span></h3>
@@ -543,7 +565,9 @@ fun LeaderLine(
     enabled: Boolean = true
 )</code></pre>
 
-<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+<p class="muted">Also visible in screen baselines: <code>expense-entry</code>.</p>
+<figure data-shot="expense-entry" data-module="app" data-caption="Seen in Anotar: Agregar nota and Repetir este gasto"></figure>
+<div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-FieldPill">
 <h3><code>FieldPill</code> <span class="src"><code>component/Chips.kt:192</code></span></h3>
@@ -585,7 +609,9 @@ fun LeaderLine(
     windowInsets: WindowInsets = WindowInsets.safeDrawing
 )</code></pre>
 
-<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+<p class="muted">Also visible in screen baselines: <code>expense-entry-note</code>.</p>
+<figure data-shot="expense-entry-note" data-module="app" data-caption="Seen in Anotar: the note composer over the keypad"></figure>
+<div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-FormField">
 <h3><code>FormField</code> <span class="src"><code>component/FormField.kt:45</code></span></h3>
@@ -608,7 +634,9 @@ fun LeaderLine(
     trailing: (@Composable () -&gt; Unit)? = null
 )</code></pre>
 
-<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+<p class="muted">Also visible in screen baselines: <code>category-editor</code>.</p>
+<figure data-shot="category-editor" data-module="app" data-caption="Seen in Editar categoría: the Nombre field"></figure>
+<div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-FieldMessageText">
 <h3><code>FieldMessageText</code> <span class="src"><code>component/FieldMessage.kt:46</code></span></h3>
@@ -619,7 +647,9 @@ fun LeaderLine(
 </dl>
 <pre><code>fun FieldMessageText(message: FieldMessage, modifier: Modifier = Modifier)</code></pre>
 
-<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+<p class="muted">Also visible in screen baselines: <code>category-editor-missing</code>.</p>
+<figure data-shot="category-editor-missing" data-module="app" data-caption="Seen in Nueva categoría: the hint above the button and the field errors"></figure>
+<div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-SegmentedSwitch">
 <h3><code>SegmentedSwitch</code> <span class="src"><code>component/Switches.kt:42</code></span></h3>
@@ -679,7 +709,9 @@ fun LeaderLine(
     second: @Composable () -&gt; Unit
 )</code></pre>
 
-<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+<p class="muted">Also visible in screen baselines: <code>category-editor-discard</code>.</p>
+<figure data-shot="category-editor-discard" data-module="app" data-caption="Seen in The discard slip: Seguir editando and Descartar"></figure>
+<div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-SelloChip">
 <h3><code>SelloChip</code> <span class="src"><code>component/Chips.kt:49</code></span></h3>
@@ -743,7 +775,9 @@ fun LeaderLine(
     item: @Composable (Int) -&gt; Unit
 )</code></pre>
 
-<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+<p class="muted">Also visible in screen baselines: <code>expense-entry</code>.</p>
+<figure data-shot="expense-entry" data-module="app" data-caption="Seen in Anotar: the category chips"></figure>
+<div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-IconChoiceGrid">
 <h3><code>IconChoiceGrid</code> <span class="src"><code>component/IconChoiceGrid.kt:52</code></span></h3>
@@ -765,7 +799,9 @@ fun LeaderLine(
     inUseLabel: String? = null
 )</code></pre>
 
-<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+<p class="muted">Also visible in screen baselines: <code>category-editor-icon-sheet</code>.</p>
+<figure data-shot="category-editor-icon-sheet" data-module="app" data-caption="Seen in Elige un ícono: the grid"></figure>
+<div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-IconPickerCircle">
 <h3><code>IconPickerCircle</code> <span class="src"><code>component/IconPicker.kt:42</code></span></h3>
@@ -804,7 +840,9 @@ fun LeaderLine(
     inUseNote: String? = null
 )</code></pre>
 
-<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+<p class="muted">Also visible in screen baselines: <code>category-editor-icon-sheet</code>.</p>
+<figure data-shot="category-editor-icon-sheet" data-module="app" data-caption="Seen in Elige un ícono over Nueva categoría"></figure>
+<div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-rememberSelectedFirst">
 <h3><code>rememberSelectedFirst()</code> <span class="src"><code>component/SelectedFirst.kt:24</code></span></h3>
@@ -818,7 +856,7 @@ fun LeaderLine(
     key: (T) -&gt; Any
 ): SelectedFirstOrder&lt;T&gt;</code></pre>
 
-<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+<div class="gaps"><p>No component capture: it only orders chips, so no screen shows it on its own.</p></div>
 </article>
 </section>
 <section id="g-feedback">
@@ -876,7 +914,9 @@ fun ConfirmSlip(
     content: @Composable ColumnScope.() -&gt; Unit
 )</code></pre>
 
-<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+<p class="muted">Also visible in screen baselines: <code>category-editor-discard</code>.</p>
+<figure data-shot="category-editor-discard" data-module="app" data-caption="Seen in ¿Descartar los cambios?"></figure>
+<div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-ChoiceSlip">
 <h3><code>ChoiceSlip</code> <span class="src"><code>component/Feedback.kt:194</code>, <code>component/Feedback.kt:272</code></span></h3>
@@ -910,7 +950,9 @@ fun ChoiceSlip(
     content: @Composable ColumnScope.() -&gt; Unit
 )</code></pre>
 
-<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+<p class="muted">Also visible in screen baselines: <code>settings-export-slip</code>.</p>
+<figure data-shot="settings-export-slip" data-module="app" data-caption="Seen in Exportar tus datos: CSV or JSON"></figure>
+<div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-OptionSlip">
 <h3><code>OptionSlip</code> <span class="src"><code>component/Settings.kt:142</code></span></h3>
@@ -927,7 +969,9 @@ fun ChoiceSlip(
     modifier: Modifier = Modifier
 )</code></pre>
 
-<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+<p class="muted">Also visible in screen baselines: <code>settings-order-slip</code>.</p>
+<figure data-shot="settings-order-slip" data-module="app" data-caption="Seen in Orden de las categorías"></figure>
+<div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-EmptySlip">
 <h3><code>EmptySlip</code> <span class="src"><code>component/Feedback.kt:352</code></span></h3>
@@ -1004,7 +1048,9 @@ fun ChoiceSlip(
 </dl>
 <pre><code>fun BulletList(bullets: List&lt;Bullet&gt;, modifier: Modifier = Modifier)</code></pre>
 
-<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+<p class="muted">Also visible in screen baselines: <code>settings-export-slip</code>.</p>
+<figure data-shot="settings-export-slip" data-module="app" data-caption="Seen in Exportar tus datos: the bullets"></figure>
+<div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-RepeatSheet">
 <h3><code>RepeatSheet</code> <span class="src"><code>component/Recurrence.kt:60</code></span></h3>
@@ -1019,7 +1065,9 @@ fun ChoiceSlip(
     content: @Composable ColumnScope.() -&gt; Unit
 )</code></pre>
 
-<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+<p class="muted">Also visible in screen baselines: <code>schedule-editor-repeat-monthly</code>.</p>
+<figure data-shot="schedule-editor-repeat-monthly" data-module="app" data-caption="Seen in Se repite's sheet over the schedule editor"></figure>
+<div class="gaps"><p>No component capture.</p></div>
 </article>
 </section>
 <section id="g-categories">
@@ -1152,7 +1200,9 @@ fun ChoiceSlip(
     rule: Boolean = true
 )</code></pre>
 
-<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+<p class="muted">Also visible in screen baselines: <code>goal-detail-movements</code>.</p>
+<figure data-shot="goal-detail-movements" data-module="app" data-caption="Seen in Goal detail: Movimientos"></figure>
+<div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-MovementMonthLine">
 <h3><code>MovementMonthLine</code> <span class="src"><code>component/Goals.kt:164</code></span></h3>
@@ -1162,7 +1212,9 @@ fun ChoiceSlip(
 </dl>
 <pre><code>fun MovementMonthLine(name: String, net: MoneyTextValue?, modifier: Modifier = Modifier)</code></pre>
 
-<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+<p class="muted">Also visible in screen baselines: <code>goal-detail-movements-all</code>.</p>
+<figure data-shot="goal-detail-movements-all" data-module="app" data-caption="Seen in Goal detail: every movement, a line per month with its net"></figure>
+<div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-MilestonePlace">
 <h3><code>MilestonePlace</code> <span class="src"><code>component/Goals.kt:205</code></span></h3>
@@ -1201,7 +1253,9 @@ fun ChoiceSlip(
     evenly: Boolean = false
 )</code></pre>
 
-<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+<p class="muted">Also visible in screen baselines: <code>goal-detail-framed</code>.</p>
+<figure data-shot="goal-detail-framed" data-module="app" data-caption="Seen in Goal detail: the stamps under Sellos"></figure>
+<div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-StampTicket">
 <h3><code>StampTicket</code> <span class="src"><code>component/Goals.kt:409</code></span></h3>
@@ -1217,7 +1271,9 @@ fun ChoiceSlip(
     land: Boolean = false
 )</code></pre>
 
-<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+<p class="muted">Also visible in screen baselines: <code>metas-ticket</code>.</p>
+<figure data-shot="metas-ticket" data-module="app" data-caption="Seen in Metas: the ticket in the notice bar"></figure>
+<div class="gaps"><p>No component capture.</p></div>
 </article>
 </section>
 <section id="g-rows">
@@ -1268,7 +1324,9 @@ fun ChoiceSlip(
     enabled: Boolean = true
 )</code></pre>
 
-<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+<p class="muted">Also visible in screen baselines: <code>settings-loaded</code>.</p>
+<figure data-shot="settings-loaded" data-module="app" data-caption="Seen in Configuración: Pagos e ingresos fijos and the other rows"></figure>
+<div class="gaps"><p>No component capture.</p></div>
 </article>
 </section>
 <section id="g-bulk">
