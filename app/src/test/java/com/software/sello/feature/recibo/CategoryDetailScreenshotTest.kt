@@ -1,10 +1,12 @@
 package com.software.sello.feature.recibo
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
+import com.software.sello.R
 import com.software.sello.captureStill
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
@@ -180,7 +182,8 @@ class CategoryDetailScreenshotTest {
         state: CategoryDetailState,
         dark: Boolean,
         month: YearMonth = YearMonth.of(2026, 10),
-        announcement: Boolean = false
+        announcement: Boolean = false,
+        listed: ReciboState = recibo
     ) {
         rule.showSello(Look(dark = dark)) {
             // Opened in Recibo, on a phone: ReciboDestinations.kt hands it to the frame as
@@ -193,7 +196,8 @@ class CategoryDetailScreenshotTest {
                 {},
                 navigation = appTabs(ShellTab.Recibo),
                 detail = ShellDetail(
-                    detailTitle(food.id, state, recibo) ?: "Categoría",
+                    detailTitle(food.id, state, listed)
+                        ?: stringResource(R.string.category_detail_title_fallback),
                     archived = archived(state),
                     actions = { CategoryEditAction(state is CategoryDetailState.Ready) {} }
                 ) { padding ->
@@ -328,4 +332,21 @@ class CategoryDetailScreenshotTest {
     @Test fun deleteRefusedClaro() = shot("delete-refused", refused, dark = false)
 
     @Test fun deleteRefusedOscuro() = shot("delete-refused", refused, dark = true)
+
+    /** Opened before Recibo's month was read: the fallback title. */
+    @Test
+    fun untitledClaro() = shot(
+        "untitled",
+        CategoryDetailState.Loading,
+        dark = false,
+        listed = ReciboState.Loading
+    )
+
+    @Test
+    fun untitledOscuro() = shot(
+        "untitled",
+        CategoryDetailState.Loading,
+        dark = true,
+        listed = ReciboState.Loading
+    )
 }
