@@ -33,6 +33,7 @@ import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.port.ExpenseOrder
 import com.software.sello.presentation.count.countText
 import com.software.sello.presentation.date.dateLabels
+import com.software.sello.presentation.month.monthNames
 
 @Composable
 fun CategoryExpensesScreen(
@@ -44,6 +45,7 @@ fun CategoryExpensesScreen(
     padding: PaddingValues
 ) {
     val dates = dateLabels()
+    val months = monthNames()
     val loadedLabel = (state as? CategoryExpensesState.Ready)?.let {
         if (it.rows.size.toLong() < it.totalCount) {
             stringResource(
@@ -122,13 +124,28 @@ fun CategoryExpensesScreen(
                 }
                 if (state.rows.isEmpty()) {
                     item {
-                        StatusSlip(
-                            kind = StatusKind.Empty(
-                                SelloIcon.ReceiptLong,
-                                stringResource(R.string.category_expenses_empty)
-                            ),
-                            message = stringResource(R.string.category_expenses_empty_body)
-                        )
+                        // Only a search can find nothing; without one the category has
+                        // no expenses this month, said as its detail says it (#376).
+                        if (state.query.isEmpty()) {
+                            StatusSlip(
+                                kind = StatusKind.Empty(
+                                    SelloIcon.ReceiptLong,
+                                    stringResource(
+                                        R.string.category_detail_empty_title,
+                                        months.inSentence(state.month)
+                                    )
+                                ),
+                                message = stringResource(R.string.category_detail_empty_body)
+                            )
+                        } else {
+                            StatusSlip(
+                                kind = StatusKind.Empty(
+                                    SelloIcon.ReceiptLong,
+                                    stringResource(R.string.category_expenses_empty)
+                                ),
+                                message = stringResource(R.string.category_expenses_empty_body)
+                            )
+                        }
                     }
                 }
                 state.problem?.let { problem ->
