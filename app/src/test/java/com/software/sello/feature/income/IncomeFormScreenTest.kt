@@ -108,6 +108,32 @@ class IncomeFormScreenTest {
         assertEquals(listOf<IncomeFormAction>(IncomeFormAction.Retry), actions)
     }
 
+    /** A recorded income open for correction, nothing changed yet. */
+    private val correcting = ready.copy(editing = true, missing = IncomeMissing.Changes)
+
+    @Test
+    fun aDeletionWhoseOutcomeIsUnknownIsSaidAsADeletionAndOnlyOffersToCheckIt() {
+        val actions = mutableListOf<IncomeFormAction>()
+        showForm(correcting.copy(error = IncomeFormError.DeleteUnknown), actions)
+
+        rule.onNodeWithTag("income.error").assertTextEquals(
+            "Aún no sabemos si se borró. Compruébalo antes de volver a intentarlo."
+        )
+        rule.onNodeWithTag("income.missing").assertDoesNotExist()
+        rule.onNodeWithTag("income.delete").assertIsNotEnabled()
+        rule.onNodeWithTag("income.submit").assertTextEquals("Comprobar si se borró").performClick()
+
+        assertEquals(listOf<IncomeFormAction>(IncomeFormAction.Retry), actions)
+    }
+
+    @Test
+    fun aCheckThatFindsNothingDeletedSaysTheIncomeIsStillThere() {
+        showForm(correcting.copy(error = IncomeFormError.NotDeleted), mutableListOf())
+
+        rule.onNodeWithTag("income.error")
+            .assertTextEquals("No se pudo borrar. El ingreso sigue anotado.")
+    }
+
     @Test
     fun theFormIsGreenWithAPlusAndOffersSourcesAsWordsWithTheirOwnAction() {
         val actions = mutableListOf<IncomeFormAction>()

@@ -380,13 +380,14 @@ private fun IncomeAction(state: IncomeFormState, onAction: (IncomeFormAction) ->
                             IncomeFormError.FutureDate -> R.string.expense_entry_future_date
                             IncomeFormError.InvalidDate -> R.string.expense_entry_invalid_date
                             IncomeFormError.NotDeleted -> R.string.income_not_deleted
+                            IncomeFormError.DeleteUnknown -> R.string.expense_edit_delete_unknown
                             IncomeFormError.StartTooEarly -> R.string.repeat_start_too_early
                             IncomeFormError.EndTooEarly -> R.string.repeat_end_too_early
                             IncomeFormError.FollowingNotSaved -> R.string.following_not_saved
                             else -> R.string.income_not_saved
                         }
                     ),
-                    if (error == IncomeFormError.Unknown) FieldTone.Warning else FieldTone.Error
+                    if (state.unresolved) FieldTone.Warning else FieldTone.Error
                 ),
                 Modifier.testTag("income.error")
             )
@@ -404,16 +405,18 @@ private fun IncomeAction(state: IncomeFormState, onAction: (IncomeFormAction) ->
             IncomeMissing.Changes -> R.string.expense_edit_no_changes
             else -> null
         }
-        if (missing != null && !state.busy && state.error != IncomeFormError.Unknown) {
+        if (missing != null && !state.busy && !state.unresolved) {
             FieldMessageText(
                 FieldMessage(stringResource(missing), tone = FieldTone.Hint),
                 Modifier.testTag("income.missing")
             )
         }
-        val unknown = state.error == IncomeFormError.Unknown
+        val unknown = state.unresolved
+        val deleting = state.error == IncomeFormError.DeleteUnknown
         SelloButton(
             text = stringResource(
                 when {
+                    deleting -> R.string.expense_edit_check_deleted
                     unknown -> R.string.expense_entry_check_again
                     state.busy -> R.string.expense_entry_saving
                     state.editing -> R.string.expense_edit_submit

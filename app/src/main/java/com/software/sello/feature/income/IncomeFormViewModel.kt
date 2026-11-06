@@ -754,10 +754,13 @@ class IncomeFormViewModel(
             }
 
             is Settled.Unknown -> progress.update {
-                it.copy(busy = false, error = IncomeFormError.Unknown)
+                it.copy(busy = false, error = IncomeFormError.DeleteUnknown)
             }
 
-            Settled.NotCommitted -> progress.update { it.copy(busy = false, error = null) }
+            // Asked with its own ID: nothing was deleted, and Borrar can be pressed again.
+            Settled.NotCommitted -> progress.update {
+                it.copy(busy = false, error = IncomeFormError.NotDeleted)
+            }
 
             is Settled.Rejected -> {
                 val error = when (settled.reason) {
