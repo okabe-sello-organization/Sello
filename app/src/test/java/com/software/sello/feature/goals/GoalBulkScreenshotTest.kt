@@ -81,4 +81,37 @@ class GoalBulkScreenshotTest {
 
     @Test
     fun missingGoalOscuro() = capture("missing-goal", GoalBulkSamples.missingGoal, dark = true)
+
+    private val loading =
+        GoalBulkState(lines = emptyList(), total = null, today = GoalBulkSamples.today)
+
+    @Test fun loadingClaro() = capture("loading", loading, dark = false)
+
+    @Test fun loadingOscuro() = capture("loading", loading, dark = true)
+
+    private val failed = loading.copy(loading = false, loadFailed = true)
+
+    @Test fun failedClaro() = capture("failed", failed, dark = false)
+
+    @Test fun failedOscuro() = capture("failed", failed, dark = true)
+
+    /** No active goal to put a line in. */
+    private val noGoals = GoalBulkSamples.opening.copy(goals = emptyList())
+
+    @Test fun noGoalsClaro() = capture("no-goals", noGoals, dark = false)
+
+    @Test fun noGoalsOscuro() = capture("no-goals", noGoals, dark = true)
+
+    private val discard = GoalBulkSamples.three.copy(confirmDiscard = true)
+
+    @Test fun discardClaro() = capture("discard", discard, dark = false)
+
+    @Test fun discardOscuro() = capture("discard", discard, dark = true)
+
+    /** A line just removed: the notice offers to bring it back. */
+    private val removed = GoalBulkSamples.three.copy(removed = RemovedGoalLine(withdrawal = false))
+
+    @Test fun removedClaro() = capture("removed", removed, dark = false)
+
+    @Test fun removedOscuro() = capture("removed", removed, dark = true)
 }

@@ -78,4 +78,78 @@ class GoalMovementScreenshotTest {
 
     @Test
     fun unknownVioletaDark() = captureUnknown(Look(ink = SelloInk.Violeta, dark = true))
+
+    private fun shot(name: String, state: GoalMovementState, look: Look) {
+        rule.showSello(look) { GoalMovementScreen(state) {} }
+        rule.captureStill("src/test/screenshots/goal-movement-$name-${look.label}.png")
+    }
+
+    private val retiro = aporte.copy(withdrawal = true, amount = plain("200.000"))
+
+    @Test fun retiroLight() = shot("retiro", retiro, Look())
+
+    @Test fun retiroDark() = shot("retiro", retiro, Look(dark = true))
+
+    /** Correcting an aporte already saved, with a change made. */
+    private val correcting = aporte.copy(editing = true, changed = true, note = "Prima")
+
+    @Test fun correctingLight() = shot("correcting", correcting, Look())
+
+    @Test fun correctingDark() = shot("correcting", correcting, Look(dark = true))
+
+    private val loading = GoalMovementState(date = today, today = today)
+
+    @Test fun loadingLight() = shot("loading", loading, Look())
+
+    @Test fun loadingDark() = shot("loading", loading, Look(dark = true))
+
+    private val failed = loading.copy(loading = false, loadFailed = true)
+
+    @Test fun failedLight() = shot("failed", failed, Look())
+
+    @Test fun failedDark() = shot("failed", failed, Look(dark = true))
+
+    private val noGoals = loading.copy(loading = false)
+
+    @Test fun noGoalsLight() = shot("no-goals", noGoals, Look())
+
+    @Test fun noGoalsDark() = shot("no-goals", noGoals, Look(dark = true))
+
+    /** A retiro of more than the goal holds. */
+    private val over = retiro.copy(amount = plain("2.000.000"), overSaved = plain("1.710.000"))
+
+    @Test fun overLight() = shot("over", over, Look())
+
+    @Test fun overDark() = shot("over", over, Look(dark = true))
+
+    @Test fun busyLight() = shot("busy", aporte.copy(busy = true), Look())
+
+    @Test fun busyDark() = shot("busy", aporte.copy(busy = true), Look(dark = true))
+
+    private val refused = aporte.copy(error = GoalMovementError.NotSaved)
+
+    @Test fun refusedLight() = shot("refused", refused, Look())
+
+    @Test fun refusedDark() = shot("refused", refused, Look(dark = true))
+
+    @Test fun discardLight() = shot("discard", aporte.copy(confirmDiscard = true), Look())
+
+    @Test
+    fun discardDark() = shot("discard", aporte.copy(confirmDiscard = true), Look(dark = true))
+
+    @Test fun datePickerLight() = shot("date-picker", aporte.copy(datePickerOpen = true), Look())
+
+    @Test
+    fun datePickerDark() =
+        shot("date-picker", aporte.copy(datePickerOpen = true), Look(dark = true))
+
+    private val composing = aporte.copy(
+        composerOpen = true,
+        composerDraft = "Prima",
+        composerLength = 5
+    )
+
+    @Test fun noteLight() = shot("note", composing, Look())
+
+    @Test fun noteDark() = shot("note", composing, Look(dark = true))
 }

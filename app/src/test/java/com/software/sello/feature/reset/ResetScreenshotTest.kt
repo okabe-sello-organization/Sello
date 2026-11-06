@@ -11,8 +11,12 @@ import com.software.sello.Look
 import com.software.sello.captureStill
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.domain.model.OperationId
+import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.port.BackupSummary
 import com.software.sello.domain.port.ResetPreview
+import com.software.sello.feature.expense.uuid
+import com.software.sello.navigation.TitledFrame
 import com.software.sello.showSello
 import org.junit.Rule
 import org.junit.Test
@@ -45,4 +49,89 @@ class ResetScreenshotTest {
 
     @Test
     fun violetaLight() = capture(Look(ink = SelloInk.Violeta))
+
+    private val operation = (OperationId.of(uuid(5_002)) as Outcome.Success).value
+
+    private fun shot(name: String, state: ResetState, look: Look) {
+        rule.showSello(look) {
+            TitledFrame("Borrar datos") { padding -> ResetScreen(state, {}, padding, {}) }
+        }
+        rule.captureStill("src/test/screenshots/reset-$name-${look.label}.png")
+    }
+
+    @Test fun countingLight() = shot("counting", ResetState(ResetStep.Counting), Look())
+
+    @Test fun countingDark() = shot("counting", ResetState(ResetStep.Counting), Look(dark = true))
+
+    @Test fun unreadableLight() = shot("unreadable", ResetState(ResetStep.Unreadable), Look())
+
+    @Test fun unreadableDark() = shot(
+        "unreadable",
+        ResetState(ResetStep.Unreadable),
+        Look(dark = true)
+    )
+
+    @Test fun refreshedLight() =
+        shot("refreshed", ResetState(ResetStep.Ready(preview, refreshed = true)), Look())
+
+    @Test fun refreshedDark() =
+        shot("refreshed", ResetState(ResetStep.Ready(preview, refreshed = true)), Look(dark = true))
+
+    @Test fun wordLight() = shot(
+        "word",
+        ResetState(ResetStep.Ready(preview), confirming = true),
+        Look()
+    )
+
+    @Test fun wordDark() =
+        shot("word", ResetState(ResetStep.Ready(preview), confirming = true), Look(dark = true))
+
+    @Test fun wordTypedLight() = shot(
+        "word-typed",
+        ResetState(ResetStep.Ready(preview), confirming = true, typed = "BORRAR"),
+        Look()
+    )
+
+    @Test fun wordTypedDark() = shot(
+        "word-typed",
+        ResetState(ResetStep.Ready(preview), confirming = true, typed = "BORRAR"),
+        Look(dark = true)
+    )
+
+    @Test fun erasingLight() = shot(
+        "erasing",
+        ResetState(ResetStep.Erasing(preview, operation), confirming = true, typed = "BORRAR"),
+        Look()
+    )
+
+    @Test fun erasingDark() = shot(
+        "erasing",
+        ResetState(ResetStep.Erasing(preview, operation), confirming = true, typed = "BORRAR"),
+        Look(dark = true)
+    )
+
+    @Test fun failedLight() = shot("failed", ResetState(ResetStep.Failed), Look())
+
+    @Test fun failedDark() = shot("failed", ResetState(ResetStep.Failed), Look(dark = true))
+
+    @Test fun unknownLight() = shot(
+        "unknown",
+        ResetState(ResetStep.Unknown(preview, operation)),
+        Look()
+    )
+
+    @Test fun unknownDark() =
+        shot("unknown", ResetState(ResetStep.Unknown(preview, operation)), Look(dark = true))
+
+    @Test fun erasedLight() =
+        shot("erased", ResetState(ResetStep.Erased(preferencesPending = false)), Look())
+
+    @Test fun erasedDark() =
+        shot("erased", ResetState(ResetStep.Erased(preferencesPending = false)), Look(dark = true))
+
+    @Test fun pendingLight() =
+        shot("pending", ResetState(ResetStep.Erased(preferencesPending = true)), Look())
+
+    @Test fun pendingDark() =
+        shot("pending", ResetState(ResetStep.Erased(preferencesPending = true)), Look(dark = true))
 }

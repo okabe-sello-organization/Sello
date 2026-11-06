@@ -74,7 +74,18 @@ class CategoryRemovalScreenshotTest {
     )
 
     @Test
+    fun anArchivedCategoryDark() = capture(
+        "category-editor-archived",
+        editing.copy(archived = true, limitLocked = true, limitText = "", limitAmount = null),
+        Look(dark = true)
+    )
+
+    @Test
     fun nothingInIt() = capture("category-removal-empty", removal(RemovalStep.Empty))
+
+    @Test
+    fun nothingInItDark() =
+        capture("category-removal-empty", removal(RemovalStep.Empty), Look(dark = true))
 
     @Test
     fun choose() = capture("category-removal-choose", removal(RemovalStep.Choose(counts, true)))
@@ -111,6 +122,24 @@ class CategoryRemovalScreenshotTest {
     )
 
     @Test
+    fun pickDark() = capture(
+        "category-removal-pick",
+        removal(
+            RemovalStep.Pick(
+                counts,
+                october,
+                listOf(
+                    MoveTarget("3", "Hogar", "home", pesos("200.000")),
+                    MoveTarget("2", "Comida", "restaurant", pesos("120.000")),
+                    MoveTarget("5", "Transporte", "directions_bus", pesos("60.000")),
+                    MoveTarget("6", "Ropa", "checkroom", pesos("70.000"))
+                )
+            )
+        ),
+        Look(dark = true)
+    )
+
+    @Test
     fun move() = capture(
         "category-removal-move",
         removal(
@@ -129,11 +158,41 @@ class CategoryRemovalScreenshotTest {
     )
 
     @Test
+    fun moveDark() = capture(
+        "category-removal-move",
+        removal(
+            RemovalStep.Move(
+                counts,
+                MoveFacts(
+                    target = "Comida",
+                    month = october,
+                    targetSpent = pesos("80.000"),
+                    targetSpentAfter = pesos("140.000"),
+                    sourceLimit = RemovalLimit.Finite(pesos("50.000")),
+                    targetLimit = RemovalLimit.Finite(pesos("200.000"))
+                )
+            )
+        ),
+        Look(dark = true)
+    )
+
+    @Test
     fun borrarTodo() = capture("category-removal-all", removal(RemovalStep.All(counts, "")))
+
+    @Test
+    fun borrarTodoDark() =
+        capture("category-removal-all", removal(RemovalStep.All(counts, "")), Look(dark = true))
 
     @Test
     fun borrarTodoTyped() =
         capture("category-removal-all-typed", removal(RemovalStep.All(counts, "BORRAR")))
+
+    @Test
+    fun borrarTodoTypedDark() = capture(
+        "category-removal-all-typed",
+        removal(RemovalStep.All(counts, "BORRAR")),
+        Look(dark = true)
+    )
 
     @Test
     fun changed() = capture(
@@ -146,9 +205,27 @@ class CategoryRemovalScreenshotTest {
     )
 
     @Test
+    fun changedDark() = capture(
+        "category-removal-changed",
+        removal(
+            RemovalStep.Problem(
+                RemovalProblem.Changed(counts, counts.copy(expenses = 35, total = pesos("472.000")))
+            )
+        ),
+        Look(dark = true)
+    )
+
+    @Test
     fun targetClosed() = capture(
         "category-removal-target",
         removal(RemovalStep.Problem(RemovalProblem.TargetClosed("Comida")))
+    )
+
+    @Test
+    fun targetClosedDark() = capture(
+        "category-removal-target",
+        removal(RemovalStep.Problem(RemovalProblem.TargetClosed("Comida"))),
+        Look(dark = true)
     )
 
     @Test
@@ -158,14 +235,35 @@ class CategoryRemovalScreenshotTest {
     )
 
     @Test
+    fun notSavedDark() = capture(
+        "category-removal-storage",
+        removal(RemovalStep.Problem(RemovalProblem.NotSaved(counts))),
+        Look(dark = true)
+    )
+
+    @Test
     fun cannotCount() = capture(
         "category-removal-count",
         removal(RemovalStep.Problem(RemovalProblem.CannotCount))
     )
 
     @Test
+    fun cannotCountDark() = capture(
+        "category-removal-count",
+        removal(RemovalStep.Problem(RemovalProblem.CannotCount)),
+        Look(dark = true)
+    )
+
+    @Test
     fun checking() = capture(
         "category-removal-checking",
         editing.copy(removal = RemovalState("Café", RemovalStep.Checking(false), busy = true))
+    )
+
+    @Test
+    fun checkingDark() = capture(
+        "category-removal-checking",
+        editing.copy(removal = RemovalState("Café", RemovalStep.Checking(false), busy = true)),
+        Look(dark = true)
     )
 }

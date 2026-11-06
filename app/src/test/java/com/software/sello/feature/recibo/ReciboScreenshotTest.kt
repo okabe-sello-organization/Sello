@@ -21,6 +21,9 @@ import com.software.sello.feature.goals.GoalDetailError
 import com.software.sello.feature.goals.ReciboGoal
 import com.software.sello.feature.goals.ReciboGoalPill
 import com.software.sello.feature.goals.ReciboGoalState
+import com.software.sello.navigation.TitledFrame
+import com.software.sello.presentation.carry.CarryProblem
+import com.software.sello.presentation.carry.CarryProblemKind
 import com.software.sello.showSello
 import java.time.YearMonth
 import org.junit.Rule
@@ -202,7 +205,14 @@ class ReciboScreenshotTest {
     fun olderGoals() = captureGoals("stale", listOf(viaje, fondo, bici), 0, Look(), stale = true)
 
     @Test
+    fun olderGoalsDark() =
+        captureGoals("stale", listOf(viaje, fondo, bici), 0, Look(dark = true), stale = true)
+
+    @Test
     fun oneGoal() = captureGoals("one", listOf(viaje), 0, Look())
+
+    @Test
+    fun oneGoalDark() = captureGoals("one", listOf(viaje), 0, Look(dark = true))
 
     /** Marcar como lograda with an unknown outcome: titled as a save, Comprobar only. */
     @Test
@@ -211,6 +221,15 @@ class ReciboScreenshotTest {
         listOf(viaje),
         0,
         Look(),
+        completion = CompletionState.Failed(GoalDetailError.Unknown)
+    )
+
+    @Test
+    fun markCompleteUnknownDark() = captureGoals(
+        "mark-unknown",
+        listOf(viaje),
+        0,
+        Look(dark = true),
         completion = CompletionState.Failed(GoalDetailError.Unknown)
     )
 
@@ -233,4 +252,67 @@ class ReciboScreenshotTest {
         1,
         Look(dark = true)
     )
+
+    private fun shot(name: String, state: ReciboState, look: Look, goal: ReciboGoalState? = null) {
+        rule.showSello(look) {
+            TitledFrame("Recibo") { padding ->
+                ReciboScreen(
+                    state,
+                    {},
+                    padding,
+                    goal = { if (goal != null) ReciboGoal(goal, {}, {}, {}) }
+                )
+            }
+        }
+        rule.captureStill("src/test/screenshots/recibo-$name-${look.label}.png")
+    }
+
+    @Test fun loadingLight() = shot("loading", ReciboState.Loading, Look())
+
+    @Test fun loadingDark() = shot("loading", ReciboState.Loading, Look(dark = true))
+
+    @Test fun firstRunLight() = shot("first-run", ReciboState.FirstRun, Look())
+
+    @Test fun firstRunDark() = shot("first-run", ReciboState.FirstRun, Look(dark = true))
+
+    @Test fun failedLight() = shot("failed", ReciboState.Failed, Look())
+
+    @Test fun failedDark() = shot("failed", ReciboState.Failed, Look(dark = true))
+
+    @Test fun staleLight() = shot("stale", overspent.copy(stale = true), Look())
+
+    @Test fun staleDark() = shot("stale", overspent.copy(stale = true), Look(dark = true))
+
+    private val problem =
+        CarryProblem("a", "Comida", CarryProblemKind.Missing, YearMonth.of(2026, 9))
+
+    @Test fun carryProblemLight() = shot(
+        "carry-problem",
+        overspent.copy(carryProblem = problem),
+        Look()
+    )
+
+    @Test
+    fun carryProblemDark() =
+        shot("carry-problem", overspent.copy(carryProblem = problem), Look(dark = true))
+
+    @Test fun carryFailedLight() = shot("carry-failed", ReciboState.CarryFailed(problem), Look())
+
+    @Test
+    fun carryFailedDark() =
+        shot("carry-failed", ReciboState.CarryFailed(problem), Look(dark = true))
+
+    @Test
+    fun goalsFailedLight() = shot("goals-failed", overspent, Look(), ReciboGoalState.Failed)
+
+    @Test
+    fun goalsFailedDark() =
+        shot("goals-failed", overspent, Look(dark = true), ReciboGoalState.Failed)
+
+    private val marking =
+        ReciboGoalState.Shown(listOf(celular), null, CompletionState.Busy, stale = false)
+
+    @Test fun goalsBusyLight() = shot("goals-busy", overspent, Look(), marking)
+
+    @Test fun goalsBusyDark() = shot("goals-busy", overspent, Look(dark = true), marking)
 }

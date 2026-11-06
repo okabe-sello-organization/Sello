@@ -2,6 +2,7 @@ package com.software.sello.feature.goals
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
@@ -24,7 +25,9 @@ import com.software.sello.domain.port.GoalBoard
 import com.software.sello.domain.port.GoalBoardState
 import com.software.sello.domain.port.GoalSummary
 import com.software.sello.domain.port.ReadState
+import com.software.sello.navigation.TitledFrame
 import com.software.sello.presentation.date.dateLabels
+import com.software.sello.revealed
 import com.software.sello.showSello
 import com.software.sello.testing.testMoney
 import java.time.Instant
@@ -116,6 +119,12 @@ class MetasScreenshotTest {
     fun anotarVariosLight() = capture(Look(), "metas-bulk", onBulk = {})
 
     @Test
+    fun anotarVariosDark() = capture(Look(dark = true), "metas-bulk", onBulk = {})
+
+    @Test
+    fun violetaDark() = capture(Look(ink = SelloInk.Violeta, dark = true))
+
+    @Test
     fun cobaltoLight() = capture(Look())
 
     @Test
@@ -123,4 +132,62 @@ class MetasScreenshotTest {
 
     @Test
     fun violetaLight() = capture(Look(ink = SelloInk.Violeta))
+
+    private fun shot(name: String, state: MetasState, look: Look, reveal: Boolean = false) {
+        rule.showSello(look) {
+            if (state == MetasState.Loading) {
+                // The skeleton alone is too plain to tell from a blank capture: in its frame.
+                TitledFrame("Metas") { padding -> MetasScreen(state, {}, dateLabels(), padding) }
+            } else {
+                MetasScreen(state, {}, dateLabels(), PaddingValues(16.dp))
+            }
+        }
+        if (reveal) rule.onNodeWithText("Vacunas de Luna").revealed()
+        rule.captureStill("src/test/screenshots/metas-$name-${look.label}.png")
+    }
+
+    @Test fun loadingLight() = shot("loading", MetasState.Loading, Look())
+
+    @Test fun loadingDark() = shot("loading", MetasState.Loading, Look(dark = true))
+
+    @Test fun failedLight() = shot("failed", MetasState.Failed, Look())
+
+    @Test fun failedDark() = shot("failed", MetasState.Failed, Look(dark = true))
+
+    private val empty = GoalsRenderModel(money)
+        .metas(ReadState.Ready(board.copy(goals = emptyList())), today)
+
+    @Test fun emptyLight() = shot("empty", empty, Look())
+
+    @Test fun emptyDark() = shot("empty", empty, Look(dark = true))
+
+    private val stale = (metas as MetasState.Ready).copy(stale = true)
+
+    @Test fun staleLight() = shot("stale", stale, Look())
+
+    @Test fun staleDark() = shot("stale", stale, Look(dark = true))
+
+    /** Celular nuevo reached its target; Marcar como lograda is being saved. */
+    private val busy = (
+        GoalsRenderModel(money).metas(
+            ReadState.Ready(
+                board.copy(
+                    goals = listOf(
+                        goal(2, "Celular nuevo", 1_200_000, listOf(450_000, 750_000)),
+                        goal(1, "Viaje a la costa", 3_000_000, listOf(750_000, 960_000))
+                    )
+                )
+            ),
+            today
+        ) as MetasState.Ready
+        ).copy(completion = CompletionState.Busy)
+
+    @Test fun busyLight() = shot("busy", busy, Look())
+
+    @Test fun busyDark() = shot("busy", busy, Look(dark = true))
+
+    /** The completed goals, below the active ones. */
+    @Test fun completedLight() = shot("completed", metas, Look(), reveal = true)
+
+    @Test fun completedDark() = shot("completed", metas, Look(dark = true), reveal = true)
 }
