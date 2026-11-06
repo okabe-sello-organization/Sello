@@ -10,7 +10,7 @@
 An exact, current list of what the app, the design system and the catalog already have for recurrence and reserved payments, against the approved design, so the following tickets build only what is missing.
 
 ### Deliverables
-A gap list in `docs/design/v2/gaps/` for recurrence and reserved payments: each designed element marked present (with its code and tests), partial (what differs) or missing; the following tickets updated, split or closed to match, with owner approval for any scope change.
+A gap list in [`docs/design/v2/gaps/`](https://github.com/okabe-sello-organization/Sello/tree/90662770/docs/design/v2/gaps) for recurrence and reserved payments: each designed element marked present (with its code and tests), partial (what differs) or missing; the following tickets updated, split or closed to match, with owner approval for any scope change.
 
 ### Acceptance criteria
 - Every element of the v2 reserved-payment states on Recibo and the Plan del mes on income is checked against the running app and the code, not only the docs.
@@ -25,7 +25,7 @@ The audit itself, with screenshots of the running app where it differs from the 
 The gap list is merged and every later ticket in this epic matches it.
 
 ### Context and starting points
-The screens have been worked on outside these tickets (owner, 2026-10-23); [ADR 0017](../../decisions/0017-goals-recurrence-investments.md) records the decisions. Design: [v2 README](../../design/v2/README.md) and `docs/design/v2/components.html` (Exists / Extend / New).
+The screens have been worked on outside these tickets (owner, 2026-10-23); [ADR 0017](../../decisions/0017-goals-recurrence-investments.md) records the decisions. Design: [v2 README](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/README.md) and [`docs/design/v2/components.html`](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/components.html) (Exists / Extend / New).
 
 ### Implementation plan
 1. List every designed element, state and rule.
@@ -41,7 +41,7 @@ Focused tests, then `./scripts/verify-ticket SELLO-095 --retain`.
 
 ### Execution progress
 
-- **Audit, 2026-10-24:** [gap list](../../design/v2/gaps/recurrence.md) at `main` `4d16b58`,
+- **Audit, 2026-10-24:** [gap list](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/gaps/recurrence.md) at `main` `4d16b58`,
   each element checked in the code and, where drawn, in the app (sandbox scenarios
   `detalle-categoria@1`, `ingresos@1`) and the catalog on a dedicated API-30 emulator
   (screenshots). The reserved-state parts exist in the design system and

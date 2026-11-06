@@ -39,7 +39,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * The frame with a v2 top bar and an optional ribbon, one window dp drawn as one pixel.
+ * The frame with a top bar and an optional ribbon, one window dp drawn as one pixel.
  * The window can be larger than the screen, so positions are measured from its own top.
  * The slip under the band must still start on the band, as with the old title row, and
  * a ribbon may sit under either.

@@ -34,7 +34,7 @@ later app startup reads the same record. No developer fixtures are required.
 This is the first user-visible financial commit; visual save completion is not
 financial proof. Inputs are expense command/lookup from SELLO-012, preview policy
 SELLO-014, categories from SELLO-016 and controls. Read
-[Anotar](../../design/sello-spec.html#s-anotar), architecture §§5/6 and recovery cases.
+[Anotar](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/sello-spec.html#s-anotar), architecture §§5/6 and recovery cases.
 
 ### Implementation plan
 1. Build expense feature/form/receipt rendering with amount/category/date/note draft;

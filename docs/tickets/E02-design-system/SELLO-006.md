@@ -32,7 +32,7 @@ not documentation screenshots or duplicated composables.
 ### Context and starting points
 The template theme is not Sello and per-screen styling would fork immediately.
 Use modules/IDs from SELLO-003, accepted D01/D02 and
-[foundations](../../design/sello-spec.html#foundations). Read architecture §6,
+[foundations](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/sello-spec.html#foundations). Read architecture §6,
 the guide's module map and Compose testing/accessibility sources.
 
 ### Implementation plan

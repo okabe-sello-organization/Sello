@@ -58,7 +58,7 @@ On the running app Configuración looks like the approved mockup and every contr
 
 ### Context and starting points
 `feature/settings/SettingsScreen.kt`, `feature/backup/` (`BackupSession`, `RestoreSession`
-are process-wide), the [design snapshot's screen 16](../../design/sello-spec.html#s-config)
+are process-wide), the [design snapshot's screen 16](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/sello-spec.html#s-config)
 and the epic's owner direction.
 
 ### Implementation plan

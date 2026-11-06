@@ -61,9 +61,9 @@ import org.junit.Test
 
 /**
  * Category detail with the category's fixed payments (SELLO-135,
- * docs/design/v2/categoria-fijos.html). Jue 22 oct 2026; Hogar (1) has a 1.500.000 limit.
- * Arriendo (950.000, the 5th) is recorded; Internet (90.000, the 23rd) and Servicios
- * públicos (200.000, the 28th) are still to come: 290.000 reserved. Aseo (60.000, every 2
+ * docs/design/system/features/category.html#screen-fixed). Jue 22 oct 2026; Hogar (1) has a
+ * 1.500.000 limit. Arriendo (950.000, the 5th) is recorded; Internet (90.000, the 23rd) and
+ * Servicios públicos (200.000, the 28th) are still to come: 290.000 reserved. Aseo (60.000, every 2
  * weeks) is paused since the 12th. Café (2) has its own payment. Figures by hand.
  */
 @OptIn(ExperimentalCoroutinesApi::class)

@@ -11,7 +11,7 @@ A v2 design page shows the bulk receipt for expenses, incomes, a goal and an inv
 in the style of today's entry sheet, and the owner approves it before any screen is built.
 
 ### Acceptance criteria
-- `docs/design/v2/varios.html` (and its script) draws, in Claro and Oscuro: Anotar varios
+- [`docs/design/v2/varios.html`](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/varios.html) (and its script) draws, in Claro and Oscuro: Anotar varios
   for expenses and for incomes, Aportar varios for one goal, and Varios movimientos for one
   investment, starting from the v1.1 drawings.
 - It uses the v2 entry parts: the Sello pad, chips in at most two rows, the note composer,
@@ -27,11 +27,11 @@ in the style of today's entry sheet, and the owner approves it before any screen
   dollars.
 - The entry points are drawn: from single entry, from a category (preselected), from a
   goal's detail and from an investment's detail.
-- The [v2 README](../../design/v2/README.md) gets an **Anotar varios** section and a table
+- The [v2 README](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/README.md) gets an **Anotar varios** section and a table
   row; the row says it was locked by the owner, with the date. All figures are synthetic.
 
 ### Notes
 The pull request merges only after the owner approves the page in conversation; the
 orchestrator records that approval in the epic's Decisions. Starting points:
-`docs/design/sello-spec.html#s-varios`, v2 `entry.html`, `aportar.html`,
+[`docs/design/sello-spec.html#s-varios`](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/sello-spec.html#s-varios), v2 `entry.html`, `aportar.html`,
 `inversiones.html` and `components.html`.

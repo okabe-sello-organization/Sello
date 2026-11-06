@@ -37,7 +37,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.GraphicsMode
 
-/** Aportar varios at the foot of a goal's movements, beside Ver los N, as v2 varios draws it. */
+/** Aportar varios at the foot of a goal's movements, beside Ver los N. */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class GoalDetailBulkLinkTest {

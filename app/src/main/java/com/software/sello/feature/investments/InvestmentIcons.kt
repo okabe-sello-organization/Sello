@@ -7,8 +7,9 @@ import com.software.sello.presentation.category.CategoryIcons
 
 /**
  * The icons an investment can have: the one shared set of 35, offered with the money and
- * investment ones first (v2 Agregar inversión). The six investments had before keep their
- * investment names ("Finca raíz" for the house); the rest are called as for a category.
+ * investment ones first (docs/design/system/features/investments.html). The six investments had
+ * before keep their investment names ("Finca raíz" for the house); the rest are called as for a
+ * category.
  */
 object InvestmentIcons {
     private val first = listOf(

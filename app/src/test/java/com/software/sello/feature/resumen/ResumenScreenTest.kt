@@ -545,7 +545,7 @@ class ResumenScreenTest {
         rule.runOnIdle { assertEquals(ResumenAction.DismissSuggestion, actions.last()) }
     }
 
-    // --- Layout against the v2 design ---
+    // --- Layout against the design (docs/design/system/features/resumen.html) ---
 
     @Test
     fun slipsUseOnlyTheScaffoldsSideMarginsAsOnRecibo() {

@@ -11,7 +11,7 @@ Aportar and Retirar record movements, with past dates and corrections.
 
 ### Deliverables
 The Aportar/Retirar form with the Sello pad and date pill, the movement history with edit, delete and undo.
-Reuses `EntryLayout`, `SegmentedSwitch`, `EntryAmountSlip` (Gain / Ink), `FactLine` and `FieldPill` ([gap list](../../design/v2/gaps/metas.md)); extends `SelloChip` with the goal's percentage.
+Reuses `EntryLayout`, `SegmentedSwitch`, `EntryAmountSlip` (Gain / Ink), `FactLine` and `FieldPill` ([gap list](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/gaps/metas.md)); extends `SelloChip` with the goal's percentage.
 
 ### Acceptance criteria
 - A withdrawal above saved is refused with a clear message.

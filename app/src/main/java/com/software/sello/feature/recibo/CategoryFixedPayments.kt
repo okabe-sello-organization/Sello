@@ -27,8 +27,8 @@ import com.software.sello.presentation.month.MonthNames
 import com.software.sello.presentation.recurrence.repeatRuleLabel
 
 /**
- * Pagos fijos (docs/design/v2/categoria-fijos.html): the category's payments still to come
- * this month, then its other payments that repeat, each opening its schedule.
+ * Pagos fijos (docs/design/system/features/category.html#screen-fixed): the category's payments
+ * still to come this month, then its other payments that repeat, each opening its schedule.
  */
 @Composable
 internal fun CategoryFixedPayments(

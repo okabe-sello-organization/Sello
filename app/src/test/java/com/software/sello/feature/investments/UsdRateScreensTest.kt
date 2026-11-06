@@ -33,8 +33,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Dólar and Cambiar la tasa as they are drawn (v2 *Dólares y la tasa*): the rate whole
- * in every theme, size and window; no rate, loading and a failed read each their own
+ * Dólar and Cambiar la tasa as they are drawn (docs/design/system/features/investments.html): the
+ * rate whole in every theme, size and window; no rate, loading and a failed read each their own
  * state; a rate out of bounds says so and waits.
  */
 @RunWith(AndroidJUnit4::class)

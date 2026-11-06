@@ -26,11 +26,11 @@
     <section id="entry-points">
       <h2>Entry points</h2>
       <ul>
-        <li><strong>Category detail</strong>: a category cell on Recibo sends <code>ReciboAction.OpenCategory</code> (<code>app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:467</code>), turned into <code>ShellAction.OpenCategory</code> (<code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:348</code>). On a phone it replaces Recibo; where there is room for two it sits beside Recibo and the first category is shown when none is chosen (<code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:279</code>).</li>
+        <li><strong>Category detail</strong>: a category cell on Recibo sends <code>ReciboAction.OpenCategory</code> (<code>app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:469</code>), turned into <code>ShellAction.OpenCategory</code> (<code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:348</code>). On a phone it replaces Recibo; where there is room for two it sits beside Recibo and the first category is shown when none is chosen (<code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:279</code>).</li>
         <li><strong>Todos los gastos</strong>: "Ver todos" / "Ver los N" on the detail's latest expenses (<code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:106</code>, route at <code>:138</code>).</li>
         <li><strong>Nueva categoría</strong> (<code>CategoryEditorRoute</code>, <code>app/src/main/java/com/software/sello/navigation/CategoryDestinations.kt:22</code>):
           <ul>
-            <li>"Nueva categoría" chip and the first-run "Crear categoría" on Recibo (<code>app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:451</code>, <code>:120</code>; navigation <code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:136</code>).</li>
+            <li>"Nueva categoría" chip and the first-run "Crear categoría" on Recibo (<code>app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:453</code>, <code>:120</code>; navigation <code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:136</code>).</li>
             <li>Creating a category from Anotar (<code>app/src/main/java/com/software/sello/navigation/ExpenseDestinations.kt:39</code>, <code>app/src/main/java/com/software/sello/navigation/IncomeDestinations.kt:84</code>).</li>
             <li>An income plan's suggested limit (<code>CategoryEditorRoute(limit = …)</code>, <code>app/src/main/java/com/software/sello/navigation/IncomeDestinations.kt:70</code>).</li>
             <li>Anotar pressed with no category at all: the form opens with "Para anotar un gasto primero necesitas una categoría…" (<code>forEntry</code>, <code>app/src/main/java/com/software/sello/navigation/SelloApp.kt:167</code>); once created, Anotar carries on with it chosen (<code>app/src/main/java/com/software/sello/navigation/CategoryDestinations.kt:37</code>).</li>
@@ -39,7 +39,7 @@
         <li><strong>Editar categoría</strong> (<code>CategoryEditRoute(id, month)</code>, <code>app/src/main/java/com/software/sello/navigation/CategoryDestinations.kt:45</code>):
           <ul>
             <li>The detail's edit action in the title bar, or beside the name when the detail sits beside Recibo (<code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:395</code>, <code>app/src/main/java/com/software/sello/feature/recibo/CategoryDetailScreen.kt:233</code>).</li>
-            <li>"Editar categoría" in a Recibo cell's actions (<code>app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:469</code>, navigation <code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:126</code>).</li>
+            <li>"Editar categoría" in a Recibo cell's actions (<code>app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:471</code>, navigation <code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:126</code>).</li>
             <li>A carry problem's "Ponerle límite a …" (<code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:131</code>), Ajustar presupuesto (<code>:225</code>) and Resumen (<code>app/src/main/java/com/software/sello/navigation/ResumenDestinations.kt:58</code>, <code>:84</code>, <code>:96</code>, <code>:112</code>).</li>
           </ul>
         </li>
@@ -497,7 +497,7 @@
         <li><strong><code>Group</code></strong> (<code>app/src/main/java/com/software/sello/feature/recibo/CategoryFixedPayments.kt:162</code>) is the same uppercase heading Pagos e ingresos fijos draws inline (<code>app/src/main/java/com/software/sello/feature/recurrence/SchedulesScreen.kt:319</code>), except the first one's top padding (10 dp vs 0). Shots: category-fixed-coming, schedules. Finding: <a href="../findings.html#F50">F50</a>.</li>
         <li><strong>Pagos fijos' stale line</strong> (<code>…/CategoryFixedPayments.kt:66</code>) is a hand-made <code>StaleSlip</code> in warn ink instead of loss, with its own copy. No screenshot. Finding: <a href="../findings.html#F01">F01</a>.</li>
         <li><strong><code>SwitchRow</code></strong> (<code>app/src/main/java/com/software/sello/feature/category/CategoryComponents.kt:40</code>) has no shared counterpart; <a href="../components.html#c-SettingRow"><code>SettingRow</code></a> is the closest row shape (icon, title, caption, 0.38 when disabled) but has no switch.</li>
-        <li><strong><code>MoneyTextValue.text()</code> / <code>shown()</code></strong> (<code>app/src/main/java/com/software/sello/feature/category/CategoryCarry.kt:118</code>, <code>…/CategoryRemovalSlips.kt:858</code>) copy Recibo's internal <code>text()</code> (<code>app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:608</code>). Finding: <a href="../findings.html#F68">F68</a>.</li>
+        <li><strong><code>MoneyTextValue.text()</code> / <code>shown()</code></strong> (<code>app/src/main/java/com/software/sello/feature/category/CategoryCarry.kt:118</code>, <code>…/CategoryRemovalSlips.kt:858</code>) copy Recibo's internal <code>text()</code> (<code>app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:610</code>). Finding: <a href="../findings.html#F68">F68</a>.</li>
       </ul>
     </section>
 

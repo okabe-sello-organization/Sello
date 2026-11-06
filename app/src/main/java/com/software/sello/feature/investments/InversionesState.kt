@@ -6,7 +6,10 @@ import com.software.sello.domain.model.InvestmentReturn
 import java.time.LocalDate
 import java.time.YearMonth
 
-/** Inversiones (docs/design/v2/inversiones.html; docs/testing/investment-examples.md). */
+/**
+ * Inversiones (docs/design/system/features/investments.html#screen-inversiones;
+ * docs/testing/investment-examples.md).
+ */
 sealed interface InversionesState {
     data object Loading : InversionesState
 

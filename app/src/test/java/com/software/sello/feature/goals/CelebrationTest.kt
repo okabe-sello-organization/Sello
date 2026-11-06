@@ -115,7 +115,7 @@ class CelebrationTest {
     fun inOscuroTheStatusIconsTurnDarkAsTheLightGreenFloodsIn() {
         rule.mainClock.autoAdvance = false
         show(reduced = false, dark = true)
-        // v2 writes the status bar in --ongain over the flood: dark ink on Oscuro's green.
+        // The status bar is written in the on-gain ink over the flood: dark ink on Oscuro's green.
         rule.mainClock.advanceTimeBy(1_000)
         assertFalse(darkStatusIcons())
         rule.mainClock.advanceTimeBy(1_600)

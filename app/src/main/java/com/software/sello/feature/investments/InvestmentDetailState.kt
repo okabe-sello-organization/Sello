@@ -8,7 +8,7 @@ import com.software.sello.domain.model.InvestmentReturn
 import java.time.LocalDate
 import java.time.YearMonth
 
-/** One investment (v2 page, *Investment detail*). */
+/** One investment (docs/design/system/features/investments.html#screen-detail). */
 sealed interface InvestmentDetailState {
     data object Loading : InvestmentDetailState
 

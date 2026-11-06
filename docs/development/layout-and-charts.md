@@ -4,9 +4,9 @@ Contracts of the `:design-system` structure components. They hold no state and n
 financial rule; the application supplies selection, the month, formatted exact amounts
 and every word.
 
-The app follows the approved [Sello v2](../design/v2/README.md): four tabs (Recibo,
+The app follows the [design system](../design/system/index.html): four tabs (Recibo,
 Resumen, Metas, Inversiones) with the Anotar dock above them; its
-[components](../design/v2/components.html) list the shared parts.
+[components](../design/system/components.html) list the shared parts.
 
 ## Frame and navigation
 

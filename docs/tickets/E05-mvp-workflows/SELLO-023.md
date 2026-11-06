@@ -45,7 +45,7 @@ preferences without changing financial data or formulas.
 ### Context and starting points
 Preferences should not make settings a financial transaction coordinator. Use
 neutral contracts from SELLO-005, theme from SELLO-006, real categories and approved
-D06/D09. Read [settings](../../design/sello-spec.html#s-config), architecture §§2/7
+D06/D09. Read [settings](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/sello-spec.html#s-config), architecture §§2/7
 and the guide's DataStore source. Rate/currency/notification settings are not MVP.
 
 Carried over from SELLO-019 (2026-10-12, project owner): the dismissible first-time

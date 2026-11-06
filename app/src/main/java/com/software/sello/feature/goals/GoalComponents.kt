@@ -198,7 +198,7 @@ internal fun ReachedRow(
             Icon(SelloIcon.Check.painter(), null, Modifier.size(22.dp), tint = colors.semantic.gain)
         }
         val action = @Composable {
-            // The v2 row's own compact button: 44dp, so the name keeps its room.
+            // The row's own compact button: 44dp, so the name keeps its room.
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.heightIn(min = 44.dp).clip(CircleShape)

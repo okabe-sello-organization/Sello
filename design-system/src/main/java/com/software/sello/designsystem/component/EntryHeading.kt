@@ -12,7 +12,8 @@ import com.software.sello.designsystem.theme.SelloTheme
 
 /**
  * A section heading of an entry or movement form, such as Tipo, Meta or Inversión:
- * uppercase, heavy and spaced, in the softer ink, as the v2 entry design draws it.
+ * uppercase, heavy and spaced, in the softer ink
+ * (docs/design/system/components.html#c-EntryHeading).
  */
 @Composable
 fun EntryHeading(text: String, modifier: Modifier = Modifier) {

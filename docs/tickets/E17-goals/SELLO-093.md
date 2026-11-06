@@ -11,7 +11,7 @@ Recibo shows the chosen goal as the v2 pill with Aportar, and a row when another
 
 ### Deliverables
 The goal pill, the person's choice of goal, the fallback rule and the green 100 % row.
-Reuses `GoalPill` and `ReachedRow` ([gap list](../../design/v2/gaps/metas.md)).
+Reuses `GoalPill` and `ReachedRow` ([gap list](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/gaps/metas.md)).
 
 ### Acceptance criteria
 - The person's choice wins; otherwise the highest completion; nothing with no active goal.

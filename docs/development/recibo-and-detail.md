@@ -1,8 +1,8 @@
 # Recibo and category detail
 
 Decisions: [D03, D06](../decisions/0001-mvp-contract.md) ·
-Design: [Sello v2 Recibo](../design/v2/home.html); [Detalle de
-categoría](../design/sello-spec.html#s-categoria) (v1.1; not redesigned in v2) ·
+Design: [Recibo](../design/system/features/recibo.html#screen-recibo); [Detalle de
+categoría](../design/system/features/category.html#screen-detail) ·
 Builds on the [monthly snapshot](monthly-snapshot.md), [Anotar](expense-entry.md) and
 the [app shell](app-shell.md).
 
@@ -15,7 +15,7 @@ anything itself.
 `ReciboRenderModel` turns a `SnapshotState` into what both screens draw. It picks the
 sentence, formats the amounts the snapshot already holds and names the verdict:
 
-Recibo's answer slip (the v2 `AnswerSlip`):
+Recibo's answer slip (the [`AnswerSlip`](../design/system/components.html#c-AnswerSlip)):
 
 | Month | With limits | Without any limit |
 | --- | --- | --- |
@@ -48,8 +48,8 @@ lists every category, so the link still helps.
 How full a category's circle is drawn is the only number that is not exact. It is
 geometry: it is never shown as a figure, compared or turned back into money.
 
-The approved [v2 Recibo](../design/v2/home.html) also adds a review invitation early
-in the month; it is not implemented yet.
+[Recibo](../design/system/features/recibo.html#screen-recibo) also shows a review
+invitation early in the month, "Ver cómo cerraste …".
 
 ## Order of the categories
 
@@ -65,10 +65,9 @@ usadas.
 
 ### Owner-approved revision — 2026-10-22
 
-The current task expands the original budget-and-list detail to the reference's
-real category insights. Reading order is **hero → latest expenses → En números →
-Cada semana gastas → Un mes normal aquí**. The owner explicitly changed the
-reference's section order. The immutable v1.1 snapshot is not edited.
+The current task expands the original budget-and-list detail to real category
+insights. Reading order is **hero → latest expenses → En números → Cada semana
+gastas → Un mes normal aquí**, the order the owner chose.
 
 Latest expenses is a four-row preview with a separate searchable, sortable,
 bounded full list. Editing moves to the toolbar. Exact financial rules and
@@ -86,10 +85,10 @@ calculation, but its visible text has no extra phrase. A higher recorded compari
 uses the warning ink, a lower one the gain ink, and zero the ordinary ink. The
 direction comes from the domain comparison, never by parsing the displayed text.
 
-The category-detail type audit follows the v1.1 CSS, using the bundled Schibsted
-font and Android sp at the system's selected scale:
+The category-detail type sizes use the bundled Schibsted font and Android sp at the
+system's selected scale (the [type scale](../design/system/foundations.html#type)):
 
-| Use | Reference size | App role |
+| Use | Size | App role |
 | --- | --- | --- |
 | Category toolbar title | 19 | titleLarge |
 | Hero amount | 44, fitted only when required by width | displayMedium |
@@ -102,10 +101,10 @@ font and Android sp at the system's selected scale:
 | Expense rows / dates | 14 / 12 | bodyLarge / labelSmall |
 | Chart legends / axis labels | 12 | labelSmall |
 
-Global type definitions already match their reference roles. Feature roles are
+Global type definitions already match their roles. Feature roles are
 verified separately; system font scaling remains enabled.
 `MoneyText` retains tabular digits even with a caller-supplied text style, as the
-reference's `.mny` rule requires; custom label sizing must not crowd group separators.
+design requires; custom label sizing must not crowd group separators.
 
 `CategoryInsightsPolicy` owns the statistics, week buckets, planning allowance and
 completed-month history under ADR 0015. `RoomCategoryInsightsSnapshots` reads seven
@@ -124,7 +123,7 @@ The owner-approved section order is:
 3. **En números**: a two-column grid of count/days and **En promedio** (average
    expense), then largest expense and weekday with the highest recorded total.
    Each label sits above its value; the largest expense's note/date sits below its
-   amount. It uses the reference's receipt, price-tag, upward-arrow and calendar icons.
+   amount. It uses Sello's receipt, price-tag, upward-arrow and calendar icons.
 4. **Cada semana gastas**: completed-bucket average, actual weekly spending and the
    current bucket's still-available allowance drawn as a separate striped portion.
 5. **Un mes normal aquí**: average of up to six completed configured months,

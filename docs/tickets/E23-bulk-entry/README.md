@@ -7,7 +7,7 @@
 
 [ARCHITECTURE §8](../../../ARCHITECTURE.md) lists Anotar varios in the *Next* increment
 and requires the batch semantics before any UI; they are fixed below. The v1.1 drawings
-are [Anotar varios and Varios movimientos](../../design/sello-spec.html#s-varios).
+are [Anotar varios and Varios movimientos](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/sello-spec.html#s-varios).
 
 ## Decisions
 
@@ -30,7 +30,7 @@ started.
   (SELLO-127 to SELLO-129), Claude Sonnet 5.5 at high effort for the others; reviewers on
   Claude Opus 5.5. Merges are delegated as in [orchestration](../../development/orchestration.md).
 
-**Owner approval (2026-10-30):** the [Anotar varios mock](../../design/v2/varios.html)
+**Owner approval (2026-10-30):** the [Anotar varios mock](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/varios.html)
 (SELLO-126) approved as drawn, with every choice it lists: switching Gasto/Ingreso asks
 first, keeps amounts and notes and clears categories or sources; a goal's total is aportes
 minus retiros; an investment's total is Aportado; a USD receipt stays in dollars; no type

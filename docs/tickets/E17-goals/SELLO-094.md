@@ -10,7 +10,7 @@
 Sandbox scenarios and catalog examples exercise goals through the real command paths.
 
 ### Deliverables
-Scenarios for stamps, withdrawals, target edits and completion; catalog states for the extensions the earlier tickets add, and device tests for `GoalPill`, `MovementRow`, `StampTicket`, `GoalPinPill` and `IconChoiceStrip`, which have none ([gap list](../../design/v2/gaps/metas.md)).
+Scenarios for stamps, withdrawals, target edits and completion; catalog states for the extensions the earlier tickets add, and device tests for `GoalPill`, `MovementRow`, `StampTicket`, `GoalPinPill` and `IconChoiceStrip`, which have none ([gap list](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/gaps/metas.md)).
 
 ### Acceptance criteria
 - Scenarios use real commands and storage with synthetic data.

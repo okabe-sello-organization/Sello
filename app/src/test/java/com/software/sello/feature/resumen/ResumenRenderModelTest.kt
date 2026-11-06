@@ -163,7 +163,7 @@ class ResumenRenderModelTest {
         assertEquals(0f, slip.spentShare)
     }
 
-    // --- v2: the month in progress, the limit line and the ranking ---
+    // --- The month in progress, the limit line and the ranking ---
 
     private val october = YearMonth.of(2026, 10)
     private val september = YearMonth.of(2026, 9)
@@ -254,7 +254,7 @@ class ResumenRenderModelTest {
         assertEquals("75.000 pesos", state.spent.spoken)
     }
 
-    // --- v2: the comparison, a normal month, weekdays and the suggestion ---
+    // --- The comparison, a normal month, weekdays and the suggestion ---
 
     private fun ready(snapshot: ResumenSnapshot) =
         render.render(ReadState.Ready(snapshot)) as ResumenState.Ready

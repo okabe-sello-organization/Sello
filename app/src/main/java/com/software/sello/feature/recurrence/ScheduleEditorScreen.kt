@@ -86,9 +86,9 @@ fun ScheduleEditorRoot(viewModels: ViewModelProvider.Factory, onClosed: () -> Un
 }
 
 /**
- * One schedule in the entry's layout (docs/design/v2/fijos.html): its amount, category or
- * source, note and Se repite; that changes apply from tomorrow; Pausar or, while paused,
- * Reanudar; and, in the top bar's ⋮, deleting it, keeping what it recorded.
+ * One schedule in the entry's layout (docs/design/system/features/recurrence.html#screen-editor):
+ * its amount, category or source, note and Se repite; that changes apply from tomorrow; Pausar or,
+ * while paused, Reanudar; and, in the top bar's ⋮, deleting it, keeping what it recorded.
  */
 @Composable
 fun ScheduleEditorScreen(

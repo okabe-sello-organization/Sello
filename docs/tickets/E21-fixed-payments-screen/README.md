@@ -9,7 +9,7 @@
 
 **Owner direction (2026-10-26):** the owner reviewed the screen on the phone and approved a
 redesign mockup (kept in SELLO-122's `artifacts/`), which replaces the list part of the
-[v2 page](../../design/v2/fijos.html) locked by delegation in SELLO-114, with these changes:
+[v2 page](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/fijos.html) locked by delegation in SELLO-114, with these changes:
 
 - The empty screen has no "Anotar algo que se repite" button. The + in the top bar stays.
 - No stamp on the summary, also not when every income arrived.

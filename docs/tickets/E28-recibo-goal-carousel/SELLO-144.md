@@ -12,7 +12,7 @@ starred even when five already are, by choosing which one it replaces.
 
 ### Acceptance criteria
 - Before building, the owner approves a mock of the carousel (pill and dots) and the
-  replace sheet; the [v2 design](../../design/v2/README.md#recibo--home) and its Goal
+  replace sheet; the [v2 design](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/README.md#recibo--home) and its Goal
   detail star pill text are updated to match ("Only one goal can be on Recibo" goes).
 - Recibo shows SELLO-143's list in the goal slot, same height as today. No active goal:
   nothing, as now. One goal: today's pill exactly, no swipe, no dots. Two to five:

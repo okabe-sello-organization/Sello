@@ -22,7 +22,7 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * A category with no limit says what was spent: the amount on its own line and a small
- * "gastado" under it, as in the v2 Recibo grid. In a grid column of a 320dp screen the
+ * "gastado" under it, as in the Recibo grid. In a grid column of a 320dp screen the
  * amount stays whole, so the cell is as tall as it is with room to spare; "gastado"
  * before the amount once squeezed it down to one character per line.
  */

@@ -24,7 +24,7 @@ A device test of the cell narrow and roomy in all four colour schemes; the exist
 A past month at 320dp shows "120.000" whole with "gastado" under it.
 
 ### Context and starting points
-Found in SELLO-093 on 2026-10-24 (a past month at 320dp showed "12 0. 00 0"); owner decision 2026-10-25: follow the v2 grid (`docs/design/v2/home.js`, `.cell-text` in `sello.css`).
+Found in SELLO-093 on 2026-10-24 (a past month at 320dp showed "12 0. 00 0"); owner decision 2026-10-25: follow the v2 grid ([`docs/design/v2/home.js`](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/home.js), `.cell-text` in `sello.css`).
 
 ### Implementation plan
 1. Red: the narrow cell grows as the amount breaks up.

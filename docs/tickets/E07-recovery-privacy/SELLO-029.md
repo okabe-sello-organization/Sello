@@ -39,7 +39,7 @@ all manual workflows remain available. Restore action stays absent until SELLO-0
 ### Context and starting points
 Returning a document URI is not a successful backup. Use SELLO-028 encoder/snapshot
 and app platform/Root contracts; read
-the [Sello v2 components](../../design/v2/components.html) and, until v2 designs it, the v1.1 [backup screen](../../design/sello-spec.html#s-respaldo), approved D08 and official
+the [Sello v2 components](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/components.html) and, until v2 designs it, the v1.1 [backup screen](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/sello-spec.html#s-respaldo), approved D08 and official
 document-picker sources in the guide. Files may be plaintext and provider failures are real.
 
 ### Implementation plan

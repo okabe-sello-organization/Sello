@@ -22,7 +22,7 @@ import androidx.compose.ui.window.DialogWindowProvider
 
 /**
  * What each screen says about the status bar: the ink that reads on what it draws under
- * it, as v2's `.statusbar` takes its colour from the bar it sits in. The window's owner
+ * it, the colour of the bar it sits in. The window's owner
  * turns the latest word into icon colour. The screen that spoke last wins, so one
  * entering over another takes the bar; when it leaves, the one under it has it again.
  */

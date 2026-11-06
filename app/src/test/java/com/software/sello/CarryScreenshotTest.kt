@@ -60,10 +60,11 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * What signed carry-over looks like (ADR 0020, SELLO-041; docs/design/v2/arrastre.html), kept
- * as committed images (ADR 0022): Recibo and the category detail of SC13, the editor's card and
- * the drop question of SC22, the list before deleting SC25's expense and catch-up's lines of
- * SC47. Every figure is copied from docs/testing/signed-carryover-examples.md.
+ * What signed carry-over looks like (ADR 0020, SELLO-041;
+ * docs/design/system/features/recibo.html#screen-recibo), kept as committed images (ADR 0022):
+ * Recibo and the category detail of SC13, the editor's card and the drop question of SC22, the list
+ * before deleting SC25's expense and catch-up's lines of SC47. Every figure is copied from
+ * docs/testing/signed-carryover-examples.md.
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)

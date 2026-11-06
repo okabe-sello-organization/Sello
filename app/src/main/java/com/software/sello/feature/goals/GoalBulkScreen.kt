@@ -67,11 +67,11 @@ fun GoalBulkRoot(viewModels: ViewModelProvider.Factory, onClosed: () -> Unit) {
 }
 
 /**
- * Aportar varios (v2 varios): the goal's name under the title while the lines name one
- * goal, the receipt taking the free height, the goal chips, the Aportar / Retirar chips and
- * the note for the highlighted line, the one button and the pad. Each line carries its own
- * goal and date, the date shown as a pill on the highlighted line. Lines without an amount
- * are ignored; one with an amount and no goal or no type waits.
+ * Aportar varios (docs/design/system/features/goals.html#screen-bulk): the goal's name under the
+ * title while the lines name one goal, the receipt taking the free height, the goal chips, the
+ * Aportar / Retirar chips and the note for the highlighted line, the one button and the pad. Each
+ * line carries its own goal and date, the date shown as a pill on the highlighted line. Lines
+ * without an amount are ignored; one with an amount and no goal or no type waits.
  */
 @Composable
 fun GoalBulkScreen(state: GoalBulkState, onAction: (GoalBulkAction) -> Unit) {

@@ -73,7 +73,7 @@ class IncomeJourneyTest {
         rule.awaitTag("income.history")
         rule.awaitText("Ingreso anotado: 150.000")
         rule.onNodeWithText("Listo").assertDoesNotExist()
-        // The v2 history: what came in, and the income itself in the list.
+        // The history: what came in, and the income itself in the list.
         rule.awaitTag("income.hero")
         // With nothing budgeted the suggestion comes first, so the list is scrolled to.
         rule.onNodeWithTag("income.history").performScrollToNode(hasTestTag("income.list"))

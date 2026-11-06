@@ -8,7 +8,7 @@
 ## Decisions
 
 **Owner direction (2026-10-25):** the owner approved a mockup of Configuración, based on
-[screen 16 of the design snapshot](../../design/sello-spec.html#s-config), with these changes:
+[screen 16 of the design snapshot](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/sello-spec.html#s-config), with these changes:
 
 - No Avisos slip: budget alerts are not part of this epic.
 - Tus datos comes first. It opens with a backup card: the last backup's date, its age and

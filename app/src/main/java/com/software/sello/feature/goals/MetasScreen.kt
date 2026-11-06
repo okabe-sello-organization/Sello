@@ -136,7 +136,8 @@ fun MetasScreen(
                             modifier = Modifier.testTag("metas.goal.${goal.id}"),
                             flagged = goal.targetMonth != null
                         )
-                        // At its target the card carries Marcar como lograda (v2 celebrations).
+                        // At its target the card carries Marcar como lograda
+                        // (docs/design/system/features/goals.html).
                         if (goal.reached) {
                             SelloButton(
                                 stringResource(R.string.goal_mark_complete),
@@ -187,7 +188,7 @@ fun MetasScreen(
     }
 }
 
-/** v1.1's empty state: the invitation and four empty stamp places, no button. */
+/** The empty state: the invitation and four empty stamp places, no button. */
 @Composable
 private fun EmptyMetas() {
     val places = GoalPlace.entries.map { place ->

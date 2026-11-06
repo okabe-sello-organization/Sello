@@ -54,7 +54,7 @@ import com.software.sello.designsystem.theme.SelloMotion
 import com.software.sello.designsystem.theme.SelloTheme
 import kotlinx.coroutines.delay
 
-/** What a movement row's mark says: money in, money out, or a new value (v2 *mov-row*). */
+/** What a movement row's mark says: money in, money out, or a new value. */
 enum class MovementTone { In, Out, Value }
 
 /**
@@ -69,9 +69,9 @@ data class MovementBalance(
 )
 
 /**
- * One movement (v2 *mov-row*): its mark, [title] over [detail], and the amount at the end
- * with [balance] under it. A movement that earned a stamp shows the stamp as its mark.
- * [rule] draws the line under the row; the last row of a group leaves it out.
+ * One movement (docs/design/system/components.html#c-MovementRow): its mark, [title] over [detail],
+ * and the amount at the end with [balance] under it. A movement that earned a stamp shows the stamp
+ * as its mark. [rule] draws the line under the row; the last row of a group leaves it out.
  */
 @Composable
 fun MovementRow(
@@ -330,7 +330,7 @@ fun MilestonePlace(
 
 private const val KEPT_ALPHA = 0.42f
 
-/** Between stamps earned together, as on the v2 celebrations page. */
+/** Between stamps earned together. */
 private const val LAND_STAGGER_MILLIS = 160L
 
 /**

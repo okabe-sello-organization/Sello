@@ -10,7 +10,7 @@
 Reviewed rules and independent examples for investments before any code.
 
 ### Deliverables
-Examples for contributions, withdrawals (never above the last value), dividends, values, the simple return, missing values, USD with the app-wide rate and corrections. Added by SELLO-105 with the owner's approval (2026-10-25): the designs the locked v2 page lacks, extending `inversiones.html` and locked by owner delegation: the currency choice and the rate asked first in Agregar inversión, how USD amounts and the rate read, the Sello pad's comma key for USD, the rate setting behind the tab's settings, the total's rate line, what the valuation footnote opens and the shades after the fourth ([gap list](../../design/v2/gaps/inversiones.md)).
+Examples for contributions, withdrawals (never above the last value), dividends, values, the simple return, missing values, USD with the app-wide rate and corrections. Added by SELLO-105 with the owner's approval (2026-10-25): the designs the locked v2 page lacks, extending `inversiones.html` and locked by owner delegation: the currency choice and the rate asked first in Agregar inversión, how USD amounts and the rate read, the Sello pad's comma key for USD, the rate setting behind the tab's settings, the total's rate line, what the valuation footnote opens and the shades after the fourth ([gap list](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/gaps/inversiones.md)).
 
 ### Acceptance criteria
 - Every ADR 0017 investment decision has examples with exact amounts.

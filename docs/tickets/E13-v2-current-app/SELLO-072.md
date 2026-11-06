@@ -34,7 +34,7 @@ month, and each opens what it opens today.
 
 ### Context and starting points
 Today: "4. Resumen" in the current app inventory and `app/.../feature/resumen`.
-Reference: `docs/design/v2/resumen.html` and "Resumen" in the v2 README. The v2
+Reference: [`docs/design/v2/resumen.html`](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/resumen.html) and "Resumen" in the v2 README. The v2
 hero ("¿Cómo va este mes?" against the same days of last month), "¿Qué días gastas
 más?" and the suggestion need new calculations and are not part of this ticket; the
 owner can ticket them separately.

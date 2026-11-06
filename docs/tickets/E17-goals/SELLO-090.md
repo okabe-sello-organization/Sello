@@ -11,7 +11,7 @@ A person can create a goal with the Sello pad, edit it and delete it with confir
 
 ### Deliverables
 The create/edit screen with projected months only while editing, and deletion with a confirm slip.
-Reuses `IconChoiceStrip`, `FormField`, `AmountKeypad`, `MilestoneSpec` captions, `DangerSlip` and `ConfirmSlip` ([gap list](../../design/v2/gaps/metas.md)); adds the large icon circle beside the name and the pad that slides up over the form.
+Reuses `IconChoiceStrip`, `FormField`, `AmountKeypad`, `MilestoneSpec` captions, `DangerSlip` and `ConfirmSlip` ([gap list](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/gaps/metas.md)); adds the large icon circle beside the name and the pad that slides up over the form.
 
 ### Acceptance criteria
 - Target amount uses the Sello pad; target date optional.

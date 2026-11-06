@@ -33,7 +33,7 @@ Sandbox scenarios can now exercise meaningful real financial state.
 ### Context and starting points
 Users must trace the receipt back to consistent persisted totals and history.
 Use SELLO-014 snapshot/failed states and SELLO-017 entry result. Read
-[Recibo](../../design/sello-spec.html#s-recibo), category detail and architecture §6;
+[Recibo](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/sello-spec.html#s-recibo), category detail and architecture §6;
 MVP detail is budget/actuals/history, not all deferred comparison/record charts.
 
 ### Implementation plan

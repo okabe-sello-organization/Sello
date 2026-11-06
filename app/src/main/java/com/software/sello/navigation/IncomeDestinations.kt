@@ -50,7 +50,7 @@ internal fun NavGraphBuilder.incomeDestinations(
             onBack = { navigation.popBackStack() },
             screenTitle = stringResource(R.string.income_history_title),
             titleLabel = incomeHistoryTitle(state, monthNames()),
-            // Here the dock records income, as in v2.
+            // Here the dock records income.
             dock = SelloDock(
                 label = stringResource(R.string.dock_income_label),
                 actionLabel = stringResource(R.string.income_save),

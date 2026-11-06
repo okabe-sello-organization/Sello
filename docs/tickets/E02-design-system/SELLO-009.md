@@ -32,8 +32,8 @@ show every delivered component and do not advertise unfinished product screens.
 
 ### Context and starting points
 Recibo and Resumen need shared category/navigation/chart rendering, not separate
-copies. Read [categories](../../design/sello-spec.html#c-categorycircle),
-[scaffold](../../design/sello-spec.html#c-selloscaffold), navigation/a11y sections
+copies. Read [categories](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/sello-spec.html#c-categorycircle),
+[scaffold](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/sello-spec.html#c-selloscaffold), navigation/a11y sections
 and exact render-input contracts from SELLO-007. No financial aggregate policy is owned here.
 
 ### Implementation plan

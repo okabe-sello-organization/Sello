@@ -32,7 +32,7 @@ import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 
 /**
- * What is being created, as a large circle beside its name (v2 create): tapping it opens
+ * What is being created, as a large circle beside its name: tapping it opens
  * the icons to choose from. With no [icon] yet it is a dashed ring in [tone] around a
  * centred +, inviting the choice; with one it is filled in [tone], with a small pencil.
  * [caption] sits under it ("Elegir ícono", "Cambiar") and [description] is what a screen

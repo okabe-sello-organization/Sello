@@ -67,10 +67,10 @@ fun GoalMovementRoot(
 }
 
 /**
- * Aportar and Retirar (v2 aportar): the entry screen's layout with the Aportar / Retirar
- * switch, a green "+" amount with the goal's icon or an ink "−" one, the goal chips with
- * their percentage, what the goal holds, the date pill and the note. Correcting a
- * movement uses the same form with Borrar.
+ * Aportar and Retirar (docs/design/system/features/goals.html#screen-movement): the entry screen's
+ * layout with the Aportar / Retirar switch, a green "+" amount with the goal's icon or an ink "−"
+ * one, the goal chips with their percentage, what the goal holds, the date pill and the note.
+ * Correcting a movement uses the same form with Borrar.
  */
 @Composable
 fun GoalMovementScreen(

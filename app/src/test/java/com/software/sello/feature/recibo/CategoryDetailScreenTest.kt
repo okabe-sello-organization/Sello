@@ -364,7 +364,7 @@ class CategoryDetailScreenTest {
 
     @Test
     fun viewAllEndsFlushWithTheAmountsBelowIt() {
-        // v1.1: "ver los 13" sits at the slip's content edge, the same edge as each amount.
+        // "ver los 13" sits at the slip's content edge, the same edge as each amount.
         val counted = rows.filterNot { it.notCountedYet }
         show(ready(ExpenseListState.Rows(counted, more = true)))
 

@@ -18,8 +18,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * Two stamps earned by one aporte land one after the other, as on the v2 celebrations
- * page ("both stamps land one after the other"): while the first comes down, the second
+ * Two stamps earned by one aporte land one after the other: while the first comes down, the second
  * is not drawn yet; then both are there. Reduced motion shows both at once.
  */
 @RunWith(AndroidJUnit4::class)

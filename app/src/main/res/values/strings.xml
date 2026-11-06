@@ -1311,7 +1311,7 @@
     <string name="goal_celebration_left">%1$s · faltan %2$s para la meta</string>
     <string name="goal_celebration_mark_later">%s · márcala como lograda cuando quieras</string>
     <string name="goal_celebration_notice">%1$s. %2$s.</string>
-    <!-- Recurring payments and incomes (SELLO-100, docs/design/v2 Pagos e ingresos fijos) -->
+    <!-- Recurring payments and incomes (SELLO-100, docs/design/system/features/recurrence.html) -->
     <string name="repeat_title">Se repite</string>
     <string name="schedules_title">Pagos e ingresos fijos</string>
     <plurals name="catch_up_payments">
@@ -1472,7 +1472,7 @@
     <string name="notice_income_deleted_schedule">Ingreso fijo borrado. Lo ya anotado se queda.</string>
     <string name="notice_income_schedule_saved_plain">Ingreso fijo guardado</string>
 
-    <!-- Inversiones (SELLO-109; docs/design/v2/inversiones.html) -->
+    <!-- Inversiones (SELLO-109; docs/design/system/features/investments.html) -->
     <string name="inversiones_title">Inversiones</string>
     <string name="inversiones_value_label">Tus inversiones valen</string>
     <string name="investment_stamp_gain">Gana</string>
@@ -1714,7 +1714,7 @@
     <string name="investment_delete_confirm_title">¿Borrar %s?</string>
     <string name="investment_delete_confirm">Borrar</string>
 
-    <!-- Signed carryover (ADR 0020 wording; docs/design/v2/arrastre.html): Sobrante / Faltante. -->
+    <!-- Signed carryover (ADR 0020 wording; docs/design/system/features/recibo.html#screen-recibo): Sobrante / Faltante. -->
     <string name="carry_base">Límite base</string>
     <string name="carry_in_surplus">Sobrante</string>
     <string name="carry_in_deficit">Faltante</string>

@@ -120,8 +120,9 @@ This summary is refreshed when an epic closes and adds no verification claims.
   only provider that grants access is the export one, limited to `cache/exports/`.
 
 The modules are `:app`, `:domain`, `:data` and `:design-system`.
-[Sello v2](../design/v2/README.md) is the approved design. Category detail retains
-the v1.1 presentation with the owner's section order and the calculations in
+The [design system](../design/system/index.html) is the design, written from the built
+app ([ADR 0026](../decisions/0026-design-system-from-the-built-app.md)). Category detail
+keeps the owner's section order and the calculations in
 [ADR 0015](../decisions/0015-category-detail-insights.md). Recibo's status is factual
 under ADR 0012 BG1 (SELLO-061); [ADR 0012](../decisions/0012-budget-guidance-contract.md)
 tracks the remaining financial inputs.

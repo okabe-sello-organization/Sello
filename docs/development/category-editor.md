@@ -1,7 +1,7 @@
 # First run and the category editor
 
 **Owner:** SELLO-016 · Decisions: [D04, D05](../decisions/0001-mvp-contract.md) ·
-Design: [category editor](../design/sello-spec.html#s-catform) (v1.1; not redesigned in [Sello v2](../design/v2/README.md)) ·
+Design: [category editor](../design/system/features/category.html#screen-editor) ·
 Builds on [commands](commands.md), [categories and limits](categories-and-limits.md)
 and the [app shell](app-shell.md).
 
@@ -29,9 +29,8 @@ The limit is **drawn** in groups (`500000` as `500.000`) through `DigitGrouping`
 its size can be read while typing. The draft, what is validated and what is saved stay
 the typed text, without the dots. An error on the name scrolls the name into view.
 
-Today the limit uses the phone's number keyboard. Under the approved
-[Sello v2](../design/v2/README.md) direction every amount uses the Sello pad, so this
-field will move to it; that is not implemented yet.
+The limit uses the compact Sello pad, like every amount
+([category editor](../design/system/features/category.html#screen-editor)).
 
 ## Saving once
 

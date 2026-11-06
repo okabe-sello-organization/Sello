@@ -25,7 +25,7 @@ ViewModel, screen and journey tests; G2.
 Schedules can be managed on a phone.
 
 ### Context and starting points
-SELLO-114's approved pages; the [gap list](../../design/v2/gaps/recurrence.md) names the reusable parts (`SegmentedSwitch`, `LeaderLine`, `ActionLine`, `AmountKeypad`, `ConfirmSlip`, `DangerSlip`, `Stamp`).
+SELLO-114's approved pages; the [gap list](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/gaps/recurrence.md) names the reusable parts (`SegmentedSwitch`, `LeaderLine`, `ActionLine`, `AmountKeypad`, `ConfirmSlip`, `DangerSlip`, `Stamp`).
 
 ### Implementation plan
 1. List.
@@ -40,7 +40,7 @@ Focused tests, then `./scripts/verify-ticket SELLO-100 --retain`.
 
 ### Execution progress
 
-- **Built to SELLO-114's locked page** (`docs/design/v2/fijos.html`, owner answers of
+- **Built to SELLO-114's locked page** ([`docs/design/v2/fijos.html`](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/fijos.html), owner answers of
   2026-10-25):
   - **Se repite** in Anotar gasto / ingreso: a row under the note and a sheet (each
     month, twice a month, every N weeks or days, an end), shared by both forms through

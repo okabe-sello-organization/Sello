@@ -10,7 +10,7 @@
 Schedules live in Room, and opening Sello records every due occurrence once, atomically.
 
 ### Deliverables
-Schema migration (schema 5), schedule commands, the catch-up use case with unique (schedule, date) origins, bounded and resumable, and receipts. The origin is a new field on `expense` and `income` and their `deleted_*` tables, which have none today ([gap list](../../design/v2/gaps/recurrence.md)).
+Schema migration (schema 5), schedule commands, the catch-up use case with unique (schedule, date) origins, bounded and resumable, and receipts. The origin is a new field on `expense` and `income` and their `deleted_*` tables, which have none today ([gap list](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/gaps/recurrence.md)).
 
 ### Acceptance criteria
 - An occurrence is recorded exactly once, even after a crash or a second opening.

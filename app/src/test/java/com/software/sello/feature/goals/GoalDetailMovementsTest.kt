@@ -58,7 +58,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * A goal's movements as v2 draws them (owner, 2026-11-02): the amount at the end with the
+ * A goal's movements as drawn (owner, 2026-11-02): the amount at the end with the
  * balance under it, a note as the title, and month lines in the full list only. MT40.
  */
 @RunWith(AndroidJUnit4::class)

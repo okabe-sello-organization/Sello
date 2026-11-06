@@ -16,5 +16,5 @@
 - Archivar and Borrar both live in Editar categoría's ⋮; an archived category shows
   Desarchivar in the form. Not on category detail.
 - When it does not happen, say that nothing was deleted or moved, why, and the way forward.
-- Design: [borrar-categoria.html](../../design/v2/borrar-categoria.html), approved in chat.
+- Design: [borrar-categoria.html](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/borrar-categoria.html), approved in chat.
 - Subagents and a separate review agent are approved for this epic.

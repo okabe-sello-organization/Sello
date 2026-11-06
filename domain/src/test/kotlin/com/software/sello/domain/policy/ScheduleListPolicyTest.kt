@@ -29,8 +29,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * Pagos e ingresos fijos' list (docs/design/v2/fijos.html) on jue 22 oct 2026. Every date
- * and sum below was worked out by hand on the 2026 calendar.
+ * Pagos e ingresos fijos' list (docs/design/system/features/recurrence.html#screen-schedules) on
+ * jue 22 oct 2026. Every date and sum below was worked out by hand on the 2026 calendar.
  */
 class ScheduleListPolicyTest {
     private val today = LocalDate.parse("2026-10-22")

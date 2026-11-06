@@ -44,7 +44,7 @@ the v2 form, and the saved confirmation from SELLO-066 appears.
 ### Context and starting points
 Today: `app/.../feature/expense/ExpenseEntryScreen.kt` and its root, render model and
 tests; see "6. Expense entry and edit" in the current app inventory. Reference:
-`docs/design/v2/entry.html` and the catalog example `v2.entry` in
+[`docs/design/v2/entry.html`](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/entry.html) and the catalog example `v2.entry` in
 `catalog/.../v2/V2InputExamples.kt`, which already shows every state with synthetic
 data.
 

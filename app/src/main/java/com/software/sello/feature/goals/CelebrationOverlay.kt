@@ -73,10 +73,10 @@ import kotlin.math.hypot
 
 /*
  * The big moment's timeline, in milliseconds from opening, from the locked reference
- * (docs/design/v2/celebrate.js): the stamps land one by one on the desk, green floods out
- * of the Meta stamp, the stamps rise and turn white, ¡Lo lograste! rises, the plate is
- * stamped, paper chads fall and the actions fade in. Everything below is derived from one
- * clock so the beats combine as they do in the reference.
+ * (docs/design/system/features/goals.html#screen-celebrations): the stamps land one by one on the
+ * desk, green floods out of the Meta stamp, the stamps rise and turn white, ¡Lo lograste! rises,
+ * the plate is stamped, paper chads fall and the actions fade in. Everything below is derived from
+ * one clock so the beats combine as they do in the reference.
  */
 private val LandAt = listOf(300, 650, 1000, 1400)
 

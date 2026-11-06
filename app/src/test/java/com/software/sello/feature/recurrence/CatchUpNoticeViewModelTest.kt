@@ -116,8 +116,8 @@ internal class HandCarry : CarryoverReads {
 
 /**
  * The notice after catching up on jue 22 oct 2026 (recurrence-examples rule 14,
- * docs/design/v2/fijos.html): everything recorded since the last Listo, named by note,
- * else category or source, until Listo is pressed and kept.
+ * docs/design/system/features/recurrence.html#notice-catch-up): everything recorded since the last
+ * Listo, named by note, else category or source, until Listo is pressed and kept.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class CatchUpNoticeViewModelTest {

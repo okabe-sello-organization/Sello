@@ -201,10 +201,12 @@ private fun SummarySlip(summary: ReciboSummary, onAdjust: () -> Unit, onReserved
         )
     ) {
         summary.closed?.let { ClosedMonthNote(it) }
-        // Revisar's two facts under the big number, before the tear line (v2 Recibo).
+        // Revisar's two facts under the big number, before the tear line
+        // (docs/design/system/features/recibo.html).
         summary.shortfall?.let { ShortfallNote(it) }
         summary.perDay?.let { PerDayFigure(it, over = summary.stamp == ReciboStamp.Over) }
-        // Under the per-day line, only while a category carries (docs/design/v2 Arrastre).
+        // Under the per-day line, only while a category carries
+        // (docs/design/system/features/recibo.html#screen-recibo).
         summary.carry?.let { MonthCarrySum(it) }
         summary.reserved?.let { ReservedFootnote(it, onReserved) }
         if (summary.adjustable) AdjustBudgetLink(onAdjust)

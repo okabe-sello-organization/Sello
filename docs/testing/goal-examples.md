@@ -5,7 +5,7 @@ below; the examples are approved by merging the SELLO-086 pull request.
 
 The rules every Metas ticket (SELLO-087–094) implements and tests against. Decisions
 come from [ADR 0017](../decisions/0017-goals-recurrence-investments.md), [ADR
-0013](../decisions/0013-sello-v2-design.md), the [Metas brief](../design/screen-briefs/goals.md)
+0013](../decisions/0013-sello-v2-design.md), the [Metas brief](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/screen-briefs/goals.md)
 and the owner's answers of 2026-10-23 (marked **Owner**). Every figure was worked out by
 hand, not from code. Amounts are whole COP pesos, grouped here as the app shows them.
 These are expectations, not passing tests.

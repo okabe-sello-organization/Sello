@@ -51,10 +51,10 @@ import com.software.sello.presentation.month.monthNames
 import java.time.YearMonth
 
 /**
- * One investment (v2 page): "Vale" with Gana / Pierde, the value, the signed return,
- * when the value was recorded and since when, what produced it and **Anotar el valor de
- * hoy**; the recorded values as dots with what was put in as steps; then the movements,
- * newest first, each opening its correction. Everything stays in its own currency.
+ * One investment (docs/design/system/features/investments.html): "Vale" with Gana / Pierde, the
+ * value, the signed return, when the value was recorded and since when, what produced it and
+ * **Anotar el valor de hoy**; the recorded values as dots with what was put in as steps; then the
+ * movements, newest first, each opening its correction. Everything stays in its own currency.
  */
 @Composable
 fun InvestmentDetailScreen(
@@ -355,7 +355,7 @@ private fun Movements(
                 rule = next != null && !(state.allMovements && month(next) != month(movement))
             )
         }
-        // The foot (v2 *Anotar varios*): Varios movimientos, and Ver los N while some are hidden.
+        // The foot: Varios movimientos, and Ver los N while some are hidden.
         Row(verticalAlignment = Alignment.CenterVertically) {
             SelloButton(
                 stringResource(R.string.investment_movements_title),

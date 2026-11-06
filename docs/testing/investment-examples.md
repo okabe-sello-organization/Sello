@@ -5,8 +5,8 @@ below; the examples are approved by merging the SELLO-106 pull request (owner, 2
 
 The rules every investment ticket (SELLO-107–112) implements and tests against.
 Decisions come from [ADR 0017](../decisions/0017-goals-recurrence-investments.md), the
-[Inversiones brief](../design/screen-briefs/investments.md), the locked
-[v2 page](../design/v2/README.md#inversiones), architecture §4 and §8 and the owner's
+[Inversiones brief](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/screen-briefs/investments.md), the locked
+[v2 page](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/README.md#inversiones), architecture §4 and §8 and the owner's
 answers of 2026-10-25 (marked **Owner**). Rules marked **Proposed** follow from those
 decisions and are approved with this file. Every figure was worked out by hand, not from
 code. COP amounts are whole pesos; USD amounts have two decimals; both are grouped as the

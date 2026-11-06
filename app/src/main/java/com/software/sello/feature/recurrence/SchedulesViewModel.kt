@@ -115,9 +115,9 @@ sealed interface SchedulesAction {
 }
 
 /**
- * Pagos e ingresos fijos (docs/design/v2/fijos.html): every schedule of one kind, with
- * the current month as a plan. Payments are named from the month's categories, archived
- * ones included, read from the same snapshot Recibo uses.
+ * Pagos e ingresos fijos (docs/design/system/features/recurrence.html#screen-schedules): every
+ * schedule of one kind, with the current month as a plan. Payments are named from the month's
+ * categories, archived ones included, read from the same snapshot Recibo uses.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class SchedulesViewModel(

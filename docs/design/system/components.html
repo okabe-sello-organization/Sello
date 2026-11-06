@@ -518,9 +518,9 @@ fun LeaderLine(
 <div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
 </article>
 <article class="component" id="c-EntryHeading">
-<h3><code>EntryHeading</code> <span class="src"><code>component/EntryHeading.kt:18</code></span></h3>
+<h3><code>EntryHeading</code> <span class="src"><code>component/EntryHeading.kt:19</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>A section heading of an entry or movement form, such as Tipo, Meta or Inversión: uppercase, heavy and spaced, in the softer ink, as the v2 entry design draws it.</dd>
+<dt>Purpose</dt><dd>A section heading of an entry or movement form, such as Tipo, Meta or Inversión: uppercase, heavy and spaced, in the softer ink.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 1</a> <a class="tag" href="features/goals.html">goals · 2</a> <a class="tag" href="features/investments.html">investments · 3</a></dd>
 </dl>
 <pre><code>fun EntryHeading(text: String, modifier: Modifier = Modifier)</code></pre>
@@ -613,7 +613,7 @@ fun LeaderLine(
 <article class="component" id="c-FieldMessageText">
 <h3><code>FieldMessageText</code> <span class="src"><code>component/FieldMessage.kt:46</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>The shared look of a <code>FieldMessage</code>, as the v2 entry's save message. Announced when it appears.</dd>
+<dt>Purpose</dt><dd>The shared look of a <code>FieldMessage</code>, as the entry's save message. Announced when it appears.</dd>
 <dt>Variants</dt><dd><code>FieldMessage.tone</code>: <code>FieldTone.Error</code> (loss ink, error icon, marks the field invalid), <code>Warning</code>, <code>Hint</code> (soft ink, no icon).</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 3</a> <a class="tag" href="features/category.html">category · 7</a> <a class="tag" href="features/expense.html">expense · 5</a> <a class="tag" href="features/goals.html">goals · 9</a> <a class="tag" href="features/income.html">income · 5</a> <a class="tag" href="features/investments.html">investments · 9</a> <a class="tag" href="features/recurrence.html">recurrence · 2</a> <a class="tag" href="features/startup.html">startup · 2</a> <span class="muted">Inside the design system: <code>FormField.kt</code>.</span></dd>
 </dl>
@@ -770,7 +770,7 @@ fun LeaderLine(
 <article class="component" id="c-IconPickerCircle">
 <h3><code>IconPickerCircle</code> <span class="src"><code>component/IconPicker.kt:42</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>What is being created, as a large circle beside its name (v2 create): tapping it opens the icons to choose from. With no <code>icon</code> yet it is a dashed ring in <code>tone</code> around a centred +, inviting the choice; with one it is filled in <code>tone</code>, with a small pencil. <code>caption</code> sits under it ("Elegir ícono", "Cambiar") and <code>description</code> is what a screen reader says, which should name the chosen icon.</dd>
+<dt>Purpose</dt><dd>What is being created, as a large circle beside its name: tapping it opens the icons to choose from. With no <code>icon</code> yet it is a dashed ring in <code>tone</code> around a centred +, inviting the choice; with one it is filled in <code>tone</code>, with a small pencil. <code>caption</code> sits under it ("Elegir ícono", "Cambiar") and <code>description</code> is what a screen reader says, which should name the chosen icon.</dd>
 <dt>Variants</dt><dd>No icon yet: dashed ring with +; chosen: filled in <code>tone</code> with a pencil.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/category.html">category · 1</a> <a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/investments.html">investments · 1</a></dd>
 </dl>
@@ -1134,7 +1134,7 @@ fun ChoiceSlip(
 <article class="component" id="c-MovementRow">
 <h3><code>MovementRow</code> <span class="src"><code>component/Goals.kt:77</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>One movement (v2 *mov-row*): its mark, <code>title</code> over <code>detail</code>, and the amount at the end with <code>balance</code> under it. A movement that earned a stamp shows the stamp as its mark. <code>rule</code> draws the line under the row; the last row of a group leaves it out.</dd>
+<dt>Purpose</dt><dd>One movement: its mark, <code>title</code> over <code>detail</code>, and the amount at the end with <code>balance</code> under it. A movement that earned a stamp shows the stamp as its mark. <code>rule</code> draws the line under the row; the last row of a group leaves it out.</dd>
 <dt>Variants</dt><dd><code>tone</code>: <code>MovementTone.In</code>, <code>Out</code>, <code>Value</code>. Optional <code>milestone</code> (a 34 dp stamp as the mark), <code>balance</code>, <code>annotation</code>, <code>rule</code>.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/investments.html">investments · 1</a></dd>
 </dl>

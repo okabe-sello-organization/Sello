@@ -6,7 +6,7 @@ into reviewed worked examples before code.
 
 ## Context
 
-[Sello v2](../design/v2/README.md) ([ADR 0013](0013-sello-v2-design.md)) designs Metas,
+[Sello v2](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/README.md) ([ADR 0013](0013-sello-v2-design.md)) designs Metas,
 reserved payments and Inversiones, and the briefs left their product rules open. After
 the MVP (SELLO-036) the owner asked for epics for the missing parts and an interview on
 those rules. This records the answers; [architecture](../../ARCHITECTURE.md) and ADRs

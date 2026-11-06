@@ -59,9 +59,10 @@ fun UsdRateEntryRoot(viewModels: ViewModelProvider.Factory, onClosed: () -> Unit
 }
 
 /**
- * Cambiar la tasa (v2 *Dólares y la tasa*): the entry layout with "Pesos por 1 dólar",
- * the rate typed with the comma pad, its date (today or earlier), one fact about the
- * current rate and **Guardar tasa**. 1,00 to 100.000,00, two decimals at most (rule 11).
+ * Cambiar la tasa (docs/design/system/features/investments.html#screen-usd-rate-entry): the entry
+ * layout with "Pesos por 1 dólar", the rate typed with the comma pad, its date (today or earlier),
+ * one fact about the current rate and **Guardar tasa**. 1,00 to 100.000,00, two decimals at most
+ * (rule 11).
  */
 @Composable
 fun UsdRateEntryScreen(state: UsdRateEntryState, onAction: (UsdRateEntryAction) -> Unit) {

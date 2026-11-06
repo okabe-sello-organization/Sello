@@ -1,6 +1,6 @@
 # Sello design philosophy
 
-**Updated:** 2026-10-16 · **Status:** approved design direction; implementation pending.
+**Updated:** 2026-11-05 · **Status:** approved design direction; implementation pending.
 
 ## Purpose and working motto
 
@@ -12,12 +12,14 @@ The motto is working wording, not final interface copy.
 
 ## Authority and scope
 
-[Sello v2](v2/README.md) is the visual reference for screens and components;
-the [v1.1 snapshot](sello-spec.html) covers only what v2 does not show.
+The [design system](system/index.html) is the visual reference for screens and
+components ([ADR 0026](../decisions/0026-design-system-from-the-built-app.md)); it is
+written from the built app, and where the app and an older design differ, the app wins.
 [Architecture](../../ARCHITECTURE.md) owns financial, recovery, privacy and module rules.
 [ADR 0011](../decisions/0011-goal-centered-design.md) records product direction,
 [0012](../decisions/0012-budget-guidance-contract.md) defines budget and income meanings,
-and [0013](../decisions/0013-sello-v2-design.md) records the final v2 rules.
+and [0017](../decisions/0017-goals-recurrence-investments.md) records the rules for goals,
+recurrence and investments.
 
 MVP has Recibo and Resumen; goals, recurrence, advanced insights and investments
 come later. Design approval does not mean implementation. Replace financial
@@ -82,7 +84,7 @@ belongs to later planning work under ADR 0012.
 Add these destinations when their features ship: four tabs at most, three preferred
 where equally clear. Goals are user-defined, accept progress without bank proof and may
 have no deadline. Keep history and completed goals accessible. Milestones, completion,
-undo and withdrawal bounds follow ADR 0013; screen visits are not milestone crossings.
+undo and withdrawal bounds follow the [goal examples](../testing/goal-examples.md); screen visits are not milestone crossings.
 
 Goals and investments stay independent, even for the same money. Do not combine
 them into a wealth total or automatically create entries across tools. Inversiones
@@ -98,10 +100,15 @@ review suggestion; offer goal-plan adjustments without blame.
 
 ## Open implementation decisions
 
-The [screen briefs](screen-briefs/README.md) hold questions about review-invitation
-timing; featured-goal ties and invalid selections; goal corrections and milestone
-replay safeguards; and investment ledger, return, dividend and FX policies.
-Recurrence lifecycle details, including expected income, are deferred beyond MVP.
+Questions no ADR, worked example or the code answers yet:
+
+- Budget example BG-E12 in [ADR 0012](../decisions/0012-budget-guidance-contract.md)
+  (income assigned to a user-created investment category) is a derived illustration
+  the owner has not reviewed on its own.
+- Entry on a real device: focus, keyboard insets, TalkBack and hardware keyboards on
+  the Sello pad and the note composer have not been confirmed.
+- Inversiones: the first version shows only the simple return since the first
+  contribution; whether return periods or an annual rate come later is not decided.
 
 ## Review a new screen
 

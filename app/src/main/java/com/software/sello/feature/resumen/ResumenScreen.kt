@@ -606,7 +606,7 @@ private fun ResumenNote(text: String) {
 
 @Composable
 private fun ResumenHeading(text: String) {
-    // v2 asks a small question over each slip's answer.
+    // Resumen asks a small question over each slip's answer.
     Text(
         text,
         style = MaterialTheme.typography.bodyLarge,
