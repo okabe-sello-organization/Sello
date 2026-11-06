@@ -178,7 +178,7 @@ private fun Preview(
             Text(
                 text = stringResource(it),
                 style = MaterialTheme.typography.bodyMedium,
-                color = SelloTheme.colors.semantic.loss,
+                color = SelloTheme.colors.semantic.warn,
                 modifier = Modifier.padding(top = SelloTheme.spacing.sm)
                     .semantics { liveRegion = LiveRegionMode.Polite }
             )

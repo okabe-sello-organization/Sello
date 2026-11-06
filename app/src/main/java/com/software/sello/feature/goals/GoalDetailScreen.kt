@@ -445,7 +445,7 @@ private fun Movements(
                 },
                 icon = when (movement.kind) {
                     GoalMovementKind.Contribution -> SelloIcon.Add
-                    GoalMovementKind.Withdrawal -> SelloIcon.ArrowBack
+                    GoalMovementKind.Withdrawal -> SelloIcon.Remove
                 },
                 annotation = when (earned.size) {
                     0 -> null

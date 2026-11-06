@@ -52,6 +52,7 @@ import com.software.sello.designsystem.component.EntryLayout
 import com.software.sello.designsystem.component.FactLine
 import com.software.sello.designsystem.component.FieldMessage
 import com.software.sello.designsystem.component.FieldMessageText
+import com.software.sello.designsystem.component.FieldPill
 import com.software.sello.designsystem.component.FieldTone
 import com.software.sello.designsystem.component.FormField
 import com.software.sello.designsystem.component.IconChoice
@@ -64,7 +65,6 @@ import com.software.sello.designsystem.component.MoreMenu
 import com.software.sello.designsystem.component.MoreMenuItem
 import com.software.sello.designsystem.component.RepeatSheet
 import com.software.sello.designsystem.component.SelloButton
-import com.software.sello.designsystem.component.SelloChip
 import com.software.sello.designsystem.component.SelloScaffold
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
@@ -264,7 +264,8 @@ private fun CheckAgain(state: GoalEditorState, onAction: (GoalEditorAction) -> U
         ),
         onClick = { onAction(GoalEditorAction.Retry) },
         modifier = Modifier.fillMaxWidth().testTag(GOAL_EDITOR_SUBMIT_TAG),
-        loading = state.busy
+        loading = state.busy,
+        tone = ButtonTone.Gain
     )
 }
 
@@ -457,11 +458,10 @@ private fun Plan(state: GoalEditorState, onAction: (GoalEditorAction) -> Unit, d
         modifier = Modifier.testTag(GOAL_EDITOR_AMOUNT_TAG),
         limitPulse = state.amountPulse,
         date = {
-            SelloChip(
-                label = month,
-                selected = false,
-                onClick = { onAction(GoalEditorAction.ChooseMonth) },
+            FieldPill(
+                text = month,
                 icon = SelloIcon.Event,
+                onClick = { onAction(GoalEditorAction.ChooseMonth) },
                 modifier = Modifier.testTag("goal.editor.month")
                     .semantics { contentDescription = spokenMonth },
                 enabled = !state.busy

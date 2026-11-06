@@ -73,6 +73,7 @@ enum class SelloIcon(@DrawableRes val filled: Int, @DrawableRes val outlined: In
     PlayArrow(R.drawable.ic_sello_play_arrow),
     ReceiptLong(R.drawable.ic_sello_receipt_long, R.drawable.ic_sello_receipt_long_outlined),
     Redeem(R.drawable.ic_sello_redeem),
+    Remove(R.drawable.ic_sello_remove),
     Restaurant(R.drawable.ic_sello_restaurant),
     Savings(R.drawable.ic_sello_savings),
     School(R.drawable.ic_sello_school),

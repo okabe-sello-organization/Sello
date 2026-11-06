@@ -3,6 +3,7 @@ package com.software.sello.feature.category
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
@@ -17,6 +18,7 @@ import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
@@ -31,18 +33,23 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
 import com.software.sello.designsystem.component.MORE_MENU_TAG
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.designsystem.theme.SelloInk
+import com.software.sello.designsystem.theme.selloColors
 import com.software.sello.presentation.carry.CarryDirection
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.revealed
 import com.software.sello.showSello
 import com.software.sello.testing.pesos
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -230,7 +237,7 @@ class CategoryEditorScreenTest {
         // A suggestion is read with its currency, not as a bare number.
         rule.onNodeWithContentDescription("300.000 pesos").revealed().performClick()
         rule.onNodeWithTag(EDITOR_SUBMIT_TAG).revealed().performClick()
-        rule.onNodeWithContentDescription("Volver").performClick()
+        rule.onNodeWithContentDescription("Cerrar").performClick()
 
         // The form is given the same state again, which is not a change, so the field
         // keeps what was typed; what matters is that the typed text was reported first,
@@ -477,6 +484,12 @@ class CategoryEditorScreenTest {
         rule.onNodeWithText("Esta categoría cambió mientras la editabas.")
             .revealed().assertIsDisplayed()
         rule.onNodeWithTag(EDITOR_SUBMIT_TAG).assertDoesNotExist()
+        // Keeping what was typed is the first, filled answer; reloading, which drops it, is under it.
+        val keep = rule.onNodeWithTag(EDITOR_CONFLICT_KEEP_TAG).revealed()
+            .getUnclippedBoundsInRoot()
+        val reload = rule.onNodeWithTag(EDITOR_CONFLICT_RELOAD_TAG).revealed()
+            .getUnclippedBoundsInRoot()
+        assertTrue(keep.bottom <= reload.top)
         rule.onNodeWithTag(EDITOR_CONFLICT_RELOAD_TAG).revealed().performClick()
         rule.onNodeWithTag(EDITOR_CONFLICT_KEEP_TAG).revealed().performClick()
 
@@ -726,6 +739,27 @@ class CategoryEditorScreenTest {
         )
 
         rule.onNodeWithTag(EDITOR_CARRY_PROBLEM_TAG).revealed().assertIsDisplayed()
+    }
+
+    /** A carry refusal is something to fix: loss ink in the card, as below the form (M12-5). */
+    @Test
+    fun aCarryRefusalInTheCardIsInLossInk() {
+        show(
+            editing.copy(
+                carry = CarryCard.Off(october),
+                changed = true,
+                carryPending = CarryPending(on = true, month = october, forgets = null),
+                carryProblem = CarryProblemText.Unavailable
+            )
+        )
+
+        val layouts = mutableListOf<TextLayoutResult>()
+        rule.onNodeWithTag(EDITOR_CARRY_PROBLEM_TAG).revealed()
+            .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+        assertEquals(
+            selloColors(SelloInk.Cobalto, isDark = false).semantic.loss,
+            layouts.single().layoutInput.style.color
+        )
     }
 
     @Test

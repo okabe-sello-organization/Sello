@@ -195,7 +195,6 @@ fun ScheduleEditorScreen(
             confirmLabel = stringResource(R.string.expense_entry_discard_confirm),
             onConfirm = { onAction(ScheduleEditorAction.DiscardConfirmed) },
             onDismiss = { onAction(ScheduleEditorAction.KeepEditing) },
-            destructive = false,
             dismissLabel = stringResource(R.string.expense_edit_discard_keep)
         )
     }
@@ -350,14 +349,15 @@ private fun Choices(
             )
         }
     } else {
-        EntryLine(
+        // Pausar writes at once, so it is a button like Reanudar; the next date is in Se repite.
+        SelloButton(
             text = stringResource(R.string.schedule_pause),
-            icon = SelloIcon.Pause,
             onClick = { onAction(ScheduleEditorAction.Pause) },
-            modifier = Modifier.testTag(SCHEDULE_PAUSE_TAG),
-            action = state.next?.let {
-                stringResource(R.string.schedule_next, dates.day(it, state.today))
-            },
+            modifier = Modifier.fillMaxWidth()
+                .padding(top = SelloTheme.spacing.sm)
+                .testTag(SCHEDULE_PAUSE_TAG),
+            kind = ButtonKind.Outlined,
+            icon = SelloIcon.Pause,
             enabled = state.editable
         )
     }

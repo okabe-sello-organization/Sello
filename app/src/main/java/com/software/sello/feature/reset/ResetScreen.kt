@@ -160,7 +160,7 @@ private fun Counts(
             Text(
                 text = stringResource(R.string.reset_refreshed),
                 style = MaterialTheme.typography.bodyMedium,
-                color = SelloTheme.colors.semantic.loss,
+                color = SelloTheme.colors.semantic.warn,
                 modifier = Modifier.padding(bottom = SelloTheme.spacing.sm)
                     .semantics { liveRegion = LiveRegionMode.Polite }
             )

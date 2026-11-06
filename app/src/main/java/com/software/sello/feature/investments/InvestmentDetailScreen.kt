@@ -344,7 +344,7 @@ private fun Movements(
                     },
                 icon = when (movement.kind) {
                     InvestmentMovementKind.Valuation -> SelloIcon.Insights
-                    InvestmentMovementKind.Withdrawal -> SelloIcon.ArrowBack
+                    InvestmentMovementKind.Withdrawal -> SelloIcon.Remove
                     else -> SelloIcon.Add
                 },
                 tone = when (movement.kind) {

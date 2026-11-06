@@ -443,6 +443,7 @@
 
     holder.appendChild(el("h2", { id: "misuse", text: "Misuse" }));
     holder.appendChild(el("p", { class: "muted", text: "One card per component: what it means in the app, then each place that uses it against that meaning. Sure places first; unsure ones are marked and say why." }));
+    if (!data.misuse.length) holder.appendChild(el("p", { text: "None left: every component is used for what it means." }));
     data.misuse.forEach(function (card) { holder.appendChild(misuseCard(card)); });
 
     holder.appendChild(el("h2", { id: "copies", text: "Copies" }));

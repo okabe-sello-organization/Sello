@@ -42,6 +42,7 @@ import com.software.sello.designsystem.component.BulkMarkTone
 import com.software.sello.designsystem.component.BulkReceipt
 import com.software.sello.designsystem.component.BulkTotal
 import com.software.sello.designsystem.component.ButtonKind
+import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.ChipRows
 import com.software.sello.designsystem.component.ConfirmSlip
 import com.software.sello.designsystem.component.EntryHeading
@@ -435,12 +436,15 @@ private fun Action(state: BulkEntryState, onAction: (BulkEntryAction) -> Unit) {
                 )
             }
         }
+        // Income records in its kind's tone, as Anotar ingreso does; expenses keep Brand.
+        val tone = if (state.kind == BulkKind.Income) ButtonTone.Gain else ButtonTone.Brand
         if (state.error == BulkError.Unknown) {
             SelloButton(
                 text = stringResource(R.string.expense_entry_check_again),
                 onClick = { onAction(BulkEntryAction.Retry) },
                 modifier = Modifier.fillMaxWidth().testTag(BULK_SUBMIT_TAG),
-                loading = state.busy
+                loading = state.busy,
+                tone = tone
             )
         } else {
             SelloButton(
@@ -461,7 +465,8 @@ private fun Action(state: BulkEntryState, onAction: (BulkEntryAction) -> Unit) {
                 modifier = Modifier.fillMaxWidth().testTag(BULK_SUBMIT_TAG),
                 icon = SelloIcon.Add.takeIf { !state.busy },
                 enabled = state.canSubmit,
-                loading = state.busy
+                loading = state.busy,
+                tone = tone
             )
         }
     }
