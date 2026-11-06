@@ -9,10 +9,12 @@ import com.software.sello.captureStill
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloInk
+import com.software.sello.navigation.CategoryEditAction
 import com.software.sello.navigation.ShellDetail
 import com.software.sello.navigation.ShellScreen
 import com.software.sello.navigation.ShellTab
 import com.software.sello.navigation.appTabs
+import com.software.sello.navigation.detailTitle
 import com.software.sello.navigation.octoberShell
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.month.monthNames
@@ -163,17 +165,27 @@ class CategoryDetailScreenshotTest {
     @Test
     fun violetaLight() = capture(Look(ink = SelloInk.Violeta))
 
+    /** Recibo's month as already read, listing [food]: what names the detail meanwhile. */
+    private val recibo = ReciboState.Month(
+        ReciboSummary(ReciboAnswerLabel.Remaining, plain("287.600"), ReciboStamp.Over),
+        listOf(food),
+        stale = false
+    )
+
     private fun shot(name: String, state: CategoryDetailState, dark: Boolean) {
         rule.showSello(Look(dark = dark)) {
             // Opened in Recibo, on a phone: ReciboDestinations.kt hands it to the frame as
-            // its ShellDetail, which draws its own title row (ShellScreen.kt).
+            // its ShellDetail, which draws its own title row (ShellScreen.kt): the name
+            // Recibo already lists while the detail is read (DetailIdentity.kt), and the
+            // edit pencil, disabled until the detail is ready.
             ShellScreen(
-                octoberShell.copy(detailCategoryId = "comida"),
+                octoberShell.copy(detailCategoryId = food.id),
                 monthNames(),
                 {},
                 navigation = appTabs(ShellTab.Recibo),
                 detail = ShellDetail(
-                    (state as? CategoryDetailState.Ready)?.category?.name ?: "Categoría"
+                    detailTitle(food.id, state, recibo) ?: "Categoría",
+                    actions = { CategoryEditAction(state is CategoryDetailState.Ready) {} }
                 ) { padding ->
                     CategoryDetailScreen(
                         state = state,
