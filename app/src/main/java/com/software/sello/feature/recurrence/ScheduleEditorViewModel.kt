@@ -86,6 +86,8 @@ class ScheduleEditorViewModel(
         val loadFailed: Boolean = false,
         val busy: Boolean = false,
         val error: ScheduleEditorError? = null,
+        /** The write last sent or asked about; an unknown or failed one is named by it. */
+        val attempted: ScheduleChange? = null,
         val limitPulse: Int = 0,
         val atLimit: Boolean = false,
         val confirmDelete: Boolean = false,
@@ -462,7 +464,7 @@ class ScheduleEditorViewModel(
     }
 
     private fun submit(change: ScheduleChange, command: (OperationId) -> ScheduleCommand) {
-        progress.update { it.copy(busy = true, error = null) }
+        progress.update { it.copy(busy = true, error = null, attempted = change) }
         viewModelScope.launch {
             settle(
                 change,
@@ -486,8 +488,9 @@ class ScheduleEditorViewModel(
                 it.copy(busy = false, error = ScheduleEditorError.Unknown)
             }
 
+            // Asked with its own ID: nothing was written, and it can be tried again.
             Settled.NotCommitted -> {
-                progress.update { it.copy(busy = false) }
+                progress.update { it.copy(busy = false, error = ScheduleEditorError.NotSaved) }
                 if (progress.value.stored == null) load()
             }
 
@@ -529,7 +532,8 @@ class ScheduleEditorViewModel(
             submission.clear()
             return load()
         }
-        progress.update { it.copy(busy = true, error = null) }
+        // The change pending is saved with its operation, so a restart still names it.
+        progress.update { it.copy(busy = true, error = null, attempted = change) }
         val settled = submission.recover(schedules::find)
         if (settled == null && !submission.pending) return load()
         settle(change, settled)
@@ -643,6 +647,7 @@ class ScheduleEditorViewModel(
             },
             busy = progress.busy,
             error = progress.error,
+            attempted = progress.attempted.takeIf { progress.error != null },
             confirmDelete = progress.confirmDelete,
             confirmDiscard = progress.confirmDiscard,
             closed = progress.closed

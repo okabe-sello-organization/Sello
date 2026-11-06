@@ -58,6 +58,7 @@ import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.Note
 import com.software.sello.presentation.category.CategoryIcons
+import com.software.sello.presentation.corrections.ScheduleChange
 import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.income.incomeSourceLabel
@@ -192,7 +193,15 @@ fun ScheduleEditorScreen(
     if (state.confirmDiscard) {
         ConfirmSlip(
             title = stringResource(R.string.expense_edit_discard_title),
-            message = AnnotatedString(stringResource(R.string.expense_edit_discard_message)),
+            message = AnnotatedString(
+                stringResource(
+                    if (state.income) {
+                        R.string.schedule_discard_income
+                    } else {
+                        R.string.schedule_discard_payment
+                    }
+                )
+            ),
             confirmLabel = stringResource(R.string.expense_entry_discard_confirm),
             onConfirm = { onAction(ScheduleEditorAction.DiscardConfirmed) },
             onDismiss = { onAction(ScheduleEditorAction.KeepEditing) },
@@ -368,7 +377,7 @@ private fun Action(state: ScheduleEditorState, onAction: (ScheduleEditorAction) 
             val unknown = it == ScheduleEditorError.Unknown
             FieldMessageText(
                 FieldMessage(
-                    stringResource(it.text()),
+                    stringResource(it.text(state.attempted, state.income)),
                     if (unknown) FieldTone.Warning else FieldTone.Error
                 ),
                 Modifier.testTag("schedule-editor:error")
@@ -389,7 +398,7 @@ private fun Action(state: ScheduleEditorState, onAction: (ScheduleEditorAction) 
         SelloButton(
             text = stringResource(
                 when {
-                    unknown -> R.string.expense_entry_check_again
+                    unknown -> state.attempted.checkLabel()
                     state.busy -> R.string.expense_entry_saving
                     else -> R.string.schedule_save
                 }
@@ -463,16 +472,48 @@ private fun StartPicker(state: ScheduleEditorState, onAction: (ScheduleEditorAct
     )
 }
 
-private fun ScheduleEditorError.text() = when (this) {
-    ScheduleEditorError.NotSaved -> R.string.schedule_error_not_saved
+/** An unknown or failed write says which it was, and what is edited; a save of edits by default. */
+private fun ScheduleEditorError.text(attempted: ScheduleChange?, income: Boolean) = when (this) {
+    ScheduleEditorError.NotSaved -> notDone(attempted, income)
     ScheduleEditorError.DataChanged -> R.string.schedule_error_data_changed
-    ScheduleEditorError.Unknown -> R.string.expense_entry_unknown
+    ScheduleEditorError.Unknown -> unknown(attempted)
     ScheduleEditorError.ScheduleGone -> R.string.schedule_error_gone
     ScheduleEditorError.ScheduleChanged -> R.string.schedule_error_changed
     ScheduleEditorError.CatchUpPending -> R.string.schedule_error_catch_up
     ScheduleEditorError.CategoryGone -> R.string.schedule_error_category
     ScheduleEditorError.StartTooEarly -> R.string.schedule_error_start
     ScheduleEditorError.EndTooEarly -> R.string.repeat_end_too_early
+}
+
+/** Nothing was written: a change keeps the draft; a pause, resume or delete left it as it was. */
+private fun notDone(attempted: ScheduleChange?, income: Boolean): Int {
+    val (payment, earning) = when (attempted) {
+        ScheduleChange.Paused ->
+            R.string.schedule_not_paused_payment to R.string.schedule_not_paused_income
+
+        ScheduleChange.Resumed ->
+            R.string.schedule_not_resumed_payment to R.string.schedule_not_resumed_income
+
+        ScheduleChange.Deleted ->
+            R.string.schedule_not_deleted_payment to R.string.schedule_not_deleted_income
+
+        ScheduleChange.Changed, null -> return R.string.schedule_error_not_saved
+    }
+    return if (income) earning else payment
+}
+
+private fun unknown(attempted: ScheduleChange?) = when (attempted) {
+    ScheduleChange.Paused -> R.string.schedule_unknown_paused
+    ScheduleChange.Resumed -> R.string.schedule_unknown_resumed
+    ScheduleChange.Deleted -> R.string.expense_edit_delete_unknown
+    ScheduleChange.Changed, null -> R.string.schedule_unknown_saved
+}
+
+private fun ScheduleChange?.checkLabel() = when (this) {
+    ScheduleChange.Paused -> R.string.schedule_check_paused
+    ScheduleChange.Resumed -> R.string.schedule_check_resumed
+    ScheduleChange.Deleted -> R.string.expense_edit_check_deleted
+    ScheduleChange.Changed, null -> R.string.expense_entry_check_again
 }
 
 private const val OTHER = "other"

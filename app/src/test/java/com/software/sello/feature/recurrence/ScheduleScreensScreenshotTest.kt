@@ -14,6 +14,7 @@ import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.RepeatRule
+import com.software.sello.presentation.corrections.ScheduleChange
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.recurrence.RepeatChoice
 import com.software.sello.presentation.recurrence.RepeatKind
@@ -298,11 +299,30 @@ class ScheduleScreensScreenshotTest {
     @Test
     fun editorBusyDark() = editorShot("busy", editing.copy(busy = true), Look(dark = true))
 
-    private val unknown = editing.copy(error = ScheduleEditorError.Unknown)
+    private val unknown =
+        editing.copy(error = ScheduleEditorError.Unknown, attempted = ScheduleChange.Changed)
 
     @Test fun editorUnknownLight() = editorShot("unknown", unknown, Look())
 
     @Test fun editorUnknownDark() = editorShot("unknown", unknown, Look(dark = true))
+
+    private val unknownDelete = unknown.copy(attempted = ScheduleChange.Deleted)
+
+    @Test fun editorUnknownDeleteLight() = editorShot("unknown-delete", unknownDelete, Look())
+
+    @Test
+    fun editorUnknownDeleteDark() = editorShot("unknown-delete", unknownDelete, Look(dark = true))
+
+    // A check found the deletion was not written.
+    private val notDeleted = incomeEditing.copy(
+        error = ScheduleEditorError.NotSaved,
+        attempted = ScheduleChange.Deleted
+    )
+
+    @Test fun editorNotDeletedLight() = editorShot("not-deleted", notDeleted, Look())
+
+    @Test
+    fun editorNotDeletedDark() = editorShot("not-deleted", notDeleted, Look(dark = true))
 
     private val refused = editing.copy(error = ScheduleEditorError.CatchUpPending)
 

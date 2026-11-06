@@ -48,6 +48,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlin.time.Duration
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -162,6 +163,9 @@ class ScheduleEditorViewModelTest {
     }
 
     private val ScheduleEditorViewModel.now get() = state.value
+
+    /** What went wrong and which write it was about. */
+    private val ScheduleEditorState.failure get() = error to attempted
 
     private fun ScheduleEditorViewModel.type(digits: String) {
         onAction(ScheduleEditorAction.ClearAmount)
@@ -339,6 +343,97 @@ class ScheduleEditorViewModelTest {
             CorrectionNotice.ScheduleChanged(ScheduleChange.Paused, income = false),
             corrections.notice.value
         )
+    }
+
+    @Test
+    fun anUnknownDeleteNamesTheDeleteAndACheckThatFindsNothingSaysItWasNotDeleted() {
+        val editor = opened()
+        commands.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
+        editor.onAction(ScheduleEditorAction.Delete)
+        editor.onAction(ScheduleEditorAction.DeleteConfirmed)
+        val unknown = editor.now
+        // A second Borrar while it is unknown sends nothing.
+        editor.onAction(ScheduleEditorAction.Delete)
+        editor.onAction(ScheduleEditorAction.DeleteConfirmed)
+        commands.found = { Outcome.Success(null) }
+        editor.onAction(ScheduleEditorAction.Retry)
+        val notDeleted = editor.now
+        // Nothing was deleted: Borrar can be pressed again, with a new operation.
+        commands.answer = { CommandOutcome.Committed(commands.committed(it.operationId), false) }
+        editor.onAction(ScheduleEditorAction.Delete)
+        editor.onAction(ScheduleEditorAction.DeleteConfirmed)
+
+        assertEquals(ScheduleEditorError.Unknown to ScheduleChange.Deleted, unknown.failure)
+        assertEquals(ScheduleEditorError.NotSaved to ScheduleChange.Deleted, notDeleted.failure)
+        assertTrue(notDeleted.editable)
+        assertFalse(notDeleted.closed)
+        assertEquals(
+            listOf(
+                DeleteSchedule(operation(500), 1, scheduleId(1), 3),
+                DeleteSchedule(operation(501), 1, scheduleId(1), 3)
+            ),
+            commands.submitted
+        )
+        assertTrue(editor.now.closed)
+    }
+
+    @Test
+    fun aPendingPauseIsStillNamedAfterARestartAndACheckThatFindsNothingSaysSo() {
+        val saved =
+            SavedStateHandle(mapOf(ScheduleEditorViewModel.KEY_SCHEDULE to scheduleId(1).value))
+        val editor = opened(saved = saved)
+        commands.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
+        editor.onAction(ScheduleEditorAction.Pause)
+
+        val restored = opened(saved = saved.afterProcessDeath())
+        val unknown = restored.now
+        commands.found = { Outcome.Success(null) }
+        restored.onAction(ScheduleEditorAction.Retry)
+
+        assertEquals(ScheduleEditorError.Unknown to ScheduleChange.Paused, unknown.failure)
+        assertEquals(ScheduleEditorError.NotSaved to ScheduleChange.Paused, restored.now.failure)
+        assertNull(restored.now.pausedFrom)
+        assertTrue(restored.now.editable)
+        assertEquals(1, commands.submitted.size)
+        assertNull(corrections.notice.value)
+    }
+
+    @Test
+    fun aResumeCancelledInFlightIsAskedAboutAfterARestartAsAResume() {
+        val saved =
+            SavedStateHandle(mapOf(ScheduleEditorViewModel.KEY_SCHEDULE to scheduleId(1).value))
+        val editor = opened(rent(pauses = listOf(SchedulePause(d("2026-10-12"), null))), saved)
+        commands.answer = { throw CancellationException("stopped") }
+        editor.onAction(ScheduleEditorAction.Resume)
+        commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
+
+        val restored = opened(
+            rent(pauses = listOf(SchedulePause(d("2026-10-12"), null))),
+            saved.afterProcessDeath()
+        )
+
+        assertEquals(ScheduleEditorError.Unknown to ScheduleChange.Resumed, restored.now.failure)
+        assertEquals(1, commands.submitted.size)
+        assertEquals(listOf(operation(500)), commands.looked)
+    }
+
+    @Test
+    fun aChangeACheckFindsNotSavedSaysSoAndKeepsTheDraft() {
+        val editor = opened()
+        editor.type("1000000")
+        commands.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
+        editor.onAction(ScheduleEditorAction.Save)
+        val unknown = editor.now
+        commands.found = { Outcome.Success(null) }
+        editor.onAction(ScheduleEditorAction.Retry)
+
+        assertEquals(ScheduleEditorError.Unknown to ScheduleChange.Changed, unknown.failure)
+        assertEquals(ScheduleEditorError.NotSaved to ScheduleChange.Changed, editor.now.failure)
+        assertEquals("1.000.000 pesos", editor.now.amount?.spoken)
+        assertTrue(editor.now.canSave)
     }
 
     @Test
