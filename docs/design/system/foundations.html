@@ -46,12 +46,23 @@
         applied.</p>
       <div class="note dynamic" id="dynamic-colours">
         <h3>Dynamic colours</h3>
-        <p>Not built yet. Every colour a screen or resource draws comes from the theme (SELLO-190): no
+        <p>A generator builds a palette from any hue: <code>hueColors(hue, isDark)</code>
+          (<code>HuePalette.kt</code>), a whole OKLCH degree from 0 to 359. It is Sello's own code, with
+          no colour library: each role keeps the luminance of Cobalto's colour for it, so every contrast
+          ratio stays Cobalto's, and turns its OKLCH hue by as much as the hue is from Cobalto's
+          (267°); chroma drops only where sRGB can't hold it. White roles, <code>semantic</code>,
+          the dark <code>goalBand</code>, the scrim and the fixed investment inks stay. At 267° it gives
+          Cobalto exactly, and at every degree, light and dark, it passes every contrast pair
+          <code>SelloPaletteTest</code> checks (<code>HuePaletteTest</code>). Cobalto and Violeta keep
+          their hand-made palettes. <code>hueName</code> gives the hue's Spanish name (Rosa to Fucsia)
+          and <code>hueMeaning</code> says whether it is red (0–49°) or green (122–195°), the hues
+          gain and loss also use. The Tuya and Sistema inks that use it are not built yet.</p>
+        <p>Every colour a screen or resource draws comes from the theme (SELLO-190): no
           <code>Color(0x…)</code> or <code>Color.White</code> outside the palette files, copied roles set
           from the role they copy, a <code>scrim</code> role, and a start-up window that is the desk. A
-          scheme built from the system's colours therefore reaches every part if it builds
-          <code>SelloColors</code> itself, through <code>lightPalette</code> / <code>darkPalette</code>;
-          a new Material <code>colorScheme</code> alone would move only the stock Material parts.</p>
+          scheme therefore reaches every part if it builds <code>SelloColors</code> itself, through
+          <code>lightPalette</code> / <code>darkPalette</code>, as the generator does; a new Material
+          <code>colorScheme</code> alone would move only the stock Material parts.</p>
         <p><strong>What it must still provide</strong></p>
         <ul>
           <li>The roles Material maps: <code>brand</code>, <code>brandSoft</code>, <code>desk</code>,

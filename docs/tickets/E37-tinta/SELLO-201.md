@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** Ready
+- **Status:** Done
 - **Depends on:** None
 - **Gate:** G2
 
@@ -31,3 +31,7 @@ The algorithm and its parameters are prototyped in the epic's
 turn the OKLCH hue by the role's offset from Cobalto's brand hue, reduce chroma until
 the colour fits sRGB. Rounding to 8 bits can move a ratio slightly; nudge, never weaken
 a test. Stored hues are OKLCH degrees.
+
+Generated bands differ but can look alike: near 160° the expense band nearly matches
+the goal band, and near 25° the brand nearly matches loss. The owner chose no blocked
+hue, so the red-and-green note in SELLO-202 and SELLO-203 is the only safeguard.

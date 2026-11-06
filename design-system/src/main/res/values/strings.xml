@@ -18,4 +18,19 @@
     <string name="sello_bulk_remove_line">Quitar renglón</string>
     <string name="sello_bulk_line_position">Renglón %1$d de %2$d</string>
     <string name="sello_bulk_release_to_remove">Suelta para quitar</string>
+    <!-- The name of an ink's hue (HuePalette.kt), round the colour circle. -->
+    <string name="sello_hue_rosa">Rosa</string>
+    <string name="sello_hue_rojo">Rojo</string>
+    <string name="sello_hue_naranja">Naranja</string>
+    <string name="sello_hue_ambar">Ámbar</string>
+    <string name="sello_hue_amarillo">Amarillo</string>
+    <string name="sello_hue_lima">Lima</string>
+    <string name="sello_hue_verde">Verde</string>
+    <string name="sello_hue_turquesa">Turquesa</string>
+    <string name="sello_hue_petroleo">Petróleo</string>
+    <string name="sello_hue_azul">Azul</string>
+    <string name="sello_hue_anil">Añil</string>
+    <string name="sello_hue_violeta">Violeta</string>
+    <string name="sello_hue_morado">Morado</string>
+    <string name="sello_hue_fucsia">Fucsia</string>
 </resources>
