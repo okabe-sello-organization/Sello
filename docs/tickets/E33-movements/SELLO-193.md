@@ -7,7 +7,7 @@
 - **Gate:** G1
 
 ### Outcome
-Typing in Movimientos finds matching expenses and incomes from every month, such as when
+Typing in the day-by-day screen's search finds matching expenses and incomes from every month, such as when
 the plumber was last paid and how much.
 
 ### Acceptance criteria
@@ -24,8 +24,9 @@ the plumber was last paid and how much.
   the sum of its matching expenses. The summary gives the count and sum of all matching
   expenses, and of matching incomes when there are any. The chips filter the results.
 - Results load in pages. A reply to an older query never replaces a newer one.
-- Nothing found: "No encontramos «plomero»" and a hint to try another word or an exact
-  amount. A failed read keeps the query and offers a retry. Tapping a result opens its
+- Nothing found is a `StatusSlip` of kind `Empty` without a button: "No encontramos
+  «plomero»" and a hint to try another word or an exact amount. A failed read keeps the
+  query and shows `LoadFailed` with its retry. Tapping a result opens its
   editor and comes back to the same results.
 - Expenses use the existing folded search key. Incomes may be folded in memory with the
   same rule. A schema change is the owner's decision (epic Decisions).

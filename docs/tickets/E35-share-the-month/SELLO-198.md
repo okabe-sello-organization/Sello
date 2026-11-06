@@ -1,4 +1,4 @@
-# SELLO-201 — Share the month's budget as an image
+# SELLO-198 — Share the month's budget as an image
 
 - **Type:** Story
 - **Priority:** P1

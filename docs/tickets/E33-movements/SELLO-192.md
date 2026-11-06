@@ -13,8 +13,9 @@ what they spent on a given day and whether something is missing.
 ### Acceptance criteria
 - Built as the owner-approved [mock](attachments/movements-mock.html). The magnifier is
   added to `:design-system` as a bundled icon, like the others.
-- Movimientos opens from a magnifier on Recibo's and Resumen's bars and from a third
-  Resumen stub ("Movimientos", "48 en octubre"), always on the shared month.
+- The screen opens from a magnifier on Recibo's and Resumen's bars and from a third
+  Resumen stub ("<palabra>", "48 en octubre"), always on the shared month. The stub and
+  the screen's title use the word the owner picks from the mock (epic Decisions).
 - It lists the month's expenses from every category (archived ones included) and its
   incomes, newest day first and newest first within a day. A day's heading names the
   day ("Hoy, mar 6", "Lun 5") and the sum of that day's expenses. A day with only incomes
@@ -28,9 +29,10 @@ what they spent on a given day and whether something is missing.
   with its undo, shows up in the list when the person comes back.
 - Long months load in pages, as Todos los gastos does. A page that fails keeps what is
   shown and offers a retry.
-- States: loading; an empty month ("Aún no hay movimientos en noviembre" and Anotar un
-  gasto); a failed read with nothing to show; older figures under the notice; the chip and
-  month restored after process death.
+- Every news state is a `StatusSlip` with its kind (E32). An empty month is `Empty`:
+  "Aún no hay movimientos", one line, and the outlined Anotar gasto. Then `LoadFailed`
+  with nothing to show, `Older` figures under the notice, and `ActionFailed` for a failed
+  page. The chip and month are restored after process death.
 - JVM tests with hand-worked literals: 18.000 + 2.950 + 8.000 = 28.950 for a day; a day
   with only a 2.500.000 income has no sum; filters; a day whose sum overflows `Money` is
   a typed failure, never wrapped. Screenshots of every state, light and dark.
