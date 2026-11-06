@@ -835,6 +835,37 @@ class InvestmentMovementsViewModelTest {
         assertTrue(hand.sent.isEmpty())
     }
 
+    @Test
+    fun theDiscardQuestionCountsOnlyLinesWithAnAmountOrANote() = runTest {
+        val model = model()
+        model.act(InvestmentMovementsAction.Kind(Contribution))
+        model.keys("5", "0", "0", "000")
+        // Otro renglón copies the type: nothing typed on it, so it is not counted.
+        model.act(InvestmentMovementsAction.AddLine, InvestmentMovementsAction.Back)
+        assertTrue(model.now.confirmDiscard)
+        assertEquals(2, model.now.lines.size)
+        assertEquals(1, model.now.discarding)
+
+        // A note alone is something typed.
+        model.act(
+            InvestmentMovementsAction.KeepEditing,
+            InvestmentMovementsAction.OpenComposer,
+            InvestmentMovementsAction.ComposerChanged("Aporte de octubre"),
+            InvestmentMovementsAction.ComposerDone,
+            InvestmentMovementsAction.Back
+        )
+        assertEquals(2, model.now.discarding)
+    }
+
+    @Test
+    fun onlyATypeChosenStillAsksAndCountsThatLine() = runTest {
+        val model = model()
+        model.act(InvestmentMovementsAction.Kind(Dividend), InvestmentMovementsAction.Back)
+
+        assertTrue(model.now.confirmDiscard)
+        assertEquals(1, model.now.discarding)
+    }
+
     // Across investments (SELLO-142)
 
     private fun fromList() = model(saved = SavedStateHandle())
