@@ -4,7 +4,6 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
-import androidx.compose.ui.graphics.Color
 
 /**
  * Feeds every Material slot from Sello tokens so stock components (dialogs, pickers,
@@ -41,7 +40,7 @@ fun SelloColors.toMaterialColorScheme(): ColorScheme {
         onErrorContainer = semantic.onLossSoft,
         outline = outline,
         outlineVariant = rule,
-        scrim = Color.Black,
+        scrim = scrim,
         surfaceBright = paper,
         surfaceDim = paperDim,
         surfaceContainerLowest = paper,

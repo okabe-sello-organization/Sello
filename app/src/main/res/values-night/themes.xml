@@ -1,11 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!--
-        On a dark phone the window before the first frame is Cobalto's dark desk
-        (CobaltoPalette.kt), not light paper. Sello's own Claro/Oscuro choice can't be
-        read yet at that point, so the window follows the phone.
-    -->
+    <!-- On a dark phone: the dark desk, with the platform's dark window. See values/themes.xml. -->
     <style name="Theme.Sello" parent="android:Theme.Material.NoActionBar">
-        <item name="android:windowBackground">#FF090D1C</item>
+        <item name="android:windowBackground">@color/sello_start_window</item>
     </style>
 </resources>

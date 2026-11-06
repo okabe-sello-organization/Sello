@@ -405,7 +405,7 @@ fun LeaderLine(
 <h3><code>BandChip</code> <span class="src"><code>component/Controls.kt:180</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>A secondary action on the band, as Metas' **+ Nueva meta** beside its title: a paper pill with a plus, the same paper on band as <code>PastMonthRibbon</code>'s return, so it stands out without competing with the dock. Its touch target is 48dp; the pill itself is 36dp. With <code>onPaper</code> the same pill sits on a slip, as Recibo's **+ Nueva categoría**: the soft brand fill instead of paper, which would not show on paper. <code>compact</code> is the round + alone, for a <code>TitleBar</code> whose title would not fit beside the label.</dd>
-<dt>Variants</dt><dd>On a band (default: paper pill, white in light), <code>onPaper</code> (<code>brandSoft</code> fill), <code>compact</code> (the round + alone).</dd>
+<dt>Variants</dt><dd>On a band (default: <code>paper</code> pill), <code>onPaper</code> (<code>brandSoft</code> fill), <code>compact</code> (the round + alone).</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/shell.html">shell · 2</a> <a class="tag" href="features/recibo.html">recibo · 1</a></dd>
 </dl>
 <pre><code>fun BandChip(
@@ -560,7 +560,7 @@ fun MoreMenuDropdown(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-EntryLine">
-<h3><code>EntryLine</code> <span class="src"><code>component/Controls.kt:300</code></span></h3>
+<h3><code>EntryLine</code> <span class="src"><code>component/Controls.kt:296</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>A full-width line under the chips that opens an editor, such as the note or an income source's name. Empty, it reads as a quiet <code>text</code> prompt; filled, it shows the value and the brand <code>action</code> (Editar, Cambiar) on the trailing edge. It only opens an editor; something done at once, such as pausing a fixed payment, is a <code>SelloButton</code>.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 2</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/income.html">income · 2</a> <a class="tag" href="features/recurrence.html">recurrence · 2</a> <span class="muted">Inside the design system: <code>Movement.kt</code>, <code>RepeatParts.kt</code>.</span></dd>
@@ -597,7 +597,7 @@ fun MoreMenuDropdown(
 <div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
 </article>
 <article class="component" id="c-NoteComposer">
-<h3><code>NoteComposer</code> <span class="src"><code>component/Controls.kt:352</code></span></h3>
+<h3><code>NoteComposer</code> <span class="src"><code>component/Controls.kt:348</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>Native text input docked above the IME. <code>context</code> says what the text belongs to, with its facts in bold spans, and <code>contextIcon</code> leads it; <code>contextDescription</code> is what a screen reader hears for the box, with amounts spoken in full. Under the box, <code>hint</code> (such as "Opcional") gives way to <code>error</code>. Validation and draft retention are caller-owned. The paper reaches the screen's edges; its content keeps clear of <code>windowInsets</code> at the sides, such as a navigation bar on the right of a phone held sideways.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 2</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a> <span class="muted">Inside the design system: <code>Movement.kt</code>.</span></dd>
@@ -725,7 +725,7 @@ fun MoreMenuDropdown(
 <div class="gaps"><p>No component capture yet: adding it to a component sheet would change an existing baseline in a pull request that must change none.</p></div>
 </article>
 <article class="component" id="c-ButtonPair">
-<h3><code>ButtonPair</code> <span class="src"><code>component/Recurrence.kt:247</code></span></h3>
+<h3><code>ButtonPair</code> <span class="src"><code>component/Recurrence.kt:246</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>Two buttons side by side, sharing the width by <code>firstWeight</code> and <code>secondWeight</code>, or one above the other at full width when a word of either label would not fit its share. <code>first</code> is the outlined answer, such as Cancelar, and <code>second</code> the filled action. Side by side the action is on the right; one above the other it is on top, Cancelar under it.</dd>
 <dt>Button order</dt><dd>One rule everywhere (owner decision M08-2): stacked, the action on top and Cancelar under it. Every two-button confirmation uses it, in dialogs (<code>ConfirmSlip</code>, <code>ChoiceSlip</code>) and on screens (Borrar datos, Restaurar, start-up restore), so the order never flips when a label stops fitting.</dd>
@@ -796,7 +796,7 @@ fun MoreMenuDropdown(
 <div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
 </article>
 <article class="component" id="c-ChipRows">
-<h3><code>ChipRows</code> <span class="src"><code>component/Controls.kt:244</code></span></h3>
+<h3><code>ChipRows</code> <span class="src"><code>component/Controls.kt:240</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>At most two rows that scroll sideways together; the trailing fade is shown only when more choices can be reached. Choices fill down each column first, and every choice in a column takes the widest one's width so the columns line up. Each row is at least a 48dp touch target tall; a shorter chip sits centred in it, leaving a visible gap.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 2</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 2</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 4</a> <a class="tag" href="features/recurrence.html">recurrence · 2</a></dd>
@@ -1117,7 +1117,7 @@ fun StatusSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-RepeatSheet">
-<h3><code>RepeatSheet</code> <span class="src"><code>component/Recurrence.kt:59</code></span></h3>
+<h3><code>RepeatSheet</code> <span class="src"><code>component/Recurrence.kt:58</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The sheet that says how something repeats, over the screen it belongs to: a scrim that closes it when tapped, and paper docked at the bottom with <code>title</code> as its heading and <code>content</code> under it, scrolling when it is taller than the screen. It keeps clear of the system bars. Back is the screen's to handle, as is what lies behind.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/category.html">category · 2</a> <a class="tag" href="features/goals.html">goals · 2</a> <a class="tag" href="features/investments.html">investments · 1</a> <a class="tag" href="features/recibo.html">recibo · 1</a> <span class="muted">Inside the design system: <code>RepeatParts.kt</code>.</span></dd>
@@ -1609,7 +1609,7 @@ fun StatusSlip(
 <section id="g-rows">
 <h2>List rows</h2>
 <article class="component" id="c-ScheduleRow">
-<h3><code>ScheduleRow</code> <span class="src"><code>component/Recurrence.kt:126</code></span></h3>
+<h3><code>ScheduleRow</code> <span class="src"><code>component/Recurrence.kt:125</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>One payment or income that repeats: its <code>icon</code> in a circle, <code>name</code> over <code>caption</code> (the category, the rule, the next date), an optional <code>pausedLabel</code> stamp and the <code>amount</code>, with an optional date <code>pill</code> under it. One still <code>soon</code> to come is in soft ink; an <code>income</code> is in gain ink. <code>recorded</code>, for one whose month already went through, shows a check instead of its icon and softens a payment's amount. <code>dimmed</code>, for one paused or ended, softens it while every text keeps its contrast. The whole row is one button read as <code>spoken</code>. A rule separates it from the next row unless it is the <code>last</code>.</dd>
 <dt>Variants</dt><dd><code>soon</code>, <code>income</code> (gain ink), <code>recorded</code> (a check), <code>dimmed</code> (paused or ended), <code>pausedLabel</code> stamp, date <code>pill</code>, <code>last</code>.</dd>

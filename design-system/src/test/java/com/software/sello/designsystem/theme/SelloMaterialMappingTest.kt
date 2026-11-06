@@ -32,6 +32,7 @@ class SelloMaterialMappingTest {
             assertEquals(c.semantic.gainSoft, m.tertiaryContainer)
             assertEquals(c.semantic.loss, m.error)
             assertEquals(c.semantic.lossSoft, m.errorContainer)
+            assertEquals(c.scrim, m.scrim)
         }
     }
 
@@ -47,7 +48,7 @@ class SelloMaterialMappingTest {
                 c.brand, c.onBrand, c.brandSoft, c.onBrandSoft, c.desk, c.paper, c.paperAlt,
                 c.paperDim, c.ink, c.inkSoft, c.outline, c.rule, c.band, c.onBand, c.pastBar,
                 c.onPastBar, c.pastBarSoft, c.onPastBarSoft, s.gain, s.onGain, s.gainSoft,
-                s.onGainSoft, s.loss, s.onLoss, s.lossSoft, s.onLossSoft, Color.Black
+                s.onGainSoft, s.loss, s.onLoss, s.lossSoft, s.onLossSoft, c.scrim
             )
             val slots = materialSlots(c.toMaterialColorScheme())
             assertTrue("expected Material colour slots, found ${slots.size}", slots.size >= 36)

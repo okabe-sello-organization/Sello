@@ -32,7 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -67,7 +66,7 @@ fun RepeatSheet(
         Box(
             Modifier
                 .fillMaxSize()
-                .background(ScrimInk.copy(alpha = SelloTheme.alpha.scrim))
+                .background(colors.scrim.copy(alpha = SelloTheme.alpha.scrim))
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
@@ -287,6 +286,3 @@ fun ButtonPair(
 }
 
 private val SheetTopGap = 24.dp
-
-/** The reference's scrim: the desk's darkest ink at 55 %. */
-private val ScrimInk = Color(0xFF050814)

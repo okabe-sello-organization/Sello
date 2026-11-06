@@ -14,6 +14,13 @@ enum class SelloInk(private val light: () -> SelloColors, private val dark: () -
     Violeta({ VioletaLight }, { VioletaDark });
 
     internal fun colors(isDark: Boolean): SelloColors = if (isDark) dark() else light()
+
+    /**
+     * The colour a picker shows for this ink: its light band, the same in both themes. It
+     * reads the ink's own palette on purpose, not [SelloTheme.colors]: a swatch previews an
+     * ink that may not be applied, so it cannot follow the active scheme.
+     */
+    val swatch: Color get() = light().band
 }
 
 /**
@@ -46,6 +53,8 @@ data class SelloColors(
     val onPastBar: Color,
     val pastBarSoft: Color,
     val onPastBarSoft: Color,
+    /** The dim behind a sheet or a dialog slip, drawn at [SelloAlpha.scrim]. Material `scrim`. */
+    val scrim: Color,
     val semantic: SelloSemanticColors,
     val categories: List<Color>,
     val investments: List<InvestmentInk>
@@ -141,22 +150,140 @@ internal val DarkCategories = listOf(
     Color(0xFFA3ADB8)
 )
 
-/** After the brand: amber, slate, sky, plum, teal; mid and deep fills alternate. */
-internal val LightInvestments = listOf(
-    InvestmentInk(Color(0xFFB87600), Color(0xFF0E1630)),
+/**
+ * After the brand: amber, slate, sky, plum, teal; mid and deep fills alternate. The mid
+ * fills take the palette's [ink], so they move with it.
+ */
+private fun lightInvestments(ink: Color) = listOf(
+    InvestmentInk(Color(0xFFB87600), ink),
     InvestmentInk(Color(0xFF3D4A5C), Color(0xFFFFFFFF)),
-    InvestmentInk(Color(0xFF2A8BCB), Color(0xFF0E1630)),
+    InvestmentInk(Color(0xFF2A8BCB), ink),
     InvestmentInk(Color(0xFF9C2A6E), Color(0xFFFFFFFF)),
-    InvestmentInk(Color(0xFF1B9385), Color(0xFF0E1630))
+    InvestmentInk(Color(0xFF1B9385), ink)
 )
 
-/** After the brand: amber, slate, sky, pink, teal; mid and light fills alternate. */
-internal val DarkInvestments = listOf(
+/**
+ * After the brand: amber, slate, sky, pink, teal; mid and light fills alternate. The light
+ * slate takes [lightInk], the ink of the same family's light palette.
+ */
+private fun darkInvestments(lightInk: Color) = listOf(
     InvestmentInk(Color(0xFF9A6B0E), Color(0xFFFFFFFF)),
-    InvestmentInk(Color(0xFFA3ADB8), Color(0xFF0E1630)),
+    InvestmentInk(Color(0xFFA3ADB8), lightInk),
     InvestmentInk(Color(0xFF2B7CB5), Color(0xFFFFFFFF)),
     InvestmentInk(Color(0xFFEE82BE), Color(0xFF2A0A1C)),
     InvestmentInk(Color(0xFF1D8174), Color(0xFFFFFFFF))
+)
+
+/** The dim behind sheets and dialog slips in every palette, as the platform's window dim. */
+private val Scrim = Color(0xFF000000)
+
+/**
+ * A light palette from an ink's own colours. The roles that are another role by design
+ * are set from it here, so they move together: the band is the brand and [onBrand] is
+ * written on it, the goal band is gain, and the investment band is the ink.
+ */
+internal fun lightPalette(
+    family: SelloInk,
+    brand: Color,
+    onBrand: Color,
+    brandSoft: Color,
+    onBrandSoft: Color,
+    desk: Color,
+    paper: Color,
+    paperAlt: Color,
+    paperDim: Color,
+    ink: Color,
+    inkSoft: Color,
+    outline: Color,
+    rule: Color,
+    pastBar: Color,
+    onPastBar: Color,
+    pastBarSoft: Color,
+    onPastBarSoft: Color
+) = SelloColors(
+    family = family,
+    isDark = false,
+    brand = brand,
+    onBrand = onBrand,
+    brandSoft = brandSoft,
+    onBrandSoft = onBrandSoft,
+    desk = desk,
+    paper = paper,
+    paperAlt = paperAlt,
+    paperDim = paperDim,
+    ink = ink,
+    inkSoft = inkSoft,
+    outline = outline,
+    rule = rule,
+    band = brand,
+    onBand = onBrand,
+    goalBand = LightSemantic.gain,
+    investmentBand = ink,
+    pastBar = pastBar,
+    onPastBar = onPastBar,
+    pastBarSoft = pastBarSoft,
+    onPastBarSoft = onPastBarSoft,
+    scrim = Scrim,
+    semantic = LightSemantic,
+    categories = LightCategories,
+    investments = lightInvestments(ink)
+)
+
+/**
+ * A dark palette from an ink's own colours. Its bands are their own, deeper than the
+ * brand and gain they stand for; [lightInk] is the ink of the family's light palette,
+ * written on the dark palette's light investment fill.
+ */
+internal fun darkPalette(
+    family: SelloInk,
+    brand: Color,
+    onBrand: Color,
+    brandSoft: Color,
+    onBrandSoft: Color,
+    desk: Color,
+    paper: Color,
+    paperAlt: Color,
+    paperDim: Color,
+    ink: Color,
+    inkSoft: Color,
+    outline: Color,
+    rule: Color,
+    band: Color,
+    onBand: Color,
+    goalBand: Color,
+    investmentBand: Color,
+    pastBar: Color,
+    onPastBar: Color,
+    pastBarSoft: Color,
+    onPastBarSoft: Color,
+    lightInk: Color
+) = SelloColors(
+    family = family,
+    isDark = true,
+    brand = brand,
+    onBrand = onBrand,
+    brandSoft = brandSoft,
+    onBrandSoft = onBrandSoft,
+    desk = desk,
+    paper = paper,
+    paperAlt = paperAlt,
+    paperDim = paperDim,
+    ink = ink,
+    inkSoft = inkSoft,
+    outline = outline,
+    rule = rule,
+    band = band,
+    onBand = onBand,
+    goalBand = goalBand,
+    investmentBand = investmentBand,
+    pastBar = pastBar,
+    onPastBar = onPastBar,
+    pastBarSoft = pastBarSoft,
+    onPastBarSoft = onPastBarSoft,
+    scrim = Scrim,
+    semantic = DarkSemantic,
+    categories = DarkCategories,
+    investments = darkInvestments(lightInk)
 )
 
 internal val LocalSelloColors = staticCompositionLocalOf { CobaltoLight }

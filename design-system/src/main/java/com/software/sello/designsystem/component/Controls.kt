@@ -190,11 +190,7 @@ fun BandChip(
         colors.isDark -> colors.ink
         else -> colors.band
     }
-    val fill = when {
-        onPaper -> colors.brandSoft
-        colors.isDark -> colors.paper
-        else -> Color.White
-    }
+    val fill = if (onPaper) colors.brandSoft else colors.paper
     if (compact) {
         // Where the label would not fit: the round + alone, still said with its label.
         Box(

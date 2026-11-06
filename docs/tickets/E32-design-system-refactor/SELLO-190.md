@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** Backlog
+- **Status:** Done
 - **Depends on:** SELLO-189
 - **Gate:** G2
 
@@ -16,3 +16,7 @@ dynamic-colour scheme can reach every part.
   theme.
 - Every baseline is unchanged, or each change is explained.
 - The foundations page's dynamic-colours box is updated.
+
+### Progress
+- 2026-11-06: the owner approved the light start-up window and splash becoming the light
+  desk `#D9E1F7` instead of the platform white, superseding SELLO-171's light-phone outcome.

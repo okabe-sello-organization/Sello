@@ -383,18 +383,14 @@
     ])]);
   }
 
-  function dynamicBox(d, groups) {
-    function list(items) { return el("ul", null, items.map(function (t) { return el("li", { text: t }); })); }
-    var risky = groups.filter(function (g) { return g.kind === "colour" && g.risk; });
+  function dynamicBox(d) {
     return el("div", { class: "note dynamic", id: "dynamic-colours" }, [
       el("h3", { text: "Dynamic colours" }),
-      el("p", null, [el("strong", { text: "How colour flows today" })]), list(d.today),
-      el("p", null, [el("strong", { text: "What dynamic colour would need" })]), list(d.needs),
-      el("p", null, [el("strong", { text: "Roles with no Material equivalent: " }), d.noMaterial]),
-      el("p", null, [el("strong", { text: "Role literals that copy other roles: " }), d.copiesRole, " See ",
-        el("a", { href: "#" + d.copiesRoleId, text: d.copiesRoleId }), "."]),
-      el("p", null, [d.outside, " The colours that would not follow a dynamic scheme: "].concat(
-        risky.map(function (g, i) { return el("span", null, [i ? ", " : "", el("a", { href: "#" + g.id, text: g.id })]); }), ["."])),
+      el("p", null, [d.summary, " ", el("a", { href: "foundations.html#dynamic-colours", text: "Dynamic colours on Foundations" }), "."]),
+      el("p", null, [el("strong", { text: "Colour findings, closed or explained" })]),
+      el("ul", null, d.explained.map(function (e) {
+        return el("li", null, [el("strong", { text: e.ids + " · " + e.what + ": " }), e.why]);
+      })),
       el("p", { class: "muted" }, [el("strong", { text: "Not listed: " }), d.notListed])
     ]);
   }
@@ -451,13 +447,15 @@
     data.copies.forEach(function (card) { holder.appendChild(copyCard(card)); });
 
     holder.appendChild(el("h2", { id: "hardcoded", text: "Hard-coded values" }));
-    holder.appendChild(dynamicBox(data.dynamic, data.hardcoded));
+    holder.appendChild(dynamicBox(data.dynamic));
     ["colour", "type", "shape", "spacing", "alpha"].forEach(function (k) {
       var groups = data.hardcoded.filter(function (g) { return g.kind === k; });
       holder.appendChild(el("h3", { id: "hard-" + k, class: "theme-heading", text: KIND_TITLES[k] }));
       if (k === "colour") holder.appendChild(el("p", { class: "muted", text: "Every colour not read from the theme. Those that would stay put under a dynamic scheme come first." }));
       if (!groups.length) {
-        holder.appendChild(el("p", { text: "None left: every value reads its token, or is a one-off named in its own component (see Foundations)." }));
+        holder.appendChild(el("p", { text: k === "colour"
+          ? "None left: every colour comes from the theme; the box above says why the remaining literals stay."
+          : "None left: every value reads its token, or is a one-off named in its own component (see Foundations)." }));
         return;
       }
       holder.appendChild(hardTable(groups, k === "colour"));

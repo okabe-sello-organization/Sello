@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- On a dark phone: Cobalto's dark desk (CobaltoPalette.kt). See values/colors.xml. -->
+    <color name="sello_start_window">#FF090D1C</color>
+</resources>
