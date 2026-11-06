@@ -2,9 +2,10 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** Backlog
+- **Status:** In Progress
 - **Depends on:** SELLO-181
 - **Gate:** G2
+- **Progress:** every slip uses `StatusSlip` and the old three are gone; M01, M12-1, M12-2, M13, C06 and C07 are fixed. M12-3 and M12-4 (the "your data changed meanwhile" notes in Borrar datos and the restore preview) fit none of the six kinds and wait for an owner decision.
 
 ### Outcome
 Every empty, failed, older, unknown or gone state uses `StatusSlip` with the kind that

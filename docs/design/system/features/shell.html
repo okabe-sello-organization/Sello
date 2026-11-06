@@ -445,7 +445,7 @@
             <tr><td><code>MonthNames</code></td><td>"Octubre 2026" (<code>month_title</code>), "Octubre" (bar), "octubre" (in a sentence), "Oct" (grid).</td><td><code>app/src/main/java/com/software/sello/presentation/month/MonthNames.kt:12</code></td></tr>
             <tr><td><code>DateLabels</code></td><td>"Hoy, vie 9 oct" (<code>date_today</code>), "jue 8 oct", "mié 31 dic 2025", "30 sep", "dic 2026", "may 27", "22 oct 2026, 2:30 p. m.".</td><td><code>app/src/main/java/com/software/sello/presentation/date/DateLabels.kt:21</code></td></tr>
             <tr><td><code>CategoryIcons</code></td><td>The one set of 35 icons for categories, goals and investments, by stored key; an unknown key shows a receipt. Investments reorder it and use a chart line for unknown keys (<code>InvestmentIcons</code>).</td><td><code>app/src/main/java/com/software/sello/presentation/category/CategoryIcons.kt:12</code></td></tr>
-            <tr><td><code>StaleSlip</code>, <code>LastGoodRead</code></td><td>The older-figures slip and the read wrapper that keeps the last good value across retries.</td><td><code>app/src/main/java/com/software/sello/presentation/read/StaleSlip.kt:23</code>, <code>app/src/main/java/com/software/sello/presentation/read/LastGoodRead.kt</code></td></tr>
+            <tr><td><code>LastGoodRead</code></td><td>The read wrapper that keeps the last good value across retries; screens say it with an Older <code>StatusSlip</code>.</td><td><code>app/src/main/java/com/software/sello/presentation/read/LastGoodRead.kt</code></td></tr>
           </tbody>
         </table>
       </div>
@@ -484,7 +484,6 @@
         <li><code>MonthBar</code> (<code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:63</code>) and <code>TitleBar</code> (<code>:122</code>) are the same band row twice (min 56dp, start <code>spacing.lg</code>, end 6dp, <code>headlineSmall</code> copied to 24sp W800), and both stand where <a href="../components.html#c-SelloScaffold"><code>SelloScaffold</code></a>'s private title row (min 50dp, <code>titleLarge</code>) stands on every other screen. Shots: <code>components-bars-and-keypad.png</code> against <code>category-editor</code>.</li>
         <li><code>MonthSwitcher</code> (<code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:214</code>) is a title button like <code>MonthBar</code>'s month button but in <code>titleLarge</code> copied to 21sp, with a 22dp chevron. Finding: <a href="../findings.html#hard-type">hard-coded type</a>.</li>
         <li><code>PastMonthRibbon</code>'s "Volver a …" pill (<code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:194</code>) is a chip on the band like <a href="../components.html#c-BandChip"><code>BandChip</code></a>, built by hand: 40dp, 14dp padding, <code>Color.White</code> in light. Shot: <code>shell-past-month</code>. Finding: <a href="../findings.html#H01">H01</a>.</li>
-        <li><code>StaleSlip</code> (<code>app/src/main/java/com/software/sello/presentation/read/StaleSlip.kt:23</code>) is app-wide but lives in <code>:app</code>; half the features use <a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a> for the same purpose instead. Findings: <a href="../findings.html#M01">M01</a>, <a href="../findings.html#C06">C06</a>.</li>
         <li><a href="../components.html#c-MovementCloseButton"><code>MovementCloseButton</code></a>, <a href="../components.html#c-MovementPane"><code>MovementPane</code></a> and <a href="../components.html#c-MovementDatePicker"><code>MovementDatePicker</code></a> (<code>design-system/src/main/java/com/software/sello/designsystem/component/Movement.kt:39</code>, <code>component/Movement.kt:47</code>, <code>component/Movement.kt:146</code>) are design-system parts the four movement screens use while seven other forms keep their own copies. Findings: <a href="../findings.html#C02">C02</a>, <a href="../findings.html#C03">C03</a>, <a href="../findings.html#C01">C01</a>.</li>
         <li>The signed-figure helper <code>signedDigits</code> (<code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:503</code>) has two twins in Inversiones and Ajustar presupuesto. Findings: <a href="../findings.html#C21">C21</a>, <a href="../findings.html#C22">C22</a>.</li>
       </ul>
@@ -534,32 +533,30 @@
       <h3>Loading, error and older figures</h3>
       <ul>
         <li>Loading: <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a> everywhere (tabs show two), except category removal, which shows a Material spinner (<code>app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:102</code>, <code>:286</code>).</li>
-        <li>Error with nothing ever loaded: <a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a> in every feature, with the default title "No se pudo cargar" or a feature's own title.</li>
-        <li>Older figures kept after a failed read: four looks (see the table below).</li>
+        <li>Error with nothing ever loaded: a LoadFailed <a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> in every feature, with the default title "No se pudo cargar" or a feature's own title.</li>
+        <li>Older figures kept after a failed read: two looks (see the table below).</li>
         <li>Form panes holding the skeleton or the error are padded six ways (<code>MovementPane</code>, <code>IncomePane</code>, <code>Pane</code>, plain columns).</li>
       </ul>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Older-figures look</th><th>Where</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td><code>StaleSlip</code>: slip, red sentence, text "Reintentar"</td><td>Recibo, category detail, Todos los gastos, Ajustar presupuesto, Pagos previstos, Pagos e ingresos fijos, a fixed payment, expense and income forms, Anotar varios</td><td><code>schedules-stale</code>, <code>category-expenses-stale-claro</code></td></tr>
-            <tr><td><code>ErrorSlip</code>: icon, "No se pudo cargar", outlined "Reintentar"</td><td>Resumen, Metas, a goal, Recibo's goals, Inversiones, an investment, Dólar, Ingresos</td><td><code>recibo-goals-stale</code>, <code>income-history-stale</code></td></tr>
-            <tr><td>Loose text + text button</td><td>A category's fixed payments, Ajustar presupuesto's limit sheet</td><td><code>limit-sheet-stale-claro</code></td></tr>
+            <tr><td>StatusSlip Older: flat slip, warn sentence, text "Reintentar"</td><td>Every screen that keeps older figures: Recibo, category detail and its Pagos fijos, Todos los gastos, Ajustar presupuesto and its limit sheet, Pagos previstos, Pagos e ingresos fijos, a fixed payment, expense and income forms, Anotar varios, Resumen, Metas, a goal, Recibo's goals, Inversiones, an investment, Dólar, Ingresos, Configuración</td><td><code>schedules-stale</code>, <code>recibo-goals-stale</code>, <code>limit-sheet-stale-claro</code></td></tr>
             <tr><td>Field hint, no retry</td><td>Varios movimientos (investments)</td><td><code>investment-movements-stale-claro</code></td></tr>
           </tbody>
         </table>
       </div>
-      <figure data-shot="schedules-stale" data-module="app" data-caption="StaleSlip (Pagos e ingresos fijos)"></figure>
-      <figure data-shot="recibo-goals-stale" data-module="app" data-caption="ErrorSlip used for older figures (Recibo's goals)"></figure>
-      <figure data-module="app" data-files="limit-sheet-stale-claro.png,investment-movements-stale-claro.png" data-caption="Loose text in the limit sheet; a field hint in Varios movimientos"></figure>
-      <p class="muted">Findings: <a href="../findings.html#M01">M01</a>, <a href="../findings.html#C06">C06</a>, <a href="../findings.html#C03">C03</a>.</p>
+      <figure data-shot="schedules-stale" data-module="app" data-caption="StatusSlip Older (Pagos e ingresos fijos)"></figure>
+      <figure data-shot="recibo-goals-stale" data-module="app" data-caption="StatusSlip Older (Recibo's goals)"></figure>
+      <figure data-module="app" data-files="limit-sheet-stale-claro.png,investment-movements-stale-claro.png" data-caption="StatusSlip Older in the limit sheet; a field hint in Varios movimientos"></figure>
+      <p class="muted">Finding: <a href="../findings.html#C03">C03</a>.</p>
 
       <h3>Busy and unknown outcome</h3>
       <ul>
         <li>Busy writes show the spinner inside the pressed <a href="../components.html#c-SelloButton"><code>SelloButton</code></a> (<code>loading</code>), <a href="../components.html#c-SelloNotice"><code>SelloNotice</code></a> (<code>busy</code>) or <a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a> (<code>busy</code>), and nothing else can be pressed.</li>
-        <li>An unknown deletion made from the expense form is asked about from the notice bar ("Comprobar si se borró"); from a category's lists it is asked inline or on an error card; unknown saves are handled inside each form (see each feature page).</li>
+        <li>An unknown deletion made from the expense form is asked about from the notice bar ("Comprobar si se borró"); from a category's lists it is asked inline or on an Unknown StatusSlip; unknown saves are handled inside each form (see each feature page).</li>
       </ul>
-      <p class="muted">Findings: <a href="../findings.html#M10">M10</a>, <a href="../findings.html#C15">C15</a>, <a href="../findings.html#M01">M01</a>.</p>
+      <p class="muted">Findings: <a href="../findings.html#M10">M10</a>, <a href="../findings.html#C15">C15</a>.</p>
 
       <h3>Self-dismissing notices</h3>
       <ul>

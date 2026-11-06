@@ -91,7 +91,7 @@
           <tbody>
             <tr><td>Loading</td><td>One <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a> in <code>IncomePane</code>.</td>
               <td><code>app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:160</code></td><td><code>income-form-loading</code></td></tr>
-            <tr><td>Error (nothing ever read)</td><td><a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a> "No se pudo cargar" / "No pudimos leer los ingresos. Inténtalo de nuevo." with "Reintentar", new or correcting alike.</td>
+            <tr><td>Error (nothing ever read)</td><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> LoadFailed "No se pudo cargar" / "No pudimos leer los ingresos. Inténtalo de nuevo." with "Reintentar", new or correcting alike.</td>
               <td><code>IncomeFormScreen.kt:164</code></td><td><code>income-form-failed</code></td></tr>
             <tr><td>Empty</td><td>Does not exist: the five sources are fixed.</td><td>—</td><td>—</td></tr>
             <tr><td>Ready</td><td>"+5.000.000" in green, Salario chosen, "Anotar ingreso" in green.</td>
@@ -100,7 +100,7 @@
               <td><code>IncomeFormScreen.kt:406</code></td><td><code>income-form-otro</code></td></tr>
             <tr><td>Amount refused</td><td>The slip label becomes "Escribe un monto entero entre 1 y 999.999.999.999 COP." (one text for every problem) or "Máximo 12 dígitos".</td>
               <td><code>IncomeFormScreen.kt:267</code></td><td><code>income-form-amount-refused</code></td></tr>
-            <tr><td>Stale</td><td><code>StaleSlip</code> with the shared "No pudimos actualizar…" and "Reintentar".</td>
+            <tr><td>Stale</td><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> Older with the shared "No pudimos actualizar…" and "Reintentar".</td>
               <td><code>IncomeFormScreen.kt:297</code></td><td>income-form-stale</td></tr>
             <tr><td>Busy</td><td>"Guardando…" with spinner; chips, pill, lines, switch and pad off; the X stays enabled but Back is ignored.</td>
               <td><code>IncomeFormScreen.kt:424</code>, <code>app/src/main/java/com/software/sello/feature/income/IncomeFormViewModel.kt:324</code></td><td><code>income-form-busy</code></td></tr>
@@ -177,7 +177,7 @@
       <figure data-shot="income-history-suggestion" data-module="app"
               data-caption="With the suggestion to give the unassigned part a category"></figure>
       <figure data-shot="income-history-stale" data-module="app"
-              data-caption="Stale: figures as last read under an ErrorSlip"></figure>
+              data-caption="Stale: figures as last read under an Older StatusSlip"></figure>
       <figure data-shot="income-history-varios" data-module="app"
               data-caption="With Anotar varios under the total"></figure>
       <figure data-shot="income-history-loading" data-module="app" data-caption="Loading"></figure>
@@ -219,21 +219,21 @@
           <tbody>
             <tr><td>Loading</td><td>Two <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a>s.</td>
               <td><code>app/src/main/java/com/software/sello/feature/income/IncomeHistoryScreen.kt:78</code></td><td><code>income-history-loading</code></td></tr>
-            <tr><td>Error (nothing ever read)</td><td><a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a> "No pudimos leer tus ingresos" / "Tus registros siguen guardados. Vuelve a intentarlo." with "Reintentar".</td>
+            <tr><td>Error (nothing ever read)</td><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> LoadFailed "No pudimos leer tus ingresos" / "Tus registros siguen guardados. Vuelve a intentarlo." with "Reintentar".</td>
               <td><code>IncomeHistoryScreen.kt:85</code></td><td><code>income-history-failed</code></td></tr>
-            <tr><td>Empty</td><td><a href="../components.html#c-EmptySlip"><code>EmptySlip</code></a> "Aún no anotas ingresos en octubre", "Sello funciona sin ingresos…", action "Anotar ingreso"; the plan still shows below.</td>
+            <tr><td>Empty</td><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> Empty "Aún no anotas ingresos en octubre", "Sello funciona sin ingresos…", action "Anotar ingreso"; the plan still shows below.</td>
               <td><code>IncomeHistoryScreen.kt:94</code></td><td><code>income-history-empty</code></td></tr>
             <tr><td>Ready</td><td>Hero, plan, suggestion, list.</td>
               <td><code>IncomeHistoryScreen.kt:110</code></td><td>income-history</td></tr>
             <tr><td>Hero pending</td><td>A one-line skeleton in place of "Entró en …" for today's month while the summary is not read; a past month shows its list total.</td>
               <td><code>IncomeHistoryScreen.kt:316</code></td><td><code>income-history-hero-pending</code></td></tr>
-            <tr><td>Stale</td><td>An <code>ErrorSlip</code> titled "No se pudo cargar" with "No pudimos leer tus ingresos de nuevo. Te mostramos los de la última lectura." and "Reintentar", above the figures as last read.</td>
+            <tr><td>Stale</td><td>A <a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> Older with "No pudimos leer tus ingresos de nuevo. Te mostramos los de la última lectura." and "Reintentar", above the figures as last read.</td>
               <td><code>IncomeHistoryScreen.kt:175</code></td><td>income-history-stale</td></tr>
             <tr><td>Busy (more)</td><td>"Ver más ingresos" shows its spinner.</td>
               <td><code>IncomeHistoryScreen.kt:144</code></td><td><code>income-history-more-loading</code></td></tr>
-            <tr><td>Page failed</td><td>An ErrorSlip "No pudimos leer los ingresos. Inténtalo de nuevo." inside the list, retrying the page.</td>
+            <tr><td>Page failed</td><td>A <a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> LoadFailed "No pudimos leer los ingresos. Inténtalo de nuevo." inside the list, retrying the page.</td>
               <td><code>IncomeHistoryScreen.kt:139</code></td><td><code>income-history-page-failed</code></td></tr>
-            <tr><td>Plan failed</td><td>An ErrorSlip "No pudimos leer lo que esperas recibir. Tus registros siguen guardados." in the plan's place.</td>
+            <tr><td>Plan failed</td><td>A <a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> LoadFailed "No pudimos leer lo que esperas recibir. Tus registros siguen guardados." in the plan's place.</td>
               <td><code>IncomeHistoryScreen.kt:222</code></td><td><code>income-history-plan-failed</code></td></tr>
             <tr><td>Over basis</td><td>"Sin asignar" signed and red, and "Tus presupuestos suman …; anotaste …".</td>
               <td><code>IncomeHistoryScreen.kt:354</code></td><td><code>income-history-over</code></td></tr>
@@ -282,15 +282,15 @@
               <td>Error, Warning for unknown, Hint for missing</td><td>Said where the button is</td></tr>
             <tr><td><a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a></td><td><code>:design-system</code> <code>Feedback.kt</code></td>
               <td>Discard, defaults (destructive, "Cancelar")</td><td>Asks before losing a draft</td></tr>
-            <tr><td><a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a>, <a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a>, <a href="../components.html#c-EmptySlip"><code>EmptySlip</code></a></td><td><code>:design-system</code> <code>Feedback.kt</code></td>
-              <td>Form and history loading, failure, history empty; ErrorSlip also for the history's stale notice</td><td>One look for read states</td></tr>
+            <tr><td><a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a>, <a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a></td><td><code>:design-system</code> <code>Feedback.kt</code>, <code>Status.kt</code></td>
+              <td>Loading; LoadFailed for the form, history, a page and the plan; Empty history; Older for the history's stale notice</td><td>One look for read states</td></tr>
             <tr><td><a href="../components.html#c-AnswerSlip"><code>AnswerSlip</code></a>, <a href="../components.html#c-SplitBar"><code>SplitBar</code></a>, <a href="../components.html#c-TearLine"><code>TearLine</code></a>, <a href="../components.html#c-LeaderLine"><code>LeaderLine</code></a>, <a href="../components.html#c-TotalLine"><code>TotalLine</code></a>, <a href="../components.html#c-MoneyText"><code>MoneyText</code></a></td><td><code>:design-system</code></td>
               <td>"Entró en …" hero and the list</td><td>The same summary Resumen shows</td></tr>
             <tr><td><a href="../components.html#c-PlanSlip"><code>PlanSlip</code></a>, <a href="../components.html#c-ExpectedChip"><code>ExpectedChip</code></a></td><td><code>:design-system</code> <code>Plan.kt</code></td>
               <td>Plan del mes in a dashed box</td><td>Expected income is in no total until recorded</td></tr>
             <tr><td><a href="../components.html#c-SuggestionNote"><code>SuggestionNote</code></a></td><td><code>:design-system</code> <code>Suggestion.kt</code></td>
               <td>Unassigned income, with a dismiss</td><td>Offers; changes nothing by itself</td></tr>
-            <tr><td><code>StaleSlip</code></td><td><code>app/src/main/java/com/software/sello/presentation/read/StaleSlip.kt:23</code></td>
+            <tr><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> Older</td><td><code>:design-system</code> <code>Status.kt</code></td>
               <td>Form only</td><td>Older data said, draft kept</td></tr>
             <tr><td><a href="../components.html#c-RepeatRow"><code>RepeatRow</code></a>, <a href="../components.html#c-RepeatChoiceSheet"><code>RepeatChoiceSheet</code></a>, <a href="../components.html#c-FollowingChoice"><code>FollowingChoice</code></a></td><td><code>design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:73</code></td>
               <td><code>income = true</code></td><td>Shared with Anotar</td></tr>
@@ -315,9 +315,6 @@
         <li>Raw <code>Text</code> hints (<code>IncomeFormScreen.kt:356</code>, <code>:363</code>; <code>IncomeHistoryScreen.kt:355</code>,
           <code>:367</code>, <code>:288</code>) where the expense form uses
           <a href="../components.html#c-FieldMessageText"><code>FieldMessageText</code></a> with the Hint tone. Finding: <a href="../findings.html#C15">C15</a>.</li>
-        <li>The history's stale notice is an <a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a>
-          (<code>IncomeHistoryScreen.kt:182</code>) where the income form, Anotar and Recibo use <code>StaleSlip</code>:
-          compare income-history-stale with income-form-stale. Findings: <a href="../findings.html#M01">M01</a>, <a href="../findings.html#C06">C06</a>.</li>
       </ul>
     </section>
 
@@ -325,7 +322,6 @@
       <h2>Findings here</h2>
       <p class="muted">Places in this feature on the <a href="../findings.html">findings</a> page; shared parts it uses are listed there under their own files.</p>
       <ul>
-        <li><strong>Misuse:</strong> <a href="../findings.html#M01">M01</a> <code>ErrorSlip</code>: <a href="../findings.html#M01-8">M01-8</a>.</li>
         <li><strong>Copies:</strong> <a href="../findings.html#C01">C01</a> <code>MovementDatePicker</code>: <a href="../findings.html#C01-2">C01-2</a>; <a href="../findings.html#C02">C02</a> <code>MovementCloseButton</code>: <a href="../findings.html#C02-2">C02-2</a>; <a href="../findings.html#C03">C03</a> <code>MovementPane</code>: <a href="../findings.html#C03-1">C03-1</a>; <a href="../findings.html#C04">C04</a> <code>MovementNoteLine</code>: <a href="../findings.html#C04-2">C04-2</a>; <a href="../findings.html#C05">C05</a> <code>MovementDiscardSlip</code>: <a href="../findings.html#C05-1">C05-1</a>.</li>
         <li><strong>Hard-coded type:</strong> <a href="../findings.html#H46">H46</a> <code>fontWeight = FontWeight.W700</code> (1 place); <a href="../findings.html#H47">H47</a> <code>fontWeight = FontWeight.Bold</code> (1 place); <a href="../findings.html#H49">H49</a> <code>fontWeight = FontWeight.W900</code> (1 place).</li>
         <li><strong>Hard-coded spacing:</strong> <a href="../findings.html#H59">H59</a> <code>4.dp</code> (1 place).</li>
