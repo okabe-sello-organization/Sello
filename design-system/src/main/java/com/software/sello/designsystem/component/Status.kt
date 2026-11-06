@@ -77,9 +77,15 @@ sealed interface StatusKind {
 /**
  * The one action of a [StatusSlip], with its [label]; [StatusSlipDefaults] has each
  * kind's usual one. While [busy] it shows a spinner, says it is busy and ignores presses,
- * so it is requested once.
+ * so it is requested once. Not [enabled], it is shown faded and ignores presses, as
+ * while something else on the screen is under way.
  */
-class StatusAction(val label: String, val busy: Boolean = false, val onClick: () -> Unit)
+class StatusAction(
+    val label: String,
+    val busy: Boolean = false,
+    val enabled: Boolean = true,
+    val onClick: () -> Unit
+)
 
 /** The usual action labels of a [StatusSlip]. */
 object StatusSlipDefaults {
@@ -380,6 +386,7 @@ private fun StatusButton(action: StatusAction, kind: ButtonKind, modifier: Modif
             .heightIn(min = SelloTheme.spacing.minTouchTarget)
             .semantics { if (action.busy) stateDescription = busy },
         kind = kind,
+        enabled = action.enabled,
         loading = action.busy,
         contentPadding = padding
     )

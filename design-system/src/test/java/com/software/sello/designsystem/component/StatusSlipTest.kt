@@ -407,6 +407,27 @@ class StatusSlipTest {
     }
 
     @Test
+    fun aDisabledActionIgnoresPressesWithoutSayingItIsBusy() {
+        var presses = 0
+        rule.inEveryScheme(
+            reset = { presses = 0 },
+            content = {
+                StatusSlip(
+                    kind = StatusKind.ActionFailed(),
+                    message = MESSAGE,
+                    action = StatusAction(label = LABEL, enabled = false) { presses++ }
+                )
+            }
+        ) {
+            rule.onNodeWithText(LABEL).assertIsDisplayed().assertIsNotEnabled().performClick()
+            val said = rule.onNode(isButton).fetchSemanticsNode().config
+                .getOrNull(SemanticsProperties.StateDescription)
+            assertEquals(it, null, said)
+            assertEquals(it, 0, presses)
+        }
+    }
+
+    @Test
     fun noActionMeansNoButton() {
         rule.inEveryScheme(content = { StatusSlip(StatusKind.Gone(), MESSAGE) }) {
             assertEquals(it, 0, rule.onAllNodes(isButton).fetchSemanticsNodes().size)

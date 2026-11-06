@@ -31,12 +31,14 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.software.sello.R
+import com.software.sello.designsystem.R as DesignR
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ButtonPair
 import com.software.sello.designsystem.component.ButtonTone
@@ -119,7 +121,7 @@ fun StartupFailureScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             Explanation(state, onAction)
-            RestoreFromBackup(state.restore, onAction)
+            RestoreFromBackup(state.restore, state.busy, onAction)
             if (state.notSetAside) {
                 FieldMessageText(
                     FieldMessage(stringResource(R.string.startup_failure_not_set_aside)),
@@ -144,11 +146,15 @@ private fun Explanation(state: StartupFailureState, onAction: (StartupFailureAct
             )
         }
         Spacer(Modifier.height(SelloTheme.spacing.lg))
+        // While a retry or a move runs, only the button that started it shows it working,
+        // keeping its label; every other choice waits, as the view model ignores them.
+        val retrying = state.working == StartupWork.Retrying
         SelloButton(
             text = stringResource(R.string.startup_failure_retry),
             onClick = { onAction(StartupFailureAction.Retry) },
-            modifier = Modifier.fillMaxWidth().testTag(STARTUP_RETRY_TAG),
-            enabled = !state.restoreBegun
+            modifier = Modifier.fillMaxWidth().testTag(STARTUP_RETRY_TAG).working(retrying),
+            loading = retrying,
+            enabled = !state.restoreBegun && !state.busy
         )
         Spacer(Modifier.height(SelloTheme.spacing.md))
         val checking = state.restore == StartupRestoreStep.Checking
@@ -160,7 +166,7 @@ private fun Explanation(state: StartupFailureState, onAction: (StartupFailureAct
             modifier = Modifier.fillMaxWidth().testTag(STARTUP_RESTORE_TAG),
             kind = ButtonKind.Outlined,
             loading = checking,
-            enabled = !state.choosing && !state.restoreBegun
+            enabled = !state.choosing && !state.restoreBegun && !state.busy
         )
         Spacer(Modifier.height(SelloTheme.spacing.md))
         SelloButton(
@@ -168,7 +174,7 @@ private fun Explanation(state: StartupFailureState, onAction: (StartupFailureAct
             onClick = { onAction(StartupFailureAction.StartOver) },
             modifier = Modifier.fillMaxWidth().testTag(STARTUP_START_OVER_TAG),
             kind = ButtonKind.Outlined,
-            enabled = !state.confirming && !state.choosing && !state.restoreBegun
+            enabled = !state.confirming && !state.choosing && !state.restoreBegun && !state.busy
         )
     }
 }
@@ -176,7 +182,11 @@ private fun Explanation(state: StartupFailureState, onAction: (StartupFailureAct
 /** A chosen backup: why it cannot be restored, its preview, or how restoring it ended. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun RestoreFromBackup(step: StartupRestoreStep, onAction: (StartupFailureAction) -> Unit) {
+private fun RestoreFromBackup(
+    step: StartupRestoreStep,
+    busy: Boolean,
+    onAction: (StartupFailureAction) -> Unit
+) {
     if (step == StartupRestoreStep.Idle || step == StartupRestoreStep.Checking) return
     val place = remember { BringIntoViewRequester() }
     // Each step opens below the choices; on a small window it must not open unseen.
@@ -189,14 +199,14 @@ private fun RestoreFromBackup(step: StartupRestoreStep, onAction: (StartupFailur
             kind = StatusKind.ActionFailed(stringResource(R.string.restore_rejected_title)),
             message = stringResource(step.reason.message()),
             modifier = modifier.testTag(STARTUP_RESTORE_REJECTED_TAG),
-            action = StatusAction(stringResource(R.string.restore_choose_other)) {
+            action = StatusAction(stringResource(R.string.restore_choose_other), enabled = !busy) {
                 onAction(StartupFailureAction.RestoreBackup)
             }
         )
 
-        is StartupRestoreStep.Previewing -> Preview(step.backup, false, onAction, modifier)
+        is StartupRestoreStep.Previewing -> Preview(step.backup, false, busy, onAction, modifier)
 
-        is StartupRestoreStep.Restoring -> Preview(step.backup, true, onAction, modifier)
+        is StartupRestoreStep.Restoring -> Preview(step.backup, true, busy, onAction, modifier)
 
         StartupRestoreStep.Interrupted -> StatusSlip(
             kind = StatusKind.Unknown(
@@ -228,6 +238,7 @@ private fun RestoreFromBackup(step: StartupRestoreStep, onAction: (StartupFailur
 private fun Preview(
     backup: CheckedBackup,
     restoring: Boolean,
+    busy: Boolean,
     onAction: (StartupFailureAction) -> Unit,
     modifier: Modifier
 ) {
@@ -265,7 +276,7 @@ private fun Preview(
                     text = stringResource(R.string.restore_cancel),
                     onClick = { onAction(StartupFailureAction.CancelRestore) },
                     kind = ButtonKind.Outlined,
-                    enabled = !restoring,
+                    enabled = !restoring && !busy,
                     modifier = Modifier.testTag(STARTUP_RESTORE_CANCEL_TAG)
                 )
             },
@@ -281,7 +292,7 @@ private fun Preview(
                     onClick = { onAction(StartupFailureAction.ConfirmRestore) },
                     tone = ButtonTone.Loss,
                     loading = restoring,
-                    enabled = !restoring,
+                    enabled = !restoring && !busy,
                     modifier = Modifier.testTag(STARTUP_RESTORE_CONFIRM_TAG)
                 )
             }
@@ -313,6 +324,9 @@ private fun Warning(state: StartupFailureState, onAction: (StartupFailureAction)
             value = state.typed,
             onValueChange = { onAction(StartupFailureAction.Typed(it)) },
             modifier = Modifier.testTag(STARTUP_WORD_TAG),
+            // Disabled, not kept as typed: the view model ignores typing meanwhile, and
+            // the word that confirmed the move must stay what the person sees.
+            enabled = !state.busy,
             keyboardOptions = KeyboardOptions(
                 capitalization = KeyboardCapitalization.Characters,
                 autoCorrectEnabled = false,
@@ -329,20 +343,31 @@ private fun Warning(state: StartupFailureState, onAction: (StartupFailureAction)
                     text = stringResource(R.string.startup_start_over_cancel),
                     onClick = { onAction(StartupFailureAction.Cancel) },
                     modifier = Modifier.testTag(STARTUP_CANCEL_TAG),
-                    kind = ButtonKind.Outlined
+                    kind = ButtonKind.Outlined,
+                    enabled = !state.busy
                 )
             },
             second = {
+                // The label stays: a longer one would stack the pair under the finger.
+                val settingAside = state.working == StartupWork.SettingAside
                 SelloButton(
                     text = stringResource(R.string.startup_start_over_confirm),
                     onClick = { onAction(StartupFailureAction.Confirm) },
-                    modifier = Modifier.testTag(STARTUP_CONFIRM_TAG),
+                    modifier = Modifier.testTag(STARTUP_CONFIRM_TAG).working(settingAside),
                     tone = ButtonTone.Loss,
-                    enabled = state.canConfirm
+                    loading = settingAside,
+                    enabled = state.canConfirm && !state.busy
                 )
             }
         )
     }
+}
+
+/** A button whose press is under way says so to a screen reader, as a busy StatusAction does. */
+@Composable
+private fun Modifier.working(working: Boolean): Modifier {
+    val busy = stringResource(DesignR.string.sello_busy)
+    return semantics { if (working) stateDescription = busy }
 }
 
 const val STARTUP_FAILURE_TAG = "startup-failure"

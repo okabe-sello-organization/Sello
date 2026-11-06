@@ -82,7 +82,7 @@ data class StartupFailureState(
     /** Trying again was asked for and the data still did not open. */
     val stillFailing: Boolean = false,
     /** Trying again or setting the data aside is under way; nothing else starts meanwhile. */
-    val busy: Boolean = false,
+    val working: StartupWork? = null,
     /** The warning before starting from zero is open. */
     val confirming: Boolean = false,
     /** Exactly what was typed to confirm. */
@@ -97,6 +97,9 @@ data class StartupFailureState(
     val pickerRequest: Boolean = false
 ) {
     val canConfirm: Boolean get() = typed.trim() == CONFIRM_WORD
+
+    /** Something is under way: every choice waits for its outcome. */
+    val busy: Boolean get() = working != null
 
     /**
      * A restore began: the data may already be set aside, so trying again, starting
@@ -114,6 +117,15 @@ data class StartupFailureState(
         /** The word D09 requires before financial data is replaced by nothing. */
         const val CONFIRM_WORD = "BORRAR"
     }
+}
+
+/** What a press started, so the screen shows which button is working. */
+enum class StartupWork {
+    /** Intentar de nuevo: opening the data again. */
+    Retrying,
+
+    /** The warning's Empezar de cero: moving the data aside. */
+    SettingAside
 }
 
 sealed interface StartupFailureAction {
