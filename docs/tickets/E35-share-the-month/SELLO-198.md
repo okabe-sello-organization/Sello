@@ -11,8 +11,9 @@ From the month on screen, the person previews an image of its budget and shares 
 any app they choose.
 
 ### Acceptance criteria
-- Built as the owner-approved [mock](attachments/share-mock.html), with the button where
-  the owner picked. The share icon is added to `:design-system`.
+- Built as the owner-approved [mock](attachments/share-mock.html). The button sits on
+  Resumen's bar, between the magnifier and Configuración, and shares the month on
+  screen. The share icon is added to `:design-system`.
 - A preview sheet shows the exact image and says what is in it and what isn't. Nothing
   is written or sent until Compartir imagen. Cancelar writes nothing.
 - The image shows the month and its date ("al 28 de octubre"), Recibo's headline and

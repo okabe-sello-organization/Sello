@@ -18,9 +18,10 @@ height: A in the category row, B a ⚡ button in the amount slip that opens a sh
 owner picks one before this epic leaves Backlog.
 
 **Owner picks (2026-11-06):** B and C together. B's button must be easy to reach for a
-right-handed person using one hand: not at the top and not by Anotar gasto. The
-[mock](attachments/frequent-mock.html) offers two places: 1 at the end of the category
-row, or 2 inside the Agregar nota row as "⚡ Frecuentes" (recommended).
+right-handed person using one hand: not at the top and not by Anotar gasto. The first B + C mock was hard to read. The
+[mock](attachments/frequent-mock.html) now draws the flow on the real Anotar screenshots,
+with two places for the button: 2a beside the category chips, or 2b inside the Agregar
+nota row as "⚡ Frecuentes" (recommended).
 
 **Planner's calls (2026-11-06), open to the owner:** an expense is frequent with the
 same category, note and amount 3 or more times in 90 days. A tap fills the form and never

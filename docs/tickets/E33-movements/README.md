@@ -19,7 +19,8 @@ search across everything, and a day-by-day view of the month.
 is too long for the Resumen stub: a shorter word, also used as the screen's title. The
 empty states use the `StatusSlip` that E32 is bringing in.
 
-The owner picked **Día a día** (2026-11-06) for the stub and the screen's title.
+The owner picked **Día a día** (2026-11-06) for the stub and the screen's title, and approved
+the [mock](attachments/movements-mock.html) the same day.
 
 **Planner's calls (2026-11-06), open to the owner:** the search field sits on the same
 screen, and an amount typed in the field finds that exact amount. See the

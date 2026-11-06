@@ -27,6 +27,8 @@ Gastos hormiga, what repeats inside a category, and a year view.
   with the app is a celebration: the invitation and its opening carry flair and joy,
   like a goal's ¡Lo lograste!
 
+**Owner approved the [mock](attachments/patterns-mock.html) (2026-11-06).**
+
 **Planner's calls (2026-11-06), open to the owner:** the line ranges from 1.000 to
 100.000, is the same in every month, and travels in backups as a portable preference.
 Fixed payments count as hormiga when they are small. The slip shows once 5 small
