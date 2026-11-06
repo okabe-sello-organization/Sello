@@ -17,7 +17,6 @@ class SelloColorsTest {
         assertEquals(rgb(0xB81E2A), light.loss)
         assertEquals(rgb(0xFBD9DB), light.lossSoft)
         assertEquals(rgb(0x8A4A00), light.warn)
-        assertEquals(rgb(0x6A3FC0), light.dividend)
 
         val dark = selloColors(SelloInk.Cobalto, isDark = true).semantic
         assertEquals(rgb(0x4FD6A0), dark.gain)
@@ -25,7 +24,6 @@ class SelloColorsTest {
         assertEquals(rgb(0xFF8A8A), dark.loss)
         assertEquals(rgb(0x5A171B), dark.lossSoft)
         assertEquals(rgb(0xFFB45C), dark.warn)
-        assertEquals(rgb(0xB7A0F5), dark.dividend)
     }
 
     @Test

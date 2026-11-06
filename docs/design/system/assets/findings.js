@@ -22,12 +22,12 @@ window.SELLO_FINDINGS = {
    {
     "ids": "H01–H05, H07",
     "what": "Fixed in SELLO-190",
-    "why": "BandChip and PastMonthRibbon's return pill fill with paper; the white confetti chads are onBand (white in every palette); RepeatSheet's scrim is the new scrim role at SelloAlpha.scrim; the Settings ink swatches read SelloInk.swatch, a preview of an ink that may not be applied, so it can't follow the active scheme; both start-up windows (light and dark) are @color/sello_start_window, the desk; band, onBand, goalBand and investmentBand, and the investment fills' dark text, are set from the role they copy in lightPalette / darkPalette."
+    "why": "BandChip and PastMonthRibbon's return pill fill with paper; the white confetti chads are onBand (white in every palette); SelloSheet's scrim is the new scrim role at SelloAlpha.scrim; the Settings ink swatches read SelloInk.swatch, a preview of an ink that may not be applied, so it can't follow the active scheme; both start-up windows (light and dark) are @color/sello_start_window, the desk; band, onBand, goalBand and investmentBand, and the investment fills' dark text, are set from the role they copy in lightPalette / darkPalette."
    },
    {
     "ids": "H06, H08, H09, H10",
     "what": "Palette source",
-    "why": "These literals are the palette: the brand, paper and ink roles, the semantic colours, the 12 category colours and the investment inks. They stay in CobaltoPalette.kt, VioletaPalette.kt and SelloColors.kt only; nothing outside the theme reads them (Theme.kt is the only main-code caller of selloColors). A dynamic scheme replaces them by building SelloColors from the system's colours."
+    "why": "These literals are the palette: the brand, paper and ink roles, the semantic colours and the investment inks. They stay in CobaltoPalette.kt, VioletaPalette.kt and SelloColors.kt only; nothing outside the theme reads them (Theme.kt is the only main-code caller of selloColors). A dynamic scheme replaces them by building SelloColors from the system's colours."
    },
    {
     "ids": "H11, H12",
@@ -64,7 +64,7 @@ window.SELLO_FINDINGS = {
   {
    "id": "F24",
    "what": "icon sheet ×3",
-   "why": "each editor calls the shared RepeatSheet and IconChoiceSheetContent with its own icons, note and tone; nothing is redrawn."
+   "why": "each editor calls the shared SelloSheet and IconChoiceSheetContent with its own icons, note and tone; nothing is redrawn."
   },
   {
    "id": "F27 (part)",

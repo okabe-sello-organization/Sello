@@ -139,14 +139,9 @@ fun OptionSlip(
         title = title,
         onDismissRequest = onDismiss,
         modifier = modifier,
-        buttons = {
-            SelloButton(
-                text = stringResource(R.string.sello_cancel),
-                onClick = onDismiss,
-                kind = ButtonKind.Text,
-                modifier = Modifier.align(Alignment.End)
-            )
-        }
+        buttons = SlipButtons.Close(
+            SlipAnswer(stringResource(R.string.sello_cancel), onClick = onDismiss)
+        )
     ) {
         Column(Modifier.selectableGroup()) {
             options.forEachIndexed { index, option ->

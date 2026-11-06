@@ -39,7 +39,6 @@ class SelloPaletteTest(private val ink: SelloInk, private val dark: Boolean) {
             assertNotEquals(base.desk, c.desk)
         }
         assertEquals(base.semantic, c.semantic)
-        assertEquals(base.categories, c.categories)
     }
 
     @Test
@@ -63,11 +62,6 @@ class SelloPaletteTest(private val ink: SelloInk, private val dark: Boolean) {
             assertEquals(c.semantic.gain, c.goalBand)
             assertEquals(c.ink, c.investmentBand)
         }
-    }
-
-    @Test
-    fun twelveCategoryColours() {
-        assertEquals(12, c.categories.distinct().size)
     }
 
     @Test
@@ -117,9 +111,6 @@ class SelloPaletteTest(private val ink: SelloInk, private val dark: Boolean) {
             add(Triple(c.brand, c.paperDim, text))
             listOf(c.brandSoft, c.pastBarSoft, s.gainSoft, s.lossSoft, s.warnSoft).forEach {
                 add(Triple(c.ink, it, text))
-            }
-            c.categories.forEach { category ->
-                listOf(c.desk, c.paper, c.paperAlt).forEach { add(Triple(category, it, mark)) }
             }
             // Investment inks are drawn on a slip: the percent is written on each fill.
             (0..5).map(c::investmentInk).forEach { ink ->

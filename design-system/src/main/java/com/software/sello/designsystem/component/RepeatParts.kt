@@ -138,7 +138,7 @@ fun RepeatChoiceSheet(
     onDone: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    RepeatSheet(
+    SelloSheet(
         title = labels.title,
         onDismiss = onDismiss,
         modifier = Modifier.testTag(REPEAT_SHEET_TAG)
@@ -401,7 +401,7 @@ private fun StepButton(sign: String, label: String, enabled: Boolean, onClick: (
 }
 
 /**
- * The last row of a [RepeatSheet]: [dismissLabel] outlined in a third of the width and
+ * The last row of [RepeatChoiceSheet]: [dismissLabel] outlined in a third of the width and
  * [confirmLabel] filled in the rest. When a label would not fit beside the other, the
  * two go one above the other.
  */

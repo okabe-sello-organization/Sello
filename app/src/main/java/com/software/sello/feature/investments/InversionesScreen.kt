@@ -191,8 +191,9 @@ private fun Total(
         }
         val from = dates.shortDay(total.valuedFrom, state.today)
         val to = dates.shortDay(total.valuedTo, state.today)
-        // A line that cannot open is as tall as its text; the foot spaces it out itself.
-        val quiet = Modifier.padding(vertical = SelloTheme.spacing.sm)
+        // A line that cannot open is as tall as its text; the foot spaces it out itself,
+        // 32 dp a line with the gap above it, as the foot was before it took Footnote.
+        val quiet = Modifier.heightIn(min = 32.dp).padding(top = 6.dp)
         Footnote(
             if (from == to) {
                 bold(stringResource(R.string.inversiones_valued_on, from), from)

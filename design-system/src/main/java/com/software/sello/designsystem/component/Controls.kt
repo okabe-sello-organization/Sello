@@ -126,6 +126,13 @@ private fun UnavailableDock(label: String, icon: SelloIcon, modifier: Modifier) 
     }
 }
 
+/**
+ * The tab bar at the foot of a phone-wide window: one tab per destination of
+ * [navigation], two to four of them, each its icon over its label. The selected tab has
+ * its icon in a soft brand pill and its label in ink; the others are in soft ink. Tabs are
+ * one selectable group, read as tabs, and report a choice with
+ * [SelloNavigation.onSelect]. A wider window takes the rail instead, from the same data.
+ */
 @Composable
 fun SelloNavigationBar(navigation: SelloNavigation, modifier: Modifier = Modifier) {
     val colors = SelloTheme.colors
@@ -169,12 +176,13 @@ fun SelloNavigationBar(navigation: SelloNavigation, modifier: Modifier = Modifie
 
 /**
  * A secondary action on the band, as Metas' **+ Nueva meta** beside its title: a paper
- * pill with a plus, the same paper on band as [PastMonthRibbon]'s return, so it stands
- * out without competing with the dock. Its touch target is 48dp; the pill itself is 36dp.
+ * pill with a plus, the same paper on band as the past-month ribbon's way back, so it
+ * stands out without competing with the dock. Its touch target is 48dp; the pill itself
+ * is 36dp.
  *
  * With [onPaper] the same pill sits on a slip, as Recibo's **+ Nueva categoría**: the
  * soft brand fill instead of paper, which would not show on paper. [compact] is the
- * round + alone, for a [TitleBar] whose title would not fit beside the label.
+ * round + alone, for a band whose title would not fit beside the label.
  */
 @Composable
 fun BandChip(

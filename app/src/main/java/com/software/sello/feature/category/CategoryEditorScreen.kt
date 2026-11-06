@@ -59,10 +59,10 @@ import com.software.sello.designsystem.component.IconPickerCircle
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.MoreMenu
 import com.software.sello.designsystem.component.MoreMenuItem
-import com.software.sello.designsystem.component.RepeatSheet
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloChip
 import com.software.sello.designsystem.component.SelloScaffold
+import com.software.sello.designsystem.component.SelloSheet
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.component.Stamp
@@ -446,7 +446,7 @@ private fun Identity(
 /** The 24 icons; the ones other categories use are dashed and can still be chosen. */
 @Composable
 private fun IconSheet(state: CategoryEditorState, onDismiss: () -> Unit, onPick: (String) -> Unit) {
-    RepeatSheet(
+    SelloSheet(
         title = stringResource(R.string.category_editor_icon),
         onDismiss = onDismiss,
         modifier = Modifier.testTag(EDITOR_ICONS_TAG)

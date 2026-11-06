@@ -63,9 +63,9 @@ import com.software.sello.designsystem.component.MonthCell
 import com.software.sello.designsystem.component.MonthGrid
 import com.software.sello.designsystem.component.MoreMenu
 import com.software.sello.designsystem.component.MoreMenuItem
-import com.software.sello.designsystem.component.RepeatSheet
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloScaffold
+import com.software.sello.designsystem.component.SelloSheet
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.component.StatusAction
@@ -425,7 +425,7 @@ private fun Identity(
 /** The 24 icons, the same as a category's, in a sheet over the form. */
 @Composable
 private fun IconSheet(selected: String?, onDismiss: () -> Unit, onPick: (String) -> Unit) {
-    RepeatSheet(
+    SelloSheet(
         title = stringResource(R.string.category_editor_icon),
         onDismiss = onDismiss,
         modifier = Modifier.testTag(GOAL_EDITOR_ICONS_TAG)

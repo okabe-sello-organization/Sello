@@ -69,10 +69,10 @@ import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.component.MoreMenu
 import com.software.sello.designsystem.component.MoreMenuItem
-import com.software.sello.designsystem.component.RepeatSheet
 import com.software.sello.designsystem.component.SegmentedSwitch
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloScaffold
+import com.software.sello.designsystem.component.SelloSheet
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.component.StatusAction
@@ -491,7 +491,7 @@ private fun Identity(
 /** The shared 35 icons, the money and investment ones first. */
 @Composable
 private fun IconSheet(selected: String?, onDismiss: () -> Unit, onPick: (String) -> Unit) {
-    RepeatSheet(
+    SelloSheet(
         title = stringResource(R.string.category_editor_icon),
         onDismiss = onDismiss,
         modifier = Modifier.testTag(INVESTMENT_EDITOR_ICONS_TAG)

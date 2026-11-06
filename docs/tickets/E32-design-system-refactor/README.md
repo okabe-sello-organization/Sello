@@ -1,6 +1,6 @@
 # SELLO-E32 — The code follows its design system
 
-- **Status:** In Progress
+- **Status:** Done
 - **Increment:** Post-MVP
 - **Goal:** Every screen uses the shared component and token that means what it shows, so the app looks and behaves alike wherever the same thing happens.
 - **Exit:** The findings page of `docs/design/system/` lists no misuse, no hand-built copy and no hard-coded value; every part two features share lives in `:design-system`; the design pages describe the result; the final commit carries the tag `design-system-v1`.
