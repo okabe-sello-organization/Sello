@@ -18,7 +18,7 @@ approved by the owner: propose a change in your report, never make it inside oth
   feature brief gives the gist, old versus new, the approach, and each pitfall with how
   to avoid it.
 - **Changes to how something looks or is laid out:** follow the approved design
-  ([Sello v2](docs/design/v2/README.md)); a visual bug is often a screen that drifted
+  ([design system](docs/design/system/index.html)); a visual bug is often a screen that drifted
   from it. Show a mock for approval only when the design doesn't cover the change.
 - **Decisions the ticket leaves open:** ask only about money, privacy, data-deleting
   behaviour or conflicting requirements. Decide the rest yourself and record the
