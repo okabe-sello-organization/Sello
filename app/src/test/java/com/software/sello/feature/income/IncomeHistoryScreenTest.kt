@@ -346,6 +346,7 @@ class IncomeHistoryScreenTest {
         ).assertIsDisplayed()
         rule.onNodeWithTag("income.line.i1").performScrollTo().assertIsDisplayed()
         rule.onNodeWithText("No pudimos leer tus ingresos").assertDoesNotExist()
+        rule.onNodeWithText("No se pudo cargar").assertDoesNotExist()
         rule.onNodeWithTag("income.stale").onChildren()
             .filterToOne(hasText("Reintentar")).performClick()
 

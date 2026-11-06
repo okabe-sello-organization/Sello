@@ -147,6 +147,9 @@ class ResumenScreenTest {
         rule.runOnIdle { state.value = resumenExample(money).copy(stale = true) }
         rule.onNodeWithTag("resumen.stale").assertIsDisplayed()
         rule.onNodeWithText("hasta el 3 de octubre.", substring = true).assertExists()
+        // Older figures, not a failed read: no "No se pudo cargar" above them.
+        rule.onNodeWithText("No se pudo cargar").assertDoesNotExist()
+        rule.onNodeWithTag("resumen.flow").assertExists()
     }
 
     @Test
