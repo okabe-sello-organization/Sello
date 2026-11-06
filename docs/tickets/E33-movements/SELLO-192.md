@@ -13,9 +13,9 @@ what they spent on a given day and whether something is missing.
 ### Acceptance criteria
 - Built as the owner-approved [mock](attachments/movements-mock.html). The magnifier is
   added to `:design-system` as a bundled icon, like the others.
-- The screen opens from a magnifier on Recibo's and Resumen's bars and from a third
-  Resumen stub ("<palabra>", "48 en octubre"), always on the shared month. The stub and
-  the screen's title use the word the owner picks from the mock (epic Decisions).
+- Día a día opens from a magnifier on Recibo's and Resumen's bars and from a third
+  Resumen stub ("Día a día", "48 en octubre"), always on the shared month. The screen's
+  title is Día a día.
 - It lists the month's expenses from every category (archived ones included) and its
   incomes, newest day first and newest first within a day. A day's heading names the
   day ("Hoy, mar 6", "Lun 5") and the sum of that day's expenses. A day with only incomes

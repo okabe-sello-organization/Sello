@@ -7,7 +7,7 @@
 - **Gate:** G1
 
 ### Outcome
-Typing in the day-by-day screen's search finds matching expenses and incomes from every month, such as when
+Typing in Día a día's search finds matching expenses and incomes from every month, such as when
 the plumber was last paid and how much.
 
 ### Acceptance criteria
