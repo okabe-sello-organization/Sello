@@ -252,7 +252,9 @@ class GoalDetailMovementsTest {
 
     /**
      * The whole screen as GoalDestinations frames it: the goal's name over the band with
-     * the star pill, the pencil (or ⋮ once completed) and Aportar's dock.
+     * the star pill, the pencil (or ⋮ once completed) and Aportar's dock. A copy of the
+     * ShellScreen arguments of GoalDestinations.kt (the goal route, lines 165-200, and
+     * goalDock), which needs a view model: change both together.
      */
     private fun framed(name: String, detail: GoalDetailState, dark: Boolean) {
         val shown = detail as? GoalDetailState.Ready

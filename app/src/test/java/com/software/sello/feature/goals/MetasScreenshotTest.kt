@@ -25,8 +25,12 @@ import com.software.sello.domain.port.GoalBoard
 import com.software.sello.domain.port.GoalBoardState
 import com.software.sello.domain.port.GoalSummary
 import com.software.sello.domain.port.ReadState
-import com.software.sello.navigation.TitledFrame
+import com.software.sello.navigation.ShellScreen
+import com.software.sello.navigation.ShellTab
+import com.software.sello.navigation.appTabs
+import com.software.sello.navigation.octoberShell
 import com.software.sello.presentation.date.dateLabels
+import com.software.sello.presentation.month.monthNames
 import com.software.sello.revealed
 import com.software.sello.showSello
 import com.software.sello.testing.testMoney
@@ -136,8 +140,15 @@ class MetasScreenshotTest {
     private fun shot(name: String, state: MetasState, look: Look, reveal: Boolean = false) {
         rule.showSello(look) {
             if (state == MetasState.Loading) {
-                // The skeleton alone is too plain to tell from a blank capture: in its frame.
-                TitledFrame("Metas") { padding -> MetasScreen(state, {}, dateLabels(), padding) }
+                // As GoalDestinations.kt frames it before the list is read: no chip, no dock.
+                ShellScreen(
+                    octoberShell,
+                    monthNames(),
+                    {},
+                    navigation = appTabs(ShellTab.Metas),
+                    titleOnly = "Metas",
+                    entryDock = false
+                ) { padding -> MetasScreen(state, {}, dateLabels(), padding) }
             } else {
                 MetasScreen(state, {}, dateLabels(), PaddingValues(16.dp))
             }

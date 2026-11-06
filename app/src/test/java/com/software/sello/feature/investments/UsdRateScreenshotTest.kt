@@ -7,8 +7,10 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
 import com.software.sello.captureStill
 import com.software.sello.designsystem.theme.SelloInk
-import com.software.sello.navigation.TitledFrame
+import com.software.sello.navigation.ShellScreen
+import com.software.sello.navigation.octoberShell
 import com.software.sello.presentation.date.dateLabels
+import com.software.sello.presentation.month.monthNames
 import com.software.sello.showSello
 import java.time.LocalDate
 import org.junit.Rule
@@ -86,7 +88,16 @@ class UsdRateScreenshotTest {
     private fun shot(name: String, state: UsdRateState, look: Look) {
         rule.showSello(look) {
             if (state == UsdRateState.Loading) {
-                TitledFrame("Dólar") { padding -> UsdRateScreen(state, {}, dateLabels(), padding) }
+                // As InvestmentDestinations.kt frames Dólar.
+                ShellScreen(
+                    octoberShell,
+                    monthNames(),
+                    {},
+                    onBack = {},
+                    titleOnly = "Dólar",
+                    pastMonthRibbon = false,
+                    entryDock = false
+                ) { padding -> UsdRateScreen(state, {}, dateLabels(), padding) }
             } else {
                 UsdRateScreen(state, {}, dateLabels(), PaddingValues(16.dp))
             }

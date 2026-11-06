@@ -9,7 +9,11 @@ import com.software.sello.captureStill
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloInk
-import com.software.sello.navigation.TitledFrame
+import com.software.sello.navigation.ShellDetail
+import com.software.sello.navigation.ShellScreen
+import com.software.sello.navigation.ShellTab
+import com.software.sello.navigation.appTabs
+import com.software.sello.navigation.octoberShell
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.month.monthNames
 import com.software.sello.showSello
@@ -161,17 +165,27 @@ class CategoryDetailScreenshotTest {
 
     private fun shot(name: String, state: CategoryDetailState, dark: Boolean) {
         rule.showSello(Look(dark = dark)) {
-            TitledFrame("Comida") { padding ->
-                CategoryDetailScreen(
-                    state = state,
-                    months = monthNames(),
-                    dates = dateLabels(),
-                    showName = false,
-                    onAction = {},
-                    onRecordHere = {},
-                    contentPadding = padding
-                )
-            }
+            // Opened in Recibo, on a phone: ReciboDestinations.kt hands it to the frame as
+            // its ShellDetail, which draws its own title row (ShellScreen.kt).
+            ShellScreen(
+                octoberShell.copy(detailCategoryId = "comida"),
+                monthNames(),
+                {},
+                navigation = appTabs(ShellTab.Recibo),
+                detail = ShellDetail(
+                    (state as? CategoryDetailState.Ready)?.category?.name ?: "Categoría"
+                ) { padding ->
+                    CategoryDetailScreen(
+                        state = state,
+                        months = monthNames(),
+                        dates = dateLabels(),
+                        showName = false,
+                        onAction = {},
+                        onRecordHere = {},
+                        contentPadding = padding
+                    )
+                }
+            ) {}
         }
         rule.captureStill(
             "src/test/screenshots/category-detail-$name-${if (dark) "oscuro" else "claro"}.png"

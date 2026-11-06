@@ -39,8 +39,10 @@ import com.software.sello.domain.policy.InvestmentPolicy
 import com.software.sello.domain.port.InvestmentBoard
 import com.software.sello.domain.port.InvestmentSummary
 import com.software.sello.domain.port.ReadState
-import com.software.sello.navigation.TitledFrame
+import com.software.sello.navigation.ShellScreen
+import com.software.sello.navigation.octoberShell
 import com.software.sello.presentation.date.dateLabels
+import com.software.sello.presentation.month.monthNames
 import com.software.sello.showSello
 import com.software.sello.testing.testMoney
 import java.time.Instant
@@ -246,7 +248,15 @@ class InvestmentDetailMovementsTest {
     private fun shot(name: String, state: InvestmentDetailState, dark: Boolean) {
         rule.showSello(Look(dark = dark)) {
             if (state == InvestmentDetailState.Loading) {
-                TitledFrame("Inversiones") { padding ->
+                // As InvestmentDestinations.kt frames it before it is read: the tab's name, no dock.
+                ShellScreen(
+                    octoberShell,
+                    monthNames(),
+                    {},
+                    onBack = {},
+                    titleOnly = "Inversiones",
+                    entryDock = false
+                ) { padding ->
                     InvestmentDetailScreen(state, {}, dateLabels(), padding)
                 }
             } else {

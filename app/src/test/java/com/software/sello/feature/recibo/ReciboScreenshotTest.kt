@@ -4,16 +4,22 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
+import com.software.sello.R
 import com.software.sello.captureStill
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.designsystem.icon.SelloIcon
+import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.feature.goals.CompletionState
@@ -21,9 +27,13 @@ import com.software.sello.feature.goals.GoalDetailError
 import com.software.sello.feature.goals.ReciboGoal
 import com.software.sello.feature.goals.ReciboGoalPill
 import com.software.sello.feature.goals.ReciboGoalState
-import com.software.sello.navigation.TitledFrame
+import com.software.sello.navigation.ShellScreen
+import com.software.sello.navigation.ShellTab
+import com.software.sello.navigation.appTabs
+import com.software.sello.navigation.octoberShell
 import com.software.sello.presentation.carry.CarryProblem
 import com.software.sello.presentation.carry.CarryProblemKind
+import com.software.sello.presentation.month.monthNames
 import com.software.sello.showSello
 import java.time.YearMonth
 import org.junit.Rule
@@ -255,7 +265,18 @@ class ReciboScreenshotTest {
 
     private fun shot(name: String, state: ReciboState, look: Look, goal: ReciboGoalState? = null) {
         rule.showSello(look) {
-            TitledFrame("Recibo") { padding ->
+            // As ReciboDestinations.kt frames the tab: the month bar, the settings action, Anotar.
+            ShellScreen(
+                octoberShell,
+                monthNames(),
+                {},
+                navigation = appTabs(ShellTab.Recibo),
+                actions = {
+                    IconButton(onClick = {}) {
+                        Icon(SelloIcon.Settings.painter(), stringResource(R.string.settings_open))
+                    }
+                }
+            ) { padding ->
                 ReciboScreen(
                     state,
                     {},

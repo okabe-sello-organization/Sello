@@ -6,7 +6,11 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
 import com.software.sello.captureStill
 import com.software.sello.designsystem.theme.SelloInk
-import com.software.sello.navigation.TitledFrame
+import com.software.sello.navigation.ShellScreen
+import com.software.sello.navigation.ShellTab
+import com.software.sello.navigation.appTabs
+import com.software.sello.navigation.octoberShell
+import com.software.sello.presentation.month.monthNames
 import com.software.sello.showSello
 import com.software.sello.testing.testMoney
 import org.junit.Rule
@@ -46,7 +50,14 @@ class ResumenScreenshotTest {
 
     private fun shot(name: String, shown: ResumenState, look: Look) {
         rule.showSello(look) {
-            TitledFrame("Resumen") { padding ->
+            // As ResumenDestinations.kt frames the tab: the month bar, no Anotar.
+            ShellScreen(
+                octoberShell,
+                monthNames(),
+                {},
+                navigation = appTabs(ShellTab.Resumen),
+                entryDock = false
+            ) { padding ->
                 ResumenScreen(shown, {}, {}, {}, {}, padding, {}, {})
             }
         }

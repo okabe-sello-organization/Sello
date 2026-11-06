@@ -16,7 +16,9 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.port.BackupSummary
 import com.software.sello.domain.port.ResetPreview
 import com.software.sello.feature.expense.uuid
-import com.software.sello.navigation.TitledFrame
+import com.software.sello.navigation.ShellScreen
+import com.software.sello.navigation.octoberShell
+import com.software.sello.presentation.month.monthNames
 import com.software.sello.showSello
 import org.junit.Rule
 import org.junit.Test
@@ -54,7 +56,16 @@ class ResetScreenshotTest {
 
     private fun shot(name: String, state: ResetState, look: Look) {
         rule.showSello(look) {
-            TitledFrame("Borrar datos") { padding -> ResetScreen(state, {}, padding, {}) }
+            // As ResetDestinations.kt frames Borrar datos.
+            ShellScreen(
+                octoberShell,
+                monthNames(),
+                {},
+                onBack = {},
+                screenTitle = "Borrar datos",
+                pastMonthRibbon = false,
+                entryDock = false
+            ) { padding -> ResetScreen(state, {}, padding, {}) }
         }
         rule.captureStill("src/test/screenshots/reset-$name-${look.label}.png")
     }

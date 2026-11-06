@@ -32,8 +32,12 @@ import com.software.sello.domain.port.InvestmentBoard
 import com.software.sello.domain.port.InvestmentBoardState
 import com.software.sello.domain.port.InvestmentSummary
 import com.software.sello.domain.port.ReadState
-import com.software.sello.navigation.TitledFrame
+import com.software.sello.navigation.ShellScreen
+import com.software.sello.navigation.ShellTab
+import com.software.sello.navigation.appTabs
+import com.software.sello.navigation.octoberShell
 import com.software.sello.presentation.date.dateLabels
+import com.software.sello.presentation.month.monthNames
 import com.software.sello.showSello
 import com.software.sello.testing.testMoney
 import java.math.BigDecimal
@@ -202,7 +206,15 @@ class InversionesScreenshotTest {
     private fun shot(name: String, state: InversionesState, look: Look) {
         rule.showSello(look) {
             if (state == InversionesState.Loading) {
-                TitledFrame("Inversiones") { padding ->
+                // As InvestmentDestinations.kt frames it before the list is read: no chip, no dock.
+                ShellScreen(
+                    octoberShell,
+                    monthNames(),
+                    {},
+                    navigation = appTabs(ShellTab.Inversiones),
+                    titleOnly = "Inversiones",
+                    entryDock = false
+                ) { padding ->
                     InversionesScreen(state, {}, dateLabels(), padding)
                 }
             } else {
