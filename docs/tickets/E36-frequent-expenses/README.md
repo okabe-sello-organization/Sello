@@ -3,7 +3,7 @@
 - **Status:** Backlog
 - **Increment:** Post-MVP
 - **Goal:** The person fills Anotar with an expense they record often in one tap, then saves it as usual.
-- **Exit:** Anotar offers frequent expenses the way the owner picks from the options mock, without growing the form, and none is ever saved without Anotar gasto.
+- **Exit:** Anotar offers frequent expenses from "⚡ Frecuentes" and while writing the note, as in the approved mock, filling the usual amount; none is ever saved without Anotar gasto.
 
 ## Decisions
 
@@ -17,13 +17,16 @@ height: A in the category row, B a ⚡ button in the amount slip that opens a sh
 (recommended), C suggestions in the note composer, D a strip on top of the pad. The
 owner picks one before this epic leaves Backlog.
 
-**Owner picks (2026-11-06):** B and C together. B's button must be easy to reach for a
-right-handed person using one hand: not at the top and not by Anotar gasto. The first B + C mock was hard to read. The
-[mock](attachments/frequent-mock.html) now draws the flow on the real Anotar screenshots,
-with two places for the button: 2a beside the category chips, or 2b inside the Agregar
-nota row as "⚡ Frecuentes" (recommended).
+**Owner picks (2026-11-06):** B and C together, as drawn on the real Anotar screenshots
+in the [mock](attachments/frequent-mock.html), now approved:
 
-**Planner's calls (2026-11-06), open to the owner:** an expense is frequent with the
-same category, note and amount 3 or more times in 90 days. A tap fills the form and never
-saves. Suggestions are hidden when correcting an expense, in Anotar varios, and for
-fixed-payment expenses.
+- B's button is "⚡ Frecuentes" at the right end of the Agregar nota row: within a right
+  thumb's reach, not at the top and not by Anotar gasto.
+- An expense is frequent by its category and note, whatever the amount, so a lunch that
+  costs a little different each day still counts.
+- A tap fills the usual amount: the median of the group's last 10 amounts in the 90
+  days, an amount the person really paid that one unusual day doesn't move.
+
+**Planner's calls (2026-11-06), open to the owner:** frequent means 3 or more times in
+90 days. A tap fills the form and never saves. Suggestions are hidden when correcting an
+expense, in Anotar varios, and for fixed-payment expenses.
