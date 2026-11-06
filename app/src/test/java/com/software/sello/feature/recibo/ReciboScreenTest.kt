@@ -543,8 +543,8 @@ class ReciboScreenTest {
 
         rule.onNodeWithTag(CARRY_PROBLEM_TAG).assertIsDisplayed()
         rule.onNodeWithText(
-            "No pudimos calcular lo que sobra o falta en Comida.",
-            substring = true
+            "No pudimos calcular lo que sobra o falta en Comida. " +
+                "Esto es lo último que se leyó y puede no estar al día."
         ).assertIsDisplayed()
         rule.onNodeWithTag(RECIBO_STALE_TAG).assertDoesNotExist()
         rule.onNodeWithText("No se pudo cargar").assertDoesNotExist()

@@ -1771,7 +1771,7 @@
     <string name="carry_failed_title">No pudimos calcular lo que sobra o falta</string>
     <string name="carry_failed_title_of">No pudimos calcular lo que sobra o falta en %1$s</string>
     <string name="carry_failed_someone">una categoría</string>
-    <string name="carry_failed_older">%1$s. %2$s</string>
+    <string name="carry_failed_older">%1$s. Esto es lo último que se leyó y puede no estar al día.</string>
     <string name="carry_failed_no_base">A %1$s de %2$s le falta un límite, y sin él no se puede calcular lo que sobra o falta. Ponle un límite a ese mes para seguir; tus registros siguen guardados.</string>
     <string name="carry_failed_set_limit">Ponerle límite a %1$s</string>
     <string name="carry_failed_damaged">Los datos de lo que sobra o falta en %1$s no se pueden leer. Tus registros siguen guardados; restaurar un respaldo los repara.</string>

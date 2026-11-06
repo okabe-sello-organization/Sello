@@ -447,7 +447,7 @@ fun carryProblem(
  * The failure in words, with the one action that can repair it: giving the month its limit
  * ([onSetLimit], with the category and month), or reading again ([onRetry]). With
  * [olderFiguresShown], the last good figures are shown under it: it is their one Older
- * notice, saying why they are older, its title leading the sentence (Older has no title).
+ * notice, saying what could not be calculated and that the figures are the last read.
  * Without, nothing could be read.
  */
 @Composable
@@ -508,9 +508,12 @@ fun CarryProblemSlip(
     }
 }
 
-/** The problem's sentence; over older figures, led by its title, which Older does not show. */
+/**
+ * The problem's sentence. Over older figures, its title then that they are the last read
+ * (Older shows no title); the detail is left to the slip shown when nothing was read.
+ */
 @Composable
 private fun carrySaid(olderFiguresShown: Boolean, title: String, body: String): String =
-    if (olderFiguresShown) stringResource(R.string.carry_failed_older, title, body) else body
+    if (olderFiguresShown) stringResource(R.string.carry_failed_older, title) else body
 
 const val CARRY_PROBLEM_TAG = "carry:problem"
