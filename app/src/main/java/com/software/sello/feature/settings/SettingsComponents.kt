@@ -22,7 +22,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
-import com.software.sello.designsystem.theme.selloColors
 
 /**
  * The ink choice: one round swatch per ink in its own colour, named under it, with a
@@ -65,11 +64,11 @@ internal fun InkSwatches(
                             shape = CircleShape
                         )
                 ) {
-                    // The ink as its light band shows it, the same in both themes.
+                    // The ink's own swatch, not the active scheme: it previews an ink.
                     Box(
                         Modifier
                             .size(SwatchSize)
-                            .background(selloColors(ink, isDark = false).band, CircleShape)
+                            .background(ink.swatch, CircleShape)
                     )
                 }
                 Text(

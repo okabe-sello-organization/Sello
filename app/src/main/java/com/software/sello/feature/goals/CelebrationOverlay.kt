@@ -472,12 +472,15 @@ private fun Actions(
     }
 }
 
-/** Punched holes, receipt teeth and strips falling over the green. Decorative only. */
+/**
+ * Punched holes, receipt teeth and strips falling over the green, in colours that read on
+ * it. The white chads are the band's own ink, white in every palette. Decorative only.
+ */
 @Composable
 private fun Confetti(t: Float) {
     val colors = SelloTheme.colors
     val palette =
-        listOf(Color.White, colors.semantic.warn, colors.brandSoft, Color.White, colors.brand)
+        listOf(colors.onBand, colors.semantic.warn, colors.brandSoft, colors.onBand, colors.brand)
     Canvas(Modifier.fillMaxSize()) {
         val start = -24.dp.toPx()
         val fall = size.height + 48.dp.toPx()

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        The window before Compose's first frame, and behind the Android 12+ splash:
+        Cobalto's light desk (CobaltoPalette.kt). XML can't read the Compose palette,
+        and the user's ink is stored data that can't be read yet, so it is the first-run
+        ink's desk; SystemBarsTest keeps it equal to the palette.
+    -->
+    <color name="sello_start_window">#FFD9E1F7</color>
+</resources>

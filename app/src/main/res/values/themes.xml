@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
-    <style name="Theme.Sello" parent="android:Theme.Material.Light.NoActionBar" />
+    <!--
+        The window before the first frame is the theme's desk, light or dark as the phone
+        is: Sello's own Claro/Oscuro choice and ink can't be read yet at that point.
+    -->
+    <style name="Theme.Sello" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/sello_start_window</item>
+    </style>
 </resources>

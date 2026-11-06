@@ -30,7 +30,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -190,7 +189,7 @@ internal fun PastMonthRibbon(
                 .minimumInteractiveComponentSize()
                 .heightIn(min = 40.dp)
                 .clip(CircleShape)
-                .background(if (colors.isDark) colors.paper else Color.White)
+                .background(colors.paper)
                 .clickable(role = Role.Button, onClick = onReturn)
                 .padding(horizontal = 14.dp)
                 .wrapContentHeight(Alignment.CenterVertically),

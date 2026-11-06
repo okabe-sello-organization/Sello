@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.core.view.WindowCompat
 import androidx.test.core.app.ApplicationProvider
@@ -14,7 +15,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.R
 import com.software.sello.designsystem.component.Blotter
 import com.software.sello.designsystem.component.SelloScaffold
+import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.designsystem.theme.selloColors
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -145,12 +148,18 @@ class SystemBarsTest {
     @Config(qualifiers = "+night")
     fun `a dark phone starts on the dark desk`() {
         assertEquals(0xFF090D1C.toInt(), windowBackground())
+        assertEquals(
+            selloColors(SelloInk.Cobalto, isDark = true).desk.toArgb(),
+            windowBackground()
+        )
     }
 
+    /** SELLO-190: the light window is the theme's desk too, no longer the platform's. */
     @Test
-    fun `a light phone starts on the platform's light window as before`() {
+    fun `a light phone starts on the light desk`() {
+        assertEquals(0xFFD9E1F7.toInt(), windowBackground())
         assertEquals(
-            windowBackground(android.R.style.Theme_Material_Light_NoActionBar),
+            selloColors(SelloInk.Cobalto, isDark = false).desk.toArgb(),
             windowBackground()
         )
     }

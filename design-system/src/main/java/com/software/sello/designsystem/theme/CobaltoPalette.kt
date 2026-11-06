@@ -3,9 +3,8 @@ package com.software.sello.designsystem.theme
 import androidx.compose.ui.graphics.Color
 
 /** Cobalto, the base ink: the first-run default. */
-internal val CobaltoLight = SelloColors(
+internal val CobaltoLight = lightPalette(
     family = SelloInk.Cobalto,
-    isDark = false,
     brand = Color(0xFF1F3BE0),
     onBrand = Color(0xFFFFFFFF),
     brandSoft = Color(0xFFDCE2FF),
@@ -18,22 +17,14 @@ internal val CobaltoLight = SelloColors(
     inkSoft = Color(0xFF434E72),
     outline = Color(0xFF6975A0),
     rule = Color(0xFFB9C5E6),
-    band = Color(0xFF1F3BE0),
-    onBand = Color(0xFFFFFFFF),
-    goalBand = Color(0xFF0A6B4A),
-    investmentBand = Color(0xFF0E1630),
     pastBar = Color(0xFF566287),
     onPastBar = Color(0xFFFFFFFF),
     pastBarSoft = Color(0xFFE1E7F6),
-    onPastBarSoft = Color(0xFF17203C),
-    semantic = LightSemantic,
-    categories = LightCategories,
-    investments = LightInvestments
+    onPastBarSoft = Color(0xFF17203C)
 )
 
-internal val CobaltoDark = SelloColors(
+internal val CobaltoDark = darkPalette(
     family = SelloInk.Cobalto,
-    isDark = true,
     brand = Color(0xFF8FA6FF),
     onBrand = Color(0xFF06175C),
     brandSoft = Color(0xFF23368F),
@@ -54,7 +45,5 @@ internal val CobaltoDark = SelloColors(
     onPastBar = Color(0xFF17203C),
     pastBarSoft = Color(0xFF2A3560),
     onPastBarSoft = Color(0xFFE1E7F6),
-    semantic = DarkSemantic,
-    categories = DarkCategories,
-    investments = DarkInvestments
+    lightInk = CobaltoLight.ink
 )
