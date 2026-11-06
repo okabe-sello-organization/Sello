@@ -52,7 +52,7 @@ class PaperAndStampTest {
                     Stamp("Pasado", StampInk.Over, Modifier.testTag("large"), StampSize.Large)
                     Stamp(
                         "Lograda",
-                        StampInk.Done,
+                        StampInk.Good,
                         Modifier.testTag("hero"),
                         StampSize.Hero,
                         land = true

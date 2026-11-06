@@ -99,7 +99,7 @@ private fun InvestmentMovementKind.mark() = when (this) {
 
     InvestmentMovementKind.Valuation -> SelloIcon.Insights to BulkMarkTone.Value
 
-    InvestmentMovementKind.Withdrawal -> SelloIcon.ArrowBack to BulkMarkTone.Neutral
+    InvestmentMovementKind.Withdrawal -> SelloIcon.Remove to BulkMarkTone.Neutral
 }
 
 /** The figure as it is written in a sentence: "3.600.000", "USD 1.050,50". */
@@ -452,8 +452,7 @@ private fun Removed(
             ?: stringResource(R.string.investment_movements_removed_plain),
         modifier = modifier.testTag(INVESTMENT_MOVEMENTS_REMOVED_TAG),
         actionLabel = stringResource(R.string.correction_undo),
-        onAction = { onAction(InvestmentMovementsAction.UndoRemove) },
-        confirmation = true
+        onAction = { onAction(InvestmentMovementsAction.UndoRemove) }
     )
 }
 

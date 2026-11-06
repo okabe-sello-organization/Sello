@@ -255,6 +255,16 @@ private fun BackupCard(
             modifier = Modifier.padding(top = SelloTheme.spacing.md),
             first = {
                 SelloButton(
+                    text = stringResource(R.string.settings_backup_restore),
+                    onClick = onRestore,
+                    kind = ButtonKind.Outlined,
+                    icon = SelloIcon.UploadFile,
+                    enabled = restoreEnabled && !backup.saving,
+                    modifier = Modifier.testTag(BACKUP_CARD_RESTORE_TAG)
+                )
+            },
+            second = {
+                SelloButton(
                     text = stringResource(
                         when {
                             backup.saving -> R.string.backup_saving
@@ -267,16 +277,6 @@ private fun BackupCard(
                     enabled = !backup.busy,
                     loading = backup.saving,
                     modifier = Modifier.testTag(BACKUP_CARD_CREATE_TAG)
-                )
-            },
-            second = {
-                SelloButton(
-                    text = stringResource(R.string.settings_backup_restore),
-                    onClick = onRestore,
-                    kind = ButtonKind.Outlined,
-                    icon = SelloIcon.UploadFile,
-                    enabled = restoreEnabled && !backup.saving,
-                    modifier = Modifier.testTag(BACKUP_CARD_RESTORE_TAG)
                 )
             }
         )
@@ -297,8 +297,8 @@ private fun BackupCard(
 @Composable
 private fun BackupStamp(age: BackupAge, land: Boolean) {
     val (text, ink) = when (age) {
-        BackupAge.None -> R.string.settings_backup_stamp_none to StampInk.Over
-        is BackupAge.Recent -> R.string.backup_saved_stamp to StampInk.Done
+        BackupAge.None -> R.string.settings_backup_stamp_none to StampInk.Warn
+        is BackupAge.Recent -> R.string.backup_saved_stamp to StampInk.Good
         is BackupAge.Old -> R.string.settings_backup_stamp_old to StampInk.Warn
     }
     Stamp(

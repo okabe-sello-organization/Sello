@@ -373,8 +373,10 @@ private fun HeaderSlip(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         val color = when (figures.comparisonDirection) {
-                            DetailComparisonDirection.Higher -> SelloTheme.colors.semantic.warn
+                            // Spending more is a plain fact, not a doubt; spending less is good news.
                             DetailComparisonDirection.Lower -> SelloTheme.colors.semantic.gain
+
+                            DetailComparisonDirection.Higher,
                             DetailComparisonDirection.Equal -> SelloTheme.colors.ink
                         }
                         Text(

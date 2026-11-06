@@ -24,7 +24,7 @@ import com.software.sello.designsystem.theme.SelloTheme
 import java.util.Locale
 
 /** Semantic inks; Warn is reserved for a review status, never ordinary overspending. */
-enum class StampInk { Good, Done, Over, Neutral, Warn }
+enum class StampInk { Good, Over, Neutral, Warn }
 
 /** 15sp, 34sp and 52sp. */
 enum class StampSize { Small, Large, Hero }
@@ -56,7 +56,6 @@ fun Stamp(
     val colors = SelloTheme.colors
     val color = when (ink) {
         StampInk.Good -> colors.semantic.gain
-        StampInk.Done -> colors.brand
         StampInk.Over -> colors.semantic.loss
         StampInk.Neutral -> colors.inkSoft
         StampInk.Warn -> colors.semantic.warn

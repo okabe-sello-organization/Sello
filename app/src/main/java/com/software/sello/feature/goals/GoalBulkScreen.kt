@@ -119,8 +119,7 @@ fun GoalBulkScreen(state: GoalBulkState, onAction: (GoalBulkAction) -> Unit) {
                             modifier = Modifier.align(Alignment.BottomCenter)
                                 .testTag(GOAL_BULK_UNDO_TAG),
                             actionLabel = stringResource(R.string.correction_undo),
-                            onAction = { onAction(GoalBulkAction.UndoRemove) },
-                            confirmation = true
+                            onAction = { onAction(GoalBulkAction.UndoRemove) }
                         )
                     }
                 }
@@ -241,7 +240,7 @@ private fun bulkLine(
     return BulkLine(
         key = line.key,
         mark = when (line.withdrawal) {
-            true -> SelloIcon.ArrowBack
+            true -> SelloIcon.Remove
             false -> SelloIcon.Add
             null -> null
         },
@@ -403,7 +402,7 @@ private fun Composer(state: GoalBulkState, onAction: (GoalBulkAction) -> Unit) {
         length = state.composerLength,
         problem = state.composerProblem,
         icon = when (line.withdrawal) {
-            true -> SelloIcon.ArrowBack
+            true -> SelloIcon.Remove
             false -> SelloIcon.Add
             null -> SelloIcon.Flag
         },

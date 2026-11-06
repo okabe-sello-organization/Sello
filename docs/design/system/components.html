@@ -307,7 +307,7 @@ fun LeaderLine(
 <h3><code>Stamp</code> <span class="src"><code>component/Stamp.kt:46</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>One word in an outlined, rotated box: the verdict of a screen. It is decoration for a result that already exists; it has no click and cannot cause a write. <code>text</code> is sentence case and is what a screen reader says; it is drawn in capitals. With <code>land</code> the stamp comes down once when it first appears. Pass it only when the verdict has just been confirmed, or with <code>haptic</code> false for a verdict revisited. Reduced motion shows the stamp at rest.</dd>
-<dt>Variants</dt><dd><code>ink</code>: <code>StampInk.Good</code>, <code>Done</code>, <code>Over</code>, <code>Neutral</code>, <code>Warn</code> (review status only). <code>size</code>: <code>StampSize.Small</code> 15 sp, <code>Large</code> 34 sp, <code>Hero</code> 52 sp; angle −6° (Hero −9°). <code>land</code>, <code>inkRing</code>, <code>haptic</code>.</dd>
+<dt>Variants</dt><dd><code>ink</code>: <code>StampInk.Good</code>, <code>Over</code>, <code>Neutral</code>, <code>Warn</code> (review status only: Revisar, a backup missing or old). <code>size</code>: <code>StampSize.Small</code> 15 sp, <code>Large</code> 34 sp, <code>Hero</code> 52 sp; angle −6° (Hero −9°). <code>land</code>, <code>inkRing</code>, <code>haptic</code>.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 2</a> <a class="tag" href="features/category.html">category · 1</a> <a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/recibo.html">recibo · 2</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a> <a class="tag" href="features/reset.html">reset · 1</a> <span class="muted">Inside the design system: <code>Paper.kt</code>, <code>Recurrence.kt</code>, <code>Restore.kt</code>.</span></dd>
 </dl>
 <pre><code>fun Stamp(
@@ -562,8 +562,8 @@ fun MoreMenuDropdown(
 <article class="component" id="c-EntryLine">
 <h3><code>EntryLine</code> <span class="src"><code>component/Controls.kt:301</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>A full-width line under the chips that opens an editor, such as the note or an income source's name. Empty, it reads as a quiet <code>text</code> prompt; filled, it shows the value and the brand <code>action</code> (Editar, Cambiar) on the trailing edge.</dd>
-<dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 2</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/income.html">income · 2</a> <a class="tag" href="features/recurrence.html">recurrence · 3</a> <span class="muted">Inside the design system: <code>Movement.kt</code>, <code>RepeatParts.kt</code>.</span></dd>
+<dt>Purpose</dt><dd>A full-width line under the chips that opens an editor, such as the note or an income source's name. Empty, it reads as a quiet <code>text</code> prompt; filled, it shows the value and the brand <code>action</code> (Editar, Cambiar) on the trailing edge. It only opens an editor; something done at once, such as pausing a fixed payment, is a <code>SelloButton</code>.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 2</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/income.html">income · 2</a> <a class="tag" href="features/recurrence.html">recurrence · 2</a> <span class="muted">Inside the design system: <code>Movement.kt</code>, <code>RepeatParts.kt</code>.</span></dd>
 </dl>
 <pre><code>fun EntryLine(
     text: String,
@@ -582,8 +582,8 @@ fun MoreMenuDropdown(
 <article class="component" id="c-FieldPill">
 <h3><code>FieldPill</code> <span class="src"><code>component/Chips.kt:192</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>A tappable value on an entry sheet, such as the date or the note.</dd>
-<dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 1</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 2</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 5</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a></dd>
+<dt>Purpose</dt><dd>A tappable value on an entry sheet, such as the date, a goal's month or the note.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 1</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 3</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 5</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a></dd>
 </dl>
 <pre><code>fun FieldPill(
     text: String,
@@ -687,8 +687,8 @@ fun MoreMenuDropdown(
 <h3><code>SelloButton</code> <span class="src"><code>component/SelloButton.kt:42</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>Sello's button. While <code>loading</code> it keeps its label and colours, shows a spinner in place of the icon and ignores presses, so a save cannot be submitted twice. <code>contentPadding</code> lets a text button end flush with the content beside it. <code>trailingIcon</code> follows the label, as the chevron of a link that opens another screen. A <code>compact</code> button is a pill 44 dp high with a smaller, heavy label, for a row that holds its own action; its touch area is still the 48 dp minimum.</dd>
-<dt>Variants</dt><dd><code>kind</code>: <code>ButtonKind.Filled</code> (one per screen), <code>Outlined</code>, <code>Text</code>. <code>tone</code>: <code>ButtonTone.Brand</code>, <code>Gain</code>, <code>Ink</code>, <code>Loss</code> (only inside a confirmation), <code>OnBand</code> (a text action on a band), <code>OnGain</code> (a button on the gain colour itself: filled, on-gain ink with gain text, as the celebration's Listo). <code>trailingIcon</code>: a chevron after the label for a link (Ajustar presupuesto ›, Ver qué contiene ›, Ver mi meta ›). <code>compact</code>: a 44 dp pill (<code>CircleShape</code>) with a <code>bodySmall</code> W800 label and a 16 dp spinner, touch area 48 dp (<code>minimumInteractiveComponentSize</code>); used by Recibo's ReachedRow "Marcar como lograda", which keeps its width while busy (the spinner takes the label's place). See <code>recibo-goals-reached</code>. States: <code>enabled</code>, <code>loading</code> (spinner replaces the icon, presses ignored).</dd>
-<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 9</a> <a class="tag" href="features/bulk.html">bulk · 3</a> <a class="tag" href="features/category.html">category · 9</a> <a class="tag" href="features/expense.html">expense · 3</a> <a class="tag" href="features/goals.html">goals · 19</a> <a class="tag" href="features/income.html">income · 4</a> <a class="tag" href="features/investments.html">investments · 12</a> <a class="tag" href="features/recibo.html">recibo · 10</a> <a class="tag" href="features/recurrence.html">recurrence · 2</a> <a class="tag" href="features/reset.html">reset · 6</a> <a class="tag" href="features/shell.html">shell · 1</a> <a class="tag" href="features/startup.html">startup · 7</a> <span class="muted">Inside the design system: <code>BulkReceipt.kt</code>, <code>Controls.kt</code>, <code>Feedback.kt</code>, <code>Movement.kt</code>, <code>RepeatParts.kt</code>, <code>Restore.kt</code>, <code>Settings.kt</code>, <code>Suggestion.kt</code>.</span></dd>
+<dt>Variants</dt><dd><code>kind</code>: <code>ButtonKind.Filled</code> (one per screen), <code>Outlined</code>, <code>Text</code>. <code>tone</code>: <code>ButtonTone.Brand</code>, <code>Gain</code>, <code>Ink</code>, <code>Loss</code> (only inside a confirmation), <code>OnBand</code> (a text action on a band), <code>OnGain</code> (a button on the gain colour itself: filled, on-gain ink with gain text, as the celebration's Listo). <code>trailingIcon</code>: a chevron after the label for a link (Ajustar presupuesto ›, Ver qué contiene ›, Ver mi meta ›). <code>compact</code>: a 44 dp pill (<code>CircleShape</code>) with a <code>bodySmall</code> W800 label and a 16 dp spinner, touch area 48 dp (<code>minimumInteractiveComponentSize</code>); used by Recibo's ReachedRow "Marcar como lograda", which keeps its width while busy (the spinner takes the label's place). See <code>recibo-goals-reached</code>. A form's main button and its "Comprobar" take the kind's tone: gastos Brand, ingresos and metas Gain, inversiones Ink. States: <code>enabled</code>, <code>loading</code> (spinner replaces the icon, presses ignored).</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 9</a> <a class="tag" href="features/bulk.html">bulk · 3</a> <a class="tag" href="features/category.html">category · 9</a> <a class="tag" href="features/expense.html">expense · 3</a> <a class="tag" href="features/goals.html">goals · 19</a> <a class="tag" href="features/income.html">income · 4</a> <a class="tag" href="features/investments.html">investments · 12</a> <a class="tag" href="features/recibo.html">recibo · 10</a> <a class="tag" href="features/recurrence.html">recurrence · 3</a> <a class="tag" href="features/reset.html">reset · 6</a> <a class="tag" href="features/shell.html">shell · 1</a> <a class="tag" href="features/startup.html">startup · 7</a> <span class="muted">Inside the design system: <code>BulkReceipt.kt</code>, <code>Controls.kt</code>, <code>Feedback.kt</code>, <code>Movement.kt</code>, <code>RepeatParts.kt</code>, <code>Restore.kt</code>, <code>Settings.kt</code>, <code>Suggestion.kt</code>.</span></dd>
 </dl>
 <pre><code>fun SelloButton(
     text: String,
@@ -751,7 +751,7 @@ fun MoreMenuDropdown(
 <dl>
 <dt>Purpose</dt><dd>One choice in a set: a category, an income source, a goal with its percentage as <code>trailing</code>. It looks 36dp tall, grows with the font size and always takes a 48dp touch target. Put the set in a <code>ChipFlow</code> so it is announced as one group.</dd>
 <dt>Variants</dt><dd><code>selected</code>, <code>enabled</code>, optional <code>icon</code> and <code>trailing</code> text.</dd>
-<dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 2</a> <a class="tag" href="features/category.html">category · 1</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 5</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 4</a> <a class="tag" href="features/recibo.html">recibo · 2</a> <a class="tag" href="features/recurrence.html">recurrence · 2</a> <span class="muted">Inside the design system: <code>RepeatParts.kt</code>.</span></dd>
+<dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 2</a> <a class="tag" href="features/category.html">category · 1</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 4</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 4</a> <a class="tag" href="features/recibo.html">recibo · 2</a> <a class="tag" href="features/recurrence.html">recurrence · 2</a> <span class="muted">Inside the design system: <code>RepeatParts.kt</code>.</span></dd>
 </dl>
 <pre><code>fun SelloChip(
     label: String,
@@ -897,7 +897,7 @@ fun MoreMenuDropdown(
 <article class="component" id="c-SelloNotice">
 <h3><code>SelloNotice</code> <span class="src"><code>component/Corrections.kt:50</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>A short statement about something that just happened, with at most one thing to do about it, such as "Gasto borrado" and "Deshacer". It is announced when it appears. <code>spoken</code> is what is read aloud, when that should say more than fits on the line. While <code>busy</code> the action stays in view and cannot be pressed. An <code>icon</code> leads the message in place of the confirmation check, such as the repeat icon on what Sello recorded by itself. It holds no time: whoever shows it decides how long, and takes it away. With <code>remaining</code> (1 to 0) it shows that time as a lighter band over the bar that shrinks from the end, and a thin line along its foot.</dd>
+<dt>Purpose</dt><dd>A short statement about something that just happened, with at most one thing to do about it, such as "Gasto borrado" and "Deshacer". It is announced when it appears. <code>spoken</code> is what is read aloud, when that should say more than fits on the line. While <code>busy</code> the action stays in view and cannot be pressed. An <code>icon</code> leads the message in place of the confirmation check, such as the repeat icon on what Sello recorded by itself. The check (<code>confirmation</code>) leads only a save or a record; a deletion or a removed line with Deshacer carries none. It holds no time: whoever shows it decides how long, and takes it away. With <code>remaining</code> (1 to 0) it shows that time as a lighter band over the bar that shrinks from the end, and a thin line along its foot.</dd>
 <dt>Variants</dt><dd>Plain or <code>confirmation</code> (a check), with an <code>icon</code>, an action, <code>busy</code>, a <code>remaining</code> time band.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 1</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/investments.html">investments · 8</a> <a class="tag" href="features/shell.html">shell · 38</a> <a class="tag" href="features/recibo.html">recibo · 1</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a></dd>
 </dl>
@@ -1393,7 +1393,7 @@ fun StatusSlip(
 <h3><code>MovementRow</code> <span class="src"><code>component/Goals.kt:77</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>One movement: its mark, <code>title</code> over <code>detail</code>, and the amount at the end with <code>balance</code> under it. A movement that earned a stamp shows the stamp as its mark. <code>rule</code> draws the line under the row; the last row of a group leaves it out.</dd>
-<dt>Variants</dt><dd><code>tone</code>: <code>MovementTone.In</code>, <code>Out</code>, <code>Value</code>. Optional <code>milestone</code> (a 34 dp stamp as the mark), <code>balance</code>, <code>annotation</code>, <code>rule</code>.</dd>
+<dt>Variants</dt><dd><code>tone</code>: <code>MovementTone.In</code>, <code>Out</code>, <code>Value</code>. Marks: <code>SelloIcon.Add</code> for an aporte, <code>Remove</code> (−) for a retiro, <code>Insights</code> for a value. Optional <code>milestone</code> (a 34 dp stamp as the mark), <code>balance</code>, <code>annotation</code>, <code>rule</code>.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/investments.html">investments · 1</a></dd>
 </dl>
 <pre><code>fun MovementRow(
@@ -1409,10 +1409,10 @@ fun StatusSlip(
     balance: MovementBalance? = null,
     rule: Boolean = true
 )</code></pre>
+<figure data-module="design-system" data-files="movement-marks-claro.png,movement-marks-oscuro.png" data-caption="Component capture: movement-marks (design-system), Add, Remove and Insights large, then an aporte and a retiro row"></figure>
 
 <p class="muted">Also visible in screen baselines: <code>goal-detail-movements</code>.</p>
 <figure data-shot="goal-detail-movements" data-module="app" data-caption="Seen in Goal detail: Movimientos"></figure>
-<div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-MovementMonthLine">
 <h3><code>MovementMonthLine</code> <span class="src"><code>component/Goals.kt:164</code></span></h3>
@@ -1678,7 +1678,7 @@ fun StatusSlip(
 <h3><code>BulkReceipt</code> <span class="src"><code>component/BulkReceipt.kt:165</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The bulk receipt of Anotar varios: a pinked slip with the <code>caption</code> and <code>headerEnd</code> (the receipt's date) on top, the <code>lines</code>, a tear line and a foot with **Otro renglón** and the <code>total</code>. It takes the height its <code>modifier</code> gives it: the lines scroll inside, fading at the edge that hides more, while the header and the foot stay. Tapping a line calls <code>onSelect</code>; the <code>highlighted</code> one is edged in ink, shows a caret and carries <code>highlightedFoot</code> (a goal's or investment's date pill). <code>onRemove</code> runs from a swipe towards the start past 40 % of the line, from its long-press menu or from the action a screen reader offers; the last line offers none of them. Each line is read as one item: its place, title, detail, amount and reason; the date pill is reached on its own. While not <code>enabled</code> nothing responds and no line is highlighted.</dd>
-<dt>Variants</dt><dd><code>BulkLine.markTone</code>: <code>BulkMarkTone.Category</code>, <code>Gain</code>, <code>Neutral</code>, <code>Value</code>. <code>BulkAmountTone.Ink</code> or <code>Gain</code>. <code>BulkCaption.Count</code> or <code>Problem</code>. A line with a <code>reason</code> is outlined in loss. At most <code>BULK_RECEIPT_MAX_LINES</code> = 30 lines.</dd>
+<dt>Variants</dt><dd><code>BulkLine.markTone</code>: <code>BulkMarkTone.Category</code>, <code>Gain</code>, <code>Neutral</code>, <code>Value</code>. <code>BulkAmountTone.Ink</code> or <code>Gain</code>. Marks as in <code>MovementRow</code>: Add, Remove (−) for a retiro, Insights. <code>BulkCaption.Count</code> or <code>Problem</code>. A line with a <code>reason</code> is outlined in loss. At most <code>BULK_RECEIPT_MAX_LINES</code> = 30 lines.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 1</a> <a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/investments.html">investments · 1</a></dd>
 </dl>
 <pre><code>fun BulkReceipt(

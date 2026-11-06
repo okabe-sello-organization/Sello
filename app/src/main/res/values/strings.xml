@@ -52,7 +52,7 @@
     <string name="recibo_new_category">Nueva categoría</string>
     <string name="recibo_category_archived">Archivada</string>
     <string name="category_editor_title">Nueva categoría</string>
-    <string name="category_editor_back">Volver</string>
+    <string name="category_editor_close">Cerrar</string>
     <string name="category_editor_needed_for_entry">Para anotar un gasto primero necesitas una categoría. Crea la primera aquí.</string>
     <string name="category_editor_name">Nombre</string>
     <string name="category_editor_name_counter">%1$d/%2$d</string>
@@ -1367,7 +1367,6 @@
     <string name="schedule_from">Desde %1$s</string>
     <string name="schedule_from_tomorrow">Los cambios aplican desde mañana. Lo que ya se anotó no cambia.</string>
     <string name="schedule_pause">Pausar</string>
-    <string name="schedule_next">Próximo: %1$s</string>
     <string name="schedule_paused_since">En pausa desde %1$s</string>
     <string name="schedule_paused_by_archive">En pausa porque %1$s está archivada</string>
     <string name="schedule_paused_body">Mientras está en pausa no se anota ni se separa nada. Al reanudar, sigue desde ese día; lo de la pausa no se anota.</string>

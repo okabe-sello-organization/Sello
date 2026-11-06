@@ -153,7 +153,7 @@ fun CategoryEditorScreen(
         modifier = modifier,
         navigationIcon = {
             IconButton(onClick = { onAction(CategoryEditorAction.Back) }) {
-                Icon(SelloIcon.ArrowBack.painter(), stringResource(R.string.category_editor_back))
+                Icon(SelloIcon.Close.painter(), stringResource(R.string.category_editor_close))
             }
         },
         actions = {
@@ -588,17 +588,18 @@ private fun Action(state: CategoryEditorState, onAction: (CategoryEditorAction) 
                 loading = state.busy
             )
 
-            // The person decides: what the category is now, or what they typed over it.
+            // The person decides: what they typed over the category, or what it is now.
+            // Keeping the typed work is the filled one; reloading throws it away.
             SaveError.Conflict -> {
-                SelloButton(
-                    text = stringResource(R.string.category_edit_conflict_reload),
-                    onClick = { onAction(CategoryEditorAction.ReloadDiscardingDraft) },
-                    modifier = Modifier.fillMaxWidth().testTag(EDITOR_CONFLICT_RELOAD_TAG)
-                )
                 SelloButton(
                     text = stringResource(R.string.category_edit_conflict_keep),
                     onClick = { onAction(CategoryEditorAction.ReloadKeepingDraft) },
-                    modifier = Modifier.fillMaxWidth().testTag(EDITOR_CONFLICT_KEEP_TAG),
+                    modifier = Modifier.fillMaxWidth().testTag(EDITOR_CONFLICT_KEEP_TAG)
+                )
+                SelloButton(
+                    text = stringResource(R.string.category_edit_conflict_reload),
+                    onClick = { onAction(CategoryEditorAction.ReloadDiscardingDraft) },
+                    modifier = Modifier.fillMaxWidth().testTag(EDITOR_CONFLICT_RELOAD_TAG),
                     kind = ButtonKind.Outlined
                 )
             }

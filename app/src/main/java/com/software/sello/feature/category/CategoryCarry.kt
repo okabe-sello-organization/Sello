@@ -222,7 +222,7 @@ private fun CarryMessages(state: CategoryEditorState) {
         Text(
             text,
             style = MaterialTheme.typography.bodyMedium,
-            color = SelloTheme.colors.semantic.warn,
+            color = SelloTheme.colors.semantic.loss,
             modifier = Modifier
                 .padding(vertical = 6.dp)
                 .testTag(EDITOR_CARRY_PROBLEM_TAG)

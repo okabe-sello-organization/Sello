@@ -500,15 +500,13 @@
             <tr><td>Band bar with a title and chip (<code>TitleBar</code>)</td><td>Metas, Inversiones</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:208</code></td></tr>
             <tr><td>Scaffold row, back arrow "Volver", title in one of four forms</td><td>Pushed screens (see above)</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:225</code></td></tr>
             <tr><td>Scaffold row, back arrow "Volver al recibo"</td><td>Category detail inside Recibo</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:182</code></td></tr>
-            <tr><td>Scaffold row, Close (x) "Cerrar"</td><td>Anotar gasto/ingreso, Anotar varios, Nueva meta, Nueva inversión, Cambiar la tasa, a fixed payment, movement forms and receipts</td><td>e.g. <code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:191</code></td></tr>
-            <tr><td>Scaffold row, back arrow "Volver"</td><td>Nueva/Editar categoría</td><td><code>app/src/main/java/com/software/sello/feature/category/CategoryEditorScreen.kt:153</code></td></tr>
+            <tr><td>Scaffold row, Close (x) "Cerrar"</td><td>Anotar gasto/ingreso, Anotar varios, Nueva meta, Nueva inversión, Nueva/Editar categoría, Cambiar la tasa, a fixed payment, movement forms and receipts</td><td>e.g. <code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:191</code></td></tr>
             <tr><td>Scaffold row on a coloured band (<code>band =</code>)</td><td>Expense and income forms (band), goal movement (goal band), investment movement (investment band)</td><td><code>app/src/main/java/com/software/sello/feature/goals/GoalMovementScreen.kt:90</code></td></tr>
             <tr><td>Title only, no icon</td><td>Start-up failure ("Sello")</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:107</code></td></tr>
           </tbody>
         </table>
       </div>
       <p>Top-bar actions: a pencil <code>IconButton</code> for edit (category, goal, investment); "Borrar" as a text button on records (expense, income, goal and investment movements); ⋮ <a href="../components.html#c-MoreMenu"><code>MoreMenu</code></a> on items (category, goal, investment, fixed payment, a completed goal).</p>
-      <p class="muted">Finding: <a href="../findings.html#M06">M06</a>.</p>
 
       <h3>Sheets and dialogs</h3>
       <div class="table-wrap">
@@ -526,7 +524,7 @@
         </table>
       </div>
 
-      <p class="muted">Every dialog slip (ConfirmSlip, ChoiceSlip, OptionSlip, the discard slip and RemovalDialog) is drawn in the one <a href="../components.html#c-DialogSlip"><code>DialogSlip</code></a> frame; two answers one above the other put the action on top and Cancelar under it. Findings: <a href="../findings.html#M03">M03</a>, <a href="../findings.html#M08">M08</a>.</p>
+      <p class="muted">Every dialog slip (ConfirmSlip, ChoiceSlip, OptionSlip, the discard slip and RemovalDialog) is drawn in the one <a href="../components.html#c-DialogSlip"><code>DialogSlip</code></a> frame; two answers one above the other put the action on top and Cancelar under it.</p>
 
       <h3>Loading, error and older figures</h3>
       <ul>
@@ -553,7 +551,6 @@
         <li>Busy writes show the spinner inside the pressed <a href="../components.html#c-SelloButton"><code>SelloButton</code></a> (<code>loading</code>), <a href="../components.html#c-SelloNotice"><code>SelloNotice</code></a> (<code>busy</code>) or <a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a> (<code>busy</code>), and nothing else can be pressed.</li>
         <li>An unknown deletion made from the expense form is asked about from the notice bar ("Comprobar si se borró"); from a category's lists it is asked inline or on an Unknown StatusSlip; unknown saves are handled inside each form (see each feature page).</li>
       </ul>
-      <p class="muted">Finding: <a href="../findings.html#M10">M10</a>.</p>
 
       <h3>Self-dismissing notices</h3>
       <ul>

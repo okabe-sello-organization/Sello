@@ -20,6 +20,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import com.software.sello.R
 import com.software.sello.designsystem.component.ButtonKind
+import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.FactLine
 import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.component.SelloButton
@@ -142,7 +143,8 @@ private fun Current(
                 .padding(top = SelloTheme.spacing.md)
                 .testTag(USD_RATE_CHANGE_TAG),
             kind = ButtonKind.Outlined,
-            icon = SelloIcon.Autorenew
+            icon = SelloIcon.Autorenew,
+            tone = ButtonTone.Ink
         )
     }
 }

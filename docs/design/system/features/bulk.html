@@ -100,7 +100,7 @@
           "¿De dónde vino?" with "Cambiar"; the note's EntryLine.</li>
         <li>Action (<code>:412</code>): "Máximo 12 dígitos" as a hint, or the error, then a full-width
           <a href="../components.html#c-SelloButton"><code>SelloButton</code></a> "+ Anotar 3 gastos" /
-          "+ Anotar 3 ingresos" in brand blue.</li>
+          "+ Anotar 3 ingresos" in gain green, the kind's tone (the check-again button too).</li>
         <li><a href="../components.html#c-AmountKeypad"><code>AmountKeypad</code></a>, <code>compact</code>, typing into
           the highlighted line (<code>:142</code>).</li>
       </ol>
@@ -216,7 +216,7 @@
             <tr><td><a href="../components.html#c-FieldPill"><code>FieldPill</code></a></td><td><code>:design-system</code> <code>Chips.kt</code></td>
               <td>The receipt's date, read "Fecha: …"</td><td>One date for every line</td></tr>
             <tr><td><a href="../components.html#c-SelloButton"><code>SelloButton</code></a></td><td><code>:design-system</code> <code>SelloButton.kt</code></td>
-              <td>Filled, <code>icon = Add</code>, brand tone for both kinds; Outlined for "Reintentar"</td><td>Counts what will be saved</td></tr>
+              <td>Filled, <code>icon = Add</code>, brand tone for gastos and gain for ingresos; Outlined for "Reintentar"</td><td>Counts what will be saved</td></tr>
             <tr><td><a href="../components.html#c-FieldMessageText"><code>FieldMessageText</code></a></td><td><code>:design-system</code> <code>FieldMessage.kt</code></td>
               <td>Error, Warning (unknown), Hint (digit limit), and the read failure</td><td>Said above the button</td></tr>
             <tr><td><a href="../components.html#c-SelloNotice"><code>SelloNotice</code></a></td><td><code>:design-system</code> <code>Corrections.kt</code></td>
@@ -256,7 +256,6 @@
       <h2>Findings here</h2>
       <p class="muted">Places in this feature on the <a href="../findings.html">findings</a> page; shared parts it uses are listed there under their own files.</p>
       <ul>
-        <li><strong>Misuse:</strong> <a href="../findings.html#M10">M10</a> <code>ButtonTone (the kind&#x27;s tone on a record button)</code>: <a href="../findings.html#M10-1">M10-1 (unsure)</a>.</li>
         <li><strong>Hard-coded type:</strong> <a href="../findings.html#H47">H47</a> <code>fontWeight = FontWeight.Bold</code> (2 places).</li>
         <li><strong>Hard-coded spacing:</strong> <a href="../findings.html#H60">H60</a> <code>8.dp</code> (2 places).</li>
       </ul>

@@ -2,6 +2,10 @@ package com.software.sello.feature.recurrence
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
@@ -315,7 +319,11 @@ class ScheduleScreensTest {
             "Los cambios aplican desde mañana. Lo que ya se anotó no cambia."
         ).performScrollTo().assertIsDisplayed()
         rule.onNodeWithTag(SCHEDULE_SAVE_TAG).assertIsNotEnabled()
-        rule.onNodeWithTag(SCHEDULE_PAUSE_TAG).performScrollTo().performClick()
+        // Pausar writes at once, so it is a button like Reanudar.
+        rule.onNodeWithTag(SCHEDULE_PAUSE_TAG).performScrollTo()
+            .assertTextEquals("Pausar")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+            .performClick()
         rule.onNodeWithTag(MORE_MENU_TAG).performClick()
         rule.onNodeWithText("Borrar pago fijo").performClick()
 

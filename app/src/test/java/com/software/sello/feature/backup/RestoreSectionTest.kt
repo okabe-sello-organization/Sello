@@ -1,12 +1,18 @@
 package com.software.sello.feature.backup
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
+import com.software.sello.designsystem.theme.SelloInk
+import com.software.sello.designsystem.theme.selloColors
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.port.BackupSummary
@@ -88,22 +94,42 @@ class RestoreSectionTest {
         rule.onNodeWithText("Comprobando…").assertIsNotEnabled()
     }
 
-    @Test
-    fun aFileFoundNotReplacedSaysSoAboveItsPreview() {
-        val staged = StagedRestore(
-            operationId = operation,
-            backupAt = Instant.parse("2026-10-22T14:30:00Z"),
-            current = BackupSummary(1, 2, 0, 0, 0),
-            replacement = BackupSummary(2, 3, 1, 0, 0),
-            generation = 1,
-            revision = 4
-        )
+    private val staged = StagedRestore(
+        operationId = operation,
+        backupAt = Instant.parse("2026-10-22T14:30:00Z"),
+        current = BackupSummary(1, 2, 0, 0, 0),
+        replacement = BackupSummary(2, 3, 1, 0, 0),
+        generation = 1,
+        revision = 4
+    )
 
+    private fun inkOf(text: String): Color {
+        val layouts = mutableListOf<TextLayoutResult>()
+        rule.onNodeWithText(text).assertIsDisplayed()
+            .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+        return layouts.single().layoutInput.style.color
+    }
+
+    /** A restore that did not happen is a problem: loss ink. */
+    @Test
+    fun aFileFoundNotReplacedSaysSoAboveItsPreviewInLossInk() {
         show(RestoreStep.Previewing(staged, notReplaced = true))
 
-        rule.onNodeWithText(
-            "No se restauró: tus datos no cambiaron. Si aún quieres, confírmalo de nuevo."
-        ).assertIsDisplayed()
+        assertEquals(
+            selloColors(SelloInk.Cobalto, isDark = false).semantic.loss,
+            inkOf("No se restauró: tus datos no cambiaron. Si aún quieres, confírmalo de nuevo.")
+        )
+    }
+
+    /** Figures that changed while reviewing are a doubt to check: warn ink, like Borrar datos'. */
+    @Test
+    fun aPreviewCountedAgainSaysSoInWarnInk() {
+        show(RestoreStep.Previewing(staged, refreshed = true))
+
+        assertEquals(
+            selloColors(SelloInk.Cobalto, isDark = false).semantic.warn,
+            inkOf("Tus datos cambiaron mientras revisabas. Estas son las cifras de ahora.")
+        )
     }
 
     @Test

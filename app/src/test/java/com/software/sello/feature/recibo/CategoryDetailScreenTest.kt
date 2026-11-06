@@ -181,12 +181,13 @@ class CategoryDetailScreenTest {
     }
 
     @Test
-    fun higherSpendingUsesTheReferencesAmberComparisonColor() {
+    fun higherSpendingIsAPlainFactInInk() {
         show(
             ready(ExpenseListState.Rows(rows, more = false))
                 .copy(insights = DetailInsightsState.Ready(footerFigures()))
         )
-        assertEquals(selloColors(SelloInk.Cobalto, false).semantic.warn, textStyle("+6,7 %").color)
+        // Warn is for a doubt to check; spending more than last month is not one (owner, E32).
+        assertEquals(selloColors(SelloInk.Cobalto, false).ink, textStyle("+6,7 %").color)
     }
 
     @Test

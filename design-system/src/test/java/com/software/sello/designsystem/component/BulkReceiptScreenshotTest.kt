@@ -160,7 +160,7 @@ class BulkReceiptScreenshotTest {
                 ),
                 BulkLine(
                     "3",
-                    SelloIcon.ArrowBack,
+                    SelloIcon.Remove,
                     BulkMarkTone.Neutral,
                     "Retiro",
                     pesos("50.000", minus = true),
