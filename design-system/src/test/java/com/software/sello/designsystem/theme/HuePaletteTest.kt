@@ -37,7 +37,8 @@ class HuePaletteTest {
 
     @Test
     fun aGreenHueMatchesThePrototype() {
-        // The mock's gen.js at hue 147, 120° from Cobalto: the port turns as the prototype.
+        // gen.js's algorithm turned 120° from Cobalto. The port turns from 267°, not the
+        // mock's 266.64°, so gen.js at 147 differs by one 8-bit step in some roles.
         assertEquals(
             listOf(
                 0x00621E, 0xFFFFFF, 0xCDEAD7, 0x00320B, 0xD2E6D5, 0xFFFFFF, 0xEBF4EC, 0xCDE1CF,
