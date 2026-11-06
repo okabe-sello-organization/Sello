@@ -179,8 +179,8 @@ fun InvestmentMovementsScreen(
         MovementDiscardSlip(
             pluralStringResource(
                 R.plurals.investment_movements_discard,
-                state.lines.size,
-                state.lines.size
+                state.discarding,
+                state.discarding
             ),
             { onAction(InvestmentMovementsAction.DiscardConfirmed) },
             { onAction(InvestmentMovementsAction.KeepEditing) }

@@ -142,6 +142,13 @@ data class InvestmentMovementsState(
     /** Lines with an amount: the ones a save sends. */
     val counted: Int get() = lines.count { it.typed }
 
+    /**
+     * What the discard question counts: the lines with an amount or a note, which leaving
+     * would lose. It also asks when only a type or another investment was chosen; then one.
+     */
+    val discarding: Int
+        get() = lines.count { it.amount != null || it.note.isNotBlank() }.coerceAtLeast(1)
+
     val missingInvestments: Int get() = lines.count { it.missingInvestment }
 
     val missingKinds: Int get() = lines.count { it.missingKind }
