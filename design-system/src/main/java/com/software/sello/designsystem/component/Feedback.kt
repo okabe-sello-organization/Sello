@@ -151,12 +151,15 @@ private fun ColumnScope.Answers(buttons: SlipButtons) {
                 secondWeight = buttons.secondWeight,
                 gap = SelloTheme.spacing.md,
                 first = {
-                    buttons.first.Button(ButtonKind.Outlined, buttons.contentPadding)
+                    buttons.first.Button(
+                        ButtonKind.Outlined,
+                        contentPadding = buttons.contentPadding
+                    )
                 },
                 second = {
                     buttons.second.Button(
                         ButtonKind.Filled,
-                        buttons.contentPadding,
+                        contentPadding = buttons.contentPadding,
                         tone = if (buttons.destructive) ButtonTone.Loss else ButtonTone.Brand
                     )
                 }
@@ -178,9 +181,9 @@ private fun ColumnScope.Answers(buttons: SlipButtons) {
 @Composable
 private fun SlipAnswer.Button(
     kind: ButtonKind,
+    modifier: Modifier = Modifier,
     contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
-    tone: ButtonTone = ButtonTone.Brand,
-    modifier: Modifier = Modifier
+    tone: ButtonTone = ButtonTone.Brand
 ) {
     SelloButton(
         text = label,
