@@ -136,7 +136,7 @@
             <tr><td>Line removed</td><td><a href="../components.html#c-SelloNotice"><code>SelloNotice</code></a> "Quitaste el renglón de Salud" with "Deshacer", for 6 seconds.</td>
               <td><code>BulkEntryScreen.kt:120</code>, <code>:84</code></td><td><code>bulk-expenses-removed</code></td></tr>
             <tr><td>Restored draft</td><td>Lines, highlighted line, date, kind and a save in flight come back from <code>SavedStateHandle</code>; a pending save is asked about, never sent again; "today" stays the day it opened.</td>
-              <td><code>BulkEntryViewModel.kt:188</code>, <code>:254</code></td><td>no screenshot</td></tr>
+              <td><code>BulkEntryViewModel.kt:188</code>, <code>:254</code></td><td>Drawn as the filled form, so not captured again: <code>bulk-expenses-three-lines</code></td></tr>
             <tr><td>Saved</td><td>The correction notice says "3 gastos anotados: 126.000" (<code>notice_expenses_recorded</code>) and the sheet closes; no haptic.</td>
               <td><code>BulkEntryViewModel.kt:674</code></td><td>—</td></tr>
           </tbody>
@@ -184,6 +184,8 @@
 
       <figure data-shot="bulk-expenses-discard" data-module="app" data-caption="The discard dialog"></figure>
       <figure data-shot="bulk-expenses-date-picker" data-module="app" data-caption="The date picker (Material's picker: the JVM screen runs in English, and draws it with square corners and no scrim)"></figure>
+      <figure data-shot="carry-bulk" data-module="app" data-caption="Carry correction: the later months a receipt dated in enero changes"></figure>
+      <figure data-shot="carry-bulk-busy" data-module="app" data-caption="The same, being saved"></figure>
       <ul>
         <li>Discard: <a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a>, destructive (loss red
           "Descartar"), title "¿Descartar 3 renglones?", "Se borra lo que escribiste en este recibo. Esto no se puede
@@ -268,10 +270,7 @@
     <section id="gaps">
       <h2>Gaps</h2>
       <div class="gaps">
-        <ul>
-          <li>The carry correction dialog: no screenshot yet (it needs a correction list built for a receipt).</li>
-          <li>Restored draft: drawn the same as the form with its values; no separate screenshot.</li>
-        </ul>
+        <p>None: every state on this page has a screenshot.</p>
       </div>
     </section>
   </main>

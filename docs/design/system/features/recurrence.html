@@ -143,8 +143,8 @@
             <tr><td>Busy</td><td>"Guardando…" with a spinner; the form is disabled. Saving, pausing, resuming and deleting all use it.</td><td><code>…/ScheduleEditorScreen.kt:387</code></td><td><code>schedule-editor-busy</code></td></tr>
             <tr><td>Unknown outcome</td><td>Warning "Aún no sabemos si se guardó. Compruébalo antes de volver a anotar." and "Comprobar si se guardó"; the form is frozen. The same words follow an unknown pause, resume or delete.</td><td><code>…/ScheduleEditorScreen.kt:382</code>, <code>:486</code></td><td><code>schedule-editor-unknown</code></td></tr>
             <tr><td>Refused</td><td>"No se guardó. Lo que cambiaste sigue aquí.", "Tus datos cambiaron…", "Este pago fijo ya no existe…", "…cambió mientras lo editabas…", "Sello aún está anotando lo pendiente…", "Esa categoría ya no recibe gastos. Elige otra.", start or end too early.</td><td><code>…/ScheduleEditorScreen.kt:483</code></td><td><code>schedule-editor-refused</code></td></tr>
-            <tr><td>Restored draft</td><td>Amount text, category or source, Otro's name, note, start, the composer, the start picker and Se repite come back from <code>SavedStateHandle</code>; a pending write is checked first.</td><td><code>app/src/main/java/com/software/sello/feature/recurrence/ScheduleEditorViewModel.kt:101</code>, <code>:114</code></td><td>no screenshot</td></tr>
-            <tr><td>Closed</td><td>After a confirmed change the editor closes and a notice says "Cambios guardados. Aplican desde mañana.", "Pago fijo en pausa", "Pago fijo reanudado" or "Pago fijo borrado. Lo ya anotado se queda."</td><td><code>…/ScheduleEditorViewModel.kt:540</code>, <code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:362</code></td><td>no screenshot</td></tr>
+            <tr><td>Restored draft</td><td>Amount text, category or source, Otro's name, note, start, the composer, the start picker and Se repite come back from <code>SavedStateHandle</code>; a pending write is checked first.</td><td><code>app/src/main/java/com/software/sello/feature/recurrence/ScheduleEditorViewModel.kt:101</code>, <code>:114</code></td><td>Drawn as the filled form, so not captured again: <code>schedule-editor</code></td></tr>
+            <tr><td>Closed</td><td>After a confirmed change the editor closes and a notice says "Cambios guardados. Aplican desde mañana.", "Pago fijo en pausa", "Pago fijo reanudado" or "Pago fijo borrado. Lo ya anotado se queda."</td><td><code>…/ScheduleEditorViewModel.kt:540</code>, <code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:362</code></td><td>On the screen it returns to, as the statements in <code>recibo-notice-restored</code> are drawn</td></tr>
           </tbody>
         </table>
       </div>
@@ -208,9 +208,9 @@
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
             <tr><td>Off / on</td><td>The row's placeholder or rule and next date.</td><td><code>…/RepeatParts.kt:93</code></td><td><code>expense-entry-switch</code>, <code>expense-entry-repeat-on</code></td></tr>
-            <tr><td>Disabled</td><td>The row follows the form's <code>editable</code>.</td><td><code>…/RepeatParts.kt:109</code></td><td>no screenshot</td></tr>
+            <tr><td>Disabled</td><td>The row follows the form's <code>editable</code>.</td><td><code>…/RepeatParts.kt:109</code></td><td><code>schedule-editor-busy</code></td></tr>
             <tr><td>Never records</td><td>"Con este final no se anotaría nada. Cambia el final o el día." and "Listo" off.</td><td><code>…/RepeatParts.kt:182</code>, <code>:194</code></td><td><code>schedule-editor-repeat-never</code></td></tr>
-            <tr><td>Next today / later</td><td>"Próximo: hoy. Se anota en cuanto guardes." or "Próximo: …. Se anota solo en su fecha."</td><td><code>…/RepeatParts.kt:183</code></td><td>no screenshot</td></tr>
+            <tr><td>Next today / later</td><td>"Próximo: hoy. Se anota en cuanto guardes." or "Próximo: …. Se anota solo en su fecha."</td><td><code>…/RepeatParts.kt:183</code></td><td><code>schedule-editor-repeat-weeks</code>, <code>schedule-editor-repeat-monthly</code></td></tr>
             <tr><td>Restored</td><td>The choice, the sheet's draft and whether the end picker is open are kept in <code>SavedStateHandle</code>.</td><td><code>app/src/main/java/com/software/sello/presentation/recurrence/RepeatDraft.kt:61</code></td><td>—</td></tr>
             <tr><td>Loading, error, busy, unknown</td><td>Do not exist: the sheet only edits a draft.</td><td>—</td><td>—</td></tr>
           </tbody>
@@ -250,6 +250,7 @@
       <figure data-shot="catch-up-bar" data-module="app"
               data-variants="cobalto-light-font1.0,cobalto-dark-font1.0,violeta-light-font1.0"
               data-caption="The catch-up notice above Anotar, its time draining across it"></figure>
+      <figure data-shot="catch-up-bar-carry" data-module="app" data-caption="With the carry wording"></figure>
 
       <h3>Layout</h3>
       <p>A <a href="../components.html#c-SelloNotice"><code>SelloNotice</code></a> with the Autorenew icon, "Sello anotó N pagos fijos" (or incomes, or both; "… y cambió lo que sobra o falta" when carry moved), the action "Ver" and the time left drawn across it (<code>remaining</code>) (<code>app/src/main/java/com/software/sello/feature/recurrence/CatchUpNotice.kt:277</code>). It shows on Recibo only when no correction notice is showing (<code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:290</code>).</p>
@@ -260,7 +261,7 @@
           <tbody>
             <tr><td>Nothing recorded, loading, failed</td><td>No bar.</td><td><code>…/CatchUpNotice.kt:282</code></td><td>—</td></tr>
             <tr><td>Shown</td><td>The bar for 5 seconds (longer when a screen reader asks), then it counts as seen.</td><td><code>…/CatchUpNotice.kt:297</code></td><td>catch-up-bar</td></tr>
-            <tr><td>Reduced motion</td><td>The time drains in five steps instead of continuously.</td><td><code>…/CatchUpNotice.kt:298</code></td><td>no screenshot</td></tr>
+            <tr><td>Reduced motion</td><td>The time drains in five steps instead of continuously.</td><td><code>…/CatchUpNotice.kt:298</code></td><td>Not capturable as motion: a still is drawn as <code>catch-up-bar</code></td></tr>
           </tbody>
         </table>
       </div>
@@ -278,6 +279,10 @@
               data-caption="Each entry Sello recorded, opening its edit (Cobalto light and dark, Violeta)"></figure>
       <figure data-shot="carry-catch-up" data-module="app"
               data-caption="With what recording them did to carry"></figure>
+      <figure data-shot="catch-up-recorded-loading" data-module="app" data-caption="Loading, in its frame"></figure>
+      <figure data-shot="catch-up-recorded-failed" data-module="app" data-caption="Nothing could be read"></figure>
+      <figure data-shot="catch-up-recorded-empty" data-module="app" data-caption="Nothing left to review"></figure>
+      <figure data-shot="catch-up-recorded-carry-failed" data-module="app" data-caption="The carry change could not be read"></figure>
 
       <h3>Layout</h3>
       <p>A <code>ShellScreen</code> titled "Lo que Sello anotó" with a dock "Listo" (Check icon) that dismisses what the list shows; Back keeps it (<code>app/src/main/java/com/software/sello/navigation/RecurrenceDestinations.kt:76</code>). A lazy list (<code>app/src/main/java/com/software/sello/feature/recurrence/CatchUpNotice.kt:368</code>):</p>
@@ -290,11 +295,11 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Loading</td><td>SlipSkeleton.</td><td><code>…/CatchUpNotice.kt:381</code></td><td>no screenshot</td></tr>
-            <tr><td>Error</td><td>ErrorSlip "No pudimos leer lo que Sello anotó" / "Lo anotado sigue guardado en tu mes. Vuelve a intentarlo."</td><td><code>…/CatchUpNotice.kt:383</code></td><td>no screenshot</td></tr>
-            <tr><td>Empty</td><td><a href="../components.html#c-EmptySlip"><code>EmptySlip</code></a> "Ya no queda nada por revisar" / "Lo que Sello anotó ya no está o ya lo revisaste.", Check icon.</td><td><code>…/CatchUpNotice.kt:392</code></td><td>no screenshot</td></tr>
+            <tr><td>Loading</td><td>SlipSkeleton.</td><td><code>…/CatchUpNotice.kt:381</code></td><td><code>catch-up-recorded-loading</code></td></tr>
+            <tr><td>Error</td><td>ErrorSlip "No pudimos leer lo que Sello anotó" / "Lo anotado sigue guardado en tu mes. Vuelve a intentarlo."</td><td><code>…/CatchUpNotice.kt:383</code></td><td><code>catch-up-recorded-failed</code></td></tr>
+            <tr><td>Empty</td><td><a href="../components.html#c-EmptySlip"><code>EmptySlip</code></a> "Ya no queda nada por revisar" / "Lo que Sello anotó ya no está o ya lo revisaste.", Check icon.</td><td><code>…/CatchUpNotice.kt:392</code></td><td><code>catch-up-recorded-empty</code></td></tr>
             <tr><td>Loaded</td><td>The list.</td><td><code>…/CatchUpNotice.kt:400</code></td><td>catch-up-recorded</td></tr>
-            <tr><td>Carry changed / failed</td><td>The carry slip, or ErrorSlip "No pudimos calcular lo que sobra o falta" / "No pudimos leer cómo cambió lo que sobra o falta. Tus pagos sí se anotaron."</td><td><code>…/CatchUpNotice.kt:455</code></td><td>carry-catch-up; failed no screenshot</td></tr>
+            <tr><td>Carry changed / failed</td><td>The carry slip, or ErrorSlip "No pudimos calcular lo que sobra o falta" / "No pudimos leer cómo cambió lo que sobra o falta. Tus pagos sí se anotaron."</td><td><code>…/CatchUpNotice.kt:455</code></td><td><code>carry-catch-up</code>, <code>catch-up-recorded-carry-failed</code>, <code>catch-up-bar-carry</code></td></tr>
             <tr><td>Busy, unknown, stale</td><td>Do not exist. "Listo" that cannot be kept leaves the list open (<code>done</code>).</td><td><code>…/CatchUpNotice.kt:174</code></td><td>—</td></tr>
           </tbody>
         </table>
@@ -367,10 +372,8 @@
       <h2>Gaps</h2>
       <div class="gaps">
         <ul>
-          <li>Schedule editor: restored draft (drawn as the form with its values): no screenshot.</li>
-          <li>Schedule editor: the closing notices (they are shown on the screen it returns to, not by the editor): no screenshot.</li>
-          <li>Catch-up bar with reduced motion, with the carry wording: no screenshot.</li>
-          <li>Lo que Sello anotó: loading, error, empty, carry failed: no screenshot.</li>
+          <li>Not capturable on the editor: its closing notices are drawn by the screen it returns to (see the Shell page's notice captures).</li>
+          <li>Not capturable: reduced motion only changes how the catch-up bar's time drains; a still is drawn as catch-up-bar.</li>
         </ul>
       </div>
     </section>

@@ -43,7 +43,7 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Loading</td><td>The bare desk colour; a screen reader hears "Cargando".</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupLoading.kt:22</code></td><td>no screenshot</td></tr>
+            <tr><td>Loading</td><td>The bare desk colour; a screen reader hears "Cargando".</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupLoading.kt:22</code></td><td>Not capturable: drawn before Sello's theme and screens exist</td></tr>
             <tr><td>Empty, error, stale, busy, unknown, restored draft, refused</td><td>Do not exist: this screen only waits.</td><td>—</td><td>—</td></tr>
           </tbody>
         </table>
@@ -67,6 +67,8 @@
       <figure data-shot="startup-failure-rejected" data-module="app" data-caption="A rejected file"></figure>
       <figure data-shot="startup-failure-interrupted" data-module="app" data-caption="A restore interrupted"></figure>
       <figure data-shot="startup-failure-restored" data-module="app" data-caption="Restored"></figure>
+      <figure data-shot="startup-failure-preview" data-module="app" data-caption="A checked backup: ¿Restaurar este respaldo?"></figure>
+      <figure data-shot="startup-failure-restoring" data-module="app" data-caption="Restoring"></figure>
 
       <h3>Layout</h3>
       <ol>
@@ -84,14 +86,14 @@
           <tbody>
             <tr><td>First shown</td><td>The explanation slip and its three buttons.</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:132</code></td><td>startup-failure</td></tr>
             <tr><td>Still failing</td><td>After "Intentar de nuevo", a field-message line "Todavía no se pueden abrir tus datos." under the body.</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:145</code></td><td><code>startup-failure-still-failing</code></td></tr>
-            <tr><td>Busy (retrying or setting aside)</td><td>Nothing changes on screen: <code>busy</code> is set in the view model but the screen never reads it; presses and typing are ignored meanwhile.</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureViewModel.kt:42</code></td><td>no screenshot</td></tr>
+            <tr><td>Busy (retrying or setting aside)</td><td>Nothing changes on screen: <code>busy</code> is set in the view model but the screen never reads it; presses and typing are ignored meanwhile.</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureViewModel.kt:42</code></td><td>Drawn as <code>startup-failure</code> (nothing changes, #375)</td></tr>
             <tr><td>Start-over warning (confirming)</td><td>The warning slip opens; "Empezar de cero" in the explanation slip is disabled; the confirm button stays disabled until the field holds exactly "BORRAR" (trimmed).</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:126</code>, <code>app/src/main/java/com/software/sello/feature/startup/StartupFailureState.kt:99</code></td><td><code>startup-failure-start-over</code>, <code>startup-failure-start-over-typed</code></td></tr>
-            <tr><td>Restored draft</td><td>Whether the warning is open and the word typed survive process death (<code>KEY_CONFIRMING</code>, <code>KEY_TYPED</code>). A backup preview does not: the file is held only in memory, so the person chooses again.</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureViewModel.kt:31</code></td><td>no screenshot</td></tr>
+            <tr><td>Restored draft</td><td>Whether the warning is open and the word typed survive process death (<code>KEY_CONFIRMING</code>, <code>KEY_TYPED</code>). A backup preview does not: the file is held only in memory, so the person chooses again.</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureViewModel.kt:31</code></td><td>Drawn as the open warning: <code>startup-failure-start-over-typed</code></td></tr>
             <tr><td>Refused: not set aside</td><td>"No pudimos apartar tus datos. No se cambió nada." under the slips.</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:120</code></td><td><code>startup-failure-not-set-aside</code></td></tr>
-            <tr><td>Choosing a file</td><td>"Restaurar un respaldo" turns into "Revisando el archivo…" with a loading indicator while the chosen file is checked; the other choices are disabled.</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:160</code></td><td>no screenshot</td></tr>
+            <tr><td>Choosing a file</td><td>"Restaurar un respaldo" turns into "Revisando el archivo…" with a loading indicator while the chosen file is checked; the other choices are disabled.</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:160</code></td><td><code>startup-failure-checking</code></td></tr>
             <tr><td>Backup rejected</td><td>ErrorSlip "Ese archivo no se puede restaurar" with the reason and an outlined "Elegir otro archivo".</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:194</code></td><td><code>startup-failure-rejected</code></td></tr>
-            <tr><td>Backup preview</td><td>Plain slip "¿Restaurar este respaldo?": the backup's date, its counts, what restoring does, a full-width loss-tone "Restaurar el respaldo" over an outlined "Cancelar".</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:230</code></td><td>no screenshot</td></tr>
-            <tr><td>Busy: restoring</td><td>The same preview with "Restaurando…" loading; both buttons disabled; every other choice is disabled from here on and Back waits, then restarts.</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:204</code></td><td>no screenshot</td></tr>
+            <tr><td>Backup preview</td><td>Plain slip "¿Restaurar este respaldo?": the backup's date, its counts, what restoring does, a full-width loss-tone "Restaurar el respaldo" over an outlined "Cancelar".</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:230</code></td><td><code>startup-failure-preview</code></td></tr>
+            <tr><td>Busy: restoring</td><td>The same preview with "Restaurando…" loading; both buttons disabled; every other choice is disabled from here on and Back waits, then restarts.</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:204</code></td><td><code>startup-failure-restoring</code></td></tr>
             <tr><td>Unknown outcome: interrupted</td><td>ErrorSlip "La restauración no terminó" saying what was kept aside and how to restore again; its button is "Continuar" and restarts the app.</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:206</code></td><td><code>startup-failure-interrupted</code></td></tr>
             <tr><td>Restored</td><td>The shared RestoredSlip: what was restored, preferences still pending and the way to leave.</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:214</code></td><td><code>startup-failure-restored</code></td></tr>
             <tr><td>Loading, empty, stale</td><td>Do not exist on this screen: it shows no figure from the data that would not open.</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureState.kt:75</code></td><td>—</td></tr>
@@ -170,9 +172,8 @@
       <h2>Gaps</h2>
       <div class="gaps">
         <ul>
-          <li>Loading at start: drawn before Sello's theme and screens exist, so a JVM screen test has nothing to show.</li>
-          <li>Preview and restoring on this screen: no screenshot (they need a checked backup file).</li>
-          <li>Busy (retry or set-aside running): not drawn at all, so there is nothing to capture; see the findings.</li>
+          <li>Not capturable: loading at start is drawn before Sello's theme and screens exist, so a JVM screen test has nothing to show.</li>
+          <li>Not capturable: busy (retry or set-aside running) is not drawn at all; see the findings.</li>
           <li>startup-failure is captured in Cobalto and Violeta, light and dark, but the real screen always uses the default theme (<code>app/src/main/java/com/software/sello/MainActivity.kt:74</code>); only the default light/dark captures match what a person can see.</li>
         </ul>
       </div>

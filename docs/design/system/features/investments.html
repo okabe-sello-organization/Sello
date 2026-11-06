@@ -126,13 +126,13 @@
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
             <tr><td>Loading</td><td>One <code>SlipSkeleton</code>; title "Inversiones", no pencil, no dock.</td><td><code>…/InvestmentDetailScreen.kt:73</code></td><td><code>investment-detail-loading</code></td></tr>
-            <tr><td>Gone</td><td>The investment is no longer there (deleted): the skeleton shows while the destination leaves at once. No message.</td><td><code>…/InvestmentDetailScreen.kt:73</code>; <code>…/InvestmentDestinations.kt:144</code></td><td>no screenshot</td></tr>
+            <tr><td>Gone</td><td>The investment is no longer there (deleted): the skeleton shows while the destination leaves at once. No message.</td><td><code>…/InvestmentDetailScreen.kt:73</code>; <code>…/InvestmentDestinations.kt:144</code></td><td>Drawn as <code>investment-detail-loading</code> while the destination leaves</td></tr>
             <tr><td>Error (nothing ever loaded)</td><td><code>ErrorSlip</code> "No pudimos leer esta inversión" / "Tus registros siguen guardados. Vuelve a intentarlo." with Reintentar.</td><td><code>…/InvestmentDetailScreen.kt:76</code></td><td><code>investment-detail-failed</code></td></tr>
             <tr><td>Stale</td><td>The page as last read under an <code>ErrorSlip</code> "No pudimos leer esta inversión de nuevo. Te mostramos la de la última lectura."</td><td><code>…/InvestmentDetailScreen.kt:85</code></td><td><code>investment-detail-stale</code></td></tr>
             <tr><td>No value yet</td><td>The plain "Vale · Sin valor anotado" slip; no chart.</td><td><code>…/InvestmentDetailScreen.kt:122</code></td><td><code>investment-detail-no-value</code></td></tr>
             <tr><td>Loaded</td><td>Answer, chart, short movement list.</td><td><code>…/InvestmentDetailScreen.kt:84</code></td><td>investment-detail-chart</td></tr>
             <tr><td>All movements</td><td>Every movement grouped by month; another year's month says its year.</td><td><code>…/InvestmentDetailScreen.kt:307</code></td><td>investment-detail-movements-all</td></tr>
-            <tr><td>Restored after process death</td><td>"All movements" and the picked chart value come back from <code>SavedStateHandle</code>.</td><td><code>app/src/main/java/com/software/sello/feature/investments/InvestmentDetailViewModel.kt:43</code></td><td>no screenshot</td></tr>
+            <tr><td>Restored after process death</td><td>"All movements" and the picked chart value come back from <code>SavedStateHandle</code>.</td><td><code>app/src/main/java/com/software/sello/feature/investments/InvestmentDetailViewModel.kt:43</code></td><td>Drawn as before: <code>investment-detail-movements-all</code>, <code>investment-detail-chart</code></td></tr>
             <tr><td>Busy, unknown outcome, refused</td><td>Do not exist here: writes happen in the forms.</td><td>—</td><td>—</td></tr>
           </tbody>
         </table>
@@ -210,7 +210,7 @@
             <tr><td>Busy</td><td>The button keeps its label with a spinner; fields and pad disabled.</td><td><code>…/InvestmentEditorScreen.kt:297</code></td><td><code>investment-editor-busy</code></td></tr>
             <tr><td>Unknown outcome</td><td>Warning "No sabemos si se guardó. Compruébalo antes de seguir." and the button "Comprobar si se guardó" (or "Comprobar si se borró"); Back does nothing until it is resolved. ⋮ stays.</td><td><code>…/InvestmentEditorScreen.kt:322</code>; <code>…/InvestmentEditorViewModel.kt:238</code></td><td>investment-editor-unresolved</td></tr>
             <tr><td>Refused</td><td>An error line above the button: not saved, changed meanwhile, future date, invalid, rate required or unchanged.</td><td><code>…/InvestmentEditorScreen.kt:322</code></td><td><code>investment-editor-refused</code></td></tr>
-            <tr><td>Restored draft</td><td>Typed text, figures, the pad's field, an open date picker, the delete confirm and an operation in flight come back from <code>SavedStateHandle</code>.</td><td><code>…/InvestmentEditorViewModel.kt:106</code></td><td>no screenshot</td></tr>
+            <tr><td>Restored draft</td><td>Typed text, figures, the pad's field, an open date picker, the delete confirm and an operation in flight come back from <code>SavedStateHandle</code>.</td><td><code>…/InvestmentEditorViewModel.kt:106</code></td><td>Drawn as the filled form, so not captured again: <code>investment-editor</code></td></tr>
             <tr><td>Confirm delete</td><td><code>ConfirmSlip</code> "¿Borrar …?" with "Se borran la inversión y sus N movimientos. Esto no se puede deshacer." (count in bold), "Borrar".</td><td><code>…/InvestmentEditorScreen.kt:236</code></td><td><code>investment-editor-delete</code></td></tr>
             <tr><td>Confirm discard</td><td><code>ConfirmSlip</code> "¿Descartar los cambios?", "Descartar" / "Seguir editando".</td><td><code>…/InvestmentEditorScreen.kt:246</code></td><td><code>investment-editor-discard</code></td></tr>
           </tbody>
@@ -260,6 +260,12 @@
       <figure data-shot="investment-movement-note" data-module="app" data-caption="The note composer"></figure>
       <figure data-shot="investment-movement-date-picker" data-module="app" data-caption="The date picker (Material's picker: the JVM screen runs in English, and draws it with square corners and no scrim)"></figure>
       <figure data-shot="investment-movement-discard" data-module="app" data-caption="The discard confirm"></figure>
+      <figure data-shot="investment-movement-unchosen" data-module="app" data-caption="From the list: no investment chosen yet"></figure>
+      <figure data-shot="investment-movement-last-value" data-module="app" data-caption="Valor de hoy: the last value it replaces"></figure>
+      <figure data-shot="investment-movement-worth" data-module="app" data-caption="Retiro: what it is worth on its date"></figure>
+      <figure data-shot="investment-movement-dividends" data-module="app" data-caption="Dividendo o renta: what it has paid so far"></figure>
+      <figure data-shot="investment-movement-before-first" data-module="app" data-caption="Blocked: a date before the first aporte"></figure>
+      <figure data-shot="investment-movement-blocked" data-module="app" data-caption="Blocked: correcting would leave a later retiro short"></figure>
 
       <h3>Layout</h3>
       <ol>
@@ -278,15 +284,15 @@
             <tr><td>Loading</td><td><code>SlipSkeleton</code> in <code>MovementPane</code>.</td><td><code>…/InvestmentMovementScreen.kt:132</code></td><td><code>investment-movement-loading</code></td></tr>
             <tr><td>Error (nothing ever loaded)</td><td><code>ErrorSlip</code> "No pudimos leer tus inversiones".</td><td><code>…/InvestmentMovementScreen.kt:136</code></td><td><code>investment-movement-failed</code></td></tr>
             <tr><td>No investments</td><td>Fact line "Todavía no tienes inversiones. Agrega una en Inversiones." instead of chips.</td><td><code>…/InvestmentMovementScreen.kt:267</code></td><td><code>investment-movement-no-investments</code></td></tr>
-            <tr><td>No investment chosen</td><td>Hint "Elige en qué inversión va."; Otro movimiento hidden.</td><td><code>…/InvestmentMovementScreen.kt:442</code></td><td>no screenshot</td></tr>
-            <tr><td>Typed</td><td>Signed amount, fact line, enabled button.</td><td><code>…/InvestmentMovementScreen.kt:145</code></td><td>investment-movement</td></tr>
+            <tr><td>No investment chosen</td><td>Hint "Elige en qué inversión va."; Otro movimiento hidden.</td><td><code>…/InvestmentMovementScreen.kt:442</code></td><td><code>investment-movement-unchosen</code></td></tr>
+            <tr><td>Typed</td><td>Signed amount, fact line, enabled button.</td><td><code>…/InvestmentMovementScreen.kt:145</code></td><td>investment-movement, <code>investment-movement-last-value</code>, <code>investment-movement-worth</code>, <code>investment-movement-dividends</code></td></tr>
             <tr><td>Retiro above the value / no value</td><td>"Más de lo que vale (…)" under the amount, the fact ends "¿Vale más hoy?", and "Anotar el valor de hoy" switches to Valor de hoy.</td><td><code>…/InvestmentMovementScreen.kt:222</code>, <code>:349</code></td><td><code>investment-movement-over</code></td></tr>
-            <tr><td>Blocked</td><td>Error lines above the button for a date before the first aporte or a later retiro left short.</td><td><code>…/InvestmentMovementScreen.kt:367</code></td><td>no screenshot</td></tr>
+            <tr><td>Blocked</td><td>Error lines above the button for a date before the first aporte or a later retiro left short.</td><td><code>…/InvestmentMovementScreen.kt:367</code></td><td><code>investment-movement-before-first</code>, <code>investment-movement-blocked</code></td></tr>
             <tr><td>Busy</td><td>The button reads "Guardando…" with a spinner; chips and pad disabled.</td><td><code>…/InvestmentMovementScreen.kt:461</code></td><td><code>investment-movement-busy</code></td></tr>
             <tr><td>Unknown outcome</td><td>Warning "Aún no sabemos si se guardó. Compruébalo antes de volver a anotar." and "Comprobar si se guardó"; the draft is locked and Back waits.</td><td><code>…/InvestmentMovementScreen.kt:406</code>; <code>app/src/main/java/com/software/sello/feature/investments/InvestmentMovementViewModel.kt:318</code></td><td><code>investment-movement-unknown</code></td></tr>
             <tr><td>Refused</td><td>Error line: not saved, future date, data changed, gone, changed, currency mismatch, unchanged, last aporte, not deleted.</td><td><code>…/InvestmentMovementScreen.kt:401</code></td><td><code>investment-movement-refused</code></td></tr>
             <tr><td>Correction</td><td>Same form with type and investment fixed, "Guardar cambios", hint "Aún no cambiaste nada." until something changes, and "Borrar" on the band (deletes at once; the list or detail then shows "Movimiento borrado" with Deshacer).</td><td><code>…/InvestmentMovementScreen.kt:119</code>, <code>:445</code>; <code>app/src/main/java/com/software/sello/feature/investments/InvestmentMovementNotices.kt:25</code></td><td><code>investment-movement-correcting</code></td></tr>
-            <tr><td>Restored draft</td><td>Amount, type, investment, date, note and the open composer survive process death.</td><td><code>…/InvestmentMovementViewModel.kt:127</code>, <code>:157</code></td><td>no screenshot</td></tr>
+            <tr><td>Restored draft</td><td>Amount, type, investment, date, note and the open composer survive process death.</td><td><code>…/InvestmentMovementViewModel.kt:127</code>, <code>:157</code></td><td>Drawn as the filled form, so not captured again: <code>investment-movement</code></td></tr>
             <tr><td>Confirm discard</td><td><code>MovementDiscardSlip</code> "¿Descartar este movimiento?".</td><td><code>…/InvestmentMovementScreen.kt:185</code></td><td><code>investment-movement-discard</code></td></tr>
           </tbody>
         </table>
@@ -328,6 +334,12 @@
       <figure data-shot="investment-movements-mixed" data-module="app" data-caption="Pesos and dollars: Aportado in pesos at the rate"></figure>
       <figure data-shot="investment-movements-mixed-no-rate" data-module="app" data-caption="Pesos and dollars without a rate: each currency on its own"></figure>
       <figure data-shot="bulk-receipt-investment" data-module="design-system" data-caption="The receipt component with investment lines"></figure>
+      <figure data-shot="investment-movements-loading" data-module="app" data-caption="Loading"></figure>
+      <figure data-shot="investment-movements-failed" data-module="app" data-caption="Nothing could be read"></figure>
+      <figure data-shot="investment-movements-full" data-module="app" data-caption="Full: 30 lines, Otro renglón off"></figure>
+      <figure data-shot="investment-movements-removed" data-module="app" data-caption="A line removed: Deshacer"></figure>
+      <figure data-shot="investment-movements-discard" data-module="app" data-caption="The discard confirm"></figure>
+      <figure data-shot="investment-movements-composer" data-module="app" data-caption="The note composer"></figure>
 
       <h3>Layout</h3>
       <ol>
@@ -342,19 +354,19 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Loading</td><td><code>SlipSkeleton</code> in <code>MovementPane</code>.</td><td><code>…/InvestmentMovementsScreen.kt:129</code></td><td>no screenshot</td></tr>
-            <tr><td>Error (nothing ever loaded)</td><td><code>ErrorSlip</code> "No pudimos leer tus inversiones".</td><td><code>…/InvestmentMovementsScreen.kt:133</code></td><td>no screenshot</td></tr>
+            <tr><td>Loading</td><td><code>SlipSkeleton</code> in <code>MovementPane</code>.</td><td><code>…/InvestmentMovementsScreen.kt:129</code></td><td><code>investment-movements-loading</code></td></tr>
+            <tr><td>Error (nothing ever loaded)</td><td><code>ErrorSlip</code> "No pudimos leer tus inversiones".</td><td><code>…/InvestmentMovementsScreen.kt:133</code></td><td><code>investment-movements-failed</code></td></tr>
             <tr><td>Empty receipt</td><td>One line, "Sin inversión" / "Sin tipo", Aportado 0, the button disabled.</td><td><code>…/InvestmentMovementsScreen.kt:317</code></td><td>investment-movements-opening</td></tr>
             <tr><td>Missing investment / type</td><td>Caption "Falta N inversión" / "Falta N tipo" in the problem style; the line says "Elige una inversión" / "Elige un tipo".</td><td><code>…/InvestmentMovementsScreen.kt:208</code>, <code>:333</code></td><td>investment-movements-from-list, investment-movements-missing-type</td></tr>
             <tr><td>Refused</td><td>"Revisa N renglón" and each refused line's reason; the error "No se guardó. Tu borrador sigue aquí."</td><td><code>…/InvestmentMovementsScreen.kt:224</code>, <code>:339</code></td><td>investment-movements-refused</td></tr>
-            <tr><td>Full</td><td>"Máximo 30 por recibo"; "Otro renglón" disabled.</td><td><code>…/InvestmentMovementsScreen.kt:203</code></td><td>no screenshot</td></tr>
+            <tr><td>Full</td><td>"Máximo 30 por recibo"; "Otro renglón" disabled.</td><td><code>…/InvestmentMovementsScreen.kt:203</code></td><td><code>investment-movements-full</code></td></tr>
             <tr><td>Stale</td><td>Grey hint "No pudimos leer esta inversión de nuevo. Te mostramos la de la última lectura." above the button; no retry.</td><td><code>…/InvestmentMovementsScreen.kt:459</code></td><td>investment-movements-stale</td></tr>
             <tr><td>Busy</td><td>"Guardando…" with a spinner, no icon; the receipt holds still.</td><td><code>…/InvestmentMovementsScreen.kt:498</code></td><td>investment-movements-saving</td></tr>
             <tr><td>Unknown outcome</td><td>Warning "Aún no sabemos si se guardó. …" and "Comprobar si se guardó"; nothing can be edited.</td><td><code>…/InvestmentMovementsScreen.kt:473</code></td><td>investment-movements-unknown</td></tr>
             <tr><td>Mixed currencies</td><td>Aportado in pesos with "En pesos · dólar a …, tasa del …", or both figures with "Sin tasa del dólar: cada moneda por su lado".</td><td><code>…/InvestmentMovementsScreen.kt:268</code></td><td>investment-movements-mixed, investment-movements-mixed-no-rate</td></tr>
-            <tr><td>Line removed</td><td>"Quitaste el renglón de …" with Deshacer for 4 s.</td><td><code>…/InvestmentMovementsScreen.kt:435</code></td><td>no screenshot</td></tr>
-            <tr><td>Restored draft</td><td>Lines, highlight, note composer and an operation in flight come back after process death.</td><td><code>app/src/main/java/com/software/sello/feature/investments/InvestmentMovementsViewModel.kt:154</code></td><td>no screenshot</td></tr>
-            <tr><td>Confirm discard</td><td><code>MovementDiscardSlip</code> "¿Descartar N renglones?" counting every line.</td><td><code>…/InvestmentMovementsScreen.kt:173</code></td><td>no screenshot</td></tr>
+            <tr><td>Line removed</td><td>"Quitaste el renglón de …" with Deshacer for 4 s.</td><td><code>…/InvestmentMovementsScreen.kt:435</code></td><td><code>investment-movements-removed</code></td></tr>
+            <tr><td>Restored draft</td><td>Lines, highlight, note composer and an operation in flight come back after process death.</td><td><code>app/src/main/java/com/software/sello/feature/investments/InvestmentMovementsViewModel.kt:154</code></td><td>Drawn as the filled form, so not captured again: <code>investment-movements-three</code></td></tr>
+            <tr><td>Confirm discard</td><td><code>MovementDiscardSlip</code> "¿Descartar N renglones?" counting every line.</td><td><code>…/InvestmentMovementsScreen.kt:173</code></td><td><code>investment-movements-discard</code></td></tr>
           </tbody>
         </table>
       </div>
@@ -456,7 +468,7 @@
             <tr><td>Busy</td><td>"Guardando…" with a spinner.</td><td><code>…/UsdRateEntryScreen.kt:203</code></td><td><code>usd-rate-entry-busy</code></td></tr>
             <tr><td>Unknown outcome</td><td>Warning "Aún no sabemos si se guardó. …", "Comprobar si se guardó", pad and date locked; Back waits.</td><td><code>…/UsdRateEntryScreen.kt:187</code>; <code>app/src/main/java/com/software/sello/feature/investments/UsdRateEntryViewModel.kt:151</code></td><td>usd-rate-entry-unknown</td></tr>
             <tr><td>Refused</td><td>"La fecha no puede ser posterior a hoy. …", "Tus datos cambiaron mientras escribías. No se guardó la tasa." or "No se guardó la tasa. Puedes intentarlo de nuevo."</td><td><code>…/UsdRateEntryScreen.kt:182</code></td><td><code>usd-rate-entry-refused</code></td></tr>
-            <tr><td>Restored draft</td><td>The typed rate, its date and an operation in flight survive process death.</td><td><code>…/UsdRateEntryViewModel.kt:70</code></td><td>no screenshot</td></tr>
+            <tr><td>Restored draft</td><td>The typed rate, its date and an operation in flight survive process death.</td><td><code>…/UsdRateEntryViewModel.kt:70</code></td><td>Drawn as the filled form, so not captured again: <code>usd-rate-entry-ready</code></td></tr>
             <tr><td>Empty</td><td>Does not exist as a separate state: no rate yet only changes the fact line.</td><td><code>…/UsdRateEntryScreen.kt:163</code></td><td>—</td></tr>
           </tbody>
         </table>
@@ -546,8 +558,6 @@
       <h2>Gaps</h2>
       <div class="gaps">
         <ul>
-          <li>Anotar movimiento: the facts line other than an aporte's, blocked: no screenshot.</li>
-          <li>Varios movimientos: loading, failed, full (30 lines), the removed-line Deshacer, the discard confirm and the composer: no screenshot.</li>
           <li>Not confirmed from the code: whether a Gone investment's skeleton is ever seen for more than a frame (it depends on navigation timing).</li>
         </ul>
       </div>
