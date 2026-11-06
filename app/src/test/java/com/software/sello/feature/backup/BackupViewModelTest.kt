@@ -12,6 +12,7 @@ import com.software.sello.domain.port.BackupRecord
 import com.software.sello.domain.port.DocumentDestination
 import com.software.sello.domain.port.DocumentWrite
 import com.software.sello.domain.port.LastBackup
+import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.navigation.HandFinancialClock
 import java.time.Instant
 import java.time.LocalDate
@@ -196,6 +197,72 @@ class BackupViewModelTest {
         assertFalse(state.unknownOutcome)
         // The note of it is kept even though it cannot be read back yet.
         assertEquals(BackupRecord(saved, unfinished = false), records.stored.value)
+    }
+
+    @Test
+    fun readsThatFailDuringASaveDoNotCallTheFinishedSaveUnknown() = runTest {
+        records.backupCompleted(earlier)
+        val model = model()
+        openPicker(model)
+        writer.gate = CompletableDeferred()
+        model.onAction(BackupAction.DestinationChosen(document))
+        runCurrent()
+        // The start is read back while the bytes go out; then a new observation fails.
+        assertEquals(
+            PreferenceRead.Ready(BackupRecord(earlier, unfinished = true)),
+            records.reads.value
+        )
+        records.failReads(lastGood = null)
+        runCurrent()
+
+        writer.gate!!.complete(Unit)
+        runCurrent()
+
+        val saved = LastBackup(savedAt, "Mi respaldo.json", 4_096, g01Summary)
+        var state = model.state.value
+        assertTrue(state.justSaved)
+        assertEquals(saved, state.last)
+        assertFalse(state.unknownOutcome)
+        assertFalse(state.recordOlder)
+
+        // Starting another save and dismissing the picker: the save just made, marked older.
+        openPicker(model)
+        model.onAction(BackupAction.DestinationChosen(null))
+        runCurrent()
+
+        state = model.state.value
+        assertEquals(saved, state.last)
+        assertFalse(state.unknownOutcome)
+        assertTrue(state.recordOlder)
+    }
+
+    @Test
+    fun readsThatFailDuringAFailedSaveDoNotCallItUnknown() = runTest {
+        records.backupCompleted(earlier)
+        val model = model()
+        openPicker(model)
+        writer.gate = CompletableDeferred()
+        writer.answer = DocumentWrite.Failed
+        model.onAction(BackupAction.DestinationChosen(document))
+        runCurrent()
+        records.failReads(lastGood = null)
+        runCurrent()
+
+        writer.gate!!.complete(Unit)
+        runCurrent()
+        assertEquals(BackupFailure.Write, model.state.value.failure)
+        assertFalse(model.state.value.unknownOutcome)
+
+        // Once the failure is acknowledged, the abandoned start is not an unknown outcome.
+        openPicker(model)
+        model.onAction(BackupAction.DestinationChosen(null))
+        runCurrent()
+
+        val state = model.state.value
+        assertNull(state.failure)
+        assertEquals(earlier, state.last)
+        assertFalse(state.unknownOutcome)
+        assertTrue(state.recordOlder)
     }
 
     @Test

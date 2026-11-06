@@ -43,21 +43,22 @@ class BackupViewModel(
     private val pickerRequest = MutableStateFlow<String?>(null)
 
     /**
-     * The record as last read. Every observation, such as a Retry's or one started when the
+     * The record as last known. Every observation, such as a Retry's or one started when the
      * screen comes back, starts with no last good record; this keeps the one already shown,
-     * so a failed read never forgets it.
+     * so a failed read never forgets it. A save this process finished or abandoned while the
+     * record could not be read settles it, as the record that save wrote.
      */
     private var lastGood: BackupRecord? = null
 
     private val record: Flow<PreferenceRead<BackupRecord>> =
         retry.flatMapLatest { records.observeBackups() }.map { read ->
+            // Every read passes here, so the one kept is never older than the observation's
+            // own, and it may have been settled by a save since.
             when (read) {
-                is PreferenceRead.Ready -> read.also { lastGood = it.value }
-
-                is PreferenceRead.Failed ->
-                    PreferenceRead.Failed(read.failure, read.lastGood ?: lastGood)
-                        .also { lastGood = it.lastGood }
+                is PreferenceRead.Ready -> lastGood = read.value
+                is PreferenceRead.Failed -> lastGood = lastGood ?: read.lastGood
             }
+            read
         }
 
     val state: StateFlow<BackupState> = combine(
@@ -68,7 +69,10 @@ class BackupViewModel(
     ) { read, progress, (picking, request), today ->
         val (stored, failed) = when (read) {
             is PreferenceRead.Ready -> read.value to false
-            is PreferenceRead.Failed -> (read.lastGood ?: BackupRecord()) to true
+
+            is PreferenceRead.Failed ->
+                // The kept record, not the read's: a new save outcome alone runs this again.
+                (settled(lastGood, progress)?.also { lastGood = it } ?: BackupRecord()) to true
         }
         val saving = progress == BackupProgress.Saving
         BackupState(
@@ -95,6 +99,18 @@ class BackupViewModel(
             BackupAction.RetryRecord -> retry.update { it + 1 }
         }
     }
+
+    /**
+     * [record], read before this process's save ended, brought up to date by that save: a
+     * finished one wrote itself as the last backup and an abandoned one cleared its start, so
+     * neither is an unknown outcome.
+     */
+    private fun settled(record: BackupRecord?, progress: BackupProgress): BackupRecord? =
+        when (progress) {
+            is BackupProgress.Saved -> BackupRecord(progress.backup, unfinished = false)
+            is BackupProgress.Failed -> record?.copy(unfinished = false)
+            BackupProgress.Idle, BackupProgress.Saving -> record
+        }
 
     private fun create() {
         if (choosing.value || state.value.saving) return
