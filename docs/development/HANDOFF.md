@@ -5,7 +5,7 @@
 > subject to the user's current instructions.
 
 **Snapshot:** 2026-11-05 · **Product baseline:** `main`; the release candidate is `0.1.0` from `a20ae90f`, and the [candidate checklist](../release/candidate-checklist.md) leaves only the owner's steps (the [MVP checklist](../release/mvp-checklist.md) is the October record).
-Every epic is Done: E01–E10, E12, E13 and E15–E30. The owner dropped E14 and the
+Every epic is Done: E01–E10, E12, E13 and E15–E31. The owner dropped E14 and the
 release tickets SELLO-043 and SELLO-113 on 2026-10-29. Each ticket's
 file under [docs/tickets](../tickets/README.md) and the pull request that closed it carry
 the details, and `python3 scripts/quality/tickets.py status` prints the current board.
@@ -115,6 +115,15 @@ This summary is refreshed when an epic closes and adds no verification claims.
   PATH; that step alone, refusing only the throwaway certificate; and the launch alone
   on the same new API 30 emulator. Then the advisory check and a walk on a new API 37
   emulator ([walk](../testing/performance-profile.md#release-candidate-walk-on-api-37-sello-175)).
+- Design system from the built app ([E31](../tickets/E31-design-system/README.md)),
+  documentation only: the pages under [docs/design/system](../design/system/index.html)
+  are the only design reference ([ADR 0026](../decisions/0026-design-system-from-the-built-app.md));
+  v2, the v1.1 snapshot and the screen briefs are gone. Each feature page describes every
+  screen and state with real JVM screenshots, light and dark, at the S25 Ultra's
+  412x891 dp. The [findings page](../design/system/findings.html) lists misuse, copies and
+  hard-coded values, colours first; its Dynamic colours box says dynamic colours need
+  `SelloColors` built from the system scheme, not only a new Material scheme. The bugs
+  the pages found are issues #374–#387 and #394.
 - No network permission or OS backup; every build checks its manifests, release
   libraries and APK against [MVP data handling](../privacy/mvp-data-handling.md). The
   only provider that grants access is the export one, limited to `cache/exports/`.
