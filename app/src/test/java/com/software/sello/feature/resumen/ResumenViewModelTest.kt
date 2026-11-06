@@ -325,6 +325,32 @@ class ResumenViewModelTest {
         assertEquals("Hogar", model.ready.suggestion?.name)
     }
 
+    /** A failure is said only by the suggestion it was asked for, never by another one. */
+    @Test
+    fun aDismissalFailureIsNotSaidByASuggestionForAnotherCategory() = runTest {
+        val model = model()
+        watch(model)
+        reads.of(october).value = ReadState.Ready(withSuggestion())
+        suggestions.failing = true
+        model.onAction(ResumenAction.DismissSuggestion)
+        val failed = model.ready.dismissal
+        val comida = (CategoryId.of("00000000-0000-4000-8000-000000000003") as Outcome.Success)
+            .value
+
+        reads.of(october).value = ReadState.Ready(
+            withSuggestion().copy(
+                suggestion = withSuggestion().suggestion!!.copy(
+                    categoryId = comida,
+                    name = (CategoryName.of("Comida") as Outcome.Success).value
+                )
+            )
+        )
+
+        assertEquals(SuggestionDismissal.Failed, failed)
+        assertEquals("Comida", model.ready.suggestion?.name)
+        assertEquals(SuggestionDismissal.Idle, model.ready.dismissal)
+    }
+
     @Test
     fun dismissingAgainAfterAFailureThatSavesClearsTheFailureAndHidesTheSuggestion() = runTest {
         val model = model()
