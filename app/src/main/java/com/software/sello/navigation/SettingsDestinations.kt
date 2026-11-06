@@ -12,6 +12,7 @@ import androidx.navigation.compose.composable
 import com.software.sello.R
 import com.software.sello.feature.backup.TusDatosRoot
 import com.software.sello.feature.settings.SettingsRoot
+import com.software.sello.feature.settings.TuyaSheetRoot
 import com.software.sello.presentation.month.monthNames
 
 /** Configuración. */
@@ -51,5 +52,7 @@ internal fun NavGraphBuilder.settingsDestinations(
             }
         }
         BackHandler(enabled = !state.monthPickerOpen) { navigation.popBackStack() }
+        // After the screen's own back, so that back closes the sheet first.
+        TuyaSheetRoot(viewModels)
     }
 }

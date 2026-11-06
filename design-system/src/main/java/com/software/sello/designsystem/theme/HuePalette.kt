@@ -19,6 +19,9 @@ import kotlin.math.sin
  */
 internal const val COBALTO_HUE = 267
 
+/** Violeta's brand hue as a whole OKLCH degree (its exact hue is 285.9°). */
+internal const val VIOLETA_HUE = 286
+
 /**
  * The palette a hue of 0 to 359 OKLCH degrees gives (Tuya, Sistema): Cobalto's, turned.
  * Each role keeps the luminance of Cobalto's colour for it, so every contrast ratio stays
@@ -78,6 +81,12 @@ fun hueColors(hue: Int, isDark: Boolean): SelloColors {
         )
     }
 }
+
+/**
+ * The light band [hueColors] gives [hue], alone: what a swatch or a hue slider shows, without
+ * building the whole palette for each.
+ */
+internal fun hueSwatch(hue: Int): Color = CobaltoLight.band.turned(checkHue(hue) - COBALTO_HUE)
 
 /** A hue that also carries one of the fixed meanings: red marks overspending, green goals. */
 enum class HueMeaning { Red, Green }

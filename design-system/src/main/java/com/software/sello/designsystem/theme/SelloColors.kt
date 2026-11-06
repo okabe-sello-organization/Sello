@@ -5,22 +5,45 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
 /**
- * The brand inks the user picks from, in picker order: the one list of Sello's themes.
- * Each registers its light and dark palette; an ink never changes what gain, loss or
- * warn mean. A palette names its ink, so it is read when used rather than built here.
+ * What a [SelloTheme] is drawn in: one of Sello's hand-made inks ([SelloInk]) or a palette
+ * built from a hue ([HueInk]). An ink never changes what gain, loss or warn mean.
  */
-enum class SelloInk(private val light: () -> SelloColors, private val dark: () -> SelloColors) {
-    Cobalto({ CobaltoLight }, { CobaltoDark }),
-    Violeta({ VioletaLight }, { VioletaDark });
-
-    internal fun colors(isDark: Boolean): SelloColors = if (isDark) dark() else light()
-
+@Immutable
+sealed interface ThemeInk {
     /**
      * The colour a picker shows for this ink: its light band, the same in both themes. It
      * reads the ink's own palette on purpose, not [SelloTheme.colors]: a swatch previews an
      * ink that may not be applied, so it cannot follow the active scheme.
      */
-    val swatch: Color get() = light().band
+    val swatch: Color
+}
+
+/**
+ * The hand-made inks, in picker order: the one list of Sello's own themes. Each registers
+ * its light and dark palette. A palette names its ink, so it is read when used rather than
+ * built here. [hue] is the whole OKLCH degree of its brand, where a hue picker starts from it.
+ */
+enum class SelloInk(
+    private val light: () -> SelloColors,
+    private val dark: () -> SelloColors,
+    val hue: Int
+) : ThemeInk {
+    Cobalto({ CobaltoLight }, { CobaltoDark }, COBALTO_HUE),
+    Violeta({ VioletaLight }, { VioletaDark }, VIOLETA_HUE);
+
+    internal fun colors(isDark: Boolean): SelloColors = if (isDark) dark() else light()
+
+    override val swatch: Color get() = light().band
+}
+
+/** The palette [hueColors] builds from [hue], a whole OKLCH degree from 0 to 359. */
+@Immutable
+data class HueInk(val hue: Int) : ThemeInk {
+    init {
+        require(hue in 0..359) { "A hue is a whole degree from 0 to 359, not $hue" }
+    }
+
+    override val swatch: Color get() = hueSwatch(hue)
 }
 
 /**
@@ -88,7 +111,10 @@ data class SelloSemanticColors(
     val warnSoft: Color
 )
 
-fun selloColors(ink: SelloInk, isDark: Boolean): SelloColors = ink.colors(isDark)
+fun selloColors(ink: ThemeInk, isDark: Boolean): SelloColors = when (ink) {
+    is SelloInk -> ink.colors(isDark)
+    is HueInk -> hueColors(ink.hue, isDark)
+}
 
 internal val LightSemantic = SelloSemanticColors(
     gain = Color(0xFF0A6B4A),

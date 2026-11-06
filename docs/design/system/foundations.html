@@ -40,8 +40,10 @@
     <section id="theme">
       <h2>Theme</h2>
       <p><code>SelloTheme(ink, darkTheme, reducedMotion)</code> (<code>Theme.kt:16</code>) is the only theme.
-        The ink is the user's choice (<code>SelloInk</code>: <strong>Cobalto</strong>, the first-run default,
-        and <strong>Violeta</strong>, <code>SelloColors.kt:12</code>); light or dark and reduced motion follow
+        The ink is the user's choice, a <code>ThemeInk</code> (<code>SelloColors.kt:12</code>): one of the
+        hand-made <code>SelloInk</code>s, <strong>Cobalto</strong>, the first-run default, and
+        <strong>Violeta</strong> (<code>SelloColors.kt:26</code>), or <code>HueInk(hue)</code>, the palette
+        the generator builds for <strong>Tuya</strong> (<code>SelloColors.kt:41</code>); light or dark and reduced motion follow
         the system unless the caller says otherwise. Wallpaper-derived (dynamic) Material colours are never
         applied.</p>
       <div class="note dynamic" id="dynamic-colours">
@@ -56,7 +58,12 @@
           <code>SelloPaletteTest</code> checks (<code>HuePaletteTest</code>). Cobalto and Violeta keep
           their hand-made palettes. <code>hueName</code> gives the hue's Spanish name (Rosa to Fucsia)
           and <code>hueMeaning</code> says whether it is red (0–49°) or green (122–195°), the hues
-          gain and loss also use. The Tuya and Sistema inks that use it are not built yet.</p>
+          gain and loss also use. <strong>Tuya</strong> uses it (SELLO-202): the person picks a hue in
+          Configuración › Apariencia › Tinta, and <code>SelloTheme(ink = HueInk(hue))</code> draws the whole
+          app in it; a picker starts from <code>SelloInk.hue</code>, each hand-made ink's own brand hue
+          (Cobalto 267°, Violeta 286°). Sistema is not built yet.</p>
+        <figure data-shot="settings-tuya" data-module="app" data-files="settings-tuya-tuya22-light-font1.0.png, settings-tuya-tuya22-dark-font1.0.png" data-caption="Configuración drawn in Tuya at 22° (Rojo), light and dark: the generator's palette; the stamp keeps its own green"></figure>
+        <figure data-shot="settings-tu-tinta" data-module="app" data-caption="Tu tinta: two previews in the hue being chosen, inside their own SelloTheme(HueInk(hue)), and the slider's track in the light band of every hue"></figure>
         <p>Every colour a screen or resource draws comes from the theme (SELLO-190): no
           <code>Color(0x…)</code> or <code>Color.White</code> outside the palette files, copied roles set
           from the role they copy, a <code>scrim</code> role, and a start-up window that is the desk. A
@@ -78,13 +85,14 @@
         <ul>
           <li>The window before the first frame (<code>@color/sello_start_window</code>, Cobalto's desk,
             light or dark as the phone): it is drawn before any Kotlin runs, so it can't know the ink.</li>
-          <li>The Settings ink swatches (<code>SelloInk.swatch</code>): each previews its own ink; a dynamic
-            option would add its own swatch.</li>
+          <li>The Settings ink swatches (<code>ThemeInk.swatch</code>, the ink's light band): each previews
+            its own ink, not the active one. Tuya's is its hue's band (<code>HueInk.swatch</code>), or before
+            it has a hue, a sweep of every generated band with a +.</li>
           <li>The launcher icon; Android 13+ themed icons already follow the wallpaper.</li>
         </ul>
       </div>
       <p>Components read tokens through <code>SelloTheme.colors</code>, <code>.type</code>,
-        <code>.shapes</code>, <code>.spacing</code>, <code>.alpha</code> and <code>.reducedMotion</code> (<code>Theme.kt:39</code>).
+        <code>.shapes</code>, <code>.spacing</code>, <code>.alpha</code> and <code>.reducedMotion</code> (<code>Theme.kt:40</code>).
         <code>SelloColors.toMaterialColorScheme()</code> (<code>SelloMaterial.kt:12</code>) fills every
         Material 3 colour slot from Sello tokens, so stock dialogs, pickers and ripples never show a Material
         baseline colour; the Material slot each role feeds is named in the tables below.</p>
@@ -95,7 +103,7 @@
 
     <section id="colours">
       <h2>Colours</h2>
-      <p>Every palette shares every role name (<code>SelloColors</code>, <code>SelloColors.kt:31</code>).
+      <p>Every palette shares every role name (<code>SelloColors</code>, <code>SelloColors.kt:54</code>).
         Each palette is built by <code>lightPalette</code> or <code>darkPalette</code>
         (<code>SelloColors.kt</code>) from its ink's own colours: Cobalto in <code>CobaltoPalette.kt</code>,
         Violeta in <code>VioletaPalette.kt</code>, which names the Cobalto values it shares (shown in
@@ -134,7 +142,7 @@
     <section id="semantic">
       <h2>Semantic colours</h2>
       <p>Meanings that stay the same in both inks, so a stamp reads the same everywhere
-        (<code>SelloSemanticColors</code>, <code>SelloColors.kt:78</code>; values <code>LightSemantic</code>
+        (<code>SelloSemanticColors</code>, <code>SelloColors.kt:101</code>; values <code>LightSemantic</code>
         and <code>DarkSemantic</code>). Read as <code>colors.semantic.&lt;role&gt;</code>.</p>
       <div class="table-wrap"><table><thead><tr><th>Role</th><th>Light (both inks)</th><th>Dark (both inks)</th><th>Meant for</th><th>Direct reads<br>ds / app</th></tr></thead><tbody>
 <tr id="color-gain"><td><code>semantic.gain</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#0A6B4A"></span><code>#0A6B4A</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#4FD6A0"></span><code>#4FD6A0</code></span></td><td>Money in, a goal reached, an income: amounts, the goal dock and stamps of a good verdict. Material <code>tertiary</code>.</td><td>14 / 26</td></tr>
@@ -152,7 +160,7 @@
 
     <section id="investments">
       <h2>Investment colours</h2>
-      <p><code>SelloColors.investmentInk(rank)</code> (<code>SelloColors.kt:66</code>): rank 0 is the brand,
+      <p><code>SelloColors.investmentInk(rank)</code> (<code>SelloColors.kt:89</code>): rank 0 is the brand,
         then five fills that repeat every six, light and dark fills alternating so neighbours in a bar never
         share one. The number on each swatch is drawn in the colour written on that fill: on a light palette's
         mid fills it is the palette's <code>ink</code>, on a dark palette's light slate the family's light
@@ -356,7 +364,7 @@
         <code>design-system/src/main/res/drawable/</code> (licence in
         <code>res/raw/license_material_symbols.txt</code>). Icons are filled; an outlined drawing exists only
         where the reference uses it, for unselected tabs (<code>SelloIcon</code>, <code>SelloIcon.kt:13</code>;
-        <code>painter(filled)</code> falls back to the filled one). 73 icons. Each is drawn below
+        <code>painter(filled)</code> falls back to the filled one). 74 icons. Each is drawn below
         from its XML file, so this list is the real drawing; an icon with two drawings shows filled then
         outlined. Every icon is referenced as <code>SelloIcon.Name</code> somewhere in app or component
         code on this commit. <code>Remove</code> (−) marks a retiro, the counterpart of <code>Add</code> (+) on an aporte;
@@ -398,6 +406,7 @@
 <div class="icon-cell" id="icon-DirectionsBus" data-drawable="ic_sello_directions_bus"><span class="icon-name">DirectionsBus</span><span class="icon-file">ic_sello_directions_bus.xml</span></div>
 <div class="icon-cell" id="icon-DirectionsCar" data-drawable="ic_sello_directions_car"><span class="icon-name">DirectionsCar</span><span class="icon-file">ic_sello_directions_car.xml</span></div>
 <div class="icon-cell" id="icon-Download" data-drawable="ic_sello_download"><span class="icon-name">Download</span><span class="icon-file">ic_sello_download.xml</span></div>
+<div class="icon-cell" id="icon-Edit" data-drawable="ic_sello_edit"><span class="icon-name">Edit</span><span class="icon-file">ic_sello_edit.xml</span></div>
 <div class="icon-cell" id="icon-EditNote" data-drawable="ic_sello_edit_note"><span class="icon-name">EditNote</span><span class="icon-file">ic_sello_edit_note.xml</span></div>
 <div class="icon-cell" id="icon-Error" data-drawable="ic_sello_error"><span class="icon-name">Error</span><span class="icon-file">ic_sello_error.xml</span></div>
 <div class="icon-cell" id="icon-Event" data-drawable="ic_sello_event"><span class="icon-name">Event</span><span class="icon-file">ic_sello_event.xml</span></div>

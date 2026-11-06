@@ -8,18 +8,19 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
 
 /**
- * Sello's theme. The ink is the user's choice; light/dark and reduced motion follow the
- * system unless the caller says otherwise. Wallpaper-derived Material colours are never
- * applied.
+ * Sello's theme. The ink is the user's choice, one of Sello's own or one built from a hue;
+ * light/dark and reduced motion follow the system unless the caller says otherwise.
+ * Wallpaper-derived Material colours are never applied.
  */
 @Composable
 fun SelloTheme(
-    ink: SelloInk = SelloInk.Cobalto,
+    ink: ThemeInk = SelloInk.Cobalto,
     darkTheme: Boolean = isSystemInDarkTheme(),
     reducedMotion: Boolean = systemReducedMotion(),
     content: @Composable () -> Unit
 ) {
-    val colors = selloColors(ink, darkTheme)
+    // A hue's palette is worked out, not looked up: once per ink and theme.
+    val colors = remember(ink, darkTheme) { selloColors(ink, darkTheme) }
     val shapes = remember { SelloShapes() }
     CompositionLocalProvider(
         LocalSelloColors provides colors,

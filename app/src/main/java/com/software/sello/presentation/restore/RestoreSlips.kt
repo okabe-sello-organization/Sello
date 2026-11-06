@@ -15,7 +15,7 @@ import com.software.sello.domain.port.BackupSummary
 import com.software.sello.domain.port.PendingPreferences
 import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.RestoreRejection
-import com.software.sello.presentation.appearance.choice
+import com.software.sello.presentation.appearance.label
 import com.software.sello.presentation.count.countText
 import com.software.sello.presentation.investments.label
 import com.software.sello.presentation.investments.newInvestmentLabel
@@ -90,7 +90,7 @@ private fun pendingItems(preferences: PendingPreferences): List<String> = listOf
         stringResource(
             R.string.restore_pending_appearance,
             stringResource(it.theme.label()),
-            stringResource(it.ink.choice.label)
+            it.ink.label()
         )
     },
     preferences.ordering?.let {

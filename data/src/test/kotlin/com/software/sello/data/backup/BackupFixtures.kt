@@ -234,6 +234,19 @@ fun version6AsVersion7(version6: String): String {
         .replace(featured, "\n    \"starredGoals\": $starred,\n")
 }
 
+/**
+ * A version 7 file as Sello now writes the same data: version 8, with no hue beside its
+ * ink when it has preferences at all, and nothing else changed.
+ */
+fun version7AsVersion8(version7: String): String {
+    check(version7.contains("\"version\": 7,"))
+    val newer = version7.replace("\"version\": 7,", "\"version\": 8,")
+    if (newer.endsWith("\"preferences\": null\n}\n")) return newer
+    val ink = Regex("(\n    \"ink\": \"[a-z]+\",)\n")
+    check(ink.findAll(newer).count() == 1)
+    return newer.replace(ink) { "${it.groupValues[1]}\n    \"inkHue\": null,\n" }
+}
+
 fun resource(name: String): ByteArray =
     requireNotNull(BackupFixtures::class.java.getResourceAsStream("/backup/$name")) {
         "missing test resource backup/$name"

@@ -1,5 +1,6 @@
 package com.software.sello.feature.settings
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.software.sello.domain.model.AppearancePreference
@@ -7,6 +8,7 @@ import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
 import com.software.sello.domain.model.CategoryOrderingPreference
 import com.software.sello.domain.model.Currency
+import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.InvestmentPreference
@@ -23,11 +25,13 @@ import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ScheduleBookState
 import com.software.sello.domain.port.ScheduleReads
+import com.software.sello.presentation.appearance.startingHue
 import com.software.sello.presentation.money.MoneyFormatter
 import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
@@ -39,9 +43,12 @@ import kotlinx.coroutines.launch
 /**
  * Coordinates the appearance, Recibo-order and Inversiones controls, how many payments and
  * incomes repeat and the current USD rate. The backup card reads the backup's own state.
+ * The hue chosen in Tu tinta is kept in [handle] while the sheet is open, so it survives
+ * rotation and process death; nothing is saved until Usar esta tinta.
  */
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class SettingsViewModel(
+    private val handle: SavedStateHandle,
     private val appearancePreferences: AppearancePreferences,
     private val orderingPreferences: CategoryOrderingPreferences,
     private val investmentPreferences: InvestmentPreferences,
@@ -52,6 +59,17 @@ class SettingsViewModel(
     private val retry = MutableStateFlow(0)
     private val busy = MutableStateFlow(false)
     private val writeFailure = MutableStateFlow<PreferenceFailure?>(null)
+    private val tuyaSaving = MutableStateFlow(false)
+    private val tuyaFailed = MutableStateFlow(false)
+
+    private val tuya = combine(
+        handle.getStateFlow<Int?>(KEY_TUYA_HUE, null),
+        tuyaSaving,
+        tuyaFailed
+    ) { hue, saving, failed ->
+        // A hue only this screen wrote; anything else is no open sheet.
+        hue?.takeIf { it in InkHue.RANGE }?.let { TuyaDraft(it, saving, failed) }
+    }
 
     private val reads: Flow<SettingsRead> = retry.flatMapLatest {
         merge(
@@ -144,14 +162,16 @@ class SettingsViewModel(
                     busy = old.busy,
                     writeFailure = old.writeFailure,
                     schedules = old.schedules,
-                    rate = old.rate
+                    rate = old.rate,
+                    tuya = old.tuya
                 )
             }
         },
         scheduleCount.map { value -> { old: SettingsState -> old.copy(schedules = value) } },
         rateLine.map { value -> { old: SettingsState -> old.copy(rate = value) } },
         busy.map { value -> { old: SettingsState -> old.copy(busy = value) } },
-        writeFailure.map { value -> { old: SettingsState -> old.copy(writeFailure = value) } }
+        writeFailure.map { value -> { old: SettingsState -> old.copy(writeFailure = value) } },
+        tuya.map { value -> { old: SettingsState -> old.copy(tuya = value) } }
     ).runningFold(SettingsState(loading = true)) { old, change -> change(old) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, SettingsState(loading = true))
 
@@ -161,6 +181,7 @@ class SettingsViewModel(
             retry.update { it + 1 }
             return
         }
+        if (action is SettingsAction.Tuya) return onTuya(action)
         if (busy.value) return
         viewModelScope.launch {
             busy.value = true
@@ -181,11 +202,58 @@ class SettingsViewModel(
                 is SettingsAction.InvestmentOrderChosen ->
                     investmentPreferences.setInvestmentOrder(action.order)
 
-                SettingsAction.Retry -> error("Retry is handled before launching")
+                SettingsAction.Retry, is SettingsAction.Tuya ->
+                    error("Handled before launching")
             }
             busy.value = false
             if (result is PreferenceWrite.Failed) writeFailure.value = result.failure
         }
+    }
+
+    /** Tu tinta: nothing is written until [SettingsAction.Tuya.Use]; one save at a time. */
+    private fun onTuya(action: SettingsAction.Tuya) {
+        if (tuyaSaving.value) return
+        when (action) {
+            SettingsAction.Tuya.Open -> {
+                tuyaFailed.value = false
+                handle[KEY_TUYA_HUE] = state.value.appearance.ink.startingHue
+            }
+
+            is SettingsAction.Tuya.HueChanged -> {
+                if (action.hue !in InkHue.RANGE || handle.get<Int>(KEY_TUYA_HUE) == null) return
+                tuyaFailed.value = false
+                handle[KEY_TUYA_HUE] = action.hue
+            }
+
+            SettingsAction.Tuya.Cancel -> close()
+
+            SettingsAction.Tuya.Use -> {
+                val hue = handle.get<Int>(KEY_TUYA_HUE)?.toLong()?.let(InkHue::of) ?: return
+                if (busy.value) return
+                tuyaSaving.value = true
+                busy.value = true
+                tuyaFailed.value = false
+                viewModelScope.launch {
+                    val result = try {
+                        appearancePreferences.setInk(InkPreference.Tuya(hue))
+                    } finally {
+                        busy.value = false
+                        tuyaSaving.value = false
+                    }
+                    if (result is PreferenceWrite.Saved) close() else tuyaFailed.value = true
+                }
+            }
+        }
+    }
+
+    private fun close() {
+        tuyaFailed.value = false
+        // Not remove(): that would cut the sheet's flow off from later changes.
+        handle[KEY_TUYA_HUE] = null
+    }
+
+    private companion object {
+        const val KEY_TUYA_HUE = "settings.tuya.hue"
     }
 }
 
@@ -197,6 +265,20 @@ sealed interface SettingsAction {
     data class NewInvestmentCurrencyChosen(val currency: Currency) : SettingsAction
     data class InvestmentOrderChosen(val order: InvestmentOrder) : SettingsAction
     data object Retry : SettingsAction
+
+    /** The Tu tinta sheet's actions. */
+    sealed interface Tuya : SettingsAction {
+        /** Tuya was tapped: the sheet opens on the hue of the ink in use. */
+        data object Open : Tuya
+
+        data class HueChanged(val hue: Int) : Tuya
+
+        /** Cancelar, Cerrar, back or the scrim: the ink stays as it is. */
+        data object Cancel : Tuya
+
+        /** Usar esta tinta, or Reintentar after a save that failed. */
+        data object Use : Tuya
+    }
 }
 
 data class SettingsState(
@@ -213,11 +295,19 @@ data class SettingsState(
     val writeFailure: PreferenceFailure? = null,
     val busy: Boolean = false,
     val schedules: ScheduleCountLine = ScheduleCountLine.Loading,
-    val rate: RateLine = RateLine.Loading
+    val rate: RateLine = RateLine.Loading,
+    /** The Tu tinta sheet while it is open; null when it is closed. */
+    val tuya: TuyaDraft? = null
 ) {
     val failure: PreferenceFailure?
         get() = writeFailure ?: appearanceFailure ?: orderingFailure ?: investmentsFailure
 }
+
+/**
+ * The hue being chosen in Tu tinta, a whole degree from 0 to 359; whether it is being saved;
+ * and whether the last save failed, which leaves the app's ink as it was.
+ */
+data class TuyaDraft(val hue: Int, val saving: Boolean = false, val failed: Boolean = false)
 
 /** The rate is written to the centavo: "4.150,25" (investment rule 11). */
 private const val RATE_SCALE = 2

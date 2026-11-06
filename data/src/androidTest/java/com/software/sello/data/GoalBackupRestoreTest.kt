@@ -243,12 +243,13 @@ class GoalBackupRestoreTest {
         assertEquals(2, other.rows("starred_goal", "goal_id").size)
     }
 
-    /** [bytes] as version 6 wrote them: [chosen] as the one chosen goal. */
+    /** [bytes] as version 6 wrote them: no ink hue, and [chosen] as the one chosen goal. */
     private fun asVersion6(bytes: ByteArray, chosen: GoalId): ByteArray {
         val text = String(bytes)
         val stars = Regex("\"starredGoals\": \\[[^]]*]")
-        check(stars.findAll(text).count() == 1 && text.contains("\"version\": 7,"))
-        return text.replace("\"version\": 7,", "\"version\": 6,")
+        check(stars.findAll(text).count() == 1 && text.contains("\"version\": 8,"))
+        return text.replace("\"version\": 8,", "\"version\": 6,")
+            .replace(Regex("\\s+\"inkHue\": null,"), "")
             .replace(stars, "\"featuredGoal\": \"${chosen.value}\"")
             .toByteArray()
     }

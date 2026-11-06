@@ -6,6 +6,7 @@ import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.DefaultLimit
 import com.software.sello.domain.model.ExactTotal
 import com.software.sello.domain.model.IncomeSource
+import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.InvestmentPreference
@@ -67,9 +68,9 @@ class BackupRoundTripTest {
     }
 
     @Test
-    fun `G01 is written byte for byte as the documented version 7 file`() {
+    fun `G01 is written byte for byte as the documented version 8 file`() {
         assertEquals(
-            String(resource("valid-g01-v7.json")),
+            String(resource("valid-g01-v8.json")),
             String(codec.encode(g01InDollars()).value())
         )
     }
@@ -90,6 +91,11 @@ class BackupRoundTripTest {
     @Test
     fun `the version 7 file reads back as the same G01 history`() {
         assertEquals(g01InDollars(), codec.read(resource("valid-g01-v7.json")).value().contents)
+    }
+
+    @Test
+    fun `the version 8 file reads back as the same G01 history`() {
+        assertEquals(g01InDollars(), codec.read(resource("valid-g01-v8.json")).value().contents)
     }
 
     @Test
@@ -123,7 +129,7 @@ class BackupRoundTripTest {
 
     @Test
     fun `every ink is written as the id it has always had, and reads back`() {
-        val file = String(resource("valid-g01-v7.json"))
+        val file = String(resource("valid-g01-v8.json"))
         for ((ink, id) in listOf(
             InkPreference.Cobalto to "cobalto",
             InkPreference.Violeta to "violeta"
@@ -139,6 +145,88 @@ class BackupRoundTripTest {
             assertEquals(file.replace("\"ink\": \"violeta\"", "\"ink\": \"$id\""), written)
             assertEquals(contents, codec.read(written.toByteArray()).value().contents)
         }
+    }
+
+    /** G01 with [ink] in place of its Violeta. */
+    private fun g01In(ink: InkPreference) = g01InDollars().let {
+        it.copy(
+            preferences = it.preferences!!.copy(
+                appearance = it.preferences.appearance.copy(ink = ink)
+            )
+        )
+    }
+
+    @Test
+    fun `Tuya is written with its hue and reads back the same, at every edge`() {
+        val file = String(resource("valid-g01-v8.json"))
+        for (hue in listOf(0L, 22L, 359L)) {
+            val contents = g01In(InkPreference.Tuya(InkHue.of(hue)!!))
+            val written = String(codec.encode(contents).value())
+            assertEquals(
+                file.replace(
+                    "\"ink\": \"violeta\",\n    \"inkHue\": null",
+                    "\"ink\": \"tuya\",\n    \"inkHue\": $hue"
+                ),
+                written
+            )
+            assertEquals(contents, codec.read(written.toByteArray()).value().contents)
+        }
+    }
+
+    @Test
+    fun `a hue outside the circle, as text or beside another ink rejects the whole file`() {
+        val file = String(resource("valid-g01-v8.json"))
+        val tuya = "\"ink\": \"tuya\",\n    \"inkHue\": "
+        for ((from, to) in listOf(
+            "\"inkHue\": null" to "\"inkHue\": 22",
+            "\"ink\": \"violeta\",\n    \"inkHue\": null" to "${tuya}360",
+            "\"ink\": \"violeta\",\n    \"inkHue\": null" to "$tuya-1",
+            "\"ink\": \"violeta\",\n    \"inkHue\": null" to "${tuya}22.5",
+            "\"ink\": \"violeta\",\n    \"inkHue\": null" to "${tuya}2.2e1",
+            "\"ink\": \"violeta\",\n    \"inkHue\": null" to "${tuya}\"22\"",
+            "\"ink\": \"violeta\",\n    \"inkHue\": null" to "${tuya}022",
+            "\"ink\": \"violeta\",\n    \"inkHue\": null" to "${tuya}99999999999999999999",
+            "\"ink\": \"violeta\",\n    \"inkHue\": null" to "${tuya}null",
+            "\"ink\": \"violeta\",\n    \"inkHue\": null" to "${tuya}true"
+        )) {
+            val changed = file.replace(from, to)
+            check(changed != file)
+            assertEquals(
+                to,
+                BackupRejection.InvalidValue("preferences.inkHue"),
+                (codec.read(changed.toByteArray()) as Outcome.Failure).error
+            )
+        }
+    }
+
+    @Test
+    fun `a version 8 file without its hue is malformed`() {
+        val file = String(resource("valid-g01-v8.json"))
+        val missing = file.replace("\n    \"inkHue\": null,", "")
+        check(missing != file)
+
+        assertTrue(
+            (codec.read(missing.toByteArray()) as Outcome.Failure).error
+                is BackupRejection.Malformed
+        )
+    }
+
+    @Test
+    fun `an older version cannot carry Tuya or a hue`() {
+        val v7 = String(resource("valid-g01-v7.json"))
+        val tuya = v7.replace("\"ink\": \"violeta\"", "\"ink\": \"tuya\"")
+        check(tuya != v7)
+        assertEquals(
+            BackupRejection.InvalidValue("preferences.inkHue"),
+            (codec.read(tuya.toByteArray()) as Outcome.Failure).error
+        )
+
+        // Version 7 had no inkHue key: a file that adds one is not a version 7 file.
+        val hue = v7.replace("\"ink\": \"violeta\",", "\"ink\": \"tuya\",\n    \"inkHue\": 22,")
+        assertTrue(
+            (codec.read(hue.toByteArray()) as Outcome.Failure).error
+                is BackupRejection.Malformed
+        )
     }
 
     @Test
@@ -333,6 +421,7 @@ class BackupRoundTripTest {
             setOf(
                 "theme",
                 "ink",
+                "inkHue",
                 "categoryOrder",
                 "categoryDirection",
                 "investmentCurrency",

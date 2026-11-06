@@ -41,13 +41,15 @@ import com.software.sello.designsystem.component.StatusSlip
 import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.designsystem.theme.hueName
 import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
 import com.software.sello.domain.model.Currency
+import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.presentation.appearance.InkChoices
-import com.software.sello.presentation.appearance.choice
+import com.software.sello.presentation.appearance.themeInk
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.investments.label
 import com.software.sello.presentation.investments.newInvestmentLabel
@@ -74,6 +76,17 @@ fun SettingsRoot(
         onOpenRate = onOpenRate,
         tusDatos = tusDatos
     )
+}
+
+/**
+ * Tu tinta over the whole of Configuración, top bar and all, while it is open. It shares
+ * [SettingsRoot]'s view model: the screen's entry owns one.
+ */
+@Composable
+fun TuyaSheetRoot(viewModels: ViewModelProvider.Factory) {
+    val model: SettingsViewModel = viewModel(factory = viewModels)
+    val state by model.state.collectAsStateWithLifecycle()
+    state.tuya?.let { TuyaSheet(it, state.appearance.ink, model::onAction) }
 }
 
 /** Which choice is open over Configuración, kept across recreation. */
@@ -247,16 +260,39 @@ private fun AppearanceControls(state: SettingsState, onAction: (SettingsAction) 
             divider = false,
             modifier = Modifier.padding(top = SelloTheme.spacing.sm)
         )
+        val ink = state.appearance.ink
+        val tuya = ink as? InkPreference.Tuya
         InkSwatches(
-            inks = InkChoices.map { it.ink to stringResource(it.label) },
-            selected = state.appearance.ink.choice.ink,
-            onSelect = { ink ->
-                val chosen = InkChoices.first { it.ink == ink }.preference
-                onAction(SettingsAction.InkChosen(chosen))
-            },
+            swatches = InkChoices.map { choice ->
+                InkSwatch(
+                    label = stringResource(choice.label),
+                    fill = choice.ink.swatch,
+                    chosen = ink == choice.preference,
+                    onClick = { onAction(SettingsAction.InkChosen(choice.preference)) }
+                )
+            } + InkSwatch(
+                label = stringResource(R.string.settings_ink_tuya),
+                fill = tuya?.themeInk?.swatch,
+                chosen = tuya != null,
+                editBadge = tuya != null,
+                onClick = { onAction(SettingsAction.Tuya.Open) }
+            ),
             enabled = !state.busy,
             modifier = Modifier.padding(start = 26.dp).testTag(SETTINGS_INK_TAG)
         )
+        if (tuya != null) {
+            Text(
+                stringResource(
+                    R.string.settings_ink_tuya_note,
+                    stringResource(hueName(tuya.hue.degrees))
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = SelloTheme.colors.inkSoft,
+                modifier = Modifier
+                    .padding(start = 26.dp, top = 6.dp, end = 2.dp)
+                    .testTag(SETTINGS_INK_NOTE_TAG)
+            )
+        }
     }
 }
 
@@ -352,6 +388,7 @@ const val SETTINGS_ERROR_TAG = "settings:error"
 const val SETTINGS_APPEARANCE_TAG = "settings:appearance"
 const val SETTINGS_THEME_TAG = "settings:theme"
 const val SETTINGS_INK_TAG = "settings:ink"
+const val SETTINGS_INK_NOTE_TAG = "settings:ink:note"
 const val SETTINGS_ORDERING_TAG = "settings:ordering"
 
 /** The order's option slip, open after tapping [SETTINGS_ORDER_ROW_TAG]. */

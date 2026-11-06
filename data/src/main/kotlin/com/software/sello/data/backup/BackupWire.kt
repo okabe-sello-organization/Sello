@@ -5,15 +5,17 @@ import com.software.sello.domain.model.InvestmentOrder
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 
 /*
- * The wire shapes of versions 1 to 7, documented in docs/data/backup-format.md.
+ * The wire shapes of versions 1 to 8, documented in docs/data/backup-format.md.
  * Version 2 is version 1 plus `financial.goals` and `financial.featuredGoal`; version 3
  * is version 2 plus `financial.schedules` and each expense's and income's `origin`;
  * version 4 is version 3 plus `financial.investments` and `financial.usdRates`; version 5 adds
  * two investment settings to `preferences`; version 6 adds `financial.carryChains`; version 7
- * replaces `financial.featuredGoal` with `financial.starredGoals`. These classes
+ * replaces `financial.featuredGoal` with `financial.starredGoals`; version 8 adds Tuya's hue
+ * to `preferences`. These classes
  * are the file and nothing else: they never become Room entities or domain values
  * without going through BackupValidation. Every property is required, including the
  * nullable ones, and the JSON configuration refuses unknown keys. Numbers and flags
@@ -572,6 +574,47 @@ internal fun BackupFileV6.asVersion7() = BackupFileV7(
         carryChains = financial.carryChains
     ),
     preferences = preferences
+)
+
+/** Version 8: version 7 with the hue of a Tuya ink in `preferences.inkHue` (SELLO-202). */
+@Serializable
+internal data class BackupFileV8(
+    val format: String,
+    val version: JsonElement,
+    val exportedAt: String,
+    val financial: FinancialV7,
+    val preferences: PreferencesV8?
+)
+
+/** `inkHue` is a whole degree from 0 to 359 when `ink` is `tuya`, and `null` otherwise. */
+@Serializable
+internal data class PreferencesV8(
+    val theme: String,
+    val ink: String,
+    val inkHue: JsonElement,
+    val categoryOrder: String,
+    val categoryDirection: String,
+    val investmentCurrency: String,
+    val investmentOrder: String
+)
+
+/** A version 7 file read as version 8: no ink of its time has a hue. */
+internal fun BackupFileV7.asVersion8() = BackupFileV8(
+    format = format,
+    version = version,
+    exportedAt = exportedAt,
+    financial = financial,
+    preferences = preferences?.let {
+        PreferencesV8(
+            theme = it.theme,
+            ink = it.ink,
+            inkHue = JsonNull,
+            categoryOrder = it.categoryOrder,
+            categoryDirection = it.categoryDirection,
+            investmentCurrency = it.investmentCurrency,
+            investmentOrder = it.investmentOrder
+        )
+    }
 )
 
 private val plainWhole = Regex("0|[1-9][0-9]*")

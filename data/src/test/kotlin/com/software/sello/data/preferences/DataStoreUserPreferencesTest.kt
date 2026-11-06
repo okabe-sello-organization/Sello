@@ -3,6 +3,7 @@ package com.software.sello.data.preferences
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.mutablePreferencesOf
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.software.sello.domain.model.AppearancePreference
@@ -13,6 +14,7 @@ import com.software.sello.domain.model.CategoryOrderingPreference
 import com.software.sello.domain.model.CorrectionAnnouncementPreference
 import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.DismissedSuggestion
+import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.InvestmentPreference
@@ -426,6 +428,102 @@ class DataStoreUserPreferencesTest {
     }
 
     @Test
+    fun tuyaIsStoredWithItsHueInOneWriteAndPickingAHandMadeInkDropsTheHue() = runTest {
+        val data = HandDataStore()
+        val preferences = DataStoreUserPreferences(data)
+        val red = InkPreference.Tuya(InkHue.of(22)!!)
+
+        assertEquals(PreferenceWrite.Saved, preferences.setInk(red))
+        assertEquals("tuya", data.data.first()[INK])
+        assertEquals(22, data.data.first()[INK_HUE])
+        // A new adapter on the same store, as after a restart or process death.
+        assertEquals(
+            PreferenceRead.Ready(AppearancePreference(ink = red)),
+            DataStoreUserPreferences(data).observeAppearance().first()
+        )
+
+        assertEquals(PreferenceWrite.Saved, preferences.setInk(InkPreference.Violeta))
+        assertEquals("violeta", data.data.first()[INK])
+        assertEquals(null, data.data.first()[INK_HUE])
+        assertEquals(
+            PreferenceRead.Ready(AppearancePreference(ink = InkPreference.Violeta)),
+            preferences.observeAppearance().first()
+        )
+    }
+
+    @Test
+    fun theEdgeHuesAreStoredAsTheyAre() = runTest {
+        for (hue in listOf(0L, 359L)) {
+            val written = mutablePreferencesOf(INK to "tuya", INK_HUE to hue.toInt())
+            assertEquals(
+                PreferenceRead.Ready(
+                    AppearancePreference(ink = InkPreference.Tuya(InkHue.of(hue)!!))
+                ),
+                DataStoreUserPreferences(HandDataStore(written)).observeAppearance().first()
+            )
+        }
+    }
+
+    @Test
+    fun aStoredHueOutsideTheCircleOrWithoutTuyaIsInvalidNotClippedOrRewritten() = runTest {
+        val damaged = listOf(
+            mutablePreferencesOf(INK to "tuya", INK_HUE to 360),
+            mutablePreferencesOf(INK to "tuya", INK_HUE to -1),
+            mutablePreferencesOf(INK to "tuya"),
+            mutablePreferencesOf(INK to "cobalto", INK_HUE to 22),
+            // No ink stored reads as Cobalto, which has no hue.
+            mutablePreferencesOf(INK_HUE to 22)
+        )
+        for (raw in damaged) {
+            val data = HandDataStore(raw)
+            assertEquals(
+                "$raw",
+                PreferenceRead.Failed<AppearancePreference>(PreferenceFailure.InvalidValue, null),
+                DataStoreUserPreferences(data).observeAppearance().first()
+            )
+            assertEquals(raw, data.data.first())
+        }
+    }
+
+    @Test
+    fun aHueStoredAsTextIsInvalid() = runTest {
+        val raw = mutablePreferencesOf(
+            INK to "tuya",
+            stringPreferencesKey("appearance_ink_hue_v1") to "22"
+        )
+
+        assertEquals(
+            PreferenceRead.Failed<AppearancePreference>(PreferenceFailure.InvalidValue, null),
+            DataStoreUserPreferences(HandDataStore(raw)).observeAppearance().first()
+        )
+    }
+
+    @Test
+    fun aTuyaThatCannotBeSavedLeavesTheStoredInk() = runTest {
+        val preferences = DataStoreUserPreferences(UnavailableDataStore())
+
+        assertEquals(
+            PreferenceWrite.Failed(PreferenceFailure.Unavailable),
+            preferences.setInk(InkPreference.Tuya(InkHue.of(22)!!))
+        )
+    }
+
+    @Test
+    fun resetReturnsTuyaToCobaltoAndForgetsItsHue() = runTest {
+        val data = HandDataStore()
+        val preferences = DataStoreUserPreferences(data)
+        preferences.setInk(InkPreference.Tuya(InkHue.of(147)!!))
+
+        assertEquals(PreferenceWrite.Saved, preferences.resetAll())
+
+        assertEquals(null, data.data.first()[INK_HUE])
+        assertEquals(
+            PreferenceRead.Ready(AppearancePreference()),
+            preferences.observeAppearance().first()
+        )
+    }
+
+    @Test
     fun anUnknownStoredCodeIsVisibleAndIsNotSilentlyRewritten() = runTest {
         val raw = mutablePreferencesOf(stringPreferencesKey("appearance_theme_v1") to "neon")
         val preferences = DataStoreUserPreferences(HandDataStore(raw))
@@ -588,3 +686,6 @@ class DataStoreUserPreferencesTest {
         )
     }
 }
+
+private val INK = stringPreferencesKey("appearance_ink_v1")
+private val INK_HUE = intPreferencesKey("appearance_ink_hue_v1")

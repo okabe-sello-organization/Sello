@@ -29,6 +29,7 @@ import com.software.sello.domain.model.IconKey
 import com.software.sello.domain.model.Income
 import com.software.sello.domain.model.IncomeId
 import com.software.sello.domain.model.IncomeSource
+import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.Investment
 import com.software.sello.domain.model.InvestmentAmount
@@ -104,7 +105,6 @@ internal object WireNames {
         ThemePreference.Light to "light",
         ThemePreference.Dark to "dark"
     )
-    val inks = InkPreference.entries.associateWith { it.id }
     val orders = mapOf(
         CategoryOrder.MostUsed to "most_used",
         CategoryOrder.Alphabetical to "alphabetical",
@@ -177,16 +177,16 @@ private fun flag(element: JsonElement, path: String): Boolean {
 }
 
 /**
- * Checks a decoded file completely, older versions read as version 7 included; the
+ * Checks a decoded file completely, older versions read as version 8 included; the
  * first problem rejects all of it.
  */
-internal fun validate(file: BackupFileV7): Outcome<BackupContents, BackupRejection> = try {
+internal fun validate(file: BackupFileV8): Outcome<BackupContents, BackupRejection> = try {
     Outcome.Success(contentsOf(file))
 } catch (rejected: Rejected) {
     Outcome.Failure(rejected.rejection)
 }
 
-private fun contentsOf(file: BackupFileV7): BackupContents {
+private fun contentsOf(file: BackupFileV8): BackupContents {
     val financial = file.financial
     val version = whole(file.version, "version")
     val revision = whole(financial.sourceRevision, "financial.sourceRevision")
@@ -997,10 +997,10 @@ private fun carryChains(
 private fun <T> Map<T, String>.decode(text: String, path: String): T =
     entries.firstOrNull { it.value == text }?.key ?: invalid(path)
 
-private fun preferences(wire: PreferencesV5) = PortablePreferences(
+private fun preferences(wire: PreferencesV8) = PortablePreferences(
     appearance = AppearancePreference(
         theme = WireNames.themes.decode(wire.theme, "preferences.theme"),
-        ink = WireNames.inks.decode(wire.ink, "preferences.ink")
+        ink = ink(wire)
     ),
     ordering = CategoryOrderingPreference(
         order = WireNames.orders.decode(wire.categoryOrder, "preferences.categoryOrder"),
@@ -1020,3 +1020,17 @@ private fun preferences(wire: PreferencesV5) = PortablePreferences(
         )
     )
 )
+
+/**
+ * The ink and, for Tuya only, its hue: a bare whole degree from 0 to 359. A hue outside it
+ * is refused, never wrapped or clipped, and so is a hue beside an ink that has none.
+ */
+private fun ink(wire: PreferencesV8): InkPreference {
+    val hue = optionalWhole(wire.inkHue, "preferences.inkHue")
+    return InkPreference.of(wire.ink, hue) ?: when {
+        InkPreference.of(wire.ink, InkHue.RANGE.first.toLong()) != null ||
+            InkPreference.of(wire.ink, null) != null -> invalid("preferences.inkHue")
+
+        else -> invalid("preferences.ink")
+    }
+}
