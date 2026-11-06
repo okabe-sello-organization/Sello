@@ -38,6 +38,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.software.sello.R
 import com.software.sello.designsystem.component.ButtonKind
+import com.software.sello.designsystem.component.ButtonPair
 import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.FieldMessage
 import com.software.sello.designsystem.component.FieldMessageText
@@ -263,24 +264,36 @@ private fun Preview(
             )
         )
         RestoreBody(stringResource(R.string.startup_restore_warning))
-        SelloButton(
-            text = stringResource(
-                if (restoring) R.string.restore_replacing else R.string.startup_restore_confirm
-            ),
-            onClick = { onAction(StartupFailureAction.ConfirmRestore) },
-            tone = ButtonTone.Loss,
-            loading = restoring,
-            enabled = !restoring,
-            modifier = Modifier.fillMaxWidth().padding(top = SelloTheme.spacing.md)
-                .testTag(STARTUP_RESTORE_CONFIRM_TAG)
-        )
-        SelloButton(
-            text = stringResource(R.string.restore_cancel),
-            onClick = { onAction(StartupFailureAction.CancelRestore) },
-            kind = ButtonKind.Outlined,
-            enabled = !restoring,
-            modifier = Modifier.fillMaxWidth().padding(top = SelloTheme.spacing.sm)
-                .testTag(STARTUP_RESTORE_CANCEL_TAG)
+        ButtonPair(
+            firstWeight = 1f,
+            secondWeight = 2f,
+            gap = SelloTheme.spacing.md,
+            modifier = Modifier.padding(top = SelloTheme.spacing.md),
+            first = {
+                SelloButton(
+                    text = stringResource(R.string.restore_cancel),
+                    onClick = { onAction(StartupFailureAction.CancelRestore) },
+                    kind = ButtonKind.Outlined,
+                    enabled = !restoring,
+                    modifier = Modifier.testTag(STARTUP_RESTORE_CANCEL_TAG)
+                )
+            },
+            second = {
+                SelloButton(
+                    text = stringResource(
+                        if (restoring) {
+                            R.string.restore_replacing
+                        } else {
+                            R.string.startup_restore_confirm
+                        }
+                    ),
+                    onClick = { onAction(StartupFailureAction.ConfirmRestore) },
+                    tone = ButtonTone.Loss,
+                    loading = restoring,
+                    enabled = !restoring,
+                    modifier = Modifier.testTag(STARTUP_RESTORE_CONFIRM_TAG)
+                )
+            }
         )
     }
 }

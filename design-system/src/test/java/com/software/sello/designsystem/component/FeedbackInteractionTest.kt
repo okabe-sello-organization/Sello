@@ -1,6 +1,7 @@
 package com.software.sello.designsystem.component
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -153,6 +154,42 @@ class FeedbackInteractionTest {
         rule.waitForIdle()
         assertEquals(0 to 0, calls.confirmed to calls.dismissed)
         rule.onNodeWithText("Borrar").assertIsDisplayed()
+    }
+
+    private fun showPair(cancel: String, action: String) {
+        rule.setContent {
+            com.software.sello.designsystem.theme.SelloTheme {
+                ConfirmSlip(
+                    title = "¿Borrar Café?",
+                    confirmLabel = action,
+                    onConfirm = {},
+                    onDismiss = {},
+                    dismissLabel = cancel
+                ) { Text("Se borran sus 12 gastos.") }
+            }
+        }
+    }
+
+    @Test
+    fun sideBySideTheDismissIsLeftOfTheAction() {
+        showPair(cancel = "No", action = "Sí")
+        val cancel = rule.onNodeWithText("No").getUnclippedBoundsInRoot()
+        val action = rule.onNodeWithText("Sí").getUnclippedBoundsInRoot()
+
+        assertEquals("one row", cancel.top, action.top)
+        assertTrue("No left of Sí", cancel.right <= action.left)
+    }
+
+    @Test
+    fun stackedTheActionIsOnTopAndCancelarUnderIt() {
+        // A word too long for its share: the two stand one above the other.
+        showPair(cancel = "Cancelar", action = "Desarchivarlasdetodasmaneras")
+        val cancel = rule.onNodeWithText("Cancelar").getUnclippedBoundsInRoot()
+        val action = rule.onNodeWithText("Desarchivarlasdetodasmaneras")
+            .getUnclippedBoundsInRoot()
+
+        assertEquals("one column", cancel.left, action.left)
+        assertTrue("the action above Cancelar", action.bottom <= cancel.top)
     }
 
     @Test

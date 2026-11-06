@@ -25,6 +25,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -108,6 +109,20 @@ object StatusSlipDefaults {
 fun StatusSlip(
     kind: StatusKind,
     message: String,
+    modifier: Modifier = Modifier,
+    action: StatusAction? = null
+) {
+    StatusSlip(kind, AnnotatedString(message), modifier, action)
+}
+
+/**
+ * [StatusSlip] whose [message] has styled parts, such as figures in bold; the kind's ink
+ * still colours the whole sentence.
+ */
+@Composable
+fun StatusSlip(
+    kind: StatusKind,
+    message: AnnotatedString,
     modifier: Modifier = Modifier,
     action: StatusAction? = null
 ) {
@@ -226,7 +241,7 @@ private fun Modifier.announcedIf(announced: Boolean): Modifier =
 private fun CentredStatus(
     look: StatusLook,
     title: String?,
-    message: String,
+    message: AnnotatedString,
     action: StatusAction?,
     modifier: Modifier
 ) {
@@ -270,7 +285,7 @@ private fun CentredStatus(
 private fun InlineStatus(
     look: StatusLook,
     title: String?,
-    message: String,
+    message: AnnotatedString,
     action: StatusAction?,
     modifier: Modifier
 ) {

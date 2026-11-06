@@ -182,8 +182,9 @@
       <h2>Dialog: discard the draft</h2>
 
       <figure data-shot="expense-entry-discard" data-module="app" data-caption="The discard dialog"></figure>
-      <p>A <a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a> with <code>destructive = false</code>, so
-        "Descartar" is in brand blue (<code>ExpenseEntryScreen.kt:290</code>). New: "¿Descartar este gasto?" /
+      <p>The shared <a href="../components.html#c-MovementDiscardSlip"><code>MovementDiscardSlip</code></a>, so
+        "Descartar" is loss red like every other discard (<code>ExpenseEntryScreen.kt:297</code>), with this form's own
+        words and keep label. New: "¿Descartar este gasto?" /
         "Lo que escribiste no se guardará." / "Seguir anotando". Correcting: "¿Descartar los cambios?" /
         "El gasto queda como estaba." / "Seguir editando". "Descartar" sends <code>DiscardConfirmed</code>, the other
         button <code>KeepEditing</code>. Screenshot: <code>expense-entry-discard</code>.</p>
@@ -263,8 +264,10 @@
               <td><code>compact</code>, off while not editable</td><td>The amount is typed only on the pad</td></tr>
             <tr><td><a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a>, <a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> LoadFailed</td><td><code>:design-system</code> <code>Feedback.kt</code>, <code>Status.kt</code></td>
               <td>Loading and nothing-read panes, in the feature's own <code>Pane</code></td><td>Error screen only when nothing was ever read</td></tr>
+            <tr><td><a href="../components.html#c-MovementDiscardSlip"><code>MovementDiscardSlip</code></a></td><td><code>:design-system</code> <code>Movement.kt</code></td>
+              <td>Discard, with "Seguir anotando" or "Seguir editando" as the keep label</td><td>Asks before losing a draft, as every movement form does</td></tr>
             <tr><td><a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a></td><td><code>:design-system</code> <code>Feedback.kt</code></td>
-              <td>Discard (not destructive) and the carry correction list (busy)</td><td>Asks before losing a draft or changing later months</td></tr>
+              <td>The carry correction list (busy)</td><td>Asks before changing later months</td></tr>
             <tr><td><a href="../components.html#c-SelloNotice"><code>SelloNotice</code></a></td><td><code>:design-system</code> <code>Corrections.kt</code></td>
               <td>Past-expense announcement, inline in the choices</td><td>Said once; "Entendido" remembers it</td></tr>
             <tr><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> Older</td><td><code>:design-system</code> <code>Status.kt</code></td>
@@ -302,8 +305,7 @@
       <h2>Findings here</h2>
       <p class="muted">Places in this feature on the <a href="../findings.html">findings</a> page; shared parts it uses are listed there under their own files.</p>
       <ul>
-        <li><strong>Misuse:</strong> <a href="../findings.html#M03">M03</a> <code>ConfirmSlip(destructive)</code>: <a href="../findings.html#M03-1">M03-1</a>.</li>
-        <li><strong>Copies:</strong> <a href="../findings.html#C01">C01</a> <code>MovementDatePicker</code>: <a href="../findings.html#C01-1">C01-1</a>; <a href="../findings.html#C02">C02</a> <code>MovementCloseButton</code>: <a href="../findings.html#C02-1">C02-1</a>; <a href="../findings.html#C03">C03</a> <code>MovementPane</code>: <a href="../findings.html#C03-2">C03-2</a>; <a href="../findings.html#C04">C04</a> <code>MovementNoteLine</code>: <a href="../findings.html#C04-1">C04-1</a>; <a href="../findings.html#C05">C05</a> <code>MovementDiscardSlip</code>: <a href="../findings.html#C05-2">C05-2 (drifted)</a>.</li>
+        <li><strong>Copies:</strong> <a href="../findings.html#C01">C01</a> <code>MovementDatePicker</code>: <a href="../findings.html#C01-1">C01-1</a>; <a href="../findings.html#C02">C02</a> <code>MovementCloseButton</code>: <a href="../findings.html#C02-1">C02-1</a>; <a href="../findings.html#C03">C03</a> <code>MovementPane</code>: <a href="../findings.html#C03-2">C03-2</a>; <a href="../findings.html#C04">C04</a> <code>MovementNoteLine</code>: <a href="../findings.html#C04-1">C04-1</a>.</li>
         <li><strong>Hard-coded type:</strong> <a href="../findings.html#H47">H47</a> <code>fontWeight = FontWeight.Bold</code> (1 place).</li>
       </ul>
     </section>

@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -58,83 +57,23 @@ import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 
 /**
- * A confirmation for something that cannot be undone. [message] says what is affected
- * and how much, with the consequence in bold. Back and a tap outside cancel. While
- * [busy] the action shows a spinner and nothing can be pressed or dismissed, so the
- * action is requested once. A slip whose labels are long can narrow [buttonPadding] so
- * each stays on one line.
+ * The frame every dialog slip shares: plain paper over a 55 % dim, [title] as its
+ * heading, [content] under it, scrolling when the slip would not fit, and [buttons], when
+ * there are any, under a tear line where they stay in view. Back and a tap outside are
+ * [onDismissRequest]; a caller that must not be dismissed, such as while busy, passes one
+ * that does nothing. [ConfirmSlip], [ChoiceSlip] and [OptionSlip] are drawn with it; use it
+ * for a slip with one answer or none, and put two answers in a [ButtonPair].
  */
 @Composable
-fun ConfirmSlip(
+fun DialogSlip(
     title: String,
-    message: AnnotatedString,
-    confirmLabel: String,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
-    destructive: Boolean = true,
-    busy: Boolean = false,
-    dismissLabel: String = stringResource(R.string.sello_cancel),
-    buttonPadding: PaddingValues = ButtonDefaults.ContentPadding
-) {
-    Dialog(onDismissRequest = { if (!busy) onDismiss() }) {
-        val window = (LocalView.current.parent as? DialogWindowProvider)?.window
-        SideEffect { window?.setDimAmount(SCRIM_ALPHA) }
-        Slip(
-            pinked = false,
-            contentPadding = SlipDefaults.PlainPadding,
-            modifier = Modifier.semantics { paneTitle = title }
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.headlineSmall.copy(fontSize = 22.sp),
-                modifier = Modifier.semantics { heading() }
-            )
-            Spacer(Modifier.height(SelloTheme.spacing.sm))
-            Text(text = message, style = MaterialTheme.typography.bodyLarge)
-            TearLine(bleed = 20.dp)
-            Row(horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md)) {
-                SelloButton(
-                    text = dismissLabel,
-                    onClick = onDismiss,
-                    kind = ButtonKind.Outlined,
-                    enabled = !busy,
-                    contentPadding = buttonPadding,
-                    modifier = Modifier.weight(1f)
-                )
-                SelloButton(
-                    text = confirmLabel,
-                    onClick = onConfirm,
-                    tone = if (destructive) ButtonTone.Loss else ButtonTone.Brand,
-                    loading = busy,
-                    contentPadding = buttonPadding,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
-    }
-}
-
-/**
- * [ConfirmSlip] with any [content] under the title, such as points to read before
- * saving a file. The content scrolls when the slip would not fit; the buttons stay
- * in view and go one above the other when a label would not fit. The action stays off
- * until [confirmEnabled], such as until a word that confirms it is typed.
- */
-@Composable
-fun ConfirmSlip(
-    title: String,
-    confirmLabel: String,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
+    onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
-    destructive: Boolean = true,
-    busy: Boolean = false,
-    dismissLabel: String = stringResource(R.string.sello_cancel),
-    confirmEnabled: Boolean = true,
+    buttons: (@Composable ColumnScope.() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val density = LocalDensity.current
-    Dialog(onDismissRequest = { if (!busy) onDismiss() }) {
+    Dialog(onDismissRequest = onDismissRequest) {
         val window = (LocalView.current.parent as? DialogWindowProvider)?.window
         SideEffect { window?.setDimAmount(SCRIM_ALPHA) }
         // The dialog's own window would take the system's text size; keep the caller's.
@@ -153,41 +92,141 @@ fun ConfirmSlip(
                 Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
                     content()
                 }
-                TearLine(bleed = 20.dp)
-                // The action's label is usually the longer one: it gets two thirds.
-                ButtonPair(
-                    firstWeight = 1f,
-                    secondWeight = 2f,
-                    gap = SelloTheme.spacing.md,
-                    first = {
-                        SelloButton(
-                            text = dismissLabel,
-                            onClick = onDismiss,
-                            kind = ButtonKind.Outlined,
-                            enabled = !busy
-                        )
-                    },
-                    second = {
-                        SelloButton(
-                            text = confirmLabel,
-                            onClick = onConfirm,
-                            tone = if (destructive) ButtonTone.Loss else ButtonTone.Brand,
-                            enabled = confirmEnabled,
-                            loading = busy
-                        )
-                    }
-                )
+                if (buttons != null) {
+                    TearLine(bleed = 20.dp)
+                    buttons()
+                }
             }
         }
     }
 }
 
 /**
+ * A confirmation for something that cannot be undone. [message] says what is affected
+ * and how much, with the consequence in bold. Back and a tap outside cancel. While
+ * [busy] the action shows a spinner and nothing can be pressed or dismissed, so the
+ * action is requested once. The two buttons share the width; when a word of a label would
+ * not fit they go one above the other, the action on top. A slip whose labels are long
+ * can narrow [buttonPadding] so each stays on one line.
+ */
+@Composable
+fun ConfirmSlip(
+    title: String,
+    message: AnnotatedString,
+    confirmLabel: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+    destructive: Boolean = true,
+    busy: Boolean = false,
+    dismissLabel: String = stringResource(R.string.sello_cancel),
+    buttonPadding: PaddingValues = ButtonDefaults.ContentPadding
+) {
+    DialogSlip(
+        title = title,
+        onDismissRequest = { if (!busy) onDismiss() },
+        buttons = {
+            ConfirmButtons(
+                dismissLabel = dismissLabel,
+                onDismiss = onDismiss,
+                confirmLabel = confirmLabel,
+                onConfirm = onConfirm,
+                destructive = destructive,
+                busy = busy,
+                confirmWeight = 1f,
+                buttonPadding = buttonPadding
+            )
+        }
+    ) {
+        Text(text = message, style = MaterialTheme.typography.bodyLarge)
+    }
+}
+
+/**
+ * [ConfirmSlip] with any [content] under the title, such as points to read before
+ * saving a file. The content scrolls when the slip would not fit; the buttons stay
+ * in view and go one above the other, the action on top, when a label would not fit.
+ * The action stays off until [confirmEnabled], such as until a word that confirms it is
+ * typed.
+ */
+@Composable
+fun ConfirmSlip(
+    title: String,
+    confirmLabel: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    destructive: Boolean = true,
+    busy: Boolean = false,
+    dismissLabel: String = stringResource(R.string.sello_cancel),
+    confirmEnabled: Boolean = true,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    DialogSlip(
+        title = title,
+        onDismissRequest = { if (!busy) onDismiss() },
+        modifier = modifier,
+        buttons = {
+            // The action's label is usually the longer one: it gets two thirds.
+            ConfirmButtons(
+                dismissLabel = dismissLabel,
+                onDismiss = onDismiss,
+                confirmLabel = confirmLabel,
+                onConfirm = onConfirm,
+                destructive = destructive,
+                busy = busy,
+                confirmWeight = 2f,
+                confirmEnabled = confirmEnabled
+            )
+        },
+        content = content
+    )
+}
+
+/** Cancelar outlined and the action filled, in loss ink when [destructive]. */
+@Composable
+private fun ConfirmButtons(
+    dismissLabel: String,
+    onDismiss: () -> Unit,
+    confirmLabel: String,
+    onConfirm: () -> Unit,
+    destructive: Boolean,
+    busy: Boolean,
+    confirmWeight: Float,
+    confirmEnabled: Boolean = true,
+    buttonPadding: PaddingValues = ButtonDefaults.ContentPadding
+) {
+    ButtonPair(
+        firstWeight = 1f,
+        secondWeight = confirmWeight,
+        gap = SelloTheme.spacing.md,
+        first = {
+            SelloButton(
+                text = dismissLabel,
+                onClick = onDismiss,
+                kind = ButtonKind.Outlined,
+                enabled = !busy,
+                contentPadding = buttonPadding
+            )
+        },
+        second = {
+            SelloButton(
+                text = confirmLabel,
+                onClick = onConfirm,
+                tone = if (destructive) ButtonTone.Loss else ButtonTone.Brand,
+                enabled = confirmEnabled,
+                loading = busy,
+                contentPadding = buttonPadding
+            )
+        }
+    )
+}
+
+/**
  * A question with two answers, neither of them destructive, such as whether a change
  * applies to the next ones too: [firstLabel] outlined, [secondLabel] filled, and
- * [backLabel] under them to go back without answering. The slip is [ConfirmSlip]'s.
- * Back and a tap outside are [onBack]. The answers stand one above the other when they
- * do not fit side by side. While [busy] the answer given shows a
+ * [backLabel] under them to go back without answering. The slip is [DialogSlip].
+ * Back and a tap outside are [onBack]. The answers stand one above the other, the filled
+ * one on top, when they do not fit side by side. While [busy] the answer given shows a
  * spinner and nothing can be pressed or dismissed, so it is requested once.
  */
 @Composable
@@ -202,64 +241,17 @@ fun ChoiceSlip(
     onBack: () -> Unit,
     busy: Boolean = false
 ) {
-    // Which answer was given, so the spinner shows on that one.
-    var answered by remember { mutableIntStateOf(0) }
-    val density = LocalDensity.current
-    Dialog(onDismissRequest = { if (!busy) onBack() }) {
-        val window = (LocalView.current.parent as? DialogWindowProvider)?.window
-        SideEffect { window?.setDimAmount(SCRIM_ALPHA) }
-        // The dialog's own window would take the system's text size; keep the caller's.
-        CompositionLocalProvider(LocalDensity provides density) {
-            Slip(
-                pinked = false,
-                contentPadding = SlipDefaults.PlainPadding,
-                modifier = Modifier.semantics { paneTitle = title }
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.headlineSmall.copy(fontSize = 22.sp),
-                    modifier = Modifier.semantics { heading() }
-                )
-                Spacer(Modifier.height(SelloTheme.spacing.sm))
-                Text(text = message, style = MaterialTheme.typography.bodyLarge)
-                TearLine(bleed = 20.dp)
-                ButtonPair(
-                    firstWeight = 1f,
-                    secondWeight = 1f,
-                    gap = SelloTheme.spacing.md,
-                    first = {
-                        SelloButton(
-                            text = firstLabel,
-                            onClick = {
-                                answered = 1
-                                onFirst()
-                            },
-                            kind = ButtonKind.Outlined,
-                            enabled = !busy,
-                            loading = busy && answered == 1
-                        )
-                    },
-                    second = {
-                        SelloButton(
-                            text = secondLabel,
-                            onClick = {
-                                answered = 2
-                                onSecond()
-                            },
-                            enabled = !busy,
-                            loading = busy && answered == 2
-                        )
-                    }
-                )
-                SelloButton(
-                    text = backLabel,
-                    onClick = onBack,
-                    kind = ButtonKind.Text,
-                    enabled = !busy,
-                    modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)
-                )
-            }
-        }
+    ChoiceSlip(
+        title = title,
+        firstLabel = firstLabel,
+        onFirst = onFirst,
+        secondLabel = secondLabel,
+        onSecond = onSecond,
+        backLabel = backLabel,
+        onBack = onBack,
+        busy = busy
+    ) {
+        Text(text = message, style = MaterialTheme.typography.bodyLarge)
     }
 }
 
@@ -281,65 +273,51 @@ fun ChoiceSlip(
     busy: Boolean = false,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    // Which answer was given, so the spinner shows on that one.
     var answered by remember { mutableIntStateOf(0) }
-    val density = LocalDensity.current
-    Dialog(onDismissRequest = { if (!busy) onBack() }) {
-        val window = (LocalView.current.parent as? DialogWindowProvider)?.window
-        SideEffect { window?.setDimAmount(SCRIM_ALPHA) }
-        CompositionLocalProvider(LocalDensity provides density) {
-            Slip(
-                pinked = false,
-                contentPadding = SlipDefaults.PlainPadding,
-                modifier = modifier.semantics { paneTitle = title }
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.headlineSmall.copy(fontSize = 22.sp),
-                    modifier = Modifier.semantics { heading() }
-                )
-                Spacer(Modifier.height(SelloTheme.spacing.sm))
-                Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
-                    content()
+    DialogSlip(
+        title = title,
+        onDismissRequest = { if (!busy) onBack() },
+        modifier = modifier,
+        buttons = {
+            ButtonPair(
+                firstWeight = 1f,
+                secondWeight = 1f,
+                gap = SelloTheme.spacing.md,
+                first = {
+                    SelloButton(
+                        text = firstLabel,
+                        onClick = {
+                            answered = 1
+                            onFirst()
+                        },
+                        kind = ButtonKind.Outlined,
+                        enabled = !busy,
+                        loading = busy && answered == 1
+                    )
+                },
+                second = {
+                    SelloButton(
+                        text = secondLabel,
+                        onClick = {
+                            answered = 2
+                            onSecond()
+                        },
+                        enabled = !busy,
+                        loading = busy && answered == 2
+                    )
                 }
-                TearLine(bleed = 20.dp)
-                ButtonPair(
-                    firstWeight = 1f,
-                    secondWeight = 1f,
-                    gap = SelloTheme.spacing.md,
-                    first = {
-                        SelloButton(
-                            text = firstLabel,
-                            onClick = {
-                                answered = 1
-                                onFirst()
-                            },
-                            kind = ButtonKind.Outlined,
-                            enabled = !busy,
-                            loading = busy && answered == 1
-                        )
-                    },
-                    second = {
-                        SelloButton(
-                            text = secondLabel,
-                            onClick = {
-                                answered = 2
-                                onSecond()
-                            },
-                            enabled = !busy,
-                            loading = busy && answered == 2
-                        )
-                    }
-                )
-                SelloButton(
-                    text = backLabel,
-                    onClick = onBack,
-                    kind = ButtonKind.Text,
-                    enabled = !busy,
-                    modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)
-                )
-            }
-        }
-    }
+            )
+            SelloButton(
+                text = backLabel,
+                onClick = onBack,
+                kind = ButtonKind.Text,
+                enabled = !busy,
+                modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)
+            )
+        },
+        content = content
+    )
 }
 
 internal const val SCRIM_ALPHA = 0.55f

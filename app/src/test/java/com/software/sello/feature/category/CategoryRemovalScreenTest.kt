@@ -1,9 +1,13 @@
 package com.software.sello.feature.category
 
+import android.view.MotionEvent
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -11,8 +15,11 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.text.font.FontWeight
+import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
+import com.software.sello.designsystem.component.STATUS_ICON_TAG
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.showSello
 import com.software.sello.testing.pesos
@@ -22,6 +29,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.GraphicsMode
+import org.robolectric.shadows.ShadowDialog
 
 /**
  * Each step of deleting Café, given by hand (borrar-categoria.html): what it says, in the
@@ -60,6 +68,15 @@ class CategoryRemovalScreenTest {
     }
 
     private fun button(text: String) = rule.onNode(hasText(text) and hasClickAction())
+
+    /** The parts of the text node [text] written in bold, in order. */
+    private fun boldIn(text: String): List<String> {
+        val shown = rule.onNodeWithText(text, useUnmergedTree = true).fetchSemanticsNode()
+            .config[SemanticsProperties.Text].single()
+        return shown.spanStyles
+            .filter { it.item.fontWeight == FontWeight.W800 }
+            .map { shown.text.substring(it.start, it.end) }
+    }
 
     @Test
     fun anEmptyCategoryIsAskedOnceInRed() {
@@ -212,12 +229,16 @@ class CategoryRemovalScreenTest {
         )
 
         rule.onNodeWithText("Café cambió").assertIsDisplayed()
-        rule.onNodeWithText("No se borró ni se movió nada.").assertIsDisplayed()
-        rule.onNodeWithText(
-            "Mientras lo veías, cambió lo que tiene Café: ahora son 35 gastos por 472.000, " +
-                "no 34 por 412.000."
-        ).assertIsDisplayed()
-        rule.onNodeWithText("Revisa las cifras nuevas antes de seguir.").assertIsDisplayed()
+        val message =
+            "No se borró ni se movió nada. Mientras lo veías, cambió lo que tiene Café: " +
+                "ahora son 35 gastos por 472.000, no 34 por 412.000. Revisa las cifras " +
+                "nuevas antes de seguir."
+        rule.onNodeWithText(message).assertIsDisplayed()
+        // What did not happen and the new figures stand out, as in borrar-categoria.html.
+        assertEquals(
+            listOf("No se borró ni se movió nada.", "35 gastos", "472.000"),
+            boldIn(message)
+        )
         button("Revisar").performClick()
 
         assertEquals(listOf<CategoryEditorAction>(RemovalAction.Next), actions)
@@ -228,9 +249,9 @@ class CategoryRemovalScreenTest {
         show(RemovalStep.Problem(RemovalProblem.TargetClosed("Comida")))
 
         rule.onNodeWithText("Comida ya no acepta gastos").assertIsDisplayed()
-        rule.onNodeWithText("No se borró ni se movió nada.").assertIsDisplayed()
         rule.onNodeWithText(
-            "Comida se archivó o se borró mientras elegías. Los gastos de Café no pueden ir allí."
+            "No se borró ni se movió nada. Comida se archivó o se borró mientras elegías. " +
+                "Los gastos de Café no pueden ir allí."
         ).assertIsDisplayed()
         button("Elegir otra").assertIsDisplayed()
     }
@@ -241,10 +262,68 @@ class CategoryRemovalScreenTest {
 
         rule.onNodeWithText("No se pudo guardar").assertIsDisplayed()
         rule.onNodeWithText(
-            "El teléfono no pudo guardar el cambio. Café sigue con sus 34 gastos, sus límites " +
-                "y su pago fijo."
+            "No se borró ni se movió nada. El teléfono no pudo guardar el cambio. Café sigue " +
+                "con sus 34 gastos, sus límites y su pago fijo."
         ).assertIsDisplayed()
         button("Reintentar").assertIsDisplayed()
+    }
+
+    @Test
+    fun aProblemIsAFailedActionInsideTheDialogWithItsOneWayForward() {
+        show(RemovalStep.Problem(RemovalProblem.TargetClosed("Comida")))
+
+        // The slip of a failed action, not a confirmation: its icon, and one way forward.
+        rule.onNode(
+            hasTestTag(STATUS_ICON_TAG) and hasAnyAncestor(hasTestTag(REMOVAL_PROBLEM_TAG)),
+            useUnmergedTree = true
+        ).assertExists()
+        button("Elegir otra").performClick()
+        button("Cancelar").performClick()
+
+        assertEquals(
+            listOf<CategoryEditorAction>(RemovalAction.Next, RemovalAction.Dismiss),
+            actions
+        )
+    }
+
+    @Test
+    fun whileTheWayForwardRunsNothingElseCanBePressed() {
+        show(RemovalStep.Problem(RemovalProblem.NotSaved(counts)), busy = true)
+
+        button("Cancelar").assertIsNotEnabled()
+        rule.onNodeWithText("Reintentar").performClick()
+        Espresso.pressBack()
+        tapOutsideTheDialog()
+        rule.waitForIdle()
+
+        assertEquals(emptyList<CategoryEditorAction>(), actions)
+        rule.onNodeWithTag(REMOVAL_PROBLEM_TAG).assertIsDisplayed()
+    }
+
+    @Test
+    fun whenNotBusyBackAndATapOutsideCloseTheProblem() {
+        show(RemovalStep.Problem(RemovalProblem.NotSaved(counts)))
+
+        Espresso.pressBack()
+        tapOutsideTheDialog()
+        rule.waitForIdle()
+
+        assertEquals(
+            listOf<CategoryEditorAction>(RemovalAction.Dismiss, RemovalAction.Dismiss),
+            actions
+        )
+    }
+
+    /** A press and release above the dialog's slip, on the dim. */
+    private fun tapOutsideTheDialog() {
+        val dialog = ShadowDialog.getLatestDialog()
+        rule.runOnUiThread {
+            listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP).forEach { action ->
+                val event = MotionEvent.obtain(0L, 0L, action, -10f, -10f, 0)
+                dialog.onTouchEvent(event)
+                event.recycle()
+            }
+        }
     }
 
     @Test

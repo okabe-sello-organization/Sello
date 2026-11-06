@@ -16,11 +16,13 @@ import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
+import com.software.sello.designsystem.R
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
@@ -76,21 +78,26 @@ fun MovementNoteLine(
     )
 }
 
-/** Asks before a typed movement is thrown away: [message], then [confirmLabel] or keep. */
+/**
+ * Asks before a typed movement is thrown away: [message], then [confirmLabel] in loss ink,
+ * or [dismissLabel] to keep it. It is a [ConfirmSlip].
+ */
 @Composable
 fun MovementDiscardSlip(
     title: String,
     message: String,
     confirmLabel: String,
     onConfirm: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    dismissLabel: String = stringResource(R.string.sello_cancel)
 ) {
     ConfirmSlip(
         title = title,
         message = AnnotatedString(message),
         confirmLabel = confirmLabel,
         onConfirm = onConfirm,
-        onDismiss = onDismiss
+        onDismiss = onDismiss,
+        dismissLabel = dismissLabel
     )
 }
 

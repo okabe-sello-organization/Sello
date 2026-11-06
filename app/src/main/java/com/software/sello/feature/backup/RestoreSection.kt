@@ -27,6 +27,7 @@ import com.software.sello.R
 import com.software.sello.designsystem.component.Bullet
 import com.software.sello.designsystem.component.BulletList
 import com.software.sello.designsystem.component.ButtonKind
+import com.software.sello.designsystem.component.ButtonPair
 import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.RestoreBody
 import com.software.sello.designsystem.component.RestoreHeading
@@ -185,24 +186,32 @@ private fun Preview(
         Counts(staged.current, staged.replacement)
         staged.legacy?.let { LegacyReportSection(it) }
         RestoreBody(stringResource(R.string.restore_preview_warning))
-        SelloButton(
-            text = stringResource(
-                if (replacing) R.string.restore_replacing else R.string.restore_confirm
-            ),
-            onClick = { onAction(RestoreAction.Confirm) },
-            tone = ButtonTone.Loss,
-            loading = replacing,
-            enabled = !replacing,
-            modifier = Modifier.fillMaxWidth().padding(top = SelloTheme.spacing.md)
-                .testTag(RESTORE_CONFIRM_TAG)
-        )
-        SelloButton(
-            text = stringResource(R.string.restore_cancel),
-            onClick = { onAction(RestoreAction.Cancel) },
-            kind = ButtonKind.Outlined,
-            enabled = !replacing,
-            modifier = Modifier.fillMaxWidth().padding(top = SelloTheme.spacing.sm)
-                .testTag(RESTORE_CANCEL_TAG)
+        ButtonPair(
+            firstWeight = 1f,
+            secondWeight = 2f,
+            gap = SelloTheme.spacing.md,
+            modifier = Modifier.padding(top = SelloTheme.spacing.md),
+            first = {
+                SelloButton(
+                    text = stringResource(R.string.restore_cancel),
+                    onClick = { onAction(RestoreAction.Cancel) },
+                    kind = ButtonKind.Outlined,
+                    enabled = !replacing,
+                    modifier = Modifier.testTag(RESTORE_CANCEL_TAG)
+                )
+            },
+            second = {
+                SelloButton(
+                    text = stringResource(
+                        if (replacing) R.string.restore_replacing else R.string.restore_confirm
+                    ),
+                    onClick = { onAction(RestoreAction.Confirm) },
+                    tone = ButtonTone.Loss,
+                    loading = replacing,
+                    enabled = !replacing,
+                    modifier = Modifier.testTag(RESTORE_CONFIRM_TAG)
+                )
+            }
         )
     }
 }

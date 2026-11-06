@@ -14,24 +14,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringArrayResource
@@ -39,11 +33,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.onClick
-import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -53,22 +44,20 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogWindowProvider
 import com.software.sello.R
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ChangeRow
 import com.software.sello.designsystem.component.ConfirmSlip
+import com.software.sello.designsystem.component.DialogSlip
 import com.software.sello.designsystem.component.FormField
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.component.RepeatSheet
 import com.software.sello.designsystem.component.SelloButton
-import com.software.sello.designsystem.component.Slip
-import com.software.sello.designsystem.component.SlipDefaults
-import com.software.sello.designsystem.component.TearLine
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
@@ -473,85 +462,88 @@ private fun ProblemSlip(
 
         is RemovalProblem.NotSaved, RemovalProblem.CannotCount -> R.string.category_delete_retry
     }
-    ConfirmSlip(
-        title = title,
-        confirmLabel = stringResource(forward),
-        onConfirm = { onAction(RemovalAction.Next) },
-        onDismiss = { onAction(RemovalAction.Dismiss) },
-        modifier = Modifier.testTag(REMOVAL_PROBLEM_TAG),
-        destructive = false,
-        busy = busy
-    ) {
-        // Counting failed before anything was offered: there was nothing to delete or move.
-        if (problem != RemovalProblem.CannotCount) {
-            val nothing = stringResource(R.string.category_delete_nothing)
-            Body(bold(nothing, nothing))
-        }
-        val gap = Modifier.padding(top = 6.dp)
-        when (problem) {
-            is RemovalProblem.Changed -> {
-                val before = problem.before
-                val now = problem.now
-                Body(
-                    if (before != null &&
-                        (before.expenses != now.expenses || before.total != now.total)
-                    ) {
-                        val count = expensesText(now.expenses)
-                        val total = now.total.shown()
-                        bold(
-                            pluralStringResource(
-                                R.plurals.category_delete_changed_counts,
-                                now.expenses,
-                                name,
-                                countText(now.expenses),
-                                total,
-                                countText(before.expenses),
-                                before.total.shown()
-                            ),
-                            count,
-                            total
-                        )
-                    } else {
-                        AnnotatedString(stringResource(R.string.category_delete_changed_body, name))
-                    },
-                    gap
+    val nothing = stringResource(R.string.category_delete_nothing)
+    val why: AnnotatedString = when (problem) {
+        is RemovalProblem.Changed -> {
+            val before = problem.before
+            val now = problem.now
+            val review = stringResource(R.string.category_delete_changed_review)
+            if (before != null &&
+                (before.expenses != now.expenses || before.total != now.total)
+            ) {
+                val count = expensesText(now.expenses)
+                val total = now.total.shown()
+                bold(
+                    pluralStringResource(
+                        R.plurals.category_delete_changed_counts,
+                        now.expenses,
+                        name,
+                        countText(now.expenses),
+                        total,
+                        countText(before.expenses),
+                        before.total.shown()
+                    ) + " " + review,
+                    count,
+                    total
                 )
-                Body(AnnotatedString(stringResource(R.string.category_delete_changed_review)), gap)
+            } else {
+                AnnotatedString(
+                    stringResource(R.string.category_delete_changed_body, name) + " " + review
+                )
             }
+        }
 
-            is RemovalProblem.TargetClosed -> Body(
-                AnnotatedString(
-                    stringResource(R.string.category_delete_target_body, problem.target, name)
-                ),
-                gap
-            )
+        is RemovalProblem.TargetClosed -> AnnotatedString(
+            stringResource(R.string.category_delete_target_body, problem.target, name)
+        )
 
-            is RemovalProblem.TargetCarry -> Body(
-                AnnotatedString(
-                    stringResource(R.string.category_delete_carry_body, problem.target, name)
-                ),
-                gap
-            )
+        is RemovalProblem.TargetCarry -> AnnotatedString(
+            stringResource(R.string.category_delete_carry_body, problem.target, name)
+        )
 
-            is RemovalProblem.NotSaved -> Body(
-                AnnotatedString(
-                    problem.counts?.let {
-                        stringResource(R.string.category_delete_storage_body, name, keeps(it))
-                    } ?: stringResource(R.string.category_delete_storage_body_plain, name)
-                ),
-                gap
-            )
+        is RemovalProblem.NotSaved -> AnnotatedString(
+            problem.counts?.let {
+                stringResource(R.string.category_delete_storage_body, name, keeps(it))
+            } ?: stringResource(R.string.category_delete_storage_body_plain, name)
+        )
 
-            RemovalProblem.CannotCount -> Body(
-                AnnotatedString(stringResource(R.string.category_delete_count_body, name))
+        RemovalProblem.CannotCount ->
+            AnnotatedString(stringResource(R.string.category_delete_count_body, name))
+    }
+    // It did not happen: an action that failed, inside the dialog, with its one way
+    // forward. Counting failed before anything was offered: nothing could be deleted.
+    val message = if (problem == RemovalProblem.CannotCount) {
+        why
+    } else {
+        bold("$nothing ", nothing) + why
+    }
+    RemovalDialog(
+        title = title,
+        onDismiss = { if (!busy) onAction(RemovalAction.Dismiss) },
+        modifier = Modifier.testTag(REMOVAL_PROBLEM_TAG),
+        action = {
+            SelloButton(
+                text = stringResource(R.string.category_delete_cancel),
+                onClick = { onAction(RemovalAction.Dismiss) },
+                kind = ButtonKind.Outlined,
+                enabled = !busy,
+                modifier = Modifier.fillMaxWidth()
             )
         }
+    ) {
+        StatusSlip(
+            kind = StatusKind.ActionFailed(),
+            message = message,
+            action = StatusAction(stringResource(forward), busy = busy) {
+                onAction(RemovalAction.Next)
+            }
+        )
     }
 }
 
 /**
- * A slip over the editor for a step with one answer or none, drawn as [ConfirmSlip]:
- * [content] scrolls, and [action], when there is one, stays under the tear line.
+ * A slip over the editor for a step with one answer or none: the shared [DialogSlip], with
+ * [action], when there is one, under the tear line.
  */
 @Composable
 private fun RemovalDialog(
@@ -561,32 +553,13 @@ private fun RemovalDialog(
     action: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    val density = LocalDensity.current
-    Dialog(onDismissRequest = onDismiss) {
-        val window = (LocalView.current.parent as? DialogWindowProvider)?.window
-        SideEffect { window?.setDimAmount(SCRIM_DIM) }
-        CompositionLocalProvider(LocalDensity provides density) {
-            Slip(
-                pinked = false,
-                contentPadding = SlipDefaults.PlainPadding,
-                modifier = modifier.semantics { paneTitle = title }
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.headlineSmall.copy(fontSize = 22.sp),
-                    modifier = Modifier.semantics { heading() }
-                )
-                Spacer(Modifier.height(SelloTheme.spacing.sm))
-                Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
-                    content()
-                }
-                if (action != null) {
-                    TearLine(bleed = 20.dp)
-                    action()
-                }
-            }
-        }
-    }
+    DialogSlip(
+        title = title,
+        onDismissRequest = onDismiss,
+        modifier = modifier,
+        buttons = action?.let { { it() } },
+        content = content
+    )
 }
 
 /** One choice of the slip that asks what to do: its icon, what it does and why, and ›. */
@@ -869,9 +842,6 @@ private fun bold(text: String, vararg parts: String): AnnotatedString = buildAnn
     }
     append(text.substring(at))
 }
-
-/** As the design system dims behind a slip. */
-private const val SCRIM_DIM = 0.55f
 
 const val REMOVAL_COUNTING_TAG = "category-removal:counting"
 const val REMOVAL_EMPTY_TAG = "category-removal:empty"
