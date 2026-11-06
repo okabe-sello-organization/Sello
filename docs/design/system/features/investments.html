@@ -64,11 +64,11 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Loading</td><td>Two <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a>s (a full one and a two-line one); no dock, no title chip.</td><td><code>app/src/main/java/com/software/sello/feature/investments/InversionesScreen.kt:85</code></td><td>no screenshot</td></tr>
-            <tr><td>Empty</td><td><a href="../components.html#c-EmptySlip"><code>EmptySlip</code></a> with the TrendingUp icon, "Anota lo que tienes invertido" and the body; the dock reads "Agregar inversión".</td><td><code>…/InversionesScreen.kt:116</code></td><td>no screenshot</td></tr>
-            <tr><td>Error (nothing ever loaded)</td><td><a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a> "No pudimos leer tus inversiones" with Reintentar.</td><td><code>…/InversionesScreen.kt:95</code></td><td>no screenshot</td></tr>
-            <tr><td>Stale</td><td>The last good board stays, under an <code>ErrorSlip</code> with "No pudimos leer tus inversiones de nuevo. Te mostramos las de la última lectura." and Reintentar.</td><td><code>…/InversionesScreen.kt:106</code>; kept by <code>LastGoodRead</code> at <code>…/InversionesViewModel.kt:39</code></td><td>no screenshot</td></tr>
-            <tr><td>No total</td><td>Investments exist but none has a value, or a dollar value has no rate: a plain slip "Tus inversiones valen" and a sentence instead of a figure; the list heading becomes "Tus inversiones" and the bar is hidden.</td><td><code>…/InversionesScreen.kt:213</code></td><td>no screenshot</td></tr>
+            <tr><td>Loading</td><td>Two <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a>s (a full one and a two-line one); no dock, no title chip.</td><td><code>app/src/main/java/com/software/sello/feature/investments/InversionesScreen.kt:85</code></td><td><code>inversiones-loading</code></td></tr>
+            <tr><td>Empty</td><td><a href="../components.html#c-EmptySlip"><code>EmptySlip</code></a> with the TrendingUp icon, "Anota lo que tienes invertido" and the body; the dock reads "Agregar inversión".</td><td><code>…/InversionesScreen.kt:116</code></td><td><code>inversiones-empty</code></td></tr>
+            <tr><td>Error (nothing ever loaded)</td><td><a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a> "No pudimos leer tus inversiones" with Reintentar.</td><td><code>…/InversionesScreen.kt:95</code></td><td><code>inversiones-failed</code></td></tr>
+            <tr><td>Stale</td><td>The last good board stays, under an <code>ErrorSlip</code> with "No pudimos leer tus inversiones de nuevo. Te mostramos las de la última lectura." and Reintentar.</td><td><code>…/InversionesScreen.kt:106</code>; kept by <code>LastGoodRead</code> at <code>…/InversionesViewModel.kt:39</code></td><td><code>inversiones-stale</code></td></tr>
+            <tr><td>No total</td><td>Investments exist but none has a value, or a dollar value has no rate: a plain slip "Tus inversiones valen" and a sentence instead of a figure; the list heading becomes "Tus inversiones" and the bar is hidden.</td><td><code>…/InversionesScreen.kt:213</code></td><td><code>inversiones-no-total</code></td></tr>
             <tr><td>Loaded</td><td>Total and rows as above. A row without a value shows a dashed circle, "Sin valor" and "aportaste …".</td><td><code>…/InversionesScreen.kt:125</code></td><td>inversiones (above)</td></tr>
             <tr><td>Busy, unknown outcome, restored draft, refused</td><td>Do not exist: the screen only reads.</td><td>—</td><td>—</td></tr>
           </tbody>
@@ -125,11 +125,11 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Loading</td><td>One <code>SlipSkeleton</code>; title "Inversiones", no pencil, no dock.</td><td><code>…/InvestmentDetailScreen.kt:73</code></td><td>no screenshot</td></tr>
+            <tr><td>Loading</td><td>One <code>SlipSkeleton</code>; title "Inversiones", no pencil, no dock.</td><td><code>…/InvestmentDetailScreen.kt:73</code></td><td><code>investment-detail-loading</code></td></tr>
             <tr><td>Gone</td><td>The investment is no longer there (deleted): the skeleton shows while the destination leaves at once. No message.</td><td><code>…/InvestmentDetailScreen.kt:73</code>; <code>…/InvestmentDestinations.kt:143</code></td><td>no screenshot</td></tr>
-            <tr><td>Error (nothing ever loaded)</td><td><code>ErrorSlip</code> "No pudimos leer esta inversión" / "Tus registros siguen guardados. Vuelve a intentarlo." with Reintentar.</td><td><code>…/InvestmentDetailScreen.kt:76</code></td><td>no screenshot</td></tr>
-            <tr><td>Stale</td><td>The page as last read under an <code>ErrorSlip</code> "No pudimos leer esta inversión de nuevo. Te mostramos la de la última lectura."</td><td><code>…/InvestmentDetailScreen.kt:85</code></td><td>no screenshot</td></tr>
-            <tr><td>No value yet</td><td>The plain "Vale · Sin valor anotado" slip; no chart.</td><td><code>…/InvestmentDetailScreen.kt:122</code></td><td>no screenshot</td></tr>
+            <tr><td>Error (nothing ever loaded)</td><td><code>ErrorSlip</code> "No pudimos leer esta inversión" / "Tus registros siguen guardados. Vuelve a intentarlo." with Reintentar.</td><td><code>…/InvestmentDetailScreen.kt:76</code></td><td><code>investment-detail-failed</code></td></tr>
+            <tr><td>Stale</td><td>The page as last read under an <code>ErrorSlip</code> "No pudimos leer esta inversión de nuevo. Te mostramos la de la última lectura."</td><td><code>…/InvestmentDetailScreen.kt:85</code></td><td><code>investment-detail-stale</code></td></tr>
+            <tr><td>No value yet</td><td>The plain "Vale · Sin valor anotado" slip; no chart.</td><td><code>…/InvestmentDetailScreen.kt:122</code></td><td><code>investment-detail-no-value</code></td></tr>
             <tr><td>Loaded</td><td>Answer, chart, short movement list.</td><td><code>…/InvestmentDetailScreen.kt:84</code></td><td>investment-detail-chart</td></tr>
             <tr><td>All movements</td><td>Every movement grouped by month; another year's month says its year.</td><td><code>…/InvestmentDetailScreen.kt:307</code></td><td>investment-detail-movements-all</td></tr>
             <tr><td>Restored after process death</td><td>"All movements" and the picked chart value come back from <code>SavedStateHandle</code>.</td><td><code>app/src/main/java/com/software/sello/feature/investments/InvestmentDetailViewModel.kt:43</code></td><td>no screenshot</td></tr>
@@ -176,7 +176,7 @@
       <figure data-shot="investment-editor-busy" data-module="app" data-caption="Saving"></figure>
       <figure data-shot="investment-editor-refused" data-module="app" data-caption="Not saved"></figure>
       <figure data-shot="investment-editor-icon-sheet" data-module="app" data-caption="The icon sheet"></figure>
-      <figure data-shot="investment-editor-date-picker" data-module="app" data-caption="The date picker"></figure>
+      <figure data-shot="investment-editor-date-picker" data-module="app" data-caption="The date picker (Material's picker: the JVM screen runs in English, and draws it with square corners and no scrim)"></figure>
       <figure data-shot="investment-editor-discard" data-module="app" data-caption="The discard confirm"></figure>
       <figure data-shot="investment-editor-delete" data-module="app" data-caption="The delete confirm"></figure>
 
@@ -202,17 +202,17 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Loading</td><td>One <code>SlipSkeleton</code>.</td><td><code>…/InvestmentEditorScreen.kt:177</code></td><td>no screenshot</td></tr>
-            <tr><td>Error (nothing ever loaded)</td><td><code>ErrorSlip</code> with the default title and "No pudimos leer esta inversión. Tus registros siguen guardados."</td><td><code>…/InvestmentEditorScreen.kt:179</code></td><td>no screenshot</td></tr>
-            <tr><td>Empty (new)</td><td>Name focused with the keyboard up; hint "Elige un ícono." over the disabled button.</td><td><code>…/InvestmentEditorScreen.kt:380</code>, <code>:263</code></td><td>no screenshot</td></tr>
+            <tr><td>Loading</td><td>One <code>SlipSkeleton</code>.</td><td><code>…/InvestmentEditorScreen.kt:177</code></td><td><code>investment-editor-loading</code></td></tr>
+            <tr><td>Error (nothing ever loaded)</td><td><code>ErrorSlip</code> with the default title and "No pudimos leer esta inversión. Tus registros siguen guardados."</td><td><code>…/InvestmentEditorScreen.kt:179</code></td><td><code>investment-editor-failed</code></td></tr>
+            <tr><td>Empty (new)</td><td>Name focused with the keyboard up; hint "Elige un ícono." over the disabled button.</td><td><code>…/InvestmentEditorScreen.kt:380</code>, <code>:263</code></td><td><code>investment-editor-empty</code></td></tr>
             <tr><td>Ready</td><td>Name, icon and first aporte given: "Crear inversión" enabled.</td><td><code>app/src/main/java/com/software/sello/feature/investments/InvestmentEditorState.kt:123</code></td><td>investment-editor</td></tr>
-            <tr><td>Dollars, no rate</td><td>The rate figure and its date appear; "Anota a cuánto está el dólar." until typed; "La tasa es de 1,00 en adelante" / "La tasa llega hasta 100.000,00" under it.</td><td><code>…/InvestmentEditorScreen.kt:679</code></td><td>no screenshot</td></tr>
-            <tr><td>Busy</td><td>The button keeps its label with a spinner; fields and pad disabled.</td><td><code>…/InvestmentEditorScreen.kt:297</code></td><td>no screenshot</td></tr>
+            <tr><td>Dollars, no rate</td><td>The rate figure and its date appear; "Anota a cuánto está el dólar." until typed; "La tasa es de 1,00 en adelante" / "La tasa llega hasta 100.000,00" under it.</td><td><code>…/InvestmentEditorScreen.kt:679</code></td><td><code>investment-editor-dollars</code></td></tr>
+            <tr><td>Busy</td><td>The button keeps its label with a spinner; fields and pad disabled.</td><td><code>…/InvestmentEditorScreen.kt:297</code></td><td><code>investment-editor-busy</code></td></tr>
             <tr><td>Unknown outcome</td><td>Warning "No sabemos si se guardó. Compruébalo antes de seguir." and the button "Comprobar si se guardó" (or "Comprobar si se borró"); Back does nothing until it is resolved. ⋮ stays.</td><td><code>…/InvestmentEditorScreen.kt:322</code>; <code>…/InvestmentEditorViewModel.kt:238</code></td><td>investment-editor-unresolved</td></tr>
-            <tr><td>Refused</td><td>An error line above the button: not saved, changed meanwhile, future date, invalid, rate required or unchanged.</td><td><code>…/InvestmentEditorScreen.kt:322</code></td><td>no screenshot</td></tr>
+            <tr><td>Refused</td><td>An error line above the button: not saved, changed meanwhile, future date, invalid, rate required or unchanged.</td><td><code>…/InvestmentEditorScreen.kt:322</code></td><td><code>investment-editor-refused</code></td></tr>
             <tr><td>Restored draft</td><td>Typed text, figures, the pad's field, an open date picker, the delete confirm and an operation in flight come back from <code>SavedStateHandle</code>.</td><td><code>…/InvestmentEditorViewModel.kt:106</code></td><td>no screenshot</td></tr>
-            <tr><td>Confirm delete</td><td><code>ConfirmSlip</code> "¿Borrar …?" with "Se borran la inversión y sus N movimientos. Esto no se puede deshacer." (count in bold), "Borrar".</td><td><code>…/InvestmentEditorScreen.kt:236</code></td><td>no screenshot</td></tr>
-            <tr><td>Confirm discard</td><td><code>ConfirmSlip</code> "¿Descartar los cambios?", "Descartar" / "Seguir editando".</td><td><code>…/InvestmentEditorScreen.kt:246</code></td><td>no screenshot</td></tr>
+            <tr><td>Confirm delete</td><td><code>ConfirmSlip</code> "¿Borrar …?" with "Se borran la inversión y sus N movimientos. Esto no se puede deshacer." (count in bold), "Borrar".</td><td><code>…/InvestmentEditorScreen.kt:236</code></td><td><code>investment-editor-delete</code></td></tr>
+            <tr><td>Confirm discard</td><td><code>ConfirmSlip</code> "¿Descartar los cambios?", "Descartar" / "Seguir editando".</td><td><code>…/InvestmentEditorScreen.kt:246</code></td><td><code>investment-editor-discard</code></td></tr>
           </tbody>
         </table>
       </div>
@@ -258,7 +258,7 @@
       <figure data-shot="investment-movement-refused" data-module="app" data-caption="Not saved"></figure>
       <figure data-shot="investment-movement-correcting" data-module="app" data-caption="Correcting, with Borrar"></figure>
       <figure data-shot="investment-movement-note" data-module="app" data-caption="The note composer"></figure>
-      <figure data-shot="investment-movement-date-picker" data-module="app" data-caption="The date picker"></figure>
+      <figure data-shot="investment-movement-date-picker" data-module="app" data-caption="The date picker (Material's picker: the JVM screen runs in English, and draws it with square corners and no scrim)"></figure>
       <figure data-shot="investment-movement-discard" data-module="app" data-caption="The discard confirm"></figure>
 
       <h3>Layout</h3>
@@ -275,19 +275,19 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Loading</td><td><code>SlipSkeleton</code> in <code>MovementPane</code>.</td><td><code>…/InvestmentMovementScreen.kt:131</code></td><td>no screenshot</td></tr>
-            <tr><td>Error (nothing ever loaded)</td><td><code>ErrorSlip</code> "No pudimos leer tus inversiones".</td><td><code>…/InvestmentMovementScreen.kt:135</code></td><td>no screenshot</td></tr>
-            <tr><td>No investments</td><td>Fact line "Todavía no tienes inversiones. Agrega una en Inversiones." instead of chips.</td><td><code>…/InvestmentMovementScreen.kt:266</code></td><td>no screenshot</td></tr>
+            <tr><td>Loading</td><td><code>SlipSkeleton</code> in <code>MovementPane</code>.</td><td><code>…/InvestmentMovementScreen.kt:131</code></td><td><code>investment-movement-loading</code></td></tr>
+            <tr><td>Error (nothing ever loaded)</td><td><code>ErrorSlip</code> "No pudimos leer tus inversiones".</td><td><code>…/InvestmentMovementScreen.kt:135</code></td><td><code>investment-movement-failed</code></td></tr>
+            <tr><td>No investments</td><td>Fact line "Todavía no tienes inversiones. Agrega una en Inversiones." instead of chips.</td><td><code>…/InvestmentMovementScreen.kt:266</code></td><td><code>investment-movement-no-investments</code></td></tr>
             <tr><td>No investment chosen</td><td>Hint "Elige en qué inversión va."; Otro movimiento hidden.</td><td><code>…/InvestmentMovementScreen.kt:441</code></td><td>no screenshot</td></tr>
             <tr><td>Typed</td><td>Signed amount, fact line, enabled button.</td><td><code>…/InvestmentMovementScreen.kt:144</code></td><td>investment-movement</td></tr>
-            <tr><td>Retiro above the value / no value</td><td>"Más de lo que vale (…)" under the amount, the fact ends "¿Vale más hoy?", and "Anotar el valor de hoy" switches to Valor de hoy.</td><td><code>…/InvestmentMovementScreen.kt:221</code>, <code>:348</code></td><td>no screenshot</td></tr>
+            <tr><td>Retiro above the value / no value</td><td>"Más de lo que vale (…)" under the amount, the fact ends "¿Vale más hoy?", and "Anotar el valor de hoy" switches to Valor de hoy.</td><td><code>…/InvestmentMovementScreen.kt:221</code>, <code>:348</code></td><td><code>investment-movement-over</code></td></tr>
             <tr><td>Blocked</td><td>Error lines above the button for a date before the first aporte or a later retiro left short.</td><td><code>…/InvestmentMovementScreen.kt:366</code></td><td>no screenshot</td></tr>
-            <tr><td>Busy</td><td>The button reads "Guardando…" with a spinner; chips and pad disabled.</td><td><code>…/InvestmentMovementScreen.kt:460</code></td><td>no screenshot</td></tr>
-            <tr><td>Unknown outcome</td><td>Warning "Aún no sabemos si se guardó. Compruébalo antes de volver a anotar." and "Comprobar si se guardó"; the draft is locked and Back waits.</td><td><code>…/InvestmentMovementScreen.kt:405</code>; <code>app/src/main/java/com/software/sello/feature/investments/InvestmentMovementViewModel.kt:318</code></td><td>no screenshot</td></tr>
-            <tr><td>Refused</td><td>Error line: not saved, future date, data changed, gone, changed, currency mismatch, unchanged, last aporte, not deleted.</td><td><code>…/InvestmentMovementScreen.kt:400</code></td><td>no screenshot</td></tr>
-            <tr><td>Correction</td><td>Same form with type and investment fixed, "Guardar cambios", hint "Aún no cambiaste nada." until something changes, and "Borrar" on the band (deletes at once; the list or detail then shows "Movimiento borrado" with Deshacer).</td><td><code>…/InvestmentMovementScreen.kt:118</code>, <code>:444</code>; <code>app/src/main/java/com/software/sello/feature/investments/InvestmentMovementNotices.kt:25</code></td><td>no screenshot</td></tr>
+            <tr><td>Busy</td><td>The button reads "Guardando…" with a spinner; chips and pad disabled.</td><td><code>…/InvestmentMovementScreen.kt:460</code></td><td><code>investment-movement-busy</code></td></tr>
+            <tr><td>Unknown outcome</td><td>Warning "Aún no sabemos si se guardó. Compruébalo antes de volver a anotar." and "Comprobar si se guardó"; the draft is locked and Back waits.</td><td><code>…/InvestmentMovementScreen.kt:405</code>; <code>app/src/main/java/com/software/sello/feature/investments/InvestmentMovementViewModel.kt:318</code></td><td><code>investment-movement-unknown</code></td></tr>
+            <tr><td>Refused</td><td>Error line: not saved, future date, data changed, gone, changed, currency mismatch, unchanged, last aporte, not deleted.</td><td><code>…/InvestmentMovementScreen.kt:400</code></td><td><code>investment-movement-refused</code></td></tr>
+            <tr><td>Correction</td><td>Same form with type and investment fixed, "Guardar cambios", hint "Aún no cambiaste nada." until something changes, and "Borrar" on the band (deletes at once; the list or detail then shows "Movimiento borrado" with Deshacer).</td><td><code>…/InvestmentMovementScreen.kt:118</code>, <code>:444</code>; <code>app/src/main/java/com/software/sello/feature/investments/InvestmentMovementNotices.kt:25</code></td><td><code>investment-movement-correcting</code></td></tr>
             <tr><td>Restored draft</td><td>Amount, type, investment, date, note and the open composer survive process death.</td><td><code>…/InvestmentMovementViewModel.kt:127</code>, <code>:157</code></td><td>no screenshot</td></tr>
-            <tr><td>Confirm discard</td><td><code>MovementDiscardSlip</code> "¿Descartar este movimiento?".</td><td><code>…/InvestmentMovementScreen.kt:184</code></td><td>no screenshot</td></tr>
+            <tr><td>Confirm discard</td><td><code>MovementDiscardSlip</code> "¿Descartar este movimiento?".</td><td><code>…/InvestmentMovementScreen.kt:184</code></td><td><code>investment-movement-discard</code></td></tr>
           </tbody>
         </table>
       </div>
@@ -402,10 +402,10 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Loading</td><td><code>SlipSkeleton</code>.</td><td><code>…/UsdRateScreen.kt:54</code></td><td>no screenshot</td></tr>
-            <tr><td>Empty</td><td><code>EmptySlip</code> with AccountBalance, "Todavía no hay tasa", the body and the action "Anotar la tasa".</td><td><code>…/UsdRateScreen.kt:74</code></td><td>no screenshot</td></tr>
-            <tr><td>Error (nothing ever loaded)</td><td><code>ErrorSlip</code> "No pudimos leer la tasa".</td><td><code>…/UsdRateScreen.kt:56</code></td><td>no screenshot</td></tr>
-            <tr><td>Stale</td><td><code>ErrorSlip</code> "No pudimos leer la tasa de nuevo. Te mostramos la de la última lectura." above the last good rates.</td><td><code>…/UsdRateScreen.kt:66</code>; <code>app/src/main/java/com/software/sello/feature/investments/UsdRateViewModel.kt:42</code></td><td>no screenshot</td></tr>
+            <tr><td>Loading</td><td><code>SlipSkeleton</code>.</td><td><code>…/UsdRateScreen.kt:54</code></td><td><code>usd-rate-loading</code></td></tr>
+            <tr><td>Empty</td><td><code>EmptySlip</code> with AccountBalance, "Todavía no hay tasa", the body and the action "Anotar la tasa".</td><td><code>…/UsdRateScreen.kt:74</code></td><td><code>usd-rate-empty</code></td></tr>
+            <tr><td>Error (nothing ever loaded)</td><td><code>ErrorSlip</code> "No pudimos leer la tasa".</td><td><code>…/UsdRateScreen.kt:56</code></td><td><code>usd-rate-failed</code></td></tr>
+            <tr><td>Stale</td><td><code>ErrorSlip</code> "No pudimos leer la tasa de nuevo. Te mostramos la de la última lectura." above the last good rates.</td><td><code>…/UsdRateScreen.kt:66</code>; <code>app/src/main/java/com/software/sello/feature/investments/UsdRateViewModel.kt:42</code></td><td><code>usd-rate-stale</code></td></tr>
             <tr><td>Loaded</td><td>Current rate and history.</td><td><code>…/UsdRateScreen.kt:83</code></td><td>usd-rate</td></tr>
             <tr><td>Busy, unknown outcome, restored draft, refused</td><td>Do not exist: read only. Rates are never deleted.</td><td>—</td><td>—</td></tr>
           </tbody>
@@ -450,12 +450,12 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Loading</td><td><code>SlipSkeleton</code> in its own padded Column.</td><td><code>…/UsdRateEntryScreen.kt:80</code></td><td>no screenshot</td></tr>
-            <tr><td>Error (nothing ever loaded)</td><td><code>ErrorSlip</code> "No pudimos leer la tasa".</td><td><code>…/UsdRateEntryScreen.kt:86</code></td><td>no screenshot</td></tr>
-            <tr><td>Typing / out of range</td><td>"La tasa es de 1,00 en adelante", "La tasa llega hasta 100.000,00" or "Hasta 100.000 y dos decimales" under the figure.</td><td><code>…/UsdRateEntryScreen.kt:135</code></td><td>no screenshot</td></tr>
-            <tr><td>Busy</td><td>"Guardando…" with a spinner.</td><td><code>…/UsdRateEntryScreen.kt:202</code></td><td>no screenshot</td></tr>
+            <tr><td>Loading</td><td><code>SlipSkeleton</code> in its own padded Column.</td><td><code>…/UsdRateEntryScreen.kt:80</code></td><td><code>usd-rate-entry-loading</code></td></tr>
+            <tr><td>Error (nothing ever loaded)</td><td><code>ErrorSlip</code> "No pudimos leer la tasa".</td><td><code>…/UsdRateEntryScreen.kt:86</code></td><td><code>usd-rate-entry-failed</code></td></tr>
+            <tr><td>Typing / out of range</td><td>"La tasa es de 1,00 en adelante", "La tasa llega hasta 100.000,00" or "Hasta 100.000 y dos decimales" under the figure.</td><td><code>…/UsdRateEntryScreen.kt:135</code></td><td><code>usd-rate-entry-ready</code>, <code>usd-rate-entry-refused</code></td></tr>
+            <tr><td>Busy</td><td>"Guardando…" with a spinner.</td><td><code>…/UsdRateEntryScreen.kt:202</code></td><td><code>usd-rate-entry-busy</code></td></tr>
             <tr><td>Unknown outcome</td><td>Warning "Aún no sabemos si se guardó. …", "Comprobar si se guardó", pad and date locked; Back waits.</td><td><code>…/UsdRateEntryScreen.kt:186</code>; <code>app/src/main/java/com/software/sello/feature/investments/UsdRateEntryViewModel.kt:151</code></td><td>usd-rate-entry-unknown</td></tr>
-            <tr><td>Refused</td><td>"La fecha no puede ser posterior a hoy. …", "Tus datos cambiaron mientras escribías. No se guardó la tasa." or "No se guardó la tasa. Puedes intentarlo de nuevo."</td><td><code>…/UsdRateEntryScreen.kt:181</code></td><td>no screenshot</td></tr>
+            <tr><td>Refused</td><td>"La fecha no puede ser posterior a hoy. …", "Tus datos cambiaron mientras escribías. No se guardó la tasa." or "No se guardó la tasa. Puedes intentarlo de nuevo."</td><td><code>…/UsdRateEntryScreen.kt:181</code></td><td><code>usd-rate-entry-refused</code></td></tr>
             <tr><td>Restored draft</td><td>The typed rate, its date and an operation in flight survive process death.</td><td><code>…/UsdRateEntryViewModel.kt:70</code></td><td>no screenshot</td></tr>
             <tr><td>Empty</td><td>Does not exist as a separate state: no rate yet only changes the fact line.</td><td><code>…/UsdRateEntryScreen.kt:162</code></td><td>—</td></tr>
           </tbody>

@@ -63,7 +63,7 @@
             <tr><td>Loading, empty, error, stale</td><td>Belong to the tab's content, not the frame; see each feature page and <a href="#app-wide">App-wide patterns</a>.</td><td>—</td><td>—</td></tr>
             <tr><td>Busy</td><td>Does not exist for the frame: it sends no write.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellViewModel.kt:77</code></td><td>—</td></tr>
             <tr><td>Restored after process death</td><td>Same month, picker open or closed, picker year, open category and pending entry; a month pinned before the app went to the background for long enough returns to the current one (<code>MonthSession</code>).</td><td><code>app/src/main/java/com/software/sello/navigation/ShellViewModel.kt:92</code></td><td>no screenshot</td></tr>
-            <tr><td>Wide window</td><td>Rail instead of tab bar; the month picker becomes a side panel; a category's detail sits beside Recibo.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:267</code></td><td>no screenshot</td></tr>
+            <tr><td>Wide window</td><td>Rail instead of tab bar; the month picker becomes a side panel; a category's detail sits beside Recibo.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:267</code></td><td><code>shell-rail-beside</code>, <code>shell-side-panel</code></td></tr>
           </tbody>
         </table>
       </div>
@@ -108,7 +108,7 @@
           <tbody>
             <tr><td>Not yet read</td><td>Title only, no chip, no dock.</td><td><code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:101</code>, <code>app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:94</code></td><td>no screenshot</td></tr>
             <tr><td>Empty</td><td>No chip; the dock creates the first one.</td><td><code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:104</code></td><td>no screenshot</td></tr>
-            <tr><td>With items</td><td>Chip beside the title; dock records a movement.</td><td><code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:90</code></td><td>no screenshot of the bar with its chip</td></tr>
+            <tr><td>With items</td><td>Chip beside the title; dock records a movement.</td><td><code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:90</code></td><td><code>shell-titled</code></td></tr>
             <tr><td>Compact chip</td><td>The chip is the round "+" alone when the title would not fit beside it.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:149</code></td><td>no screenshot</td></tr>
           </tbody>
         </table>
@@ -171,8 +171,8 @@
           <tbody>
             <tr><td>Title not yet known</td><td>A fallback title: "Todos los gastos", "Categoría", the tab name for an investment, "Meta" for a goal.</td><td><code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:153</code>, <code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:171</code></td><td>no screenshot</td></tr>
             <tr><td>Item gone</td><td>A deleted goal or investment leaves its page by itself.</td><td><code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:160</code>, <code>app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:143</code></td><td>—</td></tr>
-            <tr><td>Archived category</td><td>The dock stays in place, disabled, "Archivada" beside a prohibited sign.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:73</code></td><td>no screenshot</td></tr>
-            <tr><td>Archived not yet known</td><td>"+ Anotar", disabled.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:86</code></td><td>no screenshot</td></tr>
+            <tr><td>Archived category</td><td>The dock stays in place, disabled, "Archivada" beside a prohibited sign.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:73</code></td><td><code>shell-archived-dock</code></td></tr>
+            <tr><td>Archived not yet known</td><td>"+ Anotar", disabled.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:86</code></td><td><code>shell-waiting-dock</code></td></tr>
           </tbody>
         </table>
       </div>
@@ -196,7 +196,7 @@
       <h2>Screen: A category's detail inside Recibo</h2>
 
       <figure data-shot="shell-detail" data-module="app" data-caption="One pane: the detail with its own title row"></figure>
-      <figure data-shot="shell-rail-beside" data-module="app" data-caption="Landscape (891 × 412): the rail, the detail beside Recibo"></figure>
+      <figure data-shot="shell-rail-beside" data-module="app" data-caption="Landscape (891 × 412), the frame only with stand-in content: the rail, the detail beside Recibo"></figure>
       <p>Recibo hosts its category detail in the frame itself (<code>ShellDetail</code>), not as a route, so the open category survives rotation, resizing and process death. No screenshot shows the frame; <code>category-detail</code> shows its content only (see <a href="category.html#screen-detail">Category detail</a>).</p>
 
       <h3>Layout</h3>
@@ -211,9 +211,9 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Opened</td><td>The detail with its title row.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:175</code></td><td>no screenshot</td></tr>
+            <tr><td>Opened</td><td>The detail with its title row.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:175</code></td><td><code>shell-detail</code></td></tr>
             <tr><td>Name not yet read</td><td>Title "Categoría".</td><td><code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:284</code></td><td>no screenshot</td></tr>
-            <tr><td>Beside Recibo</td><td>No back arrow; system Back acts as on Recibo.</td><td><code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:383</code></td><td>no screenshot</td></tr>
+            <tr><td>Beside Recibo</td><td>No back arrow; system Back acts as on Recibo.</td><td><code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:383</code></td><td><code>shell-rail-beside</code></td></tr>
             <tr><td>Restored</td><td>The same category is open again.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellViewModel.kt:113</code></td><td>—</td></tr>
           </tbody>
         </table>
@@ -253,8 +253,8 @@
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
             <tr><td>Open on this year</td><td>Next-year arrow disabled; months after the current one disabled.</td><td><code>app/src/main/java/com/software/sello/navigation/MonthPicker.kt:95</code></td><td><code>shell-picker</code></td></tr>
-            <tr><td>Earliest year (2000)</td><td>Previous-year arrow disabled.</td><td><code>app/src/main/java/com/software/sello/navigation/MonthPicker.kt:90</code></td><td>no screenshot</td></tr>
-            <tr><td>Side panel</td><td>Beside the content, no scrim.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:267</code></td><td>no screenshot</td></tr>
+            <tr><td>Earliest year (2000)</td><td>Previous-year arrow disabled.</td><td><code>app/src/main/java/com/software/sello/navigation/MonthPicker.kt:90</code></td><td><code>shell-picker-earliest</code></td></tr>
+            <tr><td>Side panel</td><td>Beside the content, no scrim.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:267</code></td><td><code>shell-side-panel</code></td></tr>
             <tr><td>Restored</td><td>Still open on the year it showed.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellViewModel.kt:109</code></td><td>—</td></tr>
             <tr><td>Loading, empty, error, busy</td><td>Do not exist: the picker reads nothing and writes nothing.</td><td>—</td><td>—</td></tr>
           </tbody>
@@ -377,9 +377,9 @@
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
             <tr><td>Loading</td><td>Nothing until the preference is read.</td><td><code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:333</code></td><td>—</td></tr>
-            <tr><td>Shown</td><td>"Puedes corregir un gasto de meses anteriores." / "Puedes corregir el límite de este mes anterior." + "Entendido".</td><td><code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:505</code></td><td>no screenshot</td></tr>
-            <tr><td>Busy</td><td>"Entendido" shows a spinner while the dismissal is saved.</td><td><code>app/src/main/java/com/software/sello/presentation/corrections/CorrectionAnnouncementsViewModel.kt:61</code></td><td>no screenshot</td></tr>
-            <tr><td>Failed read or write</td><td>"No pudimos recordar este aviso. Inténtalo de nuevo." + "Reintentar"; a failed read keeps the last preference.</td><td><code>app/src/main/java/com/software/sello/presentation/corrections/CorrectionAnnouncementsViewModel.kt:36</code></td><td>no screenshot</td></tr>
+            <tr><td>Shown</td><td>"Puedes corregir un gasto de meses anteriores." / "Puedes corregir el límite de este mes anterior." + "Entendido".</td><td><code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:505</code></td><td><code>expense-entry-announcement</code></td></tr>
+            <tr><td>Busy</td><td>"Entendido" shows a spinner while the dismissal is saved.</td><td><code>app/src/main/java/com/software/sello/presentation/corrections/CorrectionAnnouncementsViewModel.kt:61</code></td><td><code>expense-entry-announcement-busy</code></td></tr>
+            <tr><td>Failed read or write</td><td>"No pudimos recordar este aviso. Inténtalo de nuevo." + "Reintentar"; a failed read keeps the last preference.</td><td><code>app/src/main/java/com/software/sello/presentation/corrections/CorrectionAnnouncementsViewModel.kt:36</code></td><td><code>expense-entry-announcement-failed</code></td></tr>
           </tbody>
         </table>
       </div>

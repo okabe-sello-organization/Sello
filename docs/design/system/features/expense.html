@@ -117,31 +117,31 @@
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
             <tr><td>Loading</td><td>One <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a> under the bar; no form yet.</td>
-              <td><code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:213</code></td><td>no screenshot</td></tr>
+              <td><code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:213</code></td><td><code>expense-entry-loading</code></td></tr>
             <tr><td>Error (nothing ever read)</td><td><a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a> "No se pudo cargar" with "No pudimos leer tus categorías." (or "No pudimos leer este gasto." when correcting) and "Reintentar".</td>
-              <td><code>ExpenseEntryScreen.kt:215</code></td><td>no screenshot</td></tr>
+              <td><code>ExpenseEntryScreen.kt:215</code></td><td><code>expense-entry-failed</code></td></tr>
             <tr><td>Empty</td><td>Does not exist on the form: with no category the shell opens the category editor first.</td>
               <td><code>app/src/main/java/com/software/sello/navigation/SelloApp.kt:165</code></td><td>—</td></tr>
             <tr><td>Ready</td><td>Amount, chips, note line, "Anotar gasto" enabled once an amount and a category are there.</td>
               <td><code>ExpenseEntryScreen.kt:231</code></td><td>expense-entry</td></tr>
             <tr><td>Missing</td><td>A hint above the button: "Elige una categoría.", "Corrige la nota.", the Se repite end problem, or "Aún no cambiaste nada." when correcting. A missing amount is not said: the slip shows "Sin monto" and the button is off.</td>
-              <td><code>ExpenseEntryScreen.kt:546</code></td><td>no screenshot</td></tr>
+              <td><code>ExpenseEntryScreen.kt:546</code></td><td><code>expense-entry-missing</code></td></tr>
             <tr><td>Amount refused</td><td>The slip's label is replaced by the reason ("Eso no es un monto…", "El monto debe ser mayor que cero.", "El monto es mayor que el máximo…") and the pasted text stays as it was; "Máximo 12 dígitos" with a shake when a key is refused.</td>
-              <td><code>ExpenseEntryScreen.kt:390</code></td><td>no screenshot</td></tr>
+              <td><code>ExpenseEntryScreen.kt:390</code></td><td><code>expense-entry-amount-refused</code></td></tr>
             <tr><td>Stale</td><td><code>StaleSlip</code> "No pudimos actualizar. Esto es lo último que se leyó y puede no estar al día." with "Reintentar" above the chips; the draft stays.</td>
               <td><code>ExpenseEntryScreen.kt:432</code></td><td>expense-entry-stale</td></tr>
             <tr><td>Busy</td><td>The button reads "Guardando…" with its spinner; chips, pill, note, switch and pad are off. The X stays enabled but Back is ignored.</td>
-              <td><code>ExpenseEntryScreen.kt:589</code>, <code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryViewModel.kt:486</code></td><td>no screenshot</td></tr>
+              <td><code>ExpenseEntryScreen.kt:589</code>, <code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryViewModel.kt:486</code></td><td><code>expense-entry-busy</code></td></tr>
             <tr><td>Unknown outcome (save)</td><td>Warning "Aún no sabemos si se guardó. Compruébalo antes de volver a anotar." and the only button "Comprobar si se guardó"; the draft is frozen.</td>
-              <td><code>ExpenseEntryScreen.kt:570</code></td><td>no screenshot</td></tr>
+              <td><code>ExpenseEntryScreen.kt:570</code></td><td><code>expense-entry-unknown</code></td></tr>
             <tr><td>Unknown outcome (deletion)</td><td>Warning "Aún no sabemos si se borró…" and "Comprobar si se borró"; "Borrar" is off.</td>
               <td><code>ExpenseEntryScreen.kt:573</code></td><td>expense-entry-delete-unknown</td></tr>
             <tr><td>Refused</td><td>An error message above the button, the draft kept: "No se guardó. Tu borrador sigue aquí.", "Esa categoría ya no acepta gastos…", "La fecha no puede ser posterior a hoy…", "Tus datos cambiaron mientras tanto…", "No se guardó: con este cambio Sello no podría calcular lo que sobra o falta…". When correcting, each says "El gasto quedó como estaba". "Este gasto ya no existe…" and "Este gasto cambió mientras lo corregías…" freeze the form.</td>
-              <td><code>ExpenseEntryScreen.kt:743</code></td><td>no screenshot</td></tr>
+              <td><code>ExpenseEntryScreen.kt:743</code></td><td><code>expense-entry-refused</code></td></tr>
             <tr><td>Following saved, this not</td><td>Under the error: "Los siguientes ya cambiaron; este todavía no. Vuelve a guardar."</td>
               <td><code>ExpenseEntryScreen.kt:542</code></td><td>no screenshot</td></tr>
             <tr><td>Past months (correcting)</td><td>A hint: "Corregir este gasto cambia las cifras de septiembre." and, once, the notice "Puedes corregir un gasto de meses anteriores." with "Entendido".</td>
-              <td><code>ExpenseEntryScreen.kt:489</code>, <code>:504</code></td><td>no screenshot</td></tr>
+              <td><code>ExpenseEntryScreen.kt:489</code>, <code>:504</code></td><td><code>expense-entry-past-month</code></td></tr>
             <tr><td>Restored draft</td><td>After process death the draft, the open composer and Se repite come back from <code>SavedStateHandle</code>; "today" stays the day it was started; a save in flight is asked about, never sent again.</td>
               <td><code>ExpenseEntryViewModel.kt:198</code>, <code>:271</code></td><td>no screenshot</td></tr>
             <tr><td>Saved</td><td>The form closes with a long-press haptic, once per recorded expense; the caller shows the notice.</td>
@@ -191,7 +191,7 @@
     <section id="dialog-date">
       <h2>Dialog: date picker</h2>
 
-      <figure data-shot="expense-entry-date-picker" data-module="app" data-caption="The date picker (the JVM screen runs in English, so the picker&#x27;s own words are English)"></figure>
+      <figure data-shot="expense-entry-date-picker" data-module="app" data-caption="The date picker (Material's picker: the JVM screen runs in English, and draws it with square corners and no scrim)"></figure>
       <p>Material <code>DatePickerDialog</code> with a <a href="../components.html#c-SelloButton"><code>SelloButton</code></a>
         "Aceptar" (<code>expense_entry_date_confirm</code>) (<code>ExpenseEntryScreen.kt:673</code>). Days after today
         cannot be picked; while Se repite is on, only today or later. Whole days in UTC, no time or zone. Dismiss sends
@@ -302,7 +302,7 @@
       <h2>Gaps</h2>
       <div class="gaps">
         <ul>
-          <li>Missing (the expense was deleted meanwhile) and restored draft (drawn as the form with its values): no screenshot.</li>
+          <li>Restored draft (drawn as the form with its values) and "Following saved, this not": no screenshot.</li>
         </ul>
       </div>
     </section>
