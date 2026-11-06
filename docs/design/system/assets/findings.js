@@ -475,23 +475,6 @@ window.SELLO_FINDINGS = {
      ]
     },
     {
-     "id": "M03-3",
-     "file": "app/src/main/java/com/software/sello/feature/category/CategoryCarry.kt:316",
-     "area": "category",
-     "features": [
-      "category"
-     ],
-     "what": "'¿Olvidar el faltante/sobrante de X?' with 'Apagar' passes destructive = false.",
-     "why": "Dropping a carried amount forgets money that is not brought back by turning carry on again; if it cannot be undone the action should be loss. Unsure whether the owner treats it as reversible.",
-     "unsure": true,
-     "shots": [
-      {
-       "module": "app",
-       "file": "carry-drop-cobalto-light-font1.0.png"
-      }
-     ]
-    },
-    {
      "id": "M03-4",
      "file": "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:476",
      "area": "category",

@@ -76,14 +76,11 @@ enum class CarryProblemText {
     DropUnavailable
 }
 
-/** Said once a carry command's receipt came back. */
-enum class CarryDone { Enabled, Disabled }
-
 /** What turning carry off, archiving or Sin límite does to this month's balance (CP10). */
 enum class DropReason { Disable, Archive, Unlimited }
 
 /**
- * A balance to drop, as the command answered it: [carry] signed, the base, and this
+ * A balance to drop, as the month was read or the save answered it: [carry] signed, the base, and this
  * month's capacity and remaining before and after. [changedFrom] is the balance the
  * person saw before, when it moved meanwhile.
  */
@@ -127,8 +124,9 @@ private fun MoneyTextValue.text() = (
 
 /**
  * The carry switch at the foot of the Límite mensual slip, under a tear line: the setting,
- * what it carries this month and what it said last. Flipping it sends the switch's own
- * command (CP28), which asks first; the switch shows the stored setting, never the tap.
+ * what it carries this month and what it said last. Flipping it asks first when there is
+ * something to confirm, then only changes the draft: the switch shows the draft and says
+ * that Guardar saves it (SELLO-188).
  */
 @Composable
 internal fun CarrySwitch(state: CategoryEditorState, onAction: (CategoryEditorAction) -> Unit) {
@@ -147,11 +145,24 @@ internal fun CarrySwitch(state: CategoryEditorState, onAction: (CategoryEditorAc
                     style = MaterialTheme.typography.labelMedium,
                     color = SelloTheme.colors.semantic.loss
                 )
+                // A change still in the draft is never saved unseen.
+                state.carryPending?.let { pending ->
+                    Text(
+                        pendingText(pending),
+                        style = MaterialTheme.typography.labelMedium,
+                        modifier = Modifier.testTag(EDITOR_CARRY_PENDING_TAG)
+                    )
+                }
+                // A save sent from here can still be refused for carry: said here too.
+                CarryMessages(state)
             }
 
             else -> {
-                val on = card is CarryCard.On
-                val setting = if (card is CarryCard.On) {
+                val pending = state.carryPending
+                val on = pending?.on ?: (card is CarryCard.On)
+                val setting = if (pending != null) {
+                    pendingText(pending)
+                } else if (card is CarryCard.On) {
                     stringResource(
                         R.string.carry_on_summary,
                         dates.monthYear(card.since),
@@ -161,7 +172,7 @@ internal fun CarrySwitch(state: CategoryEditorState, onAction: (CategoryEditorAc
                 } else {
                     stringResource(R.string.carry_setting_help)
                 }
-                val spoken = if (card is CarryCard.On) {
+                val spoken = if (pending == null && card is CarryCard.On) {
                     stringResource(
                         R.string.carry_on_summary_spoken,
                         dates.monthYear(card.since),
@@ -171,9 +182,6 @@ internal fun CarrySwitch(state: CategoryEditorState, onAction: (CategoryEditorAc
                 } else {
                     setting
                 }
-                // While the form has changes, the switch waits and says why under the setting.
-                val wait = stringResource(R.string.carry_wait_changes)
-                val subtitle = if (state.changed) "$setting\n$wait" else setting
                 SwitchRow(
                     title = stringResource(R.string.carry_setting),
                     checked = on,
@@ -187,9 +195,9 @@ internal fun CarrySwitch(state: CategoryEditorState, onAction: (CategoryEditorAc
                         )
                     },
                     modifier = Modifier.testTag(EDITOR_CARRY_SWITCH_TAG),
-                    subtitle = subtitle,
+                    subtitle = setting,
                     enabled = state.canChangeCarry,
-                    spokenSubtitle = if (state.changed) "$spoken. $wait" else spoken
+                    spokenSubtitle = spoken
                 )
                 CarryMessages(state)
             }
@@ -197,10 +205,25 @@ internal fun CarrySwitch(state: CategoryEditorState, onAction: (CategoryEditorAc
     }
 }
 
-/** The last refusal or receipt about carry, read out as it appears. */
+/** What Guardar will do to carry: on from its month, or off and what that forgets. */
+@Composable
+private fun pendingText(pending: CarryPending): String {
+    val forgets = pending.forgets
+    return when {
+        pending.on -> stringResource(
+            R.string.carry_pending_on,
+            monthNames().inSentence(pending.month)
+        )
+
+        forgets != null -> stringResource(R.string.carry_pending_off_forgets, forgets.text())
+
+        else -> stringResource(R.string.carry_pending_off)
+    }
+}
+
+/** The last refusal about carry, read out as it appears. */
 @Composable
 private fun CarryMessages(state: CategoryEditorState) {
-    val months = monthNames()
     val name = state.name
     val month = state.targetMonth ?: return
     state.carryProblem?.let { problem ->
@@ -212,25 +235,6 @@ private fun CarryMessages(state: CategoryEditorState) {
             modifier = Modifier
                 .padding(vertical = 6.dp)
                 .testTag(EDITOR_CARRY_PROBLEM_TAG)
-                .semantics { liveRegion = LiveRegionMode.Polite }
-        )
-    }
-    state.carryDone?.let { done ->
-        Text(
-            when (done) {
-                CarryDone.Enabled -> stringResource(
-                    R.string.carry_enabled,
-                    name,
-                    months.inSentence(month)
-                )
-
-                CarryDone.Disabled -> stringResource(R.string.carry_disabled, name)
-            },
-            style = MaterialTheme.typography.bodyMedium,
-            color = SelloTheme.colors.semantic.gain,
-            modifier = Modifier
-                .padding(vertical = 6.dp)
-                .testTag(EDITOR_CARRY_DONE_TAG)
                 .semantics { liveRegion = LiveRegionMode.Polite }
         )
     }
@@ -332,7 +336,8 @@ internal fun CarryQuestionSlip(
                 onConfirm = confirm,
                 onDismiss = dismiss,
                 modifier = Modifier.testTag(EDITOR_CARRY_QUESTION_TAG),
-                destructive = false,
+                // Forgetting a carried balance is not undone by turning carry on (M03-3).
+                destructive = true,
                 busy = state.busy
             ) {
                 figures.changedFrom?.let {
@@ -433,6 +438,6 @@ private fun BeforeAfter(
 const val EDITOR_CARRY_TAG = "editor:carry"
 const val EDITOR_CARRY_SWITCH_TAG = "editor:carry.switch"
 const val EDITOR_CARRY_PROBLEM_TAG = "editor:carry.problem"
-const val EDITOR_CARRY_DONE_TAG = "editor:carry.done"
+const val EDITOR_CARRY_PENDING_TAG = "editor:carry.pending"
 const val EDITOR_CARRY_QUESTION_TAG = "editor:carry.question"
 const val EDITOR_CARRY_CHANGED_TAG = "editor:carry.changed"

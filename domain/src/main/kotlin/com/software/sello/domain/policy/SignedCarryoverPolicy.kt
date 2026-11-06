@@ -2,6 +2,7 @@ package com.software.sello.domain.policy
 
 import com.software.sello.domain.model.AutomaticBudget
 import com.software.sello.domain.model.BudgetLimit
+import com.software.sello.domain.model.CarryBreakdown
 import com.software.sello.domain.model.CarryChain
 import com.software.sello.domain.model.CarryEnableRefusal
 import com.software.sello.domain.model.CarryEntry
@@ -143,6 +144,41 @@ object SignedCarryoverPolicy {
             return Outcome.Failure(CarryEnableRefusal.BaseAboveLimit(it))
         }
         return Outcome.Success(chains + CarryChain(categoryId, month, end = null))
+    }
+
+    /**
+     * What dropping the balance carried into [month] would show (CP10), from that month's
+     * figures as a snapshot read them: [carry] and what was [spent]. The form asks with it
+     * before anything is sent; the command still checks the balance itself, so only
+     * [DropPreview.carryIn] is binding. Null when nothing is carried in to drop.
+     */
+    fun dropPreview(
+        month: YearMonth,
+        carry: CarryBreakdown,
+        spent: Money
+    ): Outcome<DropPreview?, CarryoverFailure> {
+        if (carry.chainStart == null || carry.carryIn.minorUnits == 0L) {
+            return Outcome.Success(null)
+        }
+        val before = when (val difference = carry.capacity - spent) {
+            is Outcome.Success -> difference.value
+            is Outcome.Failure -> return Outcome.Failure(difference.error.toCarryover())
+        }
+        val after = when (val difference = carry.base - spent) {
+            is Outcome.Success -> difference.value
+            is Outcome.Failure -> return Outcome.Failure(difference.error.toCarryover())
+        }
+        return Outcome.Success(
+            DropPreview(
+                month = month,
+                carryIn = carry.carryIn,
+                base = carry.base,
+                capacityBefore = carry.capacity,
+                capacityAfter = carry.base,
+                remainingBefore = before,
+                remainingAfter = after
+            )
+        )
     }
 
     /**

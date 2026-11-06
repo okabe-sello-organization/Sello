@@ -21,9 +21,7 @@ import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CorrectionConfirmation
 import com.software.sello.domain.port.DeleteExpense
-import com.software.sello.domain.port.DisableCarry
 import com.software.sello.domain.port.EditExpense
-import com.software.sello.domain.port.EnableCarry
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseRejection
 import com.software.sello.domain.port.SetDefaultLimit
@@ -87,9 +85,9 @@ class CarryoverCommandContractTest {
     )
 
     private fun enable(category: Int, version: Long, generation: Long = 1) =
-        EnableCarry(ledger.operation(), generation, ledger.categoryId(category), version)
+        ledger.carryOn(ledger.operation(), generation, ledger.categoryId(category), version)
 
-    private fun disable(category: Int, version: Long, confirmed: Long? = null) = DisableCarry(
+    private fun disable(category: Int, version: Long, confirmed: Long? = null) = ledger.carryOff(
         ledger.operation(),
         1,
         ledger.categoryId(category),
@@ -112,15 +110,15 @@ class CarryoverCommandContractTest {
         val operation = ledger.operation()
 
         val outcome = ledger.categories.submit(
-            EnableCarry(operation, 1, ledger.categoryId(comida), 1)
+            ledger.carryOn(operation, 1, ledger.categoryId(comida), 1)
         )
 
-        val change = ledger.change(operation, OperationKind.EnableCarry, comida, revision = 2)
+        val change = ledger.change(operation, OperationKind.EditCategory, comida, revision = 2)
         assertEquals(Committed(change, replayed = false), outcome)
         assertEquals(listOf("${uuid(100)}|2027-01|null"), ledger.chainRows())
         assertEquals(2, versionOf(comida))
         assertEquals(
-            listOf("${operation.value}|category.enable_carry|1|2|${uuid(100)}"),
+            listOf("${operation.value}|category.edit|1|2|${uuid(100)}"),
             ledger.rows(
                 "operation_receipt",
                 "operation_id",
@@ -275,7 +273,7 @@ class CarryoverCommandContractTest {
         val unchanged = state()
         val operation = ledger.operation()
         val confirmed = ledger.categories.submit(
-            DisableCarry(operation, 1, ledger.categoryId(comida), 2, cop(-20_000))
+            ledger.carryOff(operation, 1, ledger.categoryId(comida), 2, cop(-20_000))
         )
 
         val preview = Rejected(
@@ -297,7 +295,7 @@ class CarryoverCommandContractTest {
         assertEquals(preview, wrongBalance)
         assertEquals(before, unchanged)
         assertEquals(
-            Committed(ledger.change(operation, OperationKind.DisableCarry, comida, 5), false),
+            Committed(ledger.change(operation, OperationKind.EditCategory, comida, 5), false),
             confirmed
         )
         assertEquals(listOf("${uuid(comida)}|2027-01|2027-02"), ledger.chainRows())
@@ -826,13 +824,13 @@ class CarryoverCommandContractTest {
 
         val again = ledger.categories.submit(on)
         val conflict = ledger.categories.submit(
-            DisableCarry(on.operationId, 1, ledger.categoryId(comida), 1, null)
+            ledger.carryOff(on.operationId, 1, ledger.categoryId(comida), 1, null)
         )
         ledger.reopen()
         val afterReopening = listOf(ledger.categories.submit(on), ledger.categories.submit(off))
 
-        val enabled = ledger.change(on.operationId, OperationKind.EnableCarry, comida, 2)
-        val disabled = ledger.change(off.operationId, OperationKind.DisableCarry, comida, 4)
+        val enabled = ledger.change(on.operationId, OperationKind.EditCategory, comida, 2)
+        val disabled = ledger.change(off.operationId, OperationKind.EditCategory, comida, 4)
         assertEquals(Committed(enabled, false), first)
         assertEquals(Committed(disabled, false), dropped)
         assertEquals(Committed(enabled, true), again)
@@ -925,7 +923,7 @@ class CarryoverCommandContractTest {
         ledger.whenAWriteIsStamped = {}
 
         // Cancellation proves nothing about rollback: the drop committed with its receipt.
-        val change = ledger.change(command.operationId, OperationKind.DisableCarry, comida, 4)
+        val change = ledger.change(command.operationId, OperationKind.EditCategory, comida, 4)
         assertNull(returned)
         assertTrue(cancellation != null)
         assertEquals(listOf("${uuid(comida)}|2027-01|2027-02"), ledger.chainRows())

@@ -27,7 +27,6 @@ import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.DeleteExpense
-import com.software.sello.domain.port.DisableCarry
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseRejection
 import com.software.sello.domain.port.RecordedOccurrence
@@ -325,7 +324,7 @@ class CarryoverReadContractTest {
         histories.spend(comida, "2027-01-10", 120_000)
         ledger.goTo("2027-02-10")
         ledger.categories.submit(
-            DisableCarry(ledger.operation(), 1, ledger.categoryId(comida), 2, cop(-20_000))
+            ledger.carryOff(ledger.operation(), 1, ledger.categoryId(comida), 2, cop(-20_000))
         )
         ledger.goTo("2027-04-03")
         histories.enable(comida, version = 3)
@@ -359,10 +358,10 @@ class CarryoverReadContractTest {
 
         val may = snapshot("2027-05").valueOrFail().categories.single().budget!!
         val asked = ledger.categories.submit(
-            DisableCarry(ledger.operation(), 1, ledger.categoryId(comida), 4)
+            ledger.carryOff(ledger.operation(), 1, ledger.categoryId(comida), 4)
         )
         val dropped = ledger.categories.submit(
-            DisableCarry(ledger.operation(), 1, ledger.categoryId(comida), 4, cop(70_000))
+            ledger.carryOff(ledger.operation(), 1, ledger.categoryId(comida), 4, cop(70_000))
         )
         val everyChain = history(comida, "2027-05")
 

@@ -19,6 +19,8 @@ enum class OperationKind(val key: String) {
     /** Several incomes recorded on one receipt. Its subjects are the new incomes. */
     CreateIncomes("income.create_batch"),
     CreateCategory("category.create"),
+
+    /** Receipts of the commands before SELLO-188's [EditCategory]; still read. */
     RenameCategory("category.rename"),
     ChangeCategoryIcon("category.change_icon"),
     ArchiveCategory("category.archive"),
@@ -27,6 +29,9 @@ enum class OperationKind(val key: String) {
     SetMonthLimit("category.set_month_limit"),
     EnableCarry("category.enable_carry"),
     DisableCarry("category.disable_carry"),
+
+    /** The category form's changes, carry included, on one receipt, all or none (SELLO-188). */
+    EditCategory("category.edit"),
 
     /** A category deleted for good, with what it held moved or deleted (ADR 0024). */
     DeleteCategory("category.delete"),

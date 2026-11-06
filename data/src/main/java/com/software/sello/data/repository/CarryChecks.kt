@@ -144,29 +144,42 @@ internal class CategoryCarry(
         }
     }
 
-    /** Turning carry on in this month (CP2–CP4, CP25), for a category [archived] or not. */
-    suspend fun enable(archived: Boolean): CarryDecision {
+    /**
+     * Turning carry on in this month (CP2–CP4, CP25), for a category [archived] or not.
+     * With [default], it is judged as if that default from this month on were already
+     * stored, with this month's own limit given way to it, as the same edit writes them.
+     */
+    suspend fun enable(archived: Boolean, default: DefaultLimit? = null): CarryDecision {
         val chains = when (val read = load()) {
             is Outcome.Success -> read.value
             is Outcome.Failure -> return CarryDecision.Refused(read.error)
         }
-        val defaults = when (val read = database.defaultHistory(categoryId.value)) {
+        val stored = when (val read = database.defaultHistory(categoryId.value)) {
             is Outcome.Success -> read.value
 
             is Outcome.Failure -> return CarryDecision.Refused(
                 CommandRejection.StorageFailed(read.error)
             )
         }
+        val defaults = if (default == null) {
+            stored
+        } else {
+            stored.filterNot { it.effectiveMonth == default.effectiveMonth } + default
+        }
         val key = month.toString()
-        val own = when (
-            val read = database.limitDao().monthsOf(categoryId.value, key, key, "", 1)
-                .decodeAll { it.toDomain() }
-        ) {
-            is Outcome.Success -> read.value
+        val own = if (default != null) {
+            emptyList()
+        } else {
+            when (
+                val read = database.limitDao().monthsOf(categoryId.value, key, key, "", 1)
+                    .decodeAll { it.toDomain() }
+            ) {
+                is Outcome.Success -> read.value
 
-            is Outcome.Failure -> return CarryDecision.Refused(
-                CommandRejection.StorageFailed(read.error)
-            )
+                is Outcome.Failure -> return CarryDecision.Refused(
+                    CommandRejection.StorageFailed(read.error)
+                )
+            }
         }
         return when (
             val decided = SignedCarryoverPolicy.enable(
@@ -191,10 +204,14 @@ internal class CategoryCarry(
     /**
      * A finite default from this month on (CP25, CP23): within the chain cap while a chain
      * is open, and every month must still calculate with it. This month's own limit gives
-     * way to it, as the command does.
+     * way to it, as the command does. [after] are the chains as the same command leaves
+     * them when it also drops a balance, otherwise the stored ones.
      */
-    suspend fun finiteDefault(limit: BudgetLimit.Finite): CarryDecision {
-        val chains = when (val read = load()) {
+    suspend fun finiteDefault(
+        limit: BudgetLimit.Finite,
+        after: List<CarryChain>? = null
+    ): CarryDecision {
+        val chains = after ?: when (val read = load()) {
             is Outcome.Success -> read.value
             is Outcome.Failure -> return CarryDecision.Refused(read.error)
         }

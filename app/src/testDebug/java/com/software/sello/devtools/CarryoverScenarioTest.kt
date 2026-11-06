@@ -26,6 +26,7 @@ import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.model.Verdict
 import com.software.sello.domain.policy.CarryCorrection
 import com.software.sello.domain.port.BackupExports
+import com.software.sello.domain.port.CarrySetting
 import com.software.sello.domain.port.CarryoverReads
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
@@ -35,7 +36,7 @@ import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CorrectionConfirmation
 import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.DeleteExpense
-import com.software.sello.domain.port.DisableCarry as DisableCarryCommand
+import com.software.sello.domain.port.EditCategory
 import com.software.sello.domain.port.EditExpense
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseCommands
@@ -492,13 +493,16 @@ class CarryoverScenarioTest {
         transitions.stepTo(comida)
         val comidaId = transitions.categoryId("comida")
         fun turnOff(confirmed: Long?) = runBlocking {
+            val today = transitions.koin.get<FinancialClock>().today.value.date
             categories.submit(
-                DisableCarryCommand(
+                EditCategory(
                     operation(),
                     transitions.generation(),
                     comidaId,
                     2,
-                    confirmed?.let { pesos(it) }
+                    YearMonth.from(today),
+                    carry = CarrySetting.Off,
+                    confirmedCarryIn = confirmed?.let { pesos(it) }
                 )
             )
         }

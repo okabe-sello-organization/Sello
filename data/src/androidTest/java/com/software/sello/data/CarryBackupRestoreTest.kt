@@ -19,9 +19,7 @@ import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.DeleteExpense
-import com.software.sello.domain.port.DisableCarry
 import com.software.sello.domain.port.DispatcherProvider
-import com.software.sello.domain.port.EnableCarry
 import com.software.sello.domain.port.PendingPreferences
 import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
@@ -188,7 +186,7 @@ class CarryBackupRestoreTest {
     /** SC01's first months, then the chain ended in abr with the −40.000 confirmed (SC22). */
     private suspend fun endedInApril(source: TestLedger) {
         val outcome = source.categories.submit(
-            DisableCarry(source.operation(), 1, source.categoryId(100), 2, cop(-40_000))
+            source.carryOff(source.operation(), 1, source.categoryId(100), 2, cop(-40_000))
         )
         check(outcome is CommandOutcome.Committed) { "$outcome" }
     }
@@ -493,10 +491,10 @@ class CarryBackupRestoreTest {
         restores.replace(restores.stage(bytes).valueOrFail())
 
         val stale = other.categories.submit(
-            EnableCarry(other.operation(), 1, other.categoryId(100), 1)
+            other.carryOn(other.operation(), 1, other.categoryId(100), 1)
         )
         val staleDisable = other.categories.submit(
-            DisableCarry(other.operation(), 1, other.categoryId(100), 1, cop(-40_000))
+            other.carryOff(other.operation(), 1, other.categoryId(100), 1, cop(-40_000))
         )
         val undo = other.expenses.restore(RestoreExpense(other.operation(), 1, deletion))
 

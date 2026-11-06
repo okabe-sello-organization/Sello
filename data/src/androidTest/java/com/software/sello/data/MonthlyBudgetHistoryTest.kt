@@ -11,7 +11,6 @@ import com.software.sello.domain.policy.MonthBudgetState.Paused
 import com.software.sello.domain.policy.MonthBudgetState.Unconfigured
 import com.software.sello.domain.port.ArchiveCategory
 import com.software.sello.domain.port.CommandOutcome.Committed
-import com.software.sello.domain.port.RenameCategory
 import com.software.sello.domain.port.SetDefaultLimit
 import com.software.sello.domain.port.SetMonthLimit
 import com.software.sello.domain.port.UnarchiveCategory
@@ -292,7 +291,7 @@ class MonthlyBudgetHistoryTest {
 
         committed(
             ledger.categories.submit(
-                RenameCategory(ledger.operation(), 1, mercado, version(), ledger.name("Plaza"))
+                ledger.renamed(ledger.operation(), 1, mercado, version(), ledger.name("Plaza"))
             )
         )
 

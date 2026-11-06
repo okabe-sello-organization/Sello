@@ -210,6 +210,17 @@ net flow and never in the 1–999.999.999.999 transaction range, which it does n
   generation and the category version, like the other category commands; its receipt
   survives restart and an identical replay returns it.
 
+  **Amended 2026-11-06 (owner, E32 M03-3; SELLO-188):** in the category form, turning
+  carry on or off only changes the draft; the switch and its questions (CP9, CP10) stay.
+  Guardar saves it with the form's other changes as one `EditCategory` command: one
+  operation ID, one receipt, all or nothing, checked against the limit the same save
+  sets, and refused once the month it was made for has ended. The drop confirmation is
+  destructive; its figures are read from the month when the switch is turned off, and
+  only the confirmed carry-in `K` binds: if it moved before saving, nothing changes and
+  the person is asked again. `EnableCarry`, `DisableCarry`, `RenameCategory` and
+  `ChangeCategoryIcon` are removed, as nothing sends them any more; receipts they stored
+  still read, and the sandbox turns carry on and off through `EditCategory` too.
+
 ## Presentation wording (Proposed)
 
 Spanish, amounts grouped with dots and a true minus (−). SELLO-041 designs the layout and

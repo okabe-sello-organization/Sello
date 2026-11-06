@@ -10,8 +10,8 @@ enum class NameError { Required, TooLong, NotAllowed, Taken }
 enum class LimitError { Required, NotAnAmount, TooLarge }
 
 /**
- * Why saving did not finish. For a new category none of these means it was created.
- * For an existing one, [CategoryEditorState.savedParts] says what was saved before this.
+ * Why saving did not finish. None of these means anything was saved: a category's
+ * changes are saved together or not at all.
  */
 enum class SaveError {
     /** Storage failed and nothing more was written. */
@@ -42,11 +42,17 @@ enum class SaveError {
     MonthEnded
 }
 
-/** The month the form showed ended before [carry] was turned on, or else the limit saved. */
+/** The month the form showed ended before [carry] was changed, or else the limit saved. */
 data class MonthEnded(val month: YearMonth, val carry: Boolean)
 
-/** One part of a category, saved by its own command. */
-enum class EditPart { Name, Icon, Limit }
+/** One part of a category that differs from storage; Guardar saves them all at once. */
+enum class EditPart { Name, Icon, Limit, Carry }
+
+/**
+ * Carry turned [on] or off in the draft, for [month], and not saved yet. [forgets] is the
+ * balance carried in that turning off was confirmed to forget, when there is one.
+ */
+data class CarryPending(val on: Boolean, val month: YearMonth, val forgets: MoneyTextValue?)
 
 /**
  * What archiving or unarchiving would do, asked before it is done. [expensesThisMonth]
@@ -132,8 +138,6 @@ data class CategoryEditorState(
     val limitLocked: Boolean = false,
     /** Editing: something differs from what is stored. */
     val changed: Boolean = false,
-    /** What the last attempt saved before it stopped, in order. */
-    val savedParts: List<EditPart> = emptyList(),
     val archiveQuestion: ArchiveQuestion? = null,
     /** Editing the month in progress: the carry setting. Null where it is not offered. */
     val carry: CarryCard? = null,
@@ -141,8 +145,8 @@ data class CategoryEditorState(
     val carryQuestion: CarryQuestion? = null,
     /** Why the last carry change, or a limit while carrying, was refused. */
     val carryProblem: CarryProblemText? = null,
-    /** The last carry change that has its receipt. */
-    val carryDone: CarryDone? = null,
+    /** Carry turned on or off in the draft: saved with the rest by Guardar. */
+    val carryPending: CarryPending? = null,
     /** Deleting the category, while it is being asked, sent or checked (ADR 0024). */
     val removal: RemovalState? = null
 ) {
@@ -172,11 +176,12 @@ data class CategoryEditorState(
         get() = canArchive && removal == null && archiveQuestion == null && carryQuestion == null
 
     /**
-     * Carry is changed by its own command (CP28), never with the form's changes: only while
-     * nothing else is waiting to be saved.
+     * Carry is part of the draft, saved with the rest (SELLO-188). It is never offered on a
+     * card that could not be read, nor turned on while the draft has no limit (CP3).
      */
     val canChangeCarry: Boolean
-        get() = canArchive && !changed && carry != null && carry !is CarryCard.Unreadable
+        get() = canArchive && carry != null && carry !is CarryCard.Unreadable &&
+            !(unlimited && carry is CarryCard.Off && carryPending == null)
 
     private companion object {
         val Blocking = setOf(SaveError.Unknown, SaveError.Conflict, SaveError.CategoryGone)
@@ -230,13 +235,13 @@ sealed interface CategoryEditorAction {
     /** After a conflict: read the category again and keep what was typed, to save over it. */
     data object ReloadKeepingDraft : CategoryEditorAction
 
-    /** Ask to turn carry on from this month. Nothing is sent yet. */
+    /** Ask to turn carry on from this month, or undo the draft's turning off. Nothing is sent. */
     data object EnableCarry : CategoryEditorAction
 
-    /** Turn carry off: with a balance, Sello asks first with the exact figures. */
+    /** Turn carry off in the draft: with a balance, Sello asks first with the exact figures. */
     data object DisableCarry : CategoryEditorAction
 
-    /** The carry question shown is answered yes: what it names is sent. */
+    /** The carry question shown is answered yes: the draft takes it, or the save goes on. */
     data object CarryConfirmed : CategoryEditorAction
 
     /** The carry question shown is answered no: nothing changes. */

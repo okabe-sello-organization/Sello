@@ -3,16 +3,20 @@ package com.software.sello.data
 import com.software.sello.domain.model.CarryMonth
 import com.software.sello.domain.model.CarryVerdict
 import com.software.sello.domain.model.CategoryId
+import com.software.sello.domain.model.CategoryName
 import com.software.sello.domain.model.ExpenseId
+import com.software.sello.domain.model.IconKey
+import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.SettledBalance
 import com.software.sello.domain.policy.CarryCorrection
 import com.software.sello.domain.policy.CarryMonthChange
 import com.software.sello.domain.policy.SettledBalanceChange
+import com.software.sello.domain.port.CarrySetting
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandRejection.Specific
-import com.software.sello.domain.port.EnableCarry
+import com.software.sello.domain.port.EditCategory
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseRejection
 
@@ -72,7 +76,7 @@ class CarryHistories(private val ledger: TestLedger) {
     /** Turns carry on for [category], read at [version], in the current month. */
     suspend fun enable(category: Int, version: Long) {
         val outcome = ledger.categories.submit(
-            EnableCarry(ledger.operation(), 1, ledger.categoryId(category), version)
+            ledger.carryOn(ledger.operation(), 1, ledger.categoryId(category), version)
         )
         check(outcome is CommandOutcome.Committed) { "enable $category: $outcome" }
     }
@@ -100,3 +104,43 @@ class CarryHistories(private val ledger: TestLedger) {
         ledger.goTo("2027-04-05")
     }
 }
+
+/*
+ * The category form's one save (SELLO-188) for each change the removed single-purpose
+ * commands made, in the ledger's month: carry on, carry off, a new name, a new icon.
+ */
+
+fun TestLedger.carryOn(operation: OperationId, generation: Long, id: CategoryId, version: Long) =
+    EditCategory(operation, generation, id, version, month, carry = CarrySetting.On)
+
+fun TestLedger.carryOff(
+    operation: OperationId,
+    generation: Long,
+    id: CategoryId,
+    version: Long,
+    confirmed: Money? = null
+) = EditCategory(
+    operation,
+    generation,
+    id,
+    version,
+    month,
+    carry = CarrySetting.Off,
+    confirmedCarryIn = confirmed
+)
+
+fun TestLedger.renamed(
+    operation: OperationId,
+    generation: Long,
+    id: CategoryId,
+    version: Long,
+    name: CategoryName
+) = EditCategory(operation, generation, id, version, month, name = name)
+
+fun TestLedger.withIcon(
+    operation: OperationId,
+    generation: Long,
+    id: CategoryId,
+    version: Long,
+    icon: IconKey
+) = EditCategory(operation, generation, id, version, month, icon = icon)

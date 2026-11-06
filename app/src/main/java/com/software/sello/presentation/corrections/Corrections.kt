@@ -93,9 +93,11 @@ sealed interface CorrectionNotice {
 
     /**
      * A category's changes were saved. [limitOf] is the finished month whose limit was
-     * changed, when it was one: that month's figures now follow the new limit.
+     * changed, when it was one: that month's figures now follow the new limit. [carry] is
+     * carry turned on or off by the same save.
      */
-    data class CategorySaved(val limitOf: YearMonth?) : CorrectionNotice
+    data class CategorySaved(val limitOf: YearMonth?, val carry: SavedCarry? = null) :
+        CorrectionNotice
 
     /**
      * A limit set from Ajustar presupuesto, as its receipt confirmed: "Límite de Café para
@@ -1295,3 +1297,6 @@ class Corrections(
 
 /** What a confirmed command did to a schedule. */
 enum class ScheduleChange { Changed, Paused, Resumed, Deleted }
+
+/** Carry of [category] turned [on] from [month], or off, by a saved category change. */
+data class SavedCarry(val category: String, val on: Boolean, val month: YearMonth)

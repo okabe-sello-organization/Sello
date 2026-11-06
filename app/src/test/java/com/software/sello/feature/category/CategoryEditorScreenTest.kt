@@ -431,12 +431,11 @@ class CategoryEditorScreenTest {
     }
 
     /** SELLO-154: October ended before the save; the form now shows November. */
-    private fun monthEnded(carry: Boolean, saved: List<EditPart> = emptyList()) = editing.copy(
+    private fun monthEnded(carry: Boolean) = editing.copy(
         changed = true,
         targetMonth = october.plusMonths(1),
         saveError = SaveError.MonthEnded,
-        monthEnded = MonthEnded(october, carry),
-        savedParts = saved
+        monthEnded = MonthEnded(october, carry)
     )
 
     @Test
@@ -452,41 +451,13 @@ class CategoryEditorScreenTest {
     }
 
     @Test
-    fun aMonthEndingAfterTheRenameSavedNamesTheRenameAndOnlyTheLimitAsNotSaved() {
-        show(monthEnded(carry = false, saved = listOf(EditPart.Name)))
-
-        rule.onNodeWithText(
-            "Se guardó: nombre. Octubre 2026 terminó y el límite no se guardó. " +
-                "Ahora ves Noviembre 2026: el límite que guardes vale desde ese mes."
-        ).revealed().assertIsDisplayed()
-        rule.onNodeWithTag(EDITOR_SAVED_PARTS_TAG).assertDoesNotExist()
-    }
-
-    @Test
     fun carryRefusedBecauseItsMonthEndedIsSaidAboutCarry() {
         show(monthEnded(carry = true))
 
         rule.onNodeWithText(
-            "Octubre 2026 terminó y no se empezó a pasar lo que sobra. " +
-                "Ahora ves Noviembre 2026: si lo activas, empieza en ese mes."
+            "Octubre 2026 terminó y no se guardó nada. Ahora ves Noviembre 2026: " +
+                "vuelve a elegir si pasa lo que sobra, desde ese mes."
         ).revealed().assertIsDisplayed()
-    }
-
-    @Test
-    fun whenOnlyPartWasSavedItSaysWhichPartAndThatTheRestWasNot() {
-        show(
-            editing.copy(
-                changed = true,
-                saveError = SaveError.NotSaved,
-                savedParts = listOf(EditPart.Name, EditPart.Icon)
-            )
-        )
-
-        rule.onNodeWithTag(EDITOR_SAVED_PARTS_TAG).revealed().assertIsDisplayed()
-        rule.onNodeWithText("Se guardó: nombre, ícono. Lo demás no se guardó; inténtalo de nuevo.")
-            .assertExists()
-        rule.onNodeWithText("No se pudo guardar. No se creó la categoría; inténtalo de nuevo.")
-            .assertDoesNotExist()
     }
 
     @Test
@@ -707,15 +678,69 @@ class CategoryEditorScreenTest {
         assertEquals(listOf(CategoryEditorAction.DisableCarry), actions)
     }
 
+    /**
+     * SELLO-188: carry is part of the draft, so it can be switched while other changes wait;
+     * the switch shows the draft and says that Guardar saves it. Replaces the switch that
+     * stayed off-limits until the other changes were saved.
+     */
     @Test
-    fun carryCannotBeSwitchedWhileOtherChangesWaitToBeSaved() {
-        show(editing.copy(carry = carryOn, changed = true))
+    fun carrySwitchedOffInTheDraftSaysGuardarWillTurnItOffAndWhatItForgets() {
+        show(
+            editing.copy(
+                carry = carryOn,
+                changed = true,
+                carryPending = CarryPending(on = false, month = october, forgets = minus("40.000"))
+            )
+        )
         rule.onNodeWithTag(EDITOR_CARRY_TAG).revealed().assertIsDisplayed()
 
-        rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).assertIsOn().assertIsNotEnabled()
-        rule.onNodeWithText("Guarda o descarta tus cambios para cambiar esto.", substring = true)
+        rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).assertIsOff().assertIsEnabled()
+        rule.onNodeWithText("Se apaga al guardar y olvida −40.000 de meses anteriores.")
             .assertIsDisplayed()
-        rule.onNodeWithText("trae −40.000 · este mes 60.000", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun carrySwitchedOnInTheDraftSaysItStartsAtZeroWhenSaved() {
+        show(
+            editing.copy(
+                carry = CarryCard.Off(october),
+                changed = true,
+                carryPending = CarryPending(on = true, month = october, forgets = null)
+            )
+        )
+
+        rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).revealed().assertIsOn()
+        rule.onNodeWithText("Se activa al guardar: empieza en 0 en octubre.").assertIsDisplayed()
+    }
+
+    /** Review R2: a save sent with the card unreadable can be refused for carry: it is said. */
+    @Test
+    fun aCarryRefusalIsSaidOnAnUnreadableCard() {
+        show(
+            editing.copy(
+                carry = CarryCard.Unreadable,
+                changed = true,
+                carryPending = CarryPending(on = false, month = october, forgets = null),
+                carryProblem = CarryProblemText.Unavailable
+            )
+        )
+
+        rule.onNodeWithTag(EDITOR_CARRY_PROBLEM_TAG).revealed().assertIsDisplayed()
+    }
+
+    @Test
+    fun anUnreadableCarryStillShowsAChangeWaitingInTheDraft() {
+        show(
+            editing.copy(
+                carry = CarryCard.Unreadable,
+                changed = true,
+                carryPending = CarryPending(on = false, month = october, forgets = null)
+            )
+        )
+
+        rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).assertDoesNotExist()
+        rule.onNodeWithTag(EDITOR_CARRY_PENDING_TAG).revealed().assertIsDisplayed()
+        rule.onNodeWithText("Se apaga al guardar.").assertIsDisplayed()
     }
 
     @Test
