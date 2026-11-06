@@ -48,10 +48,10 @@ import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyStyle
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.MoneyTextValue
-import com.software.sello.designsystem.component.RepeatSheet
 import com.software.sello.designsystem.component.SegmentedSwitch
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloChip
+import com.software.sello.designsystem.component.SelloSheet
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.component.StatusAction
@@ -319,7 +319,7 @@ private fun LimitSheet(sheet: LimitSheetState, onSheet: (LimitSheetAction) -> Un
     val month = names.inSentence(sheet.month)
     val colors = SelloTheme.colors
     val locked = sheet.busy || sheet.error == LimitSheetError.Unknown
-    RepeatSheet(
+    SelloSheet(
         // With carry the sheet edits the base (CP16, CP27).
         title = stringResource(
             if (sheet.carry !=
@@ -371,7 +371,7 @@ private fun LimitSheet(sheet: LimitSheetState, onSheet: (LimitSheetAction) -> Un
                 { onSheet(LimitSheetAction.Retry) },
                 kind = ButtonKind.Text
             )
-            return@RepeatSheet
+            return@SelloSheet
         }
         if (sheet.stale) {
             StatusSlip(

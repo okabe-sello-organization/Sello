@@ -57,19 +57,59 @@ import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 
 /**
+ * One answer on a [DialogSlip]: its [label] and what it does. One that is not [enabled]
+ * cannot be pressed; while [busy] it shows a spinner and ignores presses, so it is
+ * requested once.
+ */
+class SlipAnswer(
+    val label: String,
+    val enabled: Boolean = true,
+    val busy: Boolean = false,
+    val onClick: () -> Unit
+)
+
+/**
+ * The answers under a [DialogSlip]'s tear line. The slip draws them, so the answers of
+ * every dialog look and sit alike: a caller says which answers there are, never how they
+ * are drawn.
+ */
+sealed interface SlipButtons {
+    /**
+     * Two answers in a [ButtonPair]: [first] outlined, such as Cancelar, and [second]
+     * filled, in loss ink when [destructive]. [second] takes [secondWeight] shares of the
+     * width to the first's one. [back], when given, is a text button centred under them, to
+     * go back without answering. [contentPadding] can narrow both so long labels stay on
+     * one line.
+     */
+    class Two(
+        val first: SlipAnswer,
+        val second: SlipAnswer,
+        val destructive: Boolean = false,
+        val secondWeight: Float = 1f,
+        val back: SlipAnswer? = null,
+        val contentPadding: PaddingValues = ButtonDefaults.ContentPadding
+    ) : SlipButtons
+
+    /** One outlined answer across the slip, such as Cancelar or a check to try again. */
+    class One(val answer: SlipAnswer) : SlipButtons
+
+    /** Only a way out, a text button at the end, such as Cancelar under a list to pick from. */
+    class Close(val answer: SlipAnswer) : SlipButtons
+}
+
+/**
  * The frame every dialog slip shares: plain paper over a 55 % dim, [title] as its
  * heading, [content] under it, scrolling when the slip would not fit, and [buttons], when
  * there are any, under a tear line where they stay in view. Back and a tap outside are
  * [onDismissRequest]; a caller that must not be dismissed, such as while busy, passes one
- * that does nothing. [ConfirmSlip], [ChoiceSlip] and [OptionSlip] are drawn with it; use it
- * for a slip with one answer or none, and put two answers in a [ButtonPair].
+ * that does nothing. [ConfirmSlip], [ChoiceSlip] and [OptionSlip] are drawn with it.
  */
 @Composable
 fun DialogSlip(
     title: String,
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
-    buttons: (@Composable ColumnScope.() -> Unit)? = null,
+    buttons: SlipButtons? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val density = LocalDensity.current
@@ -95,11 +135,66 @@ fun DialogSlip(
                 }
                 if (buttons != null) {
                     TearLine(bleed = 20.dp)
-                    buttons()
+                    Answers(buttons)
                 }
             }
         }
     }
+}
+
+@Composable
+private fun ColumnScope.Answers(buttons: SlipButtons) {
+    when (buttons) {
+        is SlipButtons.Two -> {
+            ButtonPair(
+                firstWeight = 1f,
+                secondWeight = buttons.secondWeight,
+                gap = SelloTheme.spacing.md,
+                first = {
+                    buttons.first.Button(
+                        ButtonKind.Outlined,
+                        contentPadding = buttons.contentPadding
+                    )
+                },
+                second = {
+                    buttons.second.Button(
+                        ButtonKind.Filled,
+                        contentPadding = buttons.contentPadding,
+                        tone = if (buttons.destructive) ButtonTone.Loss else ButtonTone.Brand
+                    )
+                }
+            )
+            buttons.back?.Button(
+                ButtonKind.Text,
+                modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)
+            )
+        }
+
+        is SlipButtons.One ->
+            buttons.answer.Button(ButtonKind.Outlined, modifier = Modifier.fillMaxWidth())
+
+        is SlipButtons.Close ->
+            buttons.answer.Button(ButtonKind.Text, modifier = Modifier.align(Alignment.End))
+    }
+}
+
+@Composable
+private fun SlipAnswer.Button(
+    kind: ButtonKind,
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
+    tone: ButtonTone = ButtonTone.Brand
+) {
+    SelloButton(
+        text = label,
+        onClick = onClick,
+        kind = kind,
+        tone = tone,
+        enabled = enabled,
+        loading = busy,
+        contentPadding = contentPadding,
+        modifier = modifier
+    )
 }
 
 /**
@@ -125,18 +220,16 @@ fun ConfirmSlip(
     DialogSlip(
         title = title,
         onDismissRequest = { if (!busy) onDismiss() },
-        buttons = {
-            ConfirmButtons(
-                dismissLabel = dismissLabel,
-                onDismiss = onDismiss,
-                confirmLabel = confirmLabel,
-                onConfirm = onConfirm,
-                destructive = destructive,
-                busy = busy,
-                confirmWeight = 1f,
-                buttonPadding = buttonPadding
-            )
-        }
+        buttons = confirmButtons(
+            dismissLabel = dismissLabel,
+            onDismiss = onDismiss,
+            confirmLabel = confirmLabel,
+            onConfirm = onConfirm,
+            destructive = destructive,
+            busy = busy,
+            confirmWeight = 1f,
+            buttonPadding = buttonPadding
+        )
     ) {
         Text(text = message, style = MaterialTheme.typography.bodyLarge)
     }
@@ -166,26 +259,23 @@ fun ConfirmSlip(
         title = title,
         onDismissRequest = { if (!busy) onDismiss() },
         modifier = modifier,
-        buttons = {
-            // The action's label is usually the longer one: it gets two thirds.
-            ConfirmButtons(
-                dismissLabel = dismissLabel,
-                onDismiss = onDismiss,
-                confirmLabel = confirmLabel,
-                onConfirm = onConfirm,
-                destructive = destructive,
-                busy = busy,
-                confirmWeight = 2f,
-                confirmEnabled = confirmEnabled
-            )
-        },
+        // The action's label is usually the longer one: it gets two thirds.
+        buttons = confirmButtons(
+            dismissLabel = dismissLabel,
+            onDismiss = onDismiss,
+            confirmLabel = confirmLabel,
+            onConfirm = onConfirm,
+            destructive = destructive,
+            busy = busy,
+            confirmWeight = 2f,
+            confirmEnabled = confirmEnabled
+        ),
         content = content
     )
 }
 
 /** Cancelar outlined and the action filled, in loss ink when [destructive]. */
-@Composable
-private fun ConfirmButtons(
+private fun confirmButtons(
     dismissLabel: String,
     onDismiss: () -> Unit,
     confirmLabel: String,
@@ -195,32 +285,13 @@ private fun ConfirmButtons(
     confirmWeight: Float,
     confirmEnabled: Boolean = true,
     buttonPadding: PaddingValues = ButtonDefaults.ContentPadding
-) {
-    ButtonPair(
-        firstWeight = 1f,
-        secondWeight = confirmWeight,
-        gap = SelloTheme.spacing.md,
-        first = {
-            SelloButton(
-                text = dismissLabel,
-                onClick = onDismiss,
-                kind = ButtonKind.Outlined,
-                enabled = !busy,
-                contentPadding = buttonPadding
-            )
-        },
-        second = {
-            SelloButton(
-                text = confirmLabel,
-                onClick = onConfirm,
-                tone = if (destructive) ButtonTone.Loss else ButtonTone.Brand,
-                enabled = confirmEnabled,
-                loading = busy,
-                contentPadding = buttonPadding
-            )
-        }
-    )
-}
+) = SlipButtons.Two(
+    first = SlipAnswer(dismissLabel, enabled = !busy, onClick = onDismiss),
+    second = SlipAnswer(confirmLabel, enabled = confirmEnabled, busy = busy, onClick = onConfirm),
+    destructive = destructive,
+    secondWeight = confirmWeight,
+    contentPadding = buttonPadding
+)
 
 /**
  * A question with two answers, neither of them destructive, such as whether a change
@@ -280,43 +351,17 @@ fun ChoiceSlip(
         title = title,
         onDismissRequest = { if (!busy) onBack() },
         modifier = modifier,
-        buttons = {
-            ButtonPair(
-                firstWeight = 1f,
-                secondWeight = 1f,
-                gap = SelloTheme.spacing.md,
-                first = {
-                    SelloButton(
-                        text = firstLabel,
-                        onClick = {
-                            answered = 1
-                            onFirst()
-                        },
-                        kind = ButtonKind.Outlined,
-                        enabled = !busy,
-                        loading = busy && answered == 1
-                    )
-                },
-                second = {
-                    SelloButton(
-                        text = secondLabel,
-                        onClick = {
-                            answered = 2
-                            onSecond()
-                        },
-                        enabled = !busy,
-                        loading = busy && answered == 2
-                    )
-                }
-            )
-            SelloButton(
-                text = backLabel,
-                onClick = onBack,
-                kind = ButtonKind.Text,
-                enabled = !busy,
-                modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)
-            )
-        },
+        buttons = SlipButtons.Two(
+            first = SlipAnswer(firstLabel, enabled = !busy, busy = busy && answered == 1) {
+                answered = 1
+                onFirst()
+            },
+            second = SlipAnswer(secondLabel, enabled = !busy, busy = busy && answered == 2) {
+                answered = 2
+                onSecond()
+            },
+            back = SlipAnswer(backLabel, enabled = !busy, onClick = onBack)
+        ),
         content = content
     )
 }

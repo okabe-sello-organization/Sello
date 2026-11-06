@@ -2,115 +2,32 @@ package com.software.sello.designsystem.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.onClick
-import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.Constraints
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
-
-/**
- * The sheet that says how something repeats, over the screen it belongs to: a scrim that
- * closes it when tapped, and paper docked at the bottom with [title] as its heading and
- * [content] under it, scrolling when it is taller than the screen. It
- * keeps clear of the system bars. Back is the screen's to handle, as is what lies behind.
- */
-@Composable
-fun RepeatSheet(
-    title: String,
-    onDismiss: () -> Unit,
-    modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    val colors = SelloTheme.colors
-    Box(modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-        Box(
-            Modifier
-                .fillMaxSize()
-                .background(colors.scrim.copy(alpha = SelloTheme.alpha.scrim))
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = onDismiss
-                )
-                .clearAndSetSemantics {}
-        )
-        Surface(
-            color = colors.paper,
-            shape = SelloTheme.shapes.sheet,
-            modifier = Modifier
-                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
-                .padding(top = SheetTopGap)
-                .semantics { paneTitle = title }
-        ) {
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .windowInsetsPadding(
-                        WindowInsets.safeDrawing.only(
-                            WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
-                        )
-                    )
-                    .padding(
-                        start = SelloTheme.spacing.md,
-                        end = SelloTheme.spacing.md,
-                        top = SelloTheme.spacing.md,
-                        bottom = 10.dp
-                    )
-            ) {
-                Text(
-                    title,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = colors.ink,
-                    modifier = Modifier
-                        .padding(start = 2.dp, end = 2.dp, bottom = 10.dp)
-                        .semantics { heading() }
-                )
-                content()
-            }
-        }
-    }
-}
 
 /**
  * One payment or income that repeats: its [icon] in a circle, [name] over [caption] (the
@@ -234,55 +151,3 @@ private fun DatePill(text: String, modifier: Modifier = Modifier) {
             .padding(horizontal = 7.dp, vertical = 1.dp)
     )
 }
-
-/**
- * Two buttons side by side, sharing the width by [firstWeight] and [secondWeight], or
- * one above the other at full width when a word of either label would not fit its share.
- * [first] is the outlined answer, such as Cancelar, and [second] the filled action. Side
- * by side the action is on the right; one above the other it is on top, Cancelar under it.
- * TalkBack and the keyboard go through them in the order they are seen.
- */
-@Composable
-fun ButtonPair(
-    firstWeight: Float,
-    secondWeight: Float,
-    modifier: Modifier = Modifier,
-    gap: Dp = 10.dp,
-    first: @Composable () -> Unit,
-    second: @Composable () -> Unit
-) {
-    Layout(
-        contents = listOf(first, second),
-        modifier = modifier.fillMaxWidth()
-    ) { (firstButton, secondButton), constraints ->
-        val space = gap.roundToPx()
-        val width = constraints.maxWidth
-        val firstWidth = ((width - space) * firstWeight / (firstWeight + secondWeight)).toInt()
-        val secondWidth = width - space - firstWidth
-        val a = firstButton.single()
-        val b = secondButton.single()
-        val besides = a.minIntrinsicWidth(Constraints.Infinity) <= firstWidth &&
-            b.minIntrinsicWidth(Constraints.Infinity) <= secondWidth
-        if (besides) {
-            // Both as tall as the taller one, so a label on two lines leaves no step.
-            val height = maxOf(a.minIntrinsicHeight(firstWidth), b.minIntrinsicHeight(secondWidth))
-            val placedA = a.measure(Constraints.fixedWidth(firstWidth).copy(minHeight = height))
-            val placedB = b.measure(Constraints.fixedWidth(secondWidth).copy(minHeight = height))
-            layout(width, maxOf(placedA.height, placedB.height)) {
-                placedA.placeRelative(0, 0)
-                placedB.placeRelative(firstWidth + space, 0)
-            }
-        } else {
-            val full = Constraints.fixedWidth(width)
-            val placedA = a.measure(full)
-            val placedB = b.measure(full)
-            layout(width, placedB.height + space + placedA.height) {
-                // Placed first, so the keyboard reaches the action first, as it is seen.
-                placedB.placeRelative(0, 0)
-                placedA.placeRelative(0, placedB.height + space)
-            }
-        }
-    }
-}
-
-private val SheetTopGap = 24.dp

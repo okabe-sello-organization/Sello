@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -29,7 +30,12 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.height
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -420,6 +426,47 @@ class StatusSlipTest {
             ).fetchSemanticsNodes().size
             assertEquals("$scheme $kind", if (kind is StatusKind.Empty) 0 else 1, live)
         }
+    }
+
+    @Test
+    fun aStyledMessageKeepsItsWeightButNeverItsOwnColour() {
+        var kind by mutableStateOf<StatusKind>(empty)
+        val styled = buildAnnotatedString {
+            append("Faltan ")
+            withStyle(SpanStyle(color = Color.Magenta, fontWeight = FontWeight.Bold)) {
+                append("12.000")
+            }
+            withStyle(SpanStyle(brush = SolidColor(Color.Cyan), fontStyle = FontStyle.Italic)) {
+                append(" hoy")
+            }
+        }
+        rule.inEveryScheme(content = {
+            ReadInks()
+            StatusSlip(kind, styled)
+        }) { scheme ->
+            kinds.forEach { next ->
+                kind = next
+                rule.waitForIdle()
+                val layout = layoutOf(styled.text)
+                val spans = layout.layoutInput.text.spanStyles.map { it.item }
+                val ink = inks[next.look().messageInk]
+                assertEquals("$scheme $next ink", ink, layout.layoutInput.style.color)
+                assertTrue(
+                    "$scheme $next spans $spans",
+                    spans.all { it.color == Color.Unspecified && it.brush == null }
+                )
+                assertTrue("$scheme $next weight", spans.any { it.fontWeight == FontWeight.Bold })
+                assertTrue("$scheme $next style", spans.any { it.fontStyle == FontStyle.Italic })
+            }
+            kind = empty
+        }
+    }
+
+    private fun layoutOf(text: String): TextLayoutResult {
+        val node = rule.onNode(hasText(text)).fetchSemanticsNode()
+        val results = mutableListOf<TextLayoutResult>()
+        node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(results)
+        return results.single()
     }
 
     private companion object {

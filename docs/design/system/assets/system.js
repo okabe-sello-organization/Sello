@@ -435,7 +435,12 @@
       holder.appendChild(el("div", { class: "empty-state" }, [el("p", { text: "No findings loaded." })]));
       return;
     }
-    holder.appendChild(summary(data));
+    var open = data.misuse.length + data.copies.length + data.hardcoded.length;
+    if (open) {
+      holder.appendChild(summary(data));
+    } else {
+      holder.appendChild(el("p", { class: "none-open", text: "No open findings: nothing is misused, copied or hard-coded." }));
+    }
 
     holder.appendChild(el("h2", { id: "misuse", text: "Misuse" }));
     holder.appendChild(el("p", { class: "muted", text: "One card per component: what it means in the app, then each place that uses it against that meaning. Sure places first; unsure ones are marked and say why." }));
@@ -444,6 +449,7 @@
 
     holder.appendChild(el("h2", { id: "copies", text: "Copies" }));
     holder.appendChild(el("p", { class: "muted", text: "One card per shared component: each place that rebuilds it by hand and how the copy differs. Drifted copies say something the shared part would not." }));
+    if (!data.copies.length) holder.appendChild(el("p", { text: "None left: every shared component is used, not rebuilt by hand." }));
     data.copies.forEach(function (card) { holder.appendChild(copyCard(card)); });
 
     holder.appendChild(el("h2", { id: "hardcoded", text: "Hard-coded values" }));

@@ -27,6 +27,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -117,8 +118,9 @@ fun StatusSlip(
 }
 
 /**
- * [StatusSlip] whose [message] has styled parts, such as figures in bold; the kind's ink
- * still colours the whole sentence.
+ * [StatusSlip] whose [message] has styled parts, such as figures in bold. Only their
+ * weight, style and other shape is kept: a part's own colour or brush is dropped, so the
+ * kind's ink colours the whole sentence.
  */
 @Composable
 fun StatusSlip(
@@ -129,9 +131,44 @@ fun StatusSlip(
 ) {
     val look = kind.look()
     val title = kind.title() ?: look.defaultTitle?.let { stringResource(it) }
+    val inKindsInk = message.withoutInk()
     when (look.layout) {
-        StatusLayout.Centred -> CentredStatus(look, title, message, action, modifier)
-        StatusLayout.Inline -> InlineStatus(look, title, message, action, modifier)
+        StatusLayout.Centred -> CentredStatus(look, title, inKindsInk, action, modifier)
+        StatusLayout.Inline -> InlineStatus(look, title, inKindsInk, action, modifier)
+    }
+}
+
+/**
+ * [this] with no colour or brush of its own on any part, so the text's colour shows. Every
+ * other style and annotation, such as how a figure is read aloud, is kept.
+ */
+private fun AnnotatedString.withoutInk(): AnnotatedString = mapAnnotations { range ->
+    val style = range.item as? SpanStyle
+    if (style == null || (style.color == Color.Unspecified && style.brush == null)) {
+        range
+    } else {
+        AnnotatedString.Range(
+            SpanStyle(
+                fontSize = style.fontSize,
+                fontWeight = style.fontWeight,
+                fontStyle = style.fontStyle,
+                fontSynthesis = style.fontSynthesis,
+                fontFamily = style.fontFamily,
+                fontFeatureSettings = style.fontFeatureSettings,
+                letterSpacing = style.letterSpacing,
+                baselineShift = style.baselineShift,
+                textGeometricTransform = style.textGeometricTransform,
+                localeList = style.localeList,
+                background = style.background,
+                textDecoration = style.textDecoration,
+                shadow = style.shadow,
+                platformStyle = style.platformStyle,
+                drawStyle = style.drawStyle
+            ),
+            range.start,
+            range.end,
+            range.tag
+        )
     }
 }
 

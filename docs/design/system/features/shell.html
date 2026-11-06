@@ -29,8 +29,8 @@
         <li>Launcher: <code>MainActivity</code> shows <code>SelloAppRoot</code> once start-up is ready, <code>app/src/main/java/com/software/sello/MainActivity.kt:68</code>. Its start destination is Recibo, <code>app/src/main/java/com/software/sello/navigation/SelloApp.kt:94</code>.</li>
         <li>A link <code>sello://anotar?categoria=…&amp;monto=…</code> (not browsable): <code>ShellAction.OpenLink</code>, <code>app/src/main/java/com/software/sello/MainActivity.kt:118</code>, parsed by <code>EntryLinks.parse</code>, <code>app/src/main/java/com/software/sello/navigation/EntryLink.kt:33</code>.</li>
         <li>A tab: <code>navigation.navigate(route)</code> with saved and restored state, <code>app/src/main/java/com/software/sello/navigation/SelloApp.kt:86</code>.</li>
-        <li>The Anotar dock: <code>ShellAction.StartEntry</code>, <code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:261</code>; with no category that can take it the category form opens first, <code>app/src/main/java/com/software/sello/navigation/SelloApp.kt:167</code>, otherwise the expense form, <code>app/src/main/java/com/software/sello/navigation/SelloApp.kt:174</code>.</li>
-        <li>The month bar or a title's month switcher: <code>ShellAction.OpenMonthPicker</code>, <code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:214</code> and <code>:247</code>.</li>
+        <li>The Anotar dock: <code>ShellAction.StartEntry</code>, <code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:264</code>; with no category that can take it the category form opens first, <code>app/src/main/java/com/software/sello/navigation/SelloApp.kt:167</code>, otherwise the expense form, <code>app/src/main/java/com/software/sello/navigation/SelloApp.kt:174</code>.</li>
+        <li>The month bar or a title's month switcher: <code>ShellAction.OpenMonthPicker</code>, <code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:217</code> and <code>:250</code>.</li>
       </ul>
     </section>
 
@@ -58,12 +58,12 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Current month</td><td>Month bar only, no ribbon.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:161</code></td><td><code>shell-current-month</code></td></tr>
-            <tr><td>Past month</td><td>Ribbon "Estás viendo septiembre" / "Volver a octubre"; another year adds it: "septiembre de 2025".</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:95</code></td><td><code>shell-past-month</code></td></tr>
+            <tr><td>Current month</td><td>Month bar only, no ribbon.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:164</code></td><td><code>shell-current-month</code></td></tr>
+            <tr><td>Past month</td><td>Ribbon "Estás viendo septiembre" / "Volver a octubre"; another year adds it: "septiembre de 2025".</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:94</code></td><td><code>shell-past-month</code></td></tr>
             <tr><td>Loading, empty, error, stale</td><td>Belong to the tab's content, not the frame; see each feature page and <a href="#app-wide">App-wide patterns</a>.</td><td>—</td><td>—</td></tr>
             <tr><td>Busy</td><td>Does not exist for the frame: it sends no write.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellViewModel.kt:77</code></td><td>—</td></tr>
             <tr><td>Restored after process death</td><td>Same month, picker open or closed, picker year, open category and pending entry; a month pinned before the app went to the background for long enough returns to the current one (<code>MonthSession</code>).</td><td><code>app/src/main/java/com/software/sello/navigation/ShellViewModel.kt:92</code></td><td>Nothing to capture: drawn as the frame before</td></tr>
-            <tr><td>Wide window</td><td>Rail instead of tab bar; the month picker becomes a side panel; a category's detail sits beside Recibo.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:267</code></td><td><code>shell-rail-beside</code>, <code>shell-side-panel</code></td></tr>
+            <tr><td>Wide window</td><td>Rail instead of tab bar; the month picker becomes a side panel; a category's detail sits beside Recibo.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:270</code></td><td><code>shell-rail-beside</code>, <code>shell-side-panel</code></td></tr>
           </tbody>
         </table>
       </div>
@@ -96,7 +96,7 @@
       <h3>Layout</h3>
       <ol>
         <li><code>TitleBar</code> (feature-local, <code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:118</code>) on the band: the tab name as a heading, then a <a href="../components.html#c-BandChip"><code>BandChip</code></a> "Nueva meta" or "Nueva inversión" once there is at least one; the chip turns into the round "+" alone when its label would push the title off its line.</li>
-        <li>No month, no month switcher and no past-month ribbon (<code>titleOnly</code>, <code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:132</code>).</li>
+        <li>No month, no month switcher and no past-month ribbon (<code>titleOnly</code>, <code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:135</code>).</li>
         <li>The content, then a dock in the tab's own tone: Metas green with a flag ("Crear una meta" when empty, "Aportar a una meta" otherwise), Inversiones in ink with "+" ("Agregar inversión" / "Anotar movimiento"). No dock while the list is first read.</li>
         <li>The tab bar.</li>
       </ol>
@@ -151,10 +151,10 @@
             <table>
               <thead><tr><th>Form</th><th>Looks like</th><th>Used by</th><th>Source</th></tr></thead>
               <tbody>
-                <tr><td><code>screenTitle</code></td><td>"Configuración · Octubre 2026" with a chevron; it opens the month picker</td><td>Configuración, Respaldo, Borrar datos, Pagos previstos, Ajustar presupuesto, Lo que Sello anotó</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:243</code></td></tr>
+                <tr><td><code>screenTitle</code></td><td>"Configuración · Octubre 2026" with a chevron; it opens the month picker</td><td>Configuración, Respaldo, Borrar datos, Pagos previstos, Ajustar presupuesto, Lo que Sello anotó</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:246</code></td></tr>
                 <tr><td><code>titleLabel</code></td><td>"Ingresos de octubre" with a chevron</td><td>Ingresos</td><td><code>app/src/main/java/com/software/sello/navigation/IncomeDestinations.kt:52</code></td></tr>
-                <tr><td><code>showMonthAsSubtitle</code></td><td>The name as the title, "Octubre 2026" under it; no switcher</td><td>Todos los gastos, a category from Resumen</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:206</code></td></tr>
-                <tr><td><code>titleOnly</code></td><td>The plain title</td><td>Pagos e ingresos fijos, Dólar, a goal, an investment</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:205</code></td></tr>
+                <tr><td><code>showMonthAsSubtitle</code></td><td>The name as the title, "Octubre 2026" under it; no switcher</td><td>Todos los gastos, a category from Resumen</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:209</code></td></tr>
+                <tr><td><code>titleOnly</code></td><td>The plain title</td><td>Pagos e ingresos fijos, Dólar, a goal, an investment</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:208</code></td></tr>
               </tbody>
             </table>
           </div>
@@ -171,8 +171,8 @@
           <tbody>
             <tr><td>Title not yet known</td><td>A fallback title: "Todos los gastos", "Categoría", the tab name for an investment, "Meta" for a goal.</td><td><code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:153</code>, <code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:171</code></td><td><code>category-expenses-loading</code>, <code>category-detail-untitled</code></td></tr>
             <tr><td>Item gone</td><td>A deleted goal or investment leaves its page by itself.</td><td><code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:160</code>, <code>app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:144</code></td><td>—</td></tr>
-            <tr><td>Archived category</td><td>The dock stays in place, disabled, "Archivada" beside a prohibited sign.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:73</code></td><td><code>shell-archived-dock</code></td></tr>
-            <tr><td>Archived not yet known</td><td>"+ Anotar", disabled.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:86</code></td><td><code>shell-waiting-dock</code></td></tr>
+            <tr><td>Archived category</td><td>The dock stays in place, disabled, "Archivada" beside a prohibited sign.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:72</code></td><td><code>shell-archived-dock</code></td></tr>
+            <tr><td>Archived not yet known</td><td>"+ Anotar", disabled.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:85</code></td><td><code>shell-waiting-dock</code></td></tr>
           </tbody>
         </table>
       </div>
@@ -202,8 +202,8 @@
 
       <h3>Layout</h3>
       <ol>
-        <li>One pane (phone): the detail replaces Recibo under its own title row: back arrow read as "Volver al recibo", the category name, the month as subtitle, the edit pencil; <code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:176</code>.</li>
-        <li>Two panes (width ≥ 600dp and a two-column layout): Recibo on the left, the detail on the right; with none opened, the first category is shown; <code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:47</code>, <code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:279</code>.</li>
+        <li>One pane (phone): the detail replaces Recibo under its own title row: back arrow read as "Volver al recibo", the category name, the month as subtitle, the edit pencil; <code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:179</code>.</li>
+        <li>Two panes (width ≥ 600dp and a two-column layout): Recibo on the left, the detail on the right; with none opened, the first category is shown; <code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:46</code>, <code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:279</code>.</li>
         <li>The dock starts an expense in that category, or is the disabled "Archivada" dock.</li>
       </ol>
 
@@ -212,7 +212,7 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Opened</td><td>The detail with its title row.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:175</code></td><td><code>shell-detail</code></td></tr>
+            <tr><td>Opened</td><td>The detail with its title row.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:178</code></td><td><code>shell-detail</code></td></tr>
             <tr><td>Name not yet read</td><td>Title "Categoría".</td><td><code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:284</code></td><td><code>category-detail-untitled</code></td></tr>
             <tr><td>Beside Recibo</td><td>No back arrow; system Back acts as on Recibo.</td><td><code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:383</code></td><td><code>shell-rail-beside</code></td></tr>
             <tr><td>Restored</td><td>The same category is open again.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellViewModel.kt:113</code></td><td>—</td></tr>
@@ -243,7 +243,7 @@
 
       <h3>Layout</h3>
       <ol>
-        <li>Host: a Material <code>ModalBottomSheet</code> opened whole, paper background, ink text, status-bar icons kept as the band has them, <code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:284</code>. In a window wide enough for a side panel, the same content sits in a <a href="../components.html#c-Slip"><code>Slip</code></a> beside the content instead, <code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:274</code>.</li>
+        <li>Host: a Material <code>ModalBottomSheet</code> opened whole, paper background, ink text, status-bar icons kept as the band has them, <code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:287</code>. In a window wide enough for a side panel, the same content sits in a <a href="../components.html#c-Slip"><code>Slip</code></a> beside the content instead, <code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:277</code>.</li>
         <li>"Elige un mes" as a heading and, on the same line, a text <a href="../components.html#c-SelloButton"><code>SelloButton</code></a> "Mes actual"; with a large font it goes under the title.</li>
         <li><a href="../components.html#c-MonthGrid"><code>MonthGrid</code></a>: year arrows and the year, twelve cells "Ene" to "Dic"; the current month outlined, the selected filled, later months disabled.</li>
       </ol>
@@ -255,7 +255,7 @@
           <tbody>
             <tr><td>Open on this year</td><td>Next-year arrow disabled; months after the current one disabled.</td><td><code>app/src/main/java/com/software/sello/navigation/MonthPicker.kt:95</code></td><td><code>shell-picker</code></td></tr>
             <tr><td>Earliest year (2000)</td><td>Previous-year arrow disabled.</td><td><code>app/src/main/java/com/software/sello/navigation/MonthPicker.kt:90</code></td><td><code>shell-picker-earliest</code></td></tr>
-            <tr><td>Side panel</td><td>Beside the content, no scrim.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:267</code></td><td><code>shell-side-panel</code></td></tr>
+            <tr><td>Side panel</td><td>Beside the content, no scrim.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:270</code></td><td><code>shell-side-panel</code></td></tr>
             <tr><td>Restored</td><td>Still open on the year it showed.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellViewModel.kt:109</code></td><td>—</td></tr>
             <tr><td>Loading, empty, error, busy</td><td>Do not exist: the picker reads nothing and writes nothing.</td><td>—</td><td>—</td></tr>
           </tbody>
@@ -299,8 +299,8 @@
       <h3>Layout</h3>
       <ol>
         <li>One <a href="../components.html#c-SelloNotice"><code>SelloNotice</code></a> over the bottom of the content, above the dock, passed by each destination as <code>notice</code>. The text is the confirmation or the correction; a deletion that can still be undone has "Deshacer"; an unknown deletion has "Comprobar si se borró".</li>
-        <li><code>CorrectionNoticeBar</code> (<code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:68</code>) maps each <code>CorrectionNotice</code> to its words; investment movement notices are worded in the investments feature (<code>InvestmentMovementNoticeBar</code>).</li>
-        <li><code>StampNoticeBar</code> (<code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:441</code>) on Recibo and Metas: a goal stamp earned by a confirmed aporte lands on a paper <code>CelebrationTicket</code> instead (see the Goals page).</li>
+        <li><code>CorrectionNoticeBar</code> (<code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:69</code>) maps each <code>CorrectionNotice</code> to its words; investment movement notices are worded in the investments feature (<code>InvestmentMovementNoticeBar</code>).</li>
+        <li><code>StampNoticeBar</code> (<code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:440</code>) on Recibo and Metas: a goal stamp earned by a confirmed aporte lands on a paper <code>CelebrationTicket</code> instead (see the Goals page).</li>
         <li>On Recibo, when there is no correction to say, the catch-up notice takes the place, <code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:290</code>.</li>
       </ol>
 
@@ -309,14 +309,14 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Deleted, can undo</td><td>"Gasto borrado" + "Deshacer"; read aloud with how long it can be undone. With later months changed: "Gasto borrado · cambió el límite de 3 meses".</td><td><code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:71</code></td><td><code>components-feedback.png</code> (design-system), <code>recibo-notice-deleted-carry</code></td></tr>
-            <tr><td>Busy (undoing, checking)</td><td>The action shows a spinner and cannot be pressed again.</td><td><code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:85</code></td><td><code>recibo-notice-undoing</code>, <code>recibo-notice-checking</code></td></tr>
-            <tr><td>Undo failed</td><td>"No se pudo deshacer. Inténtalo de nuevo." + "Deshacer".</td><td><code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:74</code></td><td><code>recibo-notice-undo-failed</code></td></tr>
-            <tr><td>Unknown outcome</td><td>"No sabemos si el gasto se borró. …" + "Comprobar si se borró"; it comes back whenever the bar is free until answered.</td><td><code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:99</code>, <code>app/src/main/java/com/software/sello/presentation/corrections/Corrections.kt:1274</code></td><td><code>recibo-notice-unknown</code></td></tr>
-            <tr><td>Refused</td><td>"No se borró el gasto. …", "No se pudo deshacer porque tus datos cambiaron. …".</td><td><code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:95</code></td><td><code>recibo-notice-refused</code>, <code>recibo-notice-undo-blocked</code></td></tr>
-            <tr><td>Statement</td><td>Restored, updated, recorded, saved, archived, paused…: text only, gone after 4 seconds.</td><td><code>app/src/main/java/com/software/sello/presentation/corrections/Corrections.kt:1292</code></td><td><code>recibo-notice-restored</code>, <code>recibo-notice-category-deleted</code></td></tr>
-            <tr><td>Confirmation</td><td>A recorded write ("Gasto anotado: 48.700 en Comida") drawn as a confirmation; on screen the figure as written, aloud with its currency.</td><td><code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:190</code></td><td><code>recibo-notice-recorded</code>, <code>recibo-notice-limit-adjusted</code></td></tr>
-            <tr><td>After process death</td><td>The notice is not restored; one process-wide <code>Corrections</code> holds it so it survives leaving the screen that asked.</td><td><code>app/src/main/java/com/software/sello/presentation/corrections/Corrections.kt:342</code></td><td>—</td></tr>
+            <tr><td>Deleted, can undo</td><td>"Gasto borrado" + "Deshacer"; read aloud with how long it can be undone. With later months changed: "Gasto borrado · cambió el límite de 3 meses".</td><td><code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:72</code></td><td><code>components-feedback.png</code> (design-system), <code>recibo-notice-deleted-carry</code></td></tr>
+            <tr><td>Busy (undoing, checking)</td><td>The action shows a spinner and cannot be pressed again.</td><td><code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:86</code></td><td><code>recibo-notice-undoing</code>, <code>recibo-notice-checking</code></td></tr>
+            <tr><td>Undo failed</td><td>"No se pudo deshacer. Inténtalo de nuevo." + "Deshacer".</td><td><code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:75</code></td><td><code>recibo-notice-undo-failed</code></td></tr>
+            <tr><td>Unknown outcome</td><td>"No sabemos si el gasto se borró. …" + "Comprobar si se borró"; it comes back whenever the bar is free until answered.</td><td><code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:100</code>, <code>app/src/main/java/com/software/sello/presentation/corrections/Corrections.kt:1276</code></td><td><code>recibo-notice-unknown</code></td></tr>
+            <tr><td>Refused</td><td>"No se borró el gasto. …", "No se pudo deshacer porque tus datos cambiaron. …".</td><td><code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:96</code></td><td><code>recibo-notice-refused</code>, <code>recibo-notice-undo-blocked</code></td></tr>
+            <tr><td>Statement</td><td>Restored, updated, recorded, saved, archived, paused…: text only, gone after 4 seconds.</td><td><code>app/src/main/java/com/software/sello/presentation/corrections/Corrections.kt:1294</code></td><td><code>recibo-notice-restored</code>, <code>recibo-notice-category-deleted</code></td></tr>
+            <tr><td>Confirmation</td><td>A recorded write ("Gasto anotado: 48.700 en Comida") drawn as a confirmation; on screen the figure as written, aloud with its currency.</td><td><code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:189</code></td><td><code>recibo-notice-recorded</code>, <code>recibo-notice-limit-adjusted</code></td></tr>
+            <tr><td>After process death</td><td>The notice is not restored; one process-wide <code>Corrections</code> holds it so it survives leaving the screen that asked.</td><td><code>app/src/main/java/com/software/sello/presentation/corrections/Corrections.kt:344</code></td><td>—</td></tr>
           </tbody>
         </table>
       </div>
@@ -361,11 +361,11 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Asking (delete)</td><td>"¿Borrar este gasto?", "Borrar" in red.</td><td><code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:472</code></td><td><code>carry-delete</code></td></tr>
-            <tr><td>Asking (undo)</td><td>"¿Deshacer el borrado?", "Deshacer".</td><td><code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:481</code></td><td><code>carry-undo</code></td></tr>
-            <tr><td>Changed meanwhile</td><td>The list read again because the data moved.</td><td><code>app/src/main/java/com/software/sello/presentation/corrections/Corrections.kt:324</code></td><td><code>carry-changed</code></td></tr>
-            <tr><td>Busy</td><td>Spinner in the action; nothing can be pressed or dismissed.</td><td><code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:494</code></td><td><code>carry-busy</code></td></tr>
-            <tr><td>Undo time over</td><td>An unconfirmed undo list closes with the time and that is said.</td><td><code>app/src/main/java/com/software/sello/presentation/corrections/Corrections.kt:1255</code></td><td><code>recibo-notice-too-late</code></td></tr>
+            <tr><td>Asking (delete)</td><td>"¿Borrar este gasto?", "Borrar" in red.</td><td><code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:471</code></td><td><code>carry-delete</code></td></tr>
+            <tr><td>Asking (undo)</td><td>"¿Deshacer el borrado?", "Deshacer".</td><td><code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:480</code></td><td><code>carry-undo</code></td></tr>
+            <tr><td>Changed meanwhile</td><td>The list read again because the data moved.</td><td><code>app/src/main/java/com/software/sello/presentation/corrections/Corrections.kt:326</code></td><td><code>carry-changed</code></td></tr>
+            <tr><td>Busy</td><td>Spinner in the action; nothing can be pressed or dismissed.</td><td><code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:493</code></td><td><code>carry-busy</code></td></tr>
+            <tr><td>Undo time over</td><td>An unconfirmed undo list closes with the time and that is said.</td><td><code>app/src/main/java/com/software/sello/presentation/corrections/Corrections.kt:1257</code></td><td><code>recibo-notice-too-late</code></td></tr>
           </tbody>
         </table>
       </div>
@@ -387,13 +387,13 @@
       <figure data-shot="expense-entry-announcement" data-module="app" data-caption="Shown, in Anotar"></figure>
       <figure data-shot="expense-entry-announcement-busy" data-module="app" data-caption="Busy"></figure>
       <figure data-shot="expense-entry-announcement-failed" data-module="app" data-caption="Failed"></figure>
-      <p>Two notices, each shown until the person dismisses it once, owned by <code>CorrectionAnnouncementsViewModel</code> (<code>app/src/main/java/com/software/sello/presentation/corrections/CorrectionAnnouncementsViewModel.kt</code>) and drawn by the screens: in the expense form when correcting a past month's expense, <code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:504</code>, and in a past month's category detail, <code>app/src/main/java/com/software/sello/feature/recibo/CategoryDetailScreen.kt:165</code>. Both are a <a href="../components.html#c-SelloNotice"><code>SelloNotice</code></a> in the content.</p>
+      <p>Two notices, each shown until the person dismisses it once, owned by <code>CorrectionAnnouncementsViewModel</code> (<code>app/src/main/java/com/software/sello/presentation/corrections/CorrectionAnnouncementsViewModel.kt</code>) and drawn by the screens: in the expense form when correcting a past month's expense, <code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:498</code>, and in a past month's category detail, <code>app/src/main/java/com/software/sello/feature/recibo/CategoryDetailScreen.kt:182</code>. Both are a <a href="../components.html#c-SelloNotice"><code>SelloNotice</code></a> in the content.</p>
       <div class="table-wrap">
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
             <tr><td>Loading</td><td>Nothing until the preference is read.</td><td><code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:333</code></td><td>—</td></tr>
-            <tr><td>Shown</td><td>"Puedes corregir un gasto de meses anteriores." / "Puedes corregir el límite de este mes anterior." + "Entendido".</td><td><code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:505</code></td><td><code>expense-entry-announcement</code></td></tr>
+            <tr><td>Shown</td><td>"Puedes corregir un gasto de meses anteriores." / "Puedes corregir el límite de este mes anterior." + "Entendido".</td><td><code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:499</code></td><td><code>expense-entry-announcement</code></td></tr>
             <tr><td>Busy</td><td>"Entendido" shows a spinner while the dismissal is saved.</td><td><code>app/src/main/java/com/software/sello/presentation/corrections/CorrectionAnnouncementsViewModel.kt:61</code></td><td><code>expense-entry-announcement-busy</code></td></tr>
             <tr><td>Failed read or write</td><td>"No pudimos recordar este aviso. Inténtalo de nuevo." + "Reintentar"; a failed read keeps the last preference.</td><td><code>app/src/main/java/com/software/sello/presentation/corrections/CorrectionAnnouncementsViewModel.kt:36</code></td><td><code>expense-entry-announcement-failed</code></td></tr>
           </tbody>
@@ -417,8 +417,8 @@
             <tr><td>Recibo with a category open (one pane)</td><td>Closes the detail.</td><td><code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:385</code></td></tr>
             <tr><td>Resumen, Metas, Inversiones</td><td>Goes to Recibo.</td><td><code>app/src/main/java/com/software/sello/navigation/ResumenDestinations.kt:61</code>, <code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:133</code>, <code>app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:120</code></td></tr>
             <tr><td>Pushed screens</td><td>Pops; some declare it (Configuración, Respaldo, an investment, Dólar), the rest use the host's default.</td><td><code>app/src/main/java/com/software/sello/navigation/SettingsDestinations.kt:53</code>, <code>app/src/main/java/com/software/sello/navigation/BackupDestinations.kt:49</code></td></tr>
-            <tr><td>Respaldo after a replacing restore</td><td>The screen's own handler restarts, as the arrow does.</td><td><code>app/src/main/java/com/software/sello/feature/backup/BackupScreen.kt:55</code></td></tr>
-            <tr><td>Forms</td><td>Each form routes Back through its ViewModel (discard question, unknown outcome), as its Close button does.</td><td>e.g. <code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:148</code></td></tr>
+            <tr><td>Respaldo after a replacing restore</td><td>The screen's own handler restarts, as the arrow does.</td><td><code>app/src/main/java/com/software/sello/feature/backup/BackupScreen.kt:58</code></td></tr>
+            <tr><td>Forms</td><td>Each form routes Back through its ViewModel (discard question, unknown outcome), as its Close button does.</td><td>e.g. <code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:153</code></td></tr>
           </tbody>
         </table>
       </div>
@@ -442,7 +442,7 @@
           <tbody>
             <tr><td><code>MoneyFormatter</code></td><td>Money as a <code>MoneyTextValue</code> for <a href="../components.html#c-MoneyText"><code>MoneyText</code></a>: es-CO grouping ("937.200", "4.150,25"), no decimals for pesos, a currency code for anything else, sign as a separate field; spoken "937.200 pesos", "menos …", "más …". Only moves digits as text.</td><td><code>app/src/main/java/com/software/sello/presentation/money/MoneyFormatter.kt:24</code></td></tr>
             <tr><td><code>ResourceMoneyLabels</code></td><td>"%1$s peso" / "%1$s pesos" (<code>money_cop</code>), "%1$s %2$s" (<code>money_other_currency</code>), "menos %1$s" (<code>money_negative</code>), "más %1$s" (<code>money_positive</code>).</td><td><code>app/src/main/java/com/software/sello/presentation/money/ResourceMoneyLabels.kt</code></td></tr>
-            <tr><td><code>MonthNames</code></td><td>"Octubre 2026" (<code>month_title</code>), "Octubre" (bar), "octubre" (in a sentence), "Oct" (grid).</td><td><code>app/src/main/java/com/software/sello/presentation/month/MonthNames.kt:12</code></td></tr>
+            <tr><td><code>MonthNames</code></td><td>"Octubre 2026" (<code>month_title</code>), "Octubre" (bar), "octubre" (in a sentence), "Oct" (grid).</td><td><code>app/src/main/java/com/software/sello/presentation/month/MonthNames.kt:13</code></td></tr>
             <tr><td><code>DateLabels</code></td><td>"Hoy, vie 9 oct" (<code>date_today</code>), "jue 8 oct", "mié 31 dic 2025", "30 sep", "dic 2026", "may 27", "22 oct 2026, 2:30 p. m.".</td><td><code>app/src/main/java/com/software/sello/presentation/date/DateLabels.kt:21</code></td></tr>
             <tr><td><code>CategoryIcons</code></td><td>The one set of 35 icons for categories, goals and investments, by stored key; an unknown key shows a receipt. Investments reorder it and use a chart line for unknown keys (<code>InvestmentIcons</code>).</td><td><code>app/src/main/java/com/software/sello/presentation/category/CategoryIcons.kt:12</code></td></tr>
             <tr><td><code>LastGoodRead</code></td><td>The read wrapper that keeps the last good value across retries; screens say it with an Older <code>StatusSlip</code>.</td><td><code>app/src/main/java/com/software/sello/presentation/read/LastGoodRead.kt</code></td></tr>
@@ -467,12 +467,12 @@
             <tr><td><a href="../components.html#c-SelloNotice"><code>SelloNotice</code></a></td><td><code>:design-system</code> <code>Corrections.kt</code></td><td>Every correction; <code>busy</code> while undoing or checking; <code>confirmation</code> for recorded writes; <code>spoken</code> with the currency</td><td>One bar for what just happened, over the content so nothing moves</td></tr>
             <tr><td><a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a></td><td><code>:design-system</code> <code>Feedback.kt</code></td><td>Content form for the correction question; <code>destructive</code> only for Borrar; <code>busy</code></td><td>Asked before a change to later months is sent</td></tr>
             <tr><td><a href="../components.html#c-StatusBarInk"><code>StatusBarInk</code></a>, <a href="../components.html#c-statusBarLightIconsUnder"><code>statusBarLightIconsUnder</code></a></td><td><code>:design-system</code> <code>StatusBarInk.kt</code></td><td>Read by <code>SystemBarsFollowTheme</code>; the picker sheet keeps the band's icons</td><td>Status icons readable on band and desk</td></tr>
-            <tr><td><code>MonthBar</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:61</code></td><td>Recibo and Resumen top bar</td><td>"A tab gets the month bar" (<code>ShellScreen.kt:201</code>)</td></tr>
+            <tr><td><code>MonthBar</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:61</code></td><td>Recibo and Resumen top bar</td><td>"A tab gets the month bar" (<code>ShellScreen.kt:204</code>)</td></tr>
             <tr><td><code>TitleBar</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:118</code></td><td>Metas and Inversiones top bar, with the chip</td><td>A tab not tied to a month</td></tr>
-            <tr><td><code>PastMonthRibbon</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:160</code></td><td>Under the month bar over a past month, polite live region</td><td>"Every screen that shows it says so and offers the way back" (<code>ShellScreen.kt:160</code>)</td></tr>
+            <tr><td><code>PastMonthRibbon</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:160</code></td><td>Under the month bar over a past month, polite live region</td><td>"Every screen that shows it says so and offers the way back" (<code>ShellScreen.kt:163</code>)</td></tr>
             <tr><td><code>MonthSwitcher</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:206</code></td><td>The title of pushed screens that show a month</td><td>The month as a title that opens the picker</td></tr>
             <tr><td><code>MonthPicker</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/navigation/MonthPicker.kt:45</code></td><td>Same content in the sheet and the side panel</td><td>One picker for both window sizes</td></tr>
-            <tr><td><code>CorrectionNoticeBar</code>, <code>StampNoticeBar</code>, <code>CorrectionQuestionSlip</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:68</code>, <code>:441</code>, <code>:472</code></td><td>Words for each notice; stamps on a ticket; the months list</td><td>Notices are said the same whatever screen shows them</td></tr>
+            <tr><td><code>CorrectionNoticeBar</code>, <code>StampNoticeBar</code>, <code>CorrectionQuestionSlip</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:69</code>, <code>:440</code>, <code>:471</code></td><td>Words for each notice; stamps on a ticket; the months list</td><td>Notices are said the same whatever screen shows them</td></tr>
           </tbody>
         </table>
       </div>
@@ -496,13 +496,13 @@
         <table>
           <thead><tr><th>Variant</th><th>Where</th><th>Source</th></tr></thead>
           <tbody>
-            <tr><td>Band bar with the month (<code>MonthBar</code>)</td><td>Recibo, Resumen</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:209</code></td></tr>
-            <tr><td>Band bar with a title and chip (<code>TitleBar</code>)</td><td>Metas, Inversiones</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:208</code></td></tr>
-            <tr><td>Scaffold row, back arrow "Volver", title in one of four forms</td><td>Pushed screens (see above)</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:225</code></td></tr>
-            <tr><td>Scaffold row, back arrow "Volver al recibo"</td><td>Category detail inside Recibo</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:182</code></td></tr>
-            <tr><td>Scaffold row, Close (x) "Cerrar"</td><td>Anotar gasto/ingreso, Anotar varios, Nueva meta, Nueva inversión, Nueva/Editar categoría, Cambiar la tasa, a fixed payment, movement forms and receipts</td><td>e.g. <code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:191</code></td></tr>
-            <tr><td>Scaffold row on a coloured band (<code>band =</code>)</td><td>Expense and income forms (band), goal movement (goal band), investment movement (investment band)</td><td><code>app/src/main/java/com/software/sello/feature/goals/GoalMovementScreen.kt:90</code></td></tr>
-            <tr><td>Title only, no icon</td><td>Start-up failure ("Sello")</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:107</code></td></tr>
+            <tr><td>Band bar with the month (<code>MonthBar</code>)</td><td>Recibo, Resumen</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:212</code></td></tr>
+            <tr><td>Band bar with a title and chip (<code>TitleBar</code>)</td><td>Metas, Inversiones</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:211</code></td></tr>
+            <tr><td>Scaffold row, back arrow "Volver", title in one of four forms</td><td>Pushed screens (see above)</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:228</code></td></tr>
+            <tr><td>Scaffold row, back arrow "Volver al recibo"</td><td>Category detail inside Recibo</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:185</code></td></tr>
+            <tr><td>Scaffold row, Close (x) "Cerrar"</td><td>Anotar gasto/ingreso, Anotar varios, Nueva meta, Nueva inversión, Nueva/Editar categoría, Cambiar la tasa, a fixed payment, movement forms and receipts</td><td>e.g. <code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:195</code></td></tr>
+            <tr><td>Scaffold row on a coloured band (<code>band =</code>)</td><td>Expense and income forms (band), goal movement (goal band), investment movement (investment band)</td><td><code>app/src/main/java/com/software/sello/feature/goals/GoalMovementScreen.kt:92</code></td></tr>
+            <tr><td>Title only, no icon</td><td>Start-up failure ("Sello")</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:110</code></td></tr>
           </tbody>
         </table>
       </div>
@@ -513,12 +513,12 @@
         <table>
           <thead><tr><th>Host</th><th>Where</th><th>Source</th></tr></thead>
           <tbody>
-            <tr><td>Material <code>ModalBottomSheet</code></td><td>Month picker; goal editor's month sheet</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:284</code>, <code>app/src/main/java/com/software/sello/feature/goals/GoalEditorScreen.kt:547</code></td></tr>
-            <tr><td><a href="../components.html#c-RepeatSheet"><code>RepeatSheet</code></a> (own scrim)</td><td>Se repite, a category's month limit, category removal targets, the goal star, icon choice (category, investment), Ajustar presupuesto's limit sheet</td><td><code>design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:151</code>, <code>app/src/main/java/com/software/sello/feature/category/CategoryEditorScreen.kt:444</code>, <code>app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:259</code>, <code>app/src/main/java/com/software/sello/feature/goals/GoalStarSheet.kt:64</code>, <code>app/src/main/java/com/software/sello/feature/goals/GoalEditorScreen.kt:422</code>, <code>app/src/main/java/com/software/sello/feature/investments/InvestmentEditorScreen.kt:485</code>, <code>app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:307</code></td></tr>
-            <tr><td><a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a></td><td>Every "ask first": discard, delete, archive, carry questions, the correction question, Tus datos</td><td>e.g. <code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:477</code></td></tr>
-            <tr><td><a href="../components.html#c-ChoiceSlip"><code>ChoiceSlip</code></a> / <a href="../components.html#c-OptionSlip"><code>OptionSlip</code></a></td><td>Two-answer questions (export, repeat scope); Configuración pickers</td><td><code>app/src/main/java/com/software/sello/feature/backup/ExportControls.kt:152</code>, <code>app/src/main/java/com/software/sello/feature/settings/SettingsScreen.kt:129</code></td></tr>
-            <tr><td><a href="../components.html#c-DialogSlip"><code>DialogSlip</code></a> (<code>RemovalDialog</code>)</td><td>Category removal: counting, choosing, checking, what went wrong</td><td><code>app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:549</code></td></tr>
-            <tr><td>Full-screen <code>Dialog</code></td><td>The lograda moment</td><td><code>app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:215</code></td></tr>
+            <tr><td>Material <code>ModalBottomSheet</code></td><td>Month picker; goal editor's month sheet</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:287</code>, <code>app/src/main/java/com/software/sello/feature/goals/GoalEditorScreen.kt:552</code></td></tr>
+            <tr><td><a href="../components.html#c-SelloSheet"><code>SelloSheet</code></a> (own scrim)</td><td>Se repite, a category's month limit, category removal targets, the goal star, icon choice (category, investment), Ajustar presupuesto's limit sheet</td><td><code>design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:141</code>, <code>app/src/main/java/com/software/sello/feature/category/CategoryEditorScreen.kt:449</code>, <code>app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:244</code>, <code>app/src/main/java/com/software/sello/feature/goals/GoalStarSheet.kt:67</code>, <code>app/src/main/java/com/software/sello/feature/goals/GoalEditorScreen.kt:428</code>, <code>app/src/main/java/com/software/sello/feature/investments/InvestmentEditorScreen.kt:494</code>, <code>app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:322</code></td></tr>
+            <tr><td><a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a></td><td>Every "ask first": discard, delete, archive, carry questions, the correction question, Tus datos</td><td>e.g. <code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:476</code></td></tr>
+            <tr><td><a href="../components.html#c-ChoiceSlip"><code>ChoiceSlip</code></a> / <a href="../components.html#c-OptionSlip"><code>OptionSlip</code></a></td><td>Two-answer questions (export, repeat scope); Configuración pickers</td><td><code>app/src/main/java/com/software/sello/feature/backup/ExportControls.kt:153</code>, <code>app/src/main/java/com/software/sello/feature/settings/SettingsScreen.kt:141</code></td></tr>
+            <tr><td><a href="../components.html#c-DialogSlip"><code>DialogSlip</code></a> (<code>RemovalDialog</code>)</td><td>Category removal: counting, choosing, checking, what went wrong</td><td><code>app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:544</code></td></tr>
+            <tr><td>Full-screen <code>Dialog</code></td><td>The lograda moment</td><td><code>app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:218</code></td></tr>
             <tr><td>Material <code>DatePickerDialog</code>, "Aceptar"</td><td>Every date the app asks for, one shared part with a range of days</td><td><code>design-system/src/main/java/com/software/sello/designsystem/component/Movement.kt</code> <a href="../components.html#c-MovementDatePicker"><code>MovementDatePicker</code></a></td></tr>
           </tbody>
         </table>
@@ -528,7 +528,7 @@
 
       <h3>Loading, error and older figures</h3>
       <ul>
-        <li>Loading: <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a> everywhere (tabs show two), except category removal, which shows a Material spinner (<code>app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:102</code>, <code>:286</code>).</li>
+        <li>Loading: <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a> everywhere (tabs show two), except category removal, which shows a Material spinner (<code>app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:95</code>, <code>:271</code>).</li>
         <li>Error with nothing ever loaded: a LoadFailed <a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> in every feature, with the default title "No se pudo cargar" or a feature's own title.</li>
         <li>Older figures kept after a failed read: two looks (see the table below).</li>
         <li>Form panes holding the skeleton or the error: the entry and movement forms use <a href="../components.html#c-MovementPane"><code>MovementPane</code></a>; other screens use plain columns.</li>
@@ -554,8 +554,8 @@
 
       <h3>Self-dismissing notices</h3>
       <ul>
-        <li>Correction statements: 4 seconds fixed, <code>app/src/main/java/com/software/sello/presentation/corrections/Corrections.kt:1292</code>.</li>
-        <li>Catch-up notice: 5 seconds stretched for a screen reader, with a draining band, <code>app/src/main/java/com/software/sello/feature/recurrence/CatchUpNotice.kt:284</code>.</li>
+        <li>Correction statements: 4 seconds fixed, <code>app/src/main/java/com/software/sello/presentation/corrections/Corrections.kt:1294</code>.</li>
+        <li>Catch-up notice: 5 seconds stretched for a screen reader, with a draining band, <code>app/src/main/java/com/software/sello/feature/recurrence/CatchUpNotice.kt:286</code>.</li>
       </ul>
     </section>
 

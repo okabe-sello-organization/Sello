@@ -194,7 +194,7 @@ class RepeatPartsTest {
         dismissed = 0
         rule.inEveryScheme(reset = { dismissed = 0 }, content = {
             Box(Modifier.height(height.dp)) {
-                RepeatSheet("Se repite", onDismiss = { dismissed++ }) {
+                SelloSheet("Se repite", onDismiss = { dismissed++ }) {
                     DayGrid(setOf(5), {}, { "Día $it" })
                     IntervalStepper(1, "semana", {}, {}, "Menos", "Más")
                     RepeatNext("Próximo: lun 5 nov. Se anota solo en su fecha.")

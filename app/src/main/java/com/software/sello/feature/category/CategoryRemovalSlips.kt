@@ -53,8 +53,10 @@ import com.software.sello.designsystem.component.FormField
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.MoneyTextValue
-import com.software.sello.designsystem.component.RepeatSheet
 import com.software.sello.designsystem.component.SelloButton
+import com.software.sello.designsystem.component.SelloSheet
+import com.software.sello.designsystem.component.SlipAnswer
+import com.software.sello.designsystem.component.SlipButtons
 import com.software.sello.designsystem.component.StatusAction
 import com.software.sello.designsystem.component.StatusKind
 import com.software.sello.designsystem.component.StatusSlip
@@ -148,14 +150,8 @@ internal fun RemovalSlips(removal: RemovalState, onAction: (CategoryEditorAction
             onDismiss = {},
             modifier = Modifier.testTag(REMOVAL_CHECKING_TAG),
             action = if (step.failed) {
-                {
-                    SelloButton(
-                        text = stringResource(R.string.category_delete_check_again),
-                        onClick = { onAction(RemovalAction.Next) },
-                        kind = ButtonKind.Outlined,
-                        loading = busy,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                SlipAnswer(stringResource(R.string.category_delete_check_again), busy = busy) {
+                    onAction(RemovalAction.Next)
                 }
             } else {
                 null
@@ -185,13 +181,8 @@ private fun ChooseSlip(
         title = stringResource(R.string.category_delete_title, name),
         onDismiss = { onAction(RemovalAction.Dismiss) },
         modifier = Modifier.testTag(REMOVAL_CHOOSE_TAG),
-        action = {
-            SelloButton(
-                text = stringResource(R.string.category_delete_cancel),
-                onClick = { onAction(RemovalAction.Dismiss) },
-                kind = ButtonKind.Outlined,
-                modifier = Modifier.fillMaxWidth()
-            )
+        action = SlipAnswer(stringResource(R.string.category_delete_cancel)) {
+            onAction(RemovalAction.Dismiss)
         }
     ) {
         Body(holds(name, step.counts))
@@ -250,7 +241,7 @@ private fun PickSheet(
 ) {
     val dismiss = { onAction(RemovalAction.Dismiss) }
     BackHandler { dismiss() }
-    RepeatSheet(
+    SelloSheet(
         title = stringResource(R.string.category_delete_pick_title, name),
         onDismiss = dismiss,
         modifier = Modifier.testTag(REMOVAL_PICK_TAG)
@@ -531,14 +522,8 @@ private fun ProblemSlip(
         title = title,
         onDismiss = { if (!busy) onAction(RemovalAction.Dismiss) },
         modifier = Modifier.testTag(REMOVAL_PROBLEM_TAG),
-        action = {
-            SelloButton(
-                text = stringResource(R.string.category_delete_cancel),
-                onClick = { onAction(RemovalAction.Dismiss) },
-                kind = ButtonKind.Outlined,
-                enabled = !busy,
-                modifier = Modifier.fillMaxWidth()
-            )
+        action = SlipAnswer(stringResource(R.string.category_delete_cancel), enabled = !busy) {
+            onAction(RemovalAction.Dismiss)
         }
     ) {
         StatusSlip(
@@ -553,21 +538,21 @@ private fun ProblemSlip(
 
 /**
  * A slip over the editor for a step with one answer or none: the shared [DialogSlip], with
- * [action], when there is one, under the tear line.
+ * [action], when there is one, outlined across it under the tear line.
  */
 @Composable
 private fun RemovalDialog(
     title: String,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
-    action: (@Composable () -> Unit)? = null,
+    action: SlipAnswer? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
     DialogSlip(
         title = title,
         onDismissRequest = onDismiss,
         modifier = modifier,
-        buttons = action?.let { { it() } },
+        buttons = action?.let { SlipButtons.One(it) },
         content = content
     )
 }

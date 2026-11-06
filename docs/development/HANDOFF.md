@@ -4,8 +4,8 @@
 > Project permissions and working rules live in [AGENTS.md](../../AGENTS.md),
 > subject to the user's current instructions.
 
-**Snapshot:** 2026-11-05 · **Product baseline:** `main`; the release candidate is `0.1.0` from `a20ae90f`, and the [candidate checklist](../release/candidate-checklist.md) leaves only the owner's steps (the [MVP checklist](../release/mvp-checklist.md) is the October record).
-Every epic is Done: E01–E10, E12, E13 and E15–E31. The owner dropped E14 and the
+**Snapshot:** 2026-11-06 · **Product baseline:** `main`; the release candidate is `0.1.0` from `a20ae90f`, and the [candidate checklist](../release/candidate-checklist.md) leaves only the owner's steps (the [MVP checklist](../release/mvp-checklist.md) is the October record).
+Every epic is Done: E01–E10, E12, E13 and E15–E32. The owner dropped E14 and the
 release tickets SELLO-043 and SELLO-113 on 2026-10-29. Each ticket's
 file under [docs/tickets](../tickets/README.md) and the pull request that closed it carry
 the details, and `python3 scripts/quality/tickets.py status` prints the current board.
@@ -124,6 +124,17 @@ This summary is refreshed when an epic closes and adds no verification claims.
   hard-coded values, colours first; its Dynamic colours box says dynamic colours need
   `SelloColors` built from the system scheme, not only a new Material scheme. The bugs
   the pages found are issues #374–#387 and #394.
+- The code follows its design system ([E32](../tickets/E32-design-system-refactor/README.md)):
+  every finding of E31 fixed, so the [findings page](../design/system/findings.html) lists
+  none. One `StatusSlip` whose kind (Empty, LoadFailed, Older, ActionFailed, Unknown, Gone)
+  decides its look replaces the three old slips; every dialog is a `DialogSlip` whose
+  answers the slip draws, with one button order (stacked, the action on top). Parts two
+  features share moved to `:design-system` (the sheet is `SelloSheet`); screens read the
+  tokens for type, spacing, shape and alpha, and every colour comes from the theme (a
+  `scrim` role; unused category colours and `dividend` deleted). For the person: turning
+  carry on or off in Editar categoría waits for Guardar, Retirar has its own icon, and
+  the same thing looks alike everywhere. Once SELLO-191's pull request merges, its merge
+  commit on `main` is tagged `design-system-v1`, a marker of this design, not a release.
 - No network permission or OS backup; every build checks its manifests, release
   libraries and APK against [MVP data handling](../privacy/mvp-data-handling.md). The
   only provider that grants access is the export one, limited to `cache/exports/`.
@@ -146,7 +157,8 @@ What each ticket changed is in its pull request, linked from the ticket file
 - The candidate waits on the owner, as the [candidate checklist](../release/candidate-checklist.md)
   lists: `scripts/check --release` with the owner's key (the signed APK and its facts),
   the walk on the owner's phone, and the go/no-go. Distributing it is a separate,
-  owner-authorized action. Nothing was published, signed with the owner's key or tagged.
+  owner-authorized action. No release was published, signed with the owner's key or
+  tagged; the only tag, `design-system-v1`, marks E32's design, not a release.
 - No ticket is open. Dropped on 2026-10-29: SELLO-043 (carryover release), SELLO-113
   (the `0.2.0` release) and E14 with SELLO-074 (manual TalkBack, Switch Access and
   keyboard walks). The automated accessibility checks from SELLO-033 stay.

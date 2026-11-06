@@ -3,6 +3,7 @@ package com.software.sello.designsystem.component
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -18,7 +19,10 @@ import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.software.sello.designsystem.icon.SelloIcon
@@ -43,7 +47,8 @@ enum class ButtonTone { Brand, Gain, Ink, Loss, OnBand, OnGain }
  * [contentPadding] lets a text button end flush with the content beside it. [trailingIcon]
  * follows the label, as the chevron of a link that opens another screen. A [compact] button
  * is a pill 44 dp high with a smaller, heavy label, for a row that holds its own action;
- * its touch area is still the 48 dp minimum.
+ * its touch area is still the 48 dp minimum. Busy with an empty [text], such as a pill
+ * that keeps an idle label's width, the spinner sits alone in the middle.
  */
 @Composable
 fun SelloButton(
@@ -97,7 +102,8 @@ fun SelloButton(
                 strokeWidth = 2.dp,
                 modifier = Modifier.size(if (compact) 16.dp else 20.dp)
             )
-            Spacer(Modifier.width(SelloTheme.spacing.sm))
+            // With no label the spinner stands alone, in the middle.
+            if (text.isNotEmpty()) Spacer(Modifier.width(SelloTheme.spacing.sm))
         } else if (icon != null) {
             Icon(icon.painter(), contentDescription = null, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(SelloTheme.spacing.sm))
@@ -118,6 +124,56 @@ fun SelloButton(
         )
         if (trailingIcon != null) {
             Icon(trailingIcon.painter(), contentDescription = null, modifier = Modifier.size(20.dp))
+        }
+    }
+}
+
+/**
+ * Two buttons side by side, sharing the width by [firstWeight] and [secondWeight], or
+ * one above the other at full width when a word of either label would not fit its share.
+ * [first] is the outlined answer, such as Cancelar, and [second] the filled action. Side
+ * by side the action is on the right; one above the other it is on top, Cancelar under it.
+ * TalkBack and the keyboard go through them in the order they are seen.
+ */
+@Composable
+fun ButtonPair(
+    firstWeight: Float,
+    secondWeight: Float,
+    modifier: Modifier = Modifier,
+    gap: Dp = 10.dp,
+    first: @Composable () -> Unit,
+    second: @Composable () -> Unit
+) {
+    Layout(
+        contents = listOf(first, second),
+        modifier = modifier.fillMaxWidth()
+    ) { (firstButton, secondButton), constraints ->
+        val space = gap.roundToPx()
+        val width = constraints.maxWidth
+        val firstWidth = ((width - space) * firstWeight / (firstWeight + secondWeight)).toInt()
+        val secondWidth = width - space - firstWidth
+        val a = firstButton.single()
+        val b = secondButton.single()
+        val besides = a.minIntrinsicWidth(Constraints.Infinity) <= firstWidth &&
+            b.minIntrinsicWidth(Constraints.Infinity) <= secondWidth
+        if (besides) {
+            // Both as tall as the taller one, so a label on two lines leaves no step.
+            val height = maxOf(a.minIntrinsicHeight(firstWidth), b.minIntrinsicHeight(secondWidth))
+            val placedA = a.measure(Constraints.fixedWidth(firstWidth).copy(minHeight = height))
+            val placedB = b.measure(Constraints.fixedWidth(secondWidth).copy(minHeight = height))
+            layout(width, maxOf(placedA.height, placedB.height)) {
+                placedA.placeRelative(0, 0)
+                placedB.placeRelative(firstWidth + space, 0)
+            }
+        } else {
+            val full = Constraints.fixedWidth(width)
+            val placedA = a.measure(full)
+            val placedB = b.measure(full)
+            layout(width, placedB.height + space + placedA.height) {
+                // Placed first, so the keyboard reaches the action first, as it is seen.
+                placedB.placeRelative(0, 0)
+                placedA.placeRelative(0, placedB.height + space)
+            }
         }
     }
 }

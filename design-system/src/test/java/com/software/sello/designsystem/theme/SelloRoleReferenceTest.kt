@@ -38,7 +38,7 @@ class SelloRoleReferenceTest(private val ink: SelloInk, private val dark: Boolea
 
     @Test
     fun theScrimIsBlackAsThePlatformsWindowDim() {
-        // DialogSlip's dim is the platform's black; RepeatSheet's must match it.
+        // DialogSlip's dim is the platform's black; SelloSheet's must match it.
         assertEquals(Color.Black, c.scrim)
         assertEquals(c.scrim, c.toMaterialColorScheme().scrim)
     }

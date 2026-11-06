@@ -26,7 +26,6 @@
         <li><a href="#theme">Theme</a></li>
         <li><a href="#colours">Colours</a></li>
         <li><a href="#semantic">Semantic colours</a></li>
-        <li><a href="#categories">Category colours</a></li>
         <li><a href="#investments">Investment colours</a></li>
         <li><a href="#type">Type</a></li>
         <li><a href="#shapes">Shapes</a></li>
@@ -60,8 +59,7 @@
             <code>pastBar*</code> and <code>scrim</code> (black, as Material's).</li>
           <li>The roles with no Material equivalent: the dark bands (<code>band</code>,
             <code>goalBand</code>, <code>investmentBand</code>, deeper than what they stand for),
-            <code>onBand</code>, <code>semantic.warn</code>, <code>warnSoft</code>,
-            <code>dividend</code>, the 12 category colours and the investment inks.</li>
+            <code>onBand</code>, <code>semantic.warn</code>, <code>warnSoft</code> and the investment inks.</li>
           <li><code>semantic.gain</code> and <code>loss</code> (and their soft and on colours) are
             meanings: they must not follow the wallpaper, at most be harmonised with it.</li>
         </ul>
@@ -118,14 +116,14 @@
 <tr id="color-onPastBar"><td><code>onPastBar</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#FFFFFF"></span><code>#FFFFFF</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#17203C"></span><code>#17203C</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#FFFFFF"></span><code class="same">#FFFFFF</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#17203C"></span><code class="same">#17203C</code></span></td><td>Material <code>onSecondary</code> only; no component reads it directly.</td><td>0 / 0</td></tr>
 <tr id="color-pastBarSoft"><td><code>pastBarSoft</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#E1E7F6"></span><code>#E1E7F6</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#2A3560"></span><code>#2A3560</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#E7E1F6"></span><code>#E7E1F6</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#30265C"></span><code>#30265C</code></span></td><td>Material <code>secondaryContainer</code> only; no component reads it directly.</td><td>0 / 0</td></tr>
 <tr id="color-onPastBarSoft"><td><code>onPastBarSoft</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#17203C"></span><code>#17203C</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#E1E7F6"></span><code>#E1E7F6</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#17203C"></span><code class="same">#17203C</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#E1E7F6"></span><code class="same">#E1E7F6</code></span></td><td>Material <code>onSecondaryContainer</code> only; no component reads it directly.</td><td>0 / 0</td></tr>
-<tr id="color-scrim"><td><code>scrim</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#000000"></span><code>#000000</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#000000"></span><code>#000000</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#000000"></span><code class="same">#000000</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#000000"></span><code class="same">#000000</code></span></td><td>The dim behind a sheet, drawn at <a href="#alpha-scrim"><code>alpha.scrim</code></a> (<code>RepeatSheet</code>); the same black as the platform's dim behind a dialog slip. Material <code>scrim</code>.</td><td>1 / 0</td></tr>
+<tr id="color-scrim"><td><code>scrim</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#000000"></span><code>#000000</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#000000"></span><code>#000000</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#000000"></span><code class="same">#000000</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#000000"></span><code class="same">#000000</code></span></td><td>The dim behind a sheet, drawn at <a href="#alpha-scrim"><code>alpha.scrim</code></a> (<code>SelloSheet</code>); the same black as the platform's dim behind a dialog slip. Material <code>scrim</code>.</td><td>1 / 0</td></tr>
 </tbody></table></div>
     </section>
 
     <section id="semantic">
       <h2>Semantic colours</h2>
       <p>Meanings that stay the same in both inks, so a stamp reads the same everywhere
-        (<code>SelloSemanticColors</code>, <code>SelloColors.kt:79</code>; values <code>LightSemantic</code>
+        (<code>SelloSemanticColors</code>, <code>SelloColors.kt:78</code>; values <code>LightSemantic</code>
         and <code>DarkSemantic</code>). Read as <code>colors.semantic.&lt;role&gt;</code>.</p>
       <div class="table-wrap"><table><thead><tr><th>Role</th><th>Light (both inks)</th><th>Dark (both inks)</th><th>Meant for</th><th>Direct reads<br>ds / app</th></tr></thead><tbody>
 <tr id="color-gain"><td><code>semantic.gain</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#0A6B4A"></span><code>#0A6B4A</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#4FD6A0"></span><code>#4FD6A0</code></span></td><td>Money in, a goal reached, an income: amounts, the goal dock and stamps of a good verdict. Material <code>tertiary</code>.</td><td>14 / 26</td></tr>
@@ -138,25 +136,12 @@
 <tr id="color-onLossSoft"><td><code>semantic.onLossSoft</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#5C0B12"></span><code>#5C0B12</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#FFDADA"></span><code>#FFDADA</code></span></td><td>Text on <code>lossSoft</code>.</td><td>1 / 0</td></tr>
 <tr id="color-warn"><td><code>semantic.warn</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#8A4A00"></span><code>#8A4A00</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#FFB45C"></span><code>#FFB45C</code></span></td><td>Reserved for a review status, never ordinary overspending (<code>StampInk</code> KDoc); also warning field messages.</td><td>2 / 10</td></tr>
 <tr id="color-warnSoft"><td><code>semantic.warnSoft</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#FFE3BF"></span><code>#FFE3BF</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#55340C"></span><code>#55340C</code></span></td><td>Soft amber fill behind a warning.</td><td>0 / 2</td></tr>
-<tr id="color-dividend"><td><code>semantic.dividend</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#6A3FC0"></span><code>#6A3FC0</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#B7A0F5"></span><code>#B7A0F5</code></span></td><td>Declared for dividends; nothing reads it today.</td><td>0 / 0</td></tr>
 </tbody></table></div>
-    </section>
-
-    <section id="categories">
-      <h2>Category colours</h2>
-      <p><code>SelloColors.categories</code>: twelve colours per theme (<code>LightCategories</code>,
-        <code>DarkCategories</code>, <code>SelloColors.kt:123</code>), shared by both inks.</p>
-      <p><strong>Light</strong></p><div class="chip-swatches"><span class="swatch-cell"><span class="swatch" style="background:#C4343A"></span><code>#C4343A</code></span><span class="swatch-cell"><span class="swatch" style="background:#B8521A"></span><code>#B8521A</code></span><span class="swatch-cell"><span class="swatch" style="background:#9A6400"></span><code>#9A6400</code></span><span class="swatch-cell"><span class="swatch" style="background:#7C6C00"></span><code>#7C6C00</code></span><span class="swatch-cell"><span class="swatch" style="background:#4F7F18"></span><code>#4F7F18</code></span><span class="swatch-cell"><span class="swatch" style="background:#1B7D45"></span><code>#1B7D45</code></span><span class="swatch-cell"><span class="swatch" style="background:#0B7F73"></span><code>#0B7F73</code></span><span class="swatch-cell"><span class="swatch" style="background:#1773AA"></span><code>#1773AA</code></span><span class="swatch-cell"><span class="swatch" style="background:#4456C4"></span><code>#4456C4</code></span><span class="swatch-cell"><span class="swatch" style="background:#7C4AC4"></span><code>#7C4AC4</code></span><span class="swatch-cell"><span class="swatch" style="background:#B83A84"></span><code>#B83A84</code></span><span class="swatch-cell"><span class="swatch" style="background:#5F6878"></span><code>#5F6878</code></span></div><p><strong>Dark</strong></p><div class="chip-swatches"><span class="swatch-cell"><span class="swatch" style="background:#F2726B"></span><code>#F2726B</code></span><span class="swatch-cell"><span class="swatch" style="background:#F28B4E"></span><code>#F28B4E</code></span><span class="swatch-cell"><span class="swatch" style="background:#E8A63A"></span><code>#E8A63A</code></span><span class="swatch-cell"><span class="swatch" style="background:#D4BC3E"></span><code>#D4BC3E</code></span><span class="swatch-cell"><span class="swatch" style="background:#9CCB5A"></span><code>#9CCB5A</code></span><span class="swatch-cell"><span class="swatch" style="background:#5BC489"></span><code>#5BC489</code></span><span class="swatch-cell"><span class="swatch" style="background:#45C7B8"></span><code>#45C7B8</code></span><span class="swatch-cell"><span class="swatch" style="background:#5AB6EA"></span><code>#5AB6EA</code></span><span class="swatch-cell"><span class="swatch" style="background:#8C9CF2"></span><code>#8C9CF2</code></span><span class="swatch-cell"><span class="swatch" style="background:#B693F0"></span><code>#B693F0</code></span><span class="swatch-cell"><span class="swatch" style="background:#EE82BE"></span><code>#EE82BE</code></span><span class="swatch-cell"><span class="swatch" style="background:#A3ADB8"></span><code>#A3ADB8</code></span></div>
-      <div class="gaps">
-        <p>Nothing in <code>:design-system</code> or <code>:app</code> main code reads
-          <code>colors.categories</code>. <code>CategoryCircle</code>'s KDoc says a category "is known by its
-          icon and name, never by a colour of its own".</p>
-      </div>
     </section>
 
     <section id="investments">
       <h2>Investment colours</h2>
-      <p><code>SelloColors.investmentInk(rank)</code> (<code>SelloColors.kt:67</code>): rank 0 is the brand,
+      <p><code>SelloColors.investmentInk(rank)</code> (<code>SelloColors.kt:66</code>): rank 0 is the brand,
         then five fills that repeat every six, light and dark fills alternating so neighbours in a bar never
         share one. The number on each swatch is drawn in the colour written on that fill: on a light palette's
         mid fills it is the palette's <code>ink</code>, on a dark palette's light slate the family's light
@@ -203,7 +188,7 @@
       <h3>Amounts</h3>
       <p>Amounts are drawn by <a href="components.html#c-MoneyText"><code>MoneyText</code></a> with its own
         <code>MoneyStyle</code> sizes: Hero 60 sp, Total 44 sp, Card 32 sp, Title 19 sp, Line 14 sp
-        (<code>MoneyText.kt:48</code>), and by <a href="components.html#c-FittedMoneyText"><code>FittedMoneyText</code></a>,
+        (<code>MoneyText.kt:50</code>), and by <a href="components.html#c-FittedMoneyText"><code>FittedMoneyText</code></a>,
         which steps the size down to fit.</p>
       <p>The <code>SelloType</code> styles after the stamps (<code>Type.kt:83</code>, read through
         <code>SelloTheme.type</code>) are the combinations of a role with another size or weight that several
@@ -285,10 +270,10 @@
 
     <section id="spacing">
       <h2>Spacing</h2>
-      <p>The code defines spacing tokens: <code>SelloSpacing</code> (<code>SelloShapes.kt:28</code>), "the 4dp
+      <p>The code defines spacing tokens: <code>SelloSpacing</code> (<code>SelloShapes.kt:32</code>), "the 4dp
         grid and the fixed distances the reference names", read through <code>SelloTheme.spacing</code>.
         <code>SelloTheme</code> does not provide its own instance, so the defaults below are always in use.</p>
-      <div class="table-wrap"><table><thead><tr><th>Token</th><th>Value</th><th>Sample</th></tr></thead><tbody><tr><td><code>xs</code><br><span class="muted">SelloShapes.kt:29</span></td><td>4 dp</td><td><span style="display:inline-block;height:12px;width:4px;background:var(--brand);border-radius:2px"></span></td></tr>
+      <div class="table-wrap"><table><thead><tr><th>Token</th><th>Value</th><th>Sample</th></tr></thead><tbody><tr><td><code>xs</code><br><span class="muted">SelloShapes.kt:33</span></td><td>4 dp</td><td><span style="display:inline-block;height:12px;width:4px;background:var(--brand);border-radius:2px"></span></td></tr>
 <tr><td><code>sm</code><br><span class="muted">SelloShapes.kt:30</span></td><td>8 dp</td><td><span style="display:inline-block;height:12px;width:8px;background:var(--brand);border-radius:2px"></span></td></tr>
 <tr><td><code>md</code><br><span class="muted">SelloShapes.kt:31</span></td><td>12 dp</td><td><span style="display:inline-block;height:12px;width:12px;background:var(--brand);border-radius:2px"></span></td></tr>
 <tr><td><code>lg</code><br><span class="muted">SelloShapes.kt:32</span></td><td>16 dp</td><td><span style="display:inline-block;height:12px;width:16px;background:var(--brand);border-radius:2px"></span></td></tr>
@@ -329,7 +314,7 @@
         </table>
       </div>
       <p>Category cells per row (<code>categoryColumns</code>, <code>WindowLayout.kt:55</code>): two, three
-        once the column is 560 dp wide. The rail is 80 dp wide (<code>Navigation.kt:171</code>).
+        once the column is 560 dp wide. The rail is 80 dp wide (<code>Navigation.kt:170</code>).
         The tab bar takes two to four destinations (<code>SelloNavigationBar</code> requires it).</p>
     </section>
 

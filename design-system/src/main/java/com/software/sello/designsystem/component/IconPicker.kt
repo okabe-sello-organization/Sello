@@ -120,7 +120,7 @@ fun IconPickerCircle(
 }
 
 /**
- * The icons to choose from, under a [RepeatSheet]-style heading, as round cells. Icons in
+ * The icons to choose from, under a [SelloSheet]-style heading, as round cells. Icons in
  * [inUse] are drawn dashed and can still be chosen; [inUseNote] says so under the grid and
  * is added to what a screen reader says for each of them.
  */

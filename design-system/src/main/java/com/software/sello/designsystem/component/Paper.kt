@@ -613,6 +613,11 @@ fun AnswerSlip(
 /** Narrower than this, [AnswerSlip]'s leading part goes above the amount. */
 private val AnswerBesideMinWidth = 240.dp
 
+/**
+ * A sentence of context above a form or a list, such as what the dollar rate is for or
+ * why there are no goals to move money to: body text in soft ink. Parts of [text] that
+ * matter, such as a figure, can carry their own style, as ink in bold.
+ */
 @Composable
 fun FactLine(text: AnnotatedString, modifier: Modifier = Modifier) {
     Text(
@@ -624,9 +629,11 @@ fun FactLine(text: AnnotatedString, modifier: Modifier = Modifier) {
 }
 
 /**
- * A quiet line at a slip's foot: [icon] and [text]. With [onClick] it opens something,
- * ends in a chevron and is at least a touch target tall; without, it only says something
- * and is as tall as its text.
+ * A quiet line at a slip's foot, such as what is reserved for coming payments or when
+ * the investments were last valued: [icon] in brand and [text] in small soft ink. With
+ * [onClick] it opens something, ends in a chevron and is at least a touch target tall;
+ * without, it only says something and is as tall as its text. It adds no space around
+ * itself; the slip it sits in sets that.
  */
 @Composable
 fun Footnote(
