@@ -41,9 +41,14 @@ sealed interface ResumenState {
         val selectedHistory: String? = null,
         val selectedWeekday: String? = null,
         /** The fact on the stub's Fijos half. */
-        val nextFixed: ResumenNextFixed = ResumenNextFixed.Unknown
+        val nextFixed: ResumenNextFixed = ResumenNextFixed.Unknown,
+        /** How dismissing [suggestion] went: being saved, or not saved and said (#377). */
+        val dismissal: SuggestionDismissal = SuggestionDismissal.Idle
     ) : ResumenState
 }
+
+/** Dismissing the suggestion: nothing asked, being saved, or not saved. */
+enum class SuggestionDismissal { Idle, Saving, Failed }
 
 /**
  * The income slip's own figures; its rows are [ResumenState.Ready.categories]. [count] is

@@ -783,6 +783,7 @@
     <string name="resumen_suggestion_advice">Podrías ajustar su límite para que refleje lo que de verdad gastas.</string>
     <string name="resumen_suggestion_action">Ajustar el presupuesto de %1$s</string>
     <string name="resumen_suggestion_dismiss">Descartar sugerencia</string>
+    <string name="resumen_suggestion_dismiss_failed">No pudimos descartar la sugerencia. Tus gastos y límites siguen igual; inténtalo de nuevo.</string>
     <string name="resumen_and">" y "</string>
     <string name="resumen_insufficient_history">Con un mes más de datos verás aquí tu historia entre meses. Aún no hay promedios ni comparaciones.</string>
     <string name="settings_title">Configuración</string>
