@@ -10,6 +10,10 @@ import com.software.sello.captureStill
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloInk
+import com.software.sello.presentation.carry.CarryChangeGroup
+import com.software.sello.presentation.carry.CarryChangeRow
+import com.software.sello.presentation.carry.CarryCorrectionList
+import com.software.sello.presentation.carry.ChangeKind
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.revealed
 import com.software.sello.showSello
@@ -251,4 +255,127 @@ class CategoryEditorScreenshotTest {
     @Test fun carryOnLight() = shot("carry-on", carryOn, Look())
 
     @Test fun carryOnDark() = shot("carry-on", carryOn, Look(dark = true))
+
+    // ---------- Field errors, refusals and the carry slips (category.html) ----------
+
+    /** Guardar pressed with nothing typed: each field says what it needs. */
+    private val missing = fresh.copy(
+        name = "",
+        nameError = NameError.Required,
+        limitText = "",
+        limitError = LimitError.Required
+    )
+
+    @Test fun missingLight() = shot("missing", missing, Look())
+
+    @Test fun missingDark() = shot("missing", missing, Look(dark = true))
+
+    /** A pasted name past 40 characters and a pasted limit that is not an amount. */
+    private val tooLong = editing.copy(
+        name = "Cafetería de la esquina y panadería del barrio",
+        nameError = NameError.TooLong,
+        limitText = "cien mil",
+        limitAmount = null,
+        limitError = LimitError.NotAnAmount
+    )
+
+    @Test fun tooLongLight() = shot("too-long", tooLong, Look())
+
+    @Test fun tooLongDark() = shot("too-long", tooLong, Look(dark = true))
+
+    private val notAllowed = editing.copy(name = "Café\u0007", nameError = NameError.NotAllowed)
+
+    @Test fun notAllowedLight() = shot("not-allowed", notAllowed, Look())
+
+    @Test fun notAllowedDark() = shot("not-allowed", notAllowed, Look(dark = true))
+
+    /** Archiving waited for a fixed payment that is due and could not be recorded first. */
+    private val pending = editing.copy(saveError = SaveError.PaymentsPending)
+
+    @Test
+    fun paymentsPendingLight() = shot("payments-pending", pending, Look(), EDITOR_SAVE_ERROR_TAG)
+
+    @Test
+    fun paymentsPendingDark() =
+        shot("payments-pending", pending, Look(dark = true), EDITOR_SAVE_ERROR_TAG)
+
+    /** October ended before carry was turned on: the form reads November. */
+    private val monthEndedCarry = editing.copy(
+        targetMonth = YearMonth.of(2026, 11),
+        saveError = SaveError.MonthEnded,
+        monthEnded = MonthEnded(YearMonth.of(2026, 10), carry = true)
+    )
+
+    @Test
+    fun monthEndedCarryLight() =
+        shot("month-ended-carry", monthEndedCarry, Look(), EDITOR_SAVE_ERROR_TAG)
+
+    @Test
+    fun monthEndedCarryDark() =
+        shot("month-ended-carry", monthEndedCarry, Look(dark = true), EDITOR_SAVE_ERROR_TAG)
+
+    private fun plainPesos(digits: String) =
+        MoneyTextValue(MoneySign.None, "", digits, "$digits pesos")
+
+    private fun plusPesos(digits: String) =
+        MoneyTextValue(MoneySign.Plus, "", digits, "más $digits pesos")
+
+    /**
+     * Cafetería carries from August: its August limit from 100.000 to 150.000 adds 50.000 to
+     * September's and October's limits with carry, 120.000 → 170.000, and to what is left
+     * (20.000 → 70.000 in September, 60.000 → 110.000 in October).
+     */
+    private fun row(month: Int, left: String, leftAfter: String) = CarryChangeRow(
+        month = YearMonth.of(2026, month),
+        kind = ChangeKind.Later,
+        before = plainPesos("120.000"),
+        after = plainPesos("170.000"),
+        change = plusPesos("50.000"),
+        remainingBefore = plainPesos(left),
+        remainingAfter = plainPesos(leftAfter),
+        verdictBefore = null,
+        verdictAfter = null
+    )
+
+    private fun correction(changed: Boolean) = CarryQuestion.Correction(
+        month = YearMonth.of(2026, 8),
+        before = plainPesos("100.000"),
+        after = plainPesos("150.000"),
+        list = CarryCorrectionList(
+            months = 2,
+            groups = listOf(
+                CarryChangeGroup(
+                    "Cafetería",
+                    "local_cafe",
+                    listOf(row(9, "20.000", "70.000"), row(10, "60.000", "110.000"))
+                )
+            ),
+            totalUnchanged = false
+        ),
+        changed = changed
+    )
+
+    private val asked = past.copy(
+        limitText = "150000",
+        limitAmount = plainPesos("150.000"),
+        carryQuestion = correction(changed = false)
+    )
+
+    @Test fun pastCorrectionLight() = shot("past-correction", asked, Look())
+
+    @Test fun pastCorrectionDark() = shot("past-correction", asked, Look(dark = true))
+
+    private val askedAgain = asked.copy(carryQuestion = correction(changed = true))
+
+    @Test fun pastCorrectionChangedLight() = shot("past-correction-changed", askedAgain, Look())
+
+    @Test
+    fun pastCorrectionChangedDark() = shot("past-correction-changed", askedAgain, Look(dark = true))
+
+    @Test
+    fun pastCorrectionBusyLight() = shot("past-correction-busy", asked.copy(busy = true), Look())
+
+    @Test
+    fun pastCorrectionBusyDark() =
+        shot("past-correction-busy", asked.copy(busy = true), Look(dark = true))
 }

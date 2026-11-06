@@ -237,6 +237,17 @@ class ExpenseEntryScreenshotTest {
 
     @Test fun editingDark() = shot("editing", editing, Look(dark = true))
 
+    /** A schedule's later payments were changed; saving this one was refused. */
+    private val followingSaved =
+        editing.copy(error = EntryError.NotSaved, followingSaved = true)
+
+    @Test
+    fun followingSavedLight() = shot("following-saved", followingSaved, Look(), ENTRY_ERROR_TAG)
+
+    @Test
+    fun followingSavedDark() =
+        shot("following-saved", followingSaved, Look(dark = true), ENTRY_ERROR_TAG)
+
     /** A new expense: the "Gasto | Ingreso" switch at the top and Se repite's row. */
     @Test fun switchLight() = shot("switch", ready, Look(), reveal = REPEAT_ROW_TAG)
 

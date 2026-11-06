@@ -12,6 +12,7 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -46,6 +47,7 @@ import com.software.sello.navigation.ShellScreen
 import com.software.sello.navigation.ShellState
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.month.monthNames
+import com.software.sello.revealed
 import com.software.sello.showSello
 import com.software.sello.testing.pesos
 import com.software.sello.testing.testMoney
@@ -81,7 +83,8 @@ class GoalDetailMovementsTest {
     private fun summary(
         lastYear: Boolean = false,
         target: Long = 3_000_000,
-        completedOn: LocalDate? = null
+        completedOn: LocalDate? = null,
+        none: Boolean = false
     ): GoalSummary {
         val aportes = listOf(200_000L, 250_000L, 260_000L, 300_000L, 350_000L, 350_000L)
         val movements = aportes.mapIndexed { i, pesos ->
@@ -108,7 +111,7 @@ class GoalDetailMovementsTest {
                 Instant.EPOCH
             ),
             listOf<GoalEvent>(GoalTargetChange(pesos(target), 0, LocalDate.of(2026, 5, 1))) +
-                movements
+                if (none) emptyList() else movements
         )
         return GoalSummary(history, GoalPolicy.progress(history).value())
     }
@@ -236,13 +239,14 @@ class GoalDetailMovementsTest {
 
     private fun ready(
         target: Long = 3_000_000,
-        completedOn: LocalDate? = null
+        completedOn: LocalDate? = null,
+        none: Boolean = false
     ): GoalDetailState.Ready {
         val board = ReadState.Ready(
             GoalBoard(
                 1,
                 1,
-                listOf(summary(target = target, completedOn = completedOn)),
+                listOf(summary(target = target, completedOn = completedOn, none = none)),
                 emptySet(),
                 emptyList()
             )
@@ -256,7 +260,12 @@ class GoalDetailMovementsTest {
      * ShellScreen arguments of GoalDestinations.kt (the goal route, lines 165-200, and
      * goalDock), which needs a view model: change both together.
      */
-    private fun framed(name: String, detail: GoalDetailState, dark: Boolean) {
+    private fun framed(
+        name: String,
+        detail: GoalDetailState,
+        dark: Boolean,
+        reveal: String? = null
+    ) {
         val shown = detail as? GoalDetailState.Ready
         val active = shown != null && shown.goal.completedOn == null
         rule.showSello(Look(dark = dark)) {
@@ -322,6 +331,7 @@ class GoalDetailMovementsTest {
             }
             LogradaMoment(shown?.completion ?: CompletionState.Idle, {})
         }
+        if (reveal != null) rule.onNodeWithText(reveal).revealed()
         rule.captureStill(
             "src/test/screenshots/goal-detail-$name-${if (dark) "oscuro" else "claro"}.png"
         )
@@ -397,4 +407,15 @@ class GoalDetailMovementsTest {
     @Test fun logradaClaro() = framed("lograda", celebrating(), dark = false)
 
     @Test fun logradaOscuro() = framed("lograda", celebrating(), dark = true)
+
+    /** A goal just created: nothing saved yet, no movement. */
+    @Test
+    fun noMovementsClaro() = framed("no-movements", ready(none = true), dark = false, NO_MOVEMENTS)
+
+    @Test
+    fun noMovementsOscuro() = framed("no-movements", ready(none = true), dark = true, NO_MOVEMENTS)
+
+    private companion object {
+        const val NO_MOVEMENTS = "Todavía no hay movimientos."
+    }
 }

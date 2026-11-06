@@ -147,4 +147,67 @@ class InvestmentMovementScreenshotTest {
 
     @Test
     fun discardDark() = shot("discard", aporte.copy(confirmDiscard = true), Look(dark = true))
+
+    /** From the list: an amount typed and no investment chosen yet. */
+    private val unchosen = aporte.copy(investmentId = null, fact = null)
+
+    @Test fun unchosenLight() = shot("unchosen", unchosen, Look())
+
+    @Test fun unchosenDark() = shot("unchosen", unchosen, Look(dark = true))
+
+    /** A dividend on 2 mar 2026, before Ecopetrol's first aporte on 2 abr. */
+    private val beforeFirst = aporte.copy(
+        kind = InvestmentMovementKind.Dividend,
+        amount = pesos("89.000"),
+        fact = null,
+        date = LocalDate.of(2026, 3, 2),
+        firstContribution = LocalDate.of(2026, 4, 2)
+    )
+
+    @Test fun beforeFirstLight() = shot("before-first", beforeFirst, Look())
+
+    @Test fun beforeFirstDark() = shot("before-first", beforeFirst, Look(dark = true))
+
+    /** Correcting an aporte down would leave the retiro of 400.000 on 20 oct short. */
+    private val blocked = correcting.copy(
+        amount = pesos("100.000"),
+        blockedBy = BlockingRetiro(pesos("400.000"), LocalDate.of(2026, 10, 20), pesos("250.000"))
+    )
+
+    @Test fun blockedLight() = shot("blocked", blocked, Look())
+
+    @Test fun blockedDark() = shot("blocked", blocked, Look(dark = true))
+
+    /** Valor de hoy: the last value it replaces. */
+    private val lastValue = aporte.copy(
+        kind = InvestmentMovementKind.Valuation,
+        amount = pesos("3.600.000"),
+        fact = InvestmentMovementFact.LastValue(pesos("3.050.000"), LocalDate.of(2026, 10, 9))
+    )
+
+    @Test fun lastValueLight() = shot("last-value", lastValue, Look())
+
+    @Test fun lastValueDark() = shot("last-value", lastValue, Look(dark = true))
+
+    /** A retiro: what the investment is worth on its date. */
+    private val worth = aporte.copy(
+        kind = InvestmentMovementKind.Withdrawal,
+        amount = pesos("200.000"),
+        fact = InvestmentMovementFact.Worth(pesos("3.600.000"), LocalDate.of(2026, 10, 14))
+    )
+
+    @Test fun worthLight() = shot("worth", worth, Look())
+
+    @Test fun worthDark() = shot("worth", worth, Look(dark = true))
+
+    /** A dividend: what the investment has paid so far. */
+    private val dividends = aporte.copy(
+        kind = InvestmentMovementKind.Dividend,
+        amount = pesos("89.000"),
+        fact = InvestmentMovementFact.Dividends(pesos("178.000"), "Ecopetrol")
+    )
+
+    @Test fun dividendsLight() = shot("dividends", dividends, Look())
+
+    @Test fun dividendsDark() = shot("dividends", dividends, Look(dark = true))
 }

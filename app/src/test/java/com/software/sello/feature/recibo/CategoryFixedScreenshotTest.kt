@@ -10,6 +10,12 @@ import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.RepeatRule
+import com.software.sello.navigation.CategoryEditAction
+import com.software.sello.navigation.ShellDetail
+import com.software.sello.navigation.ShellScreen
+import com.software.sello.navigation.ShellTab
+import com.software.sello.navigation.appTabs
+import com.software.sello.navigation.octoberShell
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.month.monthNames
 import com.software.sello.showSello
@@ -205,4 +211,48 @@ class CategoryFixedScreenshotTest {
     @Test
     fun listLoadingDark() =
         capture("loading", enough.copy(fixed = DetailFixedState.Loading), Look(dark = true))
+
+    /** In its destination's frame, as CategoryDetailScreenshotTest draws the detail. */
+    private fun framed(name: String, state: CategoryDetailState.Ready, look: Look) {
+        rule.showSello(look) {
+            ShellScreen(
+                octoberShell.copy(detailCategoryId = "h"),
+                monthNames(),
+                {},
+                navigation = appTabs(ShellTab.Recibo),
+                detail = ShellDetail(
+                    "Hogar",
+                    actions = { CategoryEditAction(true) {} }
+                ) { padding ->
+                    CategoryDetailScreen(
+                        state = state,
+                        months = monthNames(),
+                        dates = dateLabels(),
+                        showName = false,
+                        onAction = {},
+                        onRecordHere = {},
+                        contentPadding = padding
+                    )
+                }
+            ) {}
+        }
+        rule.captureStill("src/test/screenshots/category-fixed-$name-${look.label}.png")
+    }
+
+    /** A refresh of the schedules failed: the list read before, under the warning. */
+    private val stale = enough.copy(fixed = fixed.copy(stale = true))
+
+    @Test fun listStale() = framed("stale", stale, Look())
+
+    @Test fun listStaleDark() = framed("stale", stale, Look(dark = true))
+
+    /** Internet and Servicios públicos already recorded: nothing left to come in October. */
+    private val noneLeft = enough.copy(
+        category = enough.category.copy(reserved = null),
+        fixed = fixed.copy(upcoming = emptyList())
+    )
+
+    @Test fun noneLeft() = framed("none-left", noneLeft, Look())
+
+    @Test fun noneLeftDark() = framed("none-left", noneLeft, Look(dark = true))
 }

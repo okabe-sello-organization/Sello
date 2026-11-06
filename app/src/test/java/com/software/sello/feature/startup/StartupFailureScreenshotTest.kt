@@ -6,10 +6,13 @@ import com.software.sello.Look
 import com.software.sello.captureStill
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.domain.port.BackupSummary
+import com.software.sello.domain.port.CheckedBackup
 import com.software.sello.domain.port.PendingPreferences
 import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.RestoreRejection
 import com.software.sello.showSello
+import java.time.Instant
+import java.time.ZoneId
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -125,4 +128,23 @@ class StartupFailureScreenshotTest {
         ),
         Look(dark = true)
     )
+
+    /** A backup of 20 Oct 2026, 9:30 in Bogotá, as a chosen file is checked to. */
+    private val backup = CheckedBackup(
+        Instant.parse("2026-10-20T14:30:00Z"),
+        ZoneId.of("America/Bogota"),
+        BackupSummary(7, 96, 5, 1, 2, 1)
+    )
+
+    private val previewing = StartupFailureState(restore = StartupRestoreStep.Previewing(backup))
+
+    @Test fun previewLight() = shot("preview", previewing, Look())
+
+    @Test fun previewDark() = shot("preview", previewing, Look(dark = true))
+
+    private val restoring = StartupFailureState(restore = StartupRestoreStep.Restoring(backup))
+
+    @Test fun restoringLight() = shot("restoring", restoring, Look())
+
+    @Test fun restoringDark() = shot("restoring", restoring, Look(dark = true))
 }

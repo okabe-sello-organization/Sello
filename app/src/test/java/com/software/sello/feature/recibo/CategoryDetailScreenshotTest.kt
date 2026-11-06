@@ -14,8 +14,11 @@ import com.software.sello.navigation.ShellDetail
 import com.software.sello.navigation.ShellScreen
 import com.software.sello.navigation.ShellTab
 import com.software.sello.navigation.appTabs
+import com.software.sello.navigation.archived
 import com.software.sello.navigation.detailTitle
 import com.software.sello.navigation.octoberShell
+import com.software.sello.presentation.carry.CarryProblem
+import com.software.sello.presentation.carry.CarryProblemKind
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.month.monthNames
 import com.software.sello.showSello
@@ -172,19 +175,26 @@ class CategoryDetailScreenshotTest {
         stale = false
     )
 
-    private fun shot(name: String, state: CategoryDetailState, dark: Boolean) {
+    private fun shot(
+        name: String,
+        state: CategoryDetailState,
+        dark: Boolean,
+        month: YearMonth = YearMonth.of(2026, 10),
+        announcement: Boolean = false
+    ) {
         rule.showSello(Look(dark = dark)) {
             // Opened in Recibo, on a phone: ReciboDestinations.kt hands it to the frame as
             // its ShellDetail, which draws its own title row (ShellScreen.kt): the name
             // Recibo already lists while the detail is read (DetailIdentity.kt), and the
             // edit pencil, disabled until the detail is ready.
             ShellScreen(
-                octoberShell.copy(detailCategoryId = food.id),
+                octoberShell.copy(selectedMonth = month, detailCategoryId = food.id),
                 monthNames(),
                 {},
                 navigation = appTabs(ShellTab.Recibo),
                 detail = ShellDetail(
                     detailTitle(food.id, state, recibo) ?: "Categoría",
+                    archived = archived(state),
                     actions = { CategoryEditAction(state is CategoryDetailState.Ready) {} }
                 ) { padding ->
                     CategoryDetailScreen(
@@ -194,7 +204,8 @@ class CategoryDetailScreenshotTest {
                         showName = false,
                         onAction = {},
                         onRecordHere = {},
-                        contentPadding = padding
+                        contentPadding = padding,
+                        showPastLimitAnnouncement = announcement
                     )
                 }
             ) {}
@@ -243,4 +254,78 @@ class CategoryDetailScreenshotTest {
     @Test fun emptyClaro() = shot("empty", empty, dark = false)
 
     @Test fun emptyOscuro() = shot("empty", empty, dark = true)
+
+    /** Alimentación's carry from September could not be read, and nothing was read before. */
+    private val problem =
+        CarryProblem("a", "Alimentación", CarryProblemKind.Missing, YearMonth.of(2026, 9))
+
+    @Test
+    fun carryFailedClaro() = shot("carry-failed", CategoryDetailState.CarryFailed(problem), false)
+
+    @Test
+    fun carryFailedOscuro() = shot("carry-failed", CategoryDetailState.CarryFailed(problem), true)
+
+    private val carryProblem = ready.copy(stale = true, carryProblem = problem)
+
+    @Test fun carryProblemClaro() = shot("carry-problem", carryProblem, dark = false)
+
+    @Test fun carryProblemOscuro() = shot("carry-problem", carryProblem, dark = true)
+
+    private val archivedFood = ready.copy(category = food.copy(archived = true), canRecord = false)
+
+    @Test fun archivedClaro() = shot("archived", archivedFood, dark = false)
+
+    @Test fun archivedOscuro() = shot("archived", archivedFood, dark = true)
+
+    /** September, finished: 900.000 − 812.000 = 88.000 left over, seen on 21 October. */
+    private val september = ready.copy(
+        category = food.copy(
+            figure = BudgetFigure(
+                ReciboHeadline.LeftOver,
+                plain("88.000"),
+                ReciboStamp.WithinLimit
+            ),
+            cellAmount = plain("88.000"),
+            spent = plain("812.000"),
+            fraction = 0.9f
+        ),
+        month = YearMonth.of(2026, 9),
+        expenses = ExpenseListState.Rows(
+            listOf(
+                ExpenseRow("4", LocalDate.of(2026, 9, 28), "Mercado", plain("112.000"), false),
+                ExpenseRow("5", LocalDate.of(2026, 9, 14), null, plain("45.300"), false)
+            ),
+            more = true
+        )
+    )
+
+    @Test
+    fun pastMonthClaro() = shot(
+        "past-month",
+        september,
+        dark = false,
+        month = YearMonth.of(2026, 9),
+        announcement = true
+    )
+
+    @Test
+    fun pastMonthOscuro() = shot(
+        "past-month",
+        september,
+        dark = true,
+        month = YearMonth.of(2026, 9),
+        announcement = true
+    )
+
+    private val checking = ready.copy(deleteProblem = DeleteProblem.Unknown, checkingDelete = true)
+
+    @Test fun deleteCheckingClaro() = shot("delete-checking", checking, dark = false)
+
+    @Test fun deleteCheckingOscuro() = shot("delete-checking", checking, dark = true)
+
+    private val refused = ready.copy(deleteProblem = DeleteProblem.Failed)
+
+    @Test fun deleteRefusedClaro() = shot("delete-refused", refused, dark = false)
+
+    @Test fun deleteRefusedOscuro() = shot("delete-refused", refused, dark = true)
 }

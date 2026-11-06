@@ -199,6 +199,35 @@ class InvestmentMovementsScreenshotTest {
         // 200,50 × 4.000,00 = 802.000; 1.000.000 + 300.000 + 802.000 = 2.102.000.
         "mixed" to receipt(mixed, 2, pesos("2.102.000"), total = mixedInPesos),
         // No rate: 1.300.000 and USD 200,50, each on its own.
+        // Thirty aportes of 100.000 on 1–30 oct: 3.000.000, and no Otro renglón.
+        "full" to receipt(
+            (1..30).map {
+                line("$it", Contribution, pesos("100.000"), LocalDate.of(2026, 10, it))
+            },
+            29,
+            pesos("3.000.000")
+        ),
+        // The dividend line was just removed: the short Deshacer over the receipt.
+        "removed" to receipt(listOf(three[0], three[2]), 1, pesos("500.000"))
+            .copy(removed = three[1]),
+        "discard" to receipt(three, 2, pesos("500.000")).copy(confirmDiscard = true),
+        "composer" to receipt(three, 0, pesos("500.000")).copy(
+            composerOpen = true,
+            composerDraft = "Aporte de octubre",
+            composerLength = 17
+        ),
+        "loading" to InvestmentMovementsState(
+            lines = listOf(line("0", null, null, today)),
+            contributed = null,
+            today = today
+        ),
+        "failed" to InvestmentMovementsState(
+            loading = false,
+            loadFailed = true,
+            lines = listOf(line("0", null, null, today)),
+            contributed = null,
+            today = today
+        ),
         "mixed-no-rate" to receipt(
             mixed,
             2,
@@ -351,6 +380,30 @@ class InvestmentMovementsScreenshotTest {
     @Test fun mixedNoRateClaro() = capture("mixed-no-rate", dark = false)
 
     @Test fun mixedNoRateOscuro() = capture("mixed-no-rate", dark = true)
+
+    @Test fun fullClaro() = capture("full", dark = false)
+
+    @Test fun fullOscuro() = capture("full", dark = true)
+
+    @Test fun removedClaro() = capture("removed", dark = false)
+
+    @Test fun removedOscuro() = capture("removed", dark = true)
+
+    @Test fun discardClaro() = capture("discard", dark = false)
+
+    @Test fun discardOscuro() = capture("discard", dark = true)
+
+    @Test fun composerClaro() = capture("composer", dark = false)
+
+    @Test fun composerOscuro() = capture("composer", dark = true)
+
+    @Test fun loadingClaro() = capture("loading", dark = false)
+
+    @Test fun loadingOscuro() = capture("loading", dark = true)
+
+    @Test fun failedClaro() = capture("failed", dark = false)
+
+    @Test fun failedOscuro() = capture("failed", dark = true)
 
     @Test fun detailClaro() = detail(dark = false)
 

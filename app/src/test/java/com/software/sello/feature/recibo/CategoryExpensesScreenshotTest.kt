@@ -1,13 +1,19 @@
 package com.software.sello.feature.recibo
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
+import com.software.sello.R
 import com.software.sello.captureStill
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.navigation.ShellScreen
+import com.software.sello.navigation.categoryDock
+import com.software.sello.navigation.octoberShell
+import com.software.sello.presentation.month.monthNames
 import com.software.sello.showSello
 import java.time.LocalDate
 import java.time.YearMonth
@@ -111,4 +117,37 @@ class CategoryExpensesScreenshotTest {
     @Test fun busyClaro() = capture(Look(), "category-expenses-busy-claro", busy)
 
     @Test fun busyOscuro() = capture(Look(dark = true), "category-expenses-busy-oscuro", busy)
+
+    /** As ReciboDestinations.kt frames Todos los gastos: the name over the month, its dock. */
+    private fun framed(name: String, state: CategoryExpensesState, look: Look, known: Boolean) {
+        rule.showSello(look) {
+            ShellScreen(
+                octoberShell,
+                monthNames(),
+                {},
+                onBack = {},
+                screenTitle = (state as? CategoryExpensesState.Ready)?.categoryName
+                    ?: stringResource(R.string.category_expenses_title),
+                showMonthAsSubtitle = true,
+                dock = categoryDock(archived = false, known = known) {}
+            ) { padding ->
+                CategoryExpensesScreen(state, "", "Date", {}, {}, padding)
+            }
+        }
+        rule.captureStill("src/test/screenshots/category-expenses-$name-${look.label}.png")
+    }
+
+    @Test
+    fun loadingClaro() = framed("loading", CategoryExpensesState.Loading, Look(), known = false)
+
+    @Test
+    fun loadingOscuro() =
+        framed("loading", CategoryExpensesState.Loading, Look(dark = true), known = false)
+
+    private val refused = ready.copy(problem = DeleteProblem.Changed)
+
+    @Test fun deleteRefusedClaro() = framed("delete-refused", refused, Look(), known = true)
+
+    @Test
+    fun deleteRefusedOscuro() = framed("delete-refused", refused, Look(dark = true), known = true)
 }

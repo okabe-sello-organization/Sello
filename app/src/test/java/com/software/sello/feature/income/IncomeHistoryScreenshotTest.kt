@@ -153,6 +153,13 @@ class IncomeHistoryScreenshotTest {
 
     @Test fun pageFailedDark() = shot("page-failed", Look(dark = true), pageFailed)
 
+    /** Ver más ingresos pressed: its spinner while the next page is read. */
+    private val moreLoading = state.copy(more = true, busy = true)
+
+    @Test fun moreLoadingLight() = shot("more-loading", Look(), moreLoading)
+
+    @Test fun moreLoadingDark() = shot("more-loading", Look(dark = true), moreLoading)
+
     /** Spent more than came in: the bar over its basis. */
     private val over = IncomeSplit(
         income = pesos("150.000"),

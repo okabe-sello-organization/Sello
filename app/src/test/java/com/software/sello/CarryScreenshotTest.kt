@@ -4,7 +4,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -13,6 +16,8 @@ import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.designsystem.icon.SelloIcon
+import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.CarryMonth
@@ -23,6 +28,11 @@ import com.software.sello.domain.model.Verdict
 import com.software.sello.domain.policy.CarryCorrection
 import com.software.sello.domain.policy.CarryMonthChange
 import com.software.sello.domain.port.ReadState
+import com.software.sello.feature.bulk.BulkCategory
+import com.software.sello.feature.bulk.BulkCorrection
+import com.software.sello.feature.bulk.BulkEntryScreen
+import com.software.sello.feature.bulk.BulkEntryState
+import com.software.sello.feature.bulk.BulkLineUi
 import com.software.sello.feature.category.CarryCard
 import com.software.sello.feature.category.CarryQuestion
 import com.software.sello.feature.category.CategoryEditorScreen
@@ -43,6 +53,10 @@ import com.software.sello.feature.recurrence.CatchUpNoticeState
 import com.software.sello.feature.recurrence.CatchUpRecordedScreen
 import com.software.sello.feature.recurrence.RecordedItem
 import com.software.sello.navigation.CorrectionQuestionSlip
+import com.software.sello.navigation.ShellScreen
+import com.software.sello.navigation.ShellState
+import com.software.sello.navigation.ShellTab
+import com.software.sello.navigation.appTabs
 import com.software.sello.presentation.carry.CarryCorrectionText
 import com.software.sello.presentation.carry.CarryDirection
 import com.software.sello.presentation.carry.carryMonthOf
@@ -301,60 +315,65 @@ class CarryScreenshotTest {
         )
 
     /** SC25: deleting ene's 20.000 moves feb, mar and abr by +20.000; mar stays Excedido. */
-    private fun deleteCorrection(look: Look) {
-        val sc25 = CarryCorrection(
-            months = listOf(
-                CarryMonthChange(
-                    categoryId(1),
-                    feb,
-                    closed(feb, 80_000, 180_000, 70_000, 110_000, false),
-                    closed(feb, 100_000, 200_000, 70_000, 130_000, false),
-                    cop(20_000)
-                ),
-                CarryMonthChange(
-                    categoryId(1),
-                    mar,
-                    closed(mar, 110_000, 210_000, 250_000, -40_000, true),
-                    closed(mar, 130_000, 230_000, 250_000, -20_000, true),
-                    cop(20_000)
-                ),
-                CarryMonthChange(
-                    categoryId(1),
-                    abr,
-                    CarryMonth(
-                        abr,
-                        ene,
-                        cop(100_000),
-                        cop(-40_000),
-                        cop(60_000),
-                        cop(0),
-                        cop(60_000),
-                        CarryVerdict.InProgress(Verdict.OnTrack)
-                    ),
-                    CarryMonth(
-                        abr,
-                        ene,
-                        cop(100_000),
-                        cop(-20_000),
-                        cop(80_000),
-                        cop(0),
-                        cop(80_000),
-                        CarryVerdict.InProgress(Verdict.OnTrack)
-                    ),
-                    cop(20_000)
-                )
+    private val sc25 = CarryCorrection(
+        months = listOf(
+            CarryMonthChange(
+                categoryId(1),
+                feb,
+                closed(feb, 80_000, 180_000, 70_000, 110_000, false),
+                closed(feb, 100_000, 200_000, 70_000, 130_000, false),
+                cop(20_000)
             ),
-            edited = emptyList(),
-            settled = emptyList(),
-            firstAffected = feb,
-            overallCapacityChange = mapOf(
-                feb to cop(20_000),
-                mar to cop(20_000),
-                abr to cop(20_000)
+            CarryMonthChange(
+                categoryId(1),
+                mar,
+                closed(mar, 110_000, 210_000, 250_000, -40_000, true),
+                closed(mar, 130_000, 230_000, 250_000, -20_000, true),
+                cop(20_000)
+            ),
+            CarryMonthChange(
+                categoryId(1),
+                abr,
+                CarryMonth(
+                    abr,
+                    ene,
+                    cop(100_000),
+                    cop(-40_000),
+                    cop(60_000),
+                    cop(0),
+                    cop(60_000),
+                    CarryVerdict.InProgress(Verdict.OnTrack)
+                ),
+                CarryMonth(
+                    abr,
+                    ene,
+                    cop(100_000),
+                    cop(-20_000),
+                    cop(80_000),
+                    cop(0),
+                    cop(80_000),
+                    CarryVerdict.InProgress(Verdict.OnTrack)
+                ),
+                cop(20_000)
             )
+        ),
+        edited = emptyList(),
+        settled = emptyList(),
+        firstAffected = feb,
+        overallCapacityChange = mapOf(
+            feb to cop(20_000),
+            mar to cop(20_000),
+            abr to cop(20_000)
         )
+    )
+
+    private val sc25List by lazy {
         val comida = categoryIn(1, "Comida", 100_000, icon = "restaurant").category
-        val list = CarryCorrectionText(money).list(sc25, mapOf(comida.id to comida))
+        CarryCorrectionText(money).list(sc25, mapOf(comida.id to comida))
+    }
+
+    private fun deleteCorrection(look: Look) {
+        val list = sc25List
         rule.showSello(look) {
             // The slip opens over a screen; the desk stands in for it.
             Box(Modifier.fillMaxSize().background(SelloTheme.colors.desk))
@@ -368,6 +387,134 @@ class CarryScreenshotTest {
 
     @Test
     fun deleteCorrectionDark() = deleteCorrection(Look(dark = true))
+
+    /**
+     * SC25 the other way: putting ene's 20.000 back (undoing the deletion, or anotar it in a
+     * receipt) moves feb, mar and abr by −20.000, back to the figures before the deletion.
+     */
+    private val sc25Back = CarryCorrection(
+        months = sc25.months.map {
+            CarryMonthChange(it.categoryId, it.month, it.after, it.before, cop(-20_000))
+        },
+        edited = emptyList(),
+        settled = emptyList(),
+        firstAffected = feb,
+        overallCapacityChange = mapOf(
+            feb to cop(-20_000),
+            mar to cop(-20_000),
+            abr to cop(-20_000)
+        )
+    )
+
+    private val sc25BackList by lazy {
+        val comida = categoryIn(1, "Comida", 100_000, icon = "restaurant").category
+        CarryCorrectionText(money).list(sc25Back, mapOf(comida.id to comida))
+    }
+
+    /** Recibo on 10 abr 2027, Comida carrying from ene: the screen the question opens over. */
+    private val abrRecibo by lazy {
+        carryMonthOf(
+            "2027-04-10",
+            listOf(
+                categoryIn(1, "Comida", 100_000, icon = "restaurant"),
+                categoryIn(2, "Transporte", 50_000)
+            ),
+            listOf(
+                storedExpense(140, 1, "2027-04-05", 30_000),
+                storedExpense(141, 2, "2027-04-06", 10_000)
+            ),
+            mapOf(1 to ene)
+        )
+    }
+
+    private val abrShell = ShellState(
+        currentMonth = abr,
+        selectedMonth = abr,
+        monthPickerOpen = false,
+        pickerYear = 2027,
+        pendingEntry = null
+    )
+
+    /** The correction question over Recibo's own frame (ReciboDestinations.kt), as SelloAppRoot shows it. */
+    private fun question(name: String, question: CorrectionQuestion, look: Look) {
+        rule.showSello(look) {
+            ShellScreen(
+                abrShell,
+                monthNames(),
+                {},
+                navigation = appTabs(ShellTab.Recibo),
+                actions = {
+                    IconButton(onClick = {}) {
+                        Icon(SelloIcon.Settings.painter(), stringResource(R.string.settings_open))
+                    }
+                }
+            ) { padding ->
+                ReciboScreen(render.recibo(ReadState.Ready(abrRecibo)), {}, padding)
+            }
+            CorrectionQuestionSlip(question, {}, {})
+        }
+        rule.captureStill("src/test/screenshots/carry-$name-${look.label}.png")
+    }
+
+    private val undoQuestion by lazy { CorrectionQuestion(CorrectionKind.Undo, sc25BackList) }
+
+    @Test fun undoQuestionLight() = question("undo", undoQuestion, Look())
+
+    @Test fun undoQuestionDark() = question("undo", undoQuestion, Look(dark = true))
+
+    /** The data moved while it was open: the list read again, said above it. */
+    @Test
+    fun changedQuestionLight() = question(
+        "changed",
+        CorrectionQuestion(CorrectionKind.Delete, sc25List, changed = true),
+        Look()
+    )
+
+    @Test
+    fun changedQuestionDark() = question(
+        "changed",
+        CorrectionQuestion(CorrectionKind.Delete, sc25List, changed = true),
+        Look(dark = true)
+    )
+
+    @Test
+    fun busyQuestionLight() =
+        question("busy", CorrectionQuestion(CorrectionKind.Delete, sc25List, busy = true), Look())
+
+    @Test
+    fun busyQuestionDark() = question(
+        "busy",
+        CorrectionQuestion(CorrectionKind.Delete, sc25List, busy = true),
+        Look(dark = true)
+    )
+
+    /** Anotar varios on 10 abr 2027 with one line of 20.000 in Comida dated 10 ene: the receipt asks first. */
+    private fun bulkCorrection(look: Look, busy: Boolean) {
+        val comida = BulkCategory("1", "Comida", "restaurant")
+        val state = BulkEntryState(
+            lines = listOf(BulkLineUi("1", comida, plain("20.000"), "Mercado")),
+            highlighted = 0,
+            date = LocalDate.of(2027, 1, 10),
+            today = LocalDate.of(2027, 4, 10),
+            loading = false,
+            categories = listOf(comida),
+            total = plain("20.000"),
+            count = 1,
+            busy = busy,
+            correction = BulkCorrection(sc25BackList, changed = false)
+        )
+        rule.showSello(look) { BulkEntryScreen(state, dateLabels(), {}) }
+        val name = if (busy) "bulk-busy" else "bulk"
+        rule.captureStill("src/test/screenshots/carry-$name-${look.label}.png")
+    }
+
+    @Test fun bulkCorrectionLight() = bulkCorrection(Look(), busy = false)
+
+    @Test fun bulkCorrectionDark() = bulkCorrection(Look(dark = true), busy = false)
+
+    @Test fun bulkCorrectionBusyLight() = bulkCorrection(Look(), busy = true)
+
+    @Test fun bulkCorrectionBusyDark() = bulkCorrection(Look(dark = true), busy = true)
 
     private fun hogar(month: YearMonth, k: Long, c: Long, s: Long, r: Long, verdict: CarryVerdict) =
         CarryMonth(month, ene, cop(1_000_000), cop(k), cop(c), cop(s), cop(r), verdict)
