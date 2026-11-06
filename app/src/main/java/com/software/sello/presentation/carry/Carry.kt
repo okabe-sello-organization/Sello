@@ -12,11 +12,17 @@ import com.software.sello.designsystem.component.CarryCorrectionContent as Carry
 import com.software.sello.designsystem.component.CarryCorrectionGroup
 import com.software.sello.designsystem.component.CarryCorrectionLine
 import com.software.sello.designsystem.component.CarryLine
-import com.software.sello.designsystem.component.ErrorSlip
+import com.software.sello.designsystem.component.ChangeRow
 import com.software.sello.designsystem.component.LineEmphasis
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.icon.SelloIcon
+import com.software.sello.designsystem.icon.painter
+import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.CarryBreakdown as CarryParts
 import com.software.sello.domain.model.CarryMonth
 import com.software.sello.domain.model.CarryVerdict
@@ -443,14 +449,17 @@ fun carryProblem(
 
 /**
  * The failure in words, with the one action that can repair it: giving the month its limit
- * ([onSetLimit], with the category and month), or reading again ([onRetry]).
+ * ([onSetLimit], with the category and month), or reading again ([onRetry]). With
+ * [olderFiguresShown], the last good figures are shown under it and it says why they are
+ * older; without, nothing could be read.
  */
 @Composable
 fun CarryProblemSlip(
     problem: CarryProblem,
     onRetry: () -> Unit,
     onSetLimit: (categoryId: String, month: YearMonth) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    olderFiguresShown: Boolean = false
 ) {
     val dates = dateLabels()
     val name = problem.name
@@ -459,32 +468,33 @@ fun CarryProblemSlip(
     } else {
         stringResource(R.string.carry_failed_title_of, name)
     }
+    val kind = if (olderFiguresShown) StatusKind.Older else StatusKind.LoadFailed(title)
     val who = name ?: stringResource(R.string.carry_failed_someone)
     val month = problem.month
     when {
-        problem.kind == CarryProblemKind.NoBase && month != null -> ErrorSlip(
+        problem.kind == CarryProblemKind.NoBase && month != null -> StatusSlip(
+            kind = kind,
             message = stringResource(R.string.carry_failed_no_base, dates.monthYear(month), who),
-            onRetry = { onSetLimit(problem.categoryId, month) },
             modifier = modifier.testTag(CARRY_PROBLEM_TAG),
-            title = title,
-            icon = SelloIcon.Error,
-            retryLabel = stringResource(R.string.carry_failed_set_limit, dates.monthYear(month))
+            action = StatusAction(
+                stringResource(R.string.carry_failed_set_limit, dates.monthYear(month))
+            ) {
+                onSetLimit(problem.categoryId, month)
+            }
         )
 
-        problem.kind == CarryProblemKind.Missing -> ErrorSlip(
+        problem.kind == CarryProblemKind.Missing -> StatusSlip(
+            kind = kind,
             message = stringResource(R.string.carry_failed_missing, who),
-            onRetry = onRetry,
             modifier = modifier.testTag(CARRY_PROBLEM_TAG),
-            title = title,
-            icon = SelloIcon.Error
+            action = StatusAction(StatusSlipDefaults.retryLabel, onClick = onRetry)
         )
 
-        else -> ErrorSlip(
+        else -> StatusSlip(
+            kind = kind,
             message = stringResource(R.string.carry_failed_damaged, who),
-            onRetry = onRetry,
             modifier = modifier.testTag(CARRY_PROBLEM_TAG),
-            title = title,
-            icon = SelloIcon.Error
+            action = StatusAction(StatusSlipDefaults.retryLabel, onClick = onRetry)
         )
     }
 }

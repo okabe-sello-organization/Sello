@@ -33,13 +33,15 @@ import com.software.sello.R
 import com.software.sello.designsystem.component.Bullet
 import com.software.sello.designsystem.component.BulletList
 import com.software.sello.designsystem.component.ButtonKind
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.component.Stamp
 import com.software.sello.designsystem.component.StampInk
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.count.countText
 import com.software.sello.presentation.date.dateLabels
@@ -246,8 +248,8 @@ internal fun backupDisclosure(): List<Bullet> = listOf(
 @Composable
 internal fun BackupProblems(state: BackupState, onCreate: () -> Unit) {
     state.failure?.let { failure ->
-        ErrorSlip(
-            title = stringResource(R.string.backup_failed_title),
+        StatusSlip(
+            kind = StatusKind.ActionFailed(stringResource(R.string.backup_failed_title)),
             message = stringResource(
                 when (failure) {
                     BackupFailure.Write -> R.string.backup_failed_write
@@ -256,18 +258,20 @@ internal fun BackupProblems(state: BackupState, onCreate: () -> Unit) {
                     BackupFailure.SelfCheck -> R.string.backup_failed_self_check
                 }
             ),
-            retryLabel = stringResource(R.string.backup_retry),
-            onRetry = { if (!state.busy) onCreate() },
-            modifier = Modifier.testTag(BACKUP_FAILED_TAG)
+            modifier = Modifier.testTag(BACKUP_FAILED_TAG),
+            action = StatusAction(stringResource(R.string.backup_retry)) {
+                if (!state.busy) onCreate()
+            }
         )
     }
     if (state.unknownOutcome && state.failure == null) {
-        ErrorSlip(
-            title = stringResource(R.string.backup_unknown_title),
+        StatusSlip(
+            kind = StatusKind.Unknown(stringResource(R.string.backup_unknown_title)),
             message = stringResource(R.string.backup_unknown),
-            retryLabel = stringResource(R.string.backup_unknown_action),
-            onRetry = { if (!state.busy) onCreate() },
-            modifier = Modifier.testTag(BACKUP_UNKNOWN_TAG)
+            modifier = Modifier.testTag(BACKUP_UNKNOWN_TAG),
+            action = StatusAction(stringResource(R.string.backup_unknown_action)) {
+                if (!state.busy) onCreate()
+            }
         )
     }
 }

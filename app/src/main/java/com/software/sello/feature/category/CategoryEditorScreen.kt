@@ -50,7 +50,6 @@ import com.software.sello.designsystem.component.ChipFlow
 import com.software.sello.designsystem.component.ConfirmSlip
 import com.software.sello.designsystem.component.EntryAmountSlip
 import com.software.sello.designsystem.component.EntryLayout
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FieldMessage
 import com.software.sello.designsystem.component.FieldMessageText
 import com.software.sello.designsystem.component.FieldTone
@@ -69,6 +68,10 @@ import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.component.Stamp
 import com.software.sello.designsystem.component.StampInk
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
@@ -184,10 +187,13 @@ fun CategoryEditorScreen(
                 if (state.loading) {
                     SlipSkeleton(Modifier.testTag(EDITOR_LOADING_TAG))
                 } else {
-                    ErrorSlip(
+                    StatusSlip(
+                        kind = StatusKind.LoadFailed(),
                         message = stringResource(R.string.category_editor_load_failed),
-                        onRetry = { onAction(CategoryEditorAction.Retry) },
-                        modifier = Modifier.testTag(EDITOR_LOAD_FAILED_TAG)
+                        modifier = Modifier.testTag(EDITOR_LOAD_FAILED_TAG),
+                        action = StatusAction(StatusSlipDefaults.retryLabel) {
+                            onAction(CategoryEditorAction.Retry)
+                        }
                     )
                 }
             }

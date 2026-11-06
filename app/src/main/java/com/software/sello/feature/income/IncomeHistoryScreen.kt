@@ -23,8 +23,6 @@ import androidx.compose.ui.unit.dp
 import com.software.sello.R
 import com.software.sello.designsystem.component.AnswerSlip
 import com.software.sello.designsystem.component.ButtonKind
-import com.software.sello.designsystem.component.EmptySlip
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.ExpectedChip
 import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.component.LineEmphasis
@@ -37,6 +35,10 @@ import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.component.SplitBar
 import com.software.sello.designsystem.component.SplitSegment
 import com.software.sello.designsystem.component.StampInk
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.component.SuggestionNote
 import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.component.TotalLine
@@ -83,27 +85,32 @@ fun IncomeHistoryScreen(
             }
 
             IncomeHistoryState.Failed -> item {
-                ErrorSlip(
+                StatusSlip(
+                    kind = StatusKind.LoadFailed(stringResource(R.string.income_failed_title)),
                     message = stringResource(R.string.recibo_failed),
-                    onRetry = { onAction(IncomeHistoryAction.Retry) },
-                    title = stringResource(R.string.income_failed_title),
-                    icon = SelloIcon.Error
+                    action = StatusAction(StatusSlipDefaults.retryLabel) {
+                        onAction(IncomeHistoryAction.Retry)
+                    }
                 )
             }
 
             is IncomeHistoryState.Ready -> if (state.lines.isEmpty() && !state.more) {
                 staleItem(state, split, onAction)
                 item {
-                    EmptySlip(
-                        title = stringResource(
-                            R.string.income_empty_title,
-                            months.inSentence(state.month)
+                    StatusSlip(
+                        kind = StatusKind.Empty(
+                            SelloIcon.AccountBalance,
+                            stringResource(
+                                R.string.income_empty_title,
+                                months.inSentence(state.month)
+                            )
                         ),
-                        body = stringResource(R.string.income_empty_body),
-                        actionLabel = stringResource(R.string.income_save),
-                        onAction = onCreate,
-                        icon = SelloIcon.AccountBalance,
-                        modifier = Modifier.testTag("income.empty")
+                        message = stringResource(R.string.income_empty_body),
+                        modifier = Modifier.testTag("income.empty"),
+                        action = StatusAction(
+                            stringResource(R.string.income_save),
+                            onClick = onCreate
+                        )
                     )
                 }
                 planItem(plan, today, onAction)
@@ -137,9 +144,13 @@ fun IncomeHistoryScreen(
                             ) { MoneyText(line.amount) }
                         }
                         if (state.pageFailed) {
-                            ErrorSlip(stringResource(R.string.income_load_failed), {
-                                onAction(IncomeHistoryAction.More)
-                            })
+                            StatusSlip(
+                                kind = StatusKind.LoadFailed(),
+                                message = stringResource(R.string.income_load_failed),
+                                action = StatusAction(StatusSlipDefaults.retryLabel) {
+                                    onAction(IncomeHistoryAction.More)
+                                }
+                            )
                         }
                         if (state.more) {
                             SelloButton(
@@ -179,10 +190,13 @@ private fun LazyListScope.staleItem(
 ) {
     if (!state.stale && split?.stale != true) return
     item {
-        ErrorSlip(
-            stringResource(R.string.income_stale),
-            { onAction(IncomeHistoryAction.Retry) },
-            Modifier.testTag("income.stale")
+        StatusSlip(
+            kind = StatusKind.Older,
+            message = stringResource(R.string.income_stale),
+            modifier = Modifier.testTag("income.stale"),
+            action = StatusAction(StatusSlipDefaults.retryLabel) {
+                onAction(IncomeHistoryAction.Retry)
+            }
         )
     }
 }
@@ -220,10 +234,13 @@ private fun LazyListScope.planItem(
         IncomePlanState.None -> Unit
 
         IncomePlanState.Failed -> item {
-            ErrorSlip(
-                stringResource(R.string.income_plan_failed),
-                { onAction(IncomeHistoryAction.Retry) },
-                modifier = Modifier.testTag("income.plan.failed")
+            StatusSlip(
+                kind = StatusKind.LoadFailed(),
+                message = stringResource(R.string.income_plan_failed),
+                modifier = Modifier.testTag("income.plan.failed"),
+                action = StatusAction(StatusSlipDefaults.retryLabel) {
+                    onAction(IncomeHistoryAction.Retry)
+                }
             )
         }
 

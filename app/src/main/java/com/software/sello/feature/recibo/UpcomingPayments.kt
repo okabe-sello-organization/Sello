@@ -20,13 +20,15 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.software.sello.R
 import com.software.sello.designsystem.component.AnswerSlip
 import com.software.sello.designsystem.component.ButtonKind
-import com.software.sello.designsystem.component.EmptySlip
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.component.ScheduleRow
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.component.StampInk
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
@@ -42,7 +44,6 @@ import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.month.monthNames
 import com.software.sello.presentation.read.LastGoodRead
-import com.software.sello.presentation.read.StaleSlip
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -176,34 +177,38 @@ fun UpcomingPaymentsScreen(
             UpcomingState.Loading -> item { SlipSkeleton() }
 
             UpcomingState.Failed -> item {
-                ErrorSlip(
+                StatusSlip(
+                    kind = StatusKind.LoadFailed(stringResource(R.string.upcoming_failed_title)),
                     message = stringResource(R.string.upcoming_failed),
-                    onRetry = onRetry,
-                    title = stringResource(R.string.upcoming_failed_title),
-                    icon = SelloIcon.Error
+                    action = StatusAction(StatusSlipDefaults.retryLabel, onClick = onRetry)
                 )
             }
 
             is UpcomingState.Empty -> {
                 if (state.stale) {
                     item {
-                        StaleSlip(
-                            stringResource(R.string.recibo_stale),
-                            onRetry,
-                            Modifier.testTag(UPCOMING_STALE_TAG)
+                        StatusSlip(
+                            kind = StatusKind.Older,
+                            message = stringResource(R.string.recibo_stale),
+                            modifier = Modifier.testTag(UPCOMING_STALE_TAG),
+                            action = StatusAction(StatusSlipDefaults.retryLabel, onClick = onRetry)
                         )
                     }
                 }
                 item {
-                    EmptySlip(
-                        title = stringResource(
-                            R.string.upcoming_empty_title,
-                            months.inSentence(state.month)
+                    StatusSlip(
+                        kind = StatusKind.Empty(
+                            SelloIcon.Check,
+                            stringResource(
+                                R.string.upcoming_empty_title,
+                                months.inSentence(state.month)
+                            )
                         ),
-                        body = stringResource(R.string.upcoming_empty_body),
-                        icon = SelloIcon.Check,
-                        actionLabel = stringResource(R.string.upcoming_all_schedules),
-                        onAction = onAllSchedules
+                        message = stringResource(R.string.upcoming_empty_body),
+                        action = StatusAction(
+                            stringResource(R.string.upcoming_all_schedules),
+                            onClick = onAllSchedules
+                        )
                     )
                 }
             }
@@ -211,10 +216,11 @@ fun UpcomingPaymentsScreen(
             is UpcomingState.Ready -> {
                 if (state.stale) {
                     item {
-                        StaleSlip(
-                            stringResource(R.string.recibo_stale),
-                            onRetry,
-                            Modifier.testTag(UPCOMING_STALE_TAG)
+                        StatusSlip(
+                            kind = StatusKind.Older,
+                            message = stringResource(R.string.recibo_stale),
+                            modifier = Modifier.testTag(UPCOMING_STALE_TAG),
+                            action = StatusAction(StatusSlipDefaults.retryLabel, onClick = onRetry)
                         )
                     }
                 }

@@ -26,13 +26,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.software.sello.R
-import com.software.sello.designsystem.component.EmptySlip
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.component.ScheduleRow
 import com.software.sello.designsystem.component.SelloNotice
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.Category
@@ -381,20 +383,21 @@ fun CatchUpRecordedScreen(
             CatchUpNoticeState.Loading -> item { SlipSkeleton() }
 
             CatchUpNoticeState.Failed -> item {
-                ErrorSlip(
+                StatusSlip(
+                    kind = StatusKind.LoadFailed(stringResource(R.string.catch_up_failed_title)),
                     message = stringResource(R.string.catch_up_failed),
-                    onRetry = onRetry,
-                    title = stringResource(R.string.catch_up_failed_title),
-                    icon = SelloIcon.Error
+                    action = StatusAction(StatusSlipDefaults.retryLabel, onClick = onRetry)
                 )
             }
 
             is CatchUpNoticeState.Ready -> if (state.items.isEmpty()) {
                 item {
-                    EmptySlip(
-                        title = stringResource(R.string.catch_up_empty_title),
-                        body = stringResource(R.string.catch_up_empty_body),
-                        icon = SelloIcon.Check
+                    StatusSlip(
+                        kind = StatusKind.Empty(
+                            SelloIcon.Check,
+                            stringResource(R.string.catch_up_empty_title)
+                        ),
+                        message = stringResource(R.string.catch_up_empty_body)
                     )
                 }
             } else {
@@ -466,12 +469,11 @@ private fun CatchUpCarrySlip(carry: CatchUpCarry, onRetry: () -> Unit) {
             CarryCorrectionContent(carry.list, changed = false, saved = true)
         }
 
-        CatchUpCarry.Failed -> ErrorSlip(
+        CatchUpCarry.Failed -> StatusSlip(
+            kind = StatusKind.LoadFailed(stringResource(R.string.catch_up_carry_failed_title)),
             message = stringResource(R.string.catch_up_carry_failed),
-            onRetry = onRetry,
             modifier = Modifier.testTag(CATCH_UP_CARRY_TAG),
-            title = stringResource(R.string.catch_up_carry_failed_title),
-            icon = SelloIcon.Error
+            action = StatusAction(StatusSlipDefaults.retryLabel, onClick = onRetry)
         )
     }
 }

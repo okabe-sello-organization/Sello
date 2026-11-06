@@ -28,7 +28,6 @@ import com.software.sello.designsystem.component.ChipRows
 import com.software.sello.designsystem.component.EntryAmountSlip
 import com.software.sello.designsystem.component.EntryHeading
 import com.software.sello.designsystem.component.EntryLayout
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FactLine
 import com.software.sello.designsystem.component.FieldMessage
 import com.software.sello.designsystem.component.FieldMessageText
@@ -42,6 +41,10 @@ import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloChip
 import com.software.sello.designsystem.component.SelloScaffold
 import com.software.sello.designsystem.component.SlipSkeleton
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.component.rememberSelectedFirst
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
@@ -113,11 +116,13 @@ fun GoalMovementScreen(
             }
 
             state.loadFailed -> MovementPane(padding) {
-                ErrorSlip(
-                    stringResource(R.string.goal_failed_body),
-                    { onAction(GoalMovementAction.Retry) },
-                    Modifier.testTag("goal.movement.failed"),
-                    title = stringResource(R.string.goal_failed_title)
+                StatusSlip(
+                    kind = StatusKind.LoadFailed(stringResource(R.string.goal_failed_title)),
+                    message = stringResource(R.string.goal_failed_body),
+                    modifier = Modifier.testTag("goal.movement.failed"),
+                    action = StatusAction(StatusSlipDefaults.retryLabel) {
+                        onAction(GoalMovementAction.Retry)
+                    }
                 )
             }
 

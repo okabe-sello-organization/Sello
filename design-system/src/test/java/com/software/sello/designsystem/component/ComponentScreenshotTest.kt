@@ -144,12 +144,14 @@ class ComponentScreenshotTest {
 
     @Test
     fun feedback() = capture("feedback") {
-        EmptySlip("Dale forma a tu mes", "Crea una categoría.", SelloIcon.ReceiptLong)
-        ErrorSlip(
+        StatusSlip(
+            StatusKind.Empty(SelloIcon.ReceiptLong, "Dale forma a tu mes"),
+            "Crea una categoría."
+        )
+        StatusSlip(
+            StatusKind.LoadFailed("No pudimos leer tu mes"),
             "Tus registros siguen guardados.",
-            {},
-            title = "No pudimos leer tu mes",
-            icon = SelloIcon.Error
+            action = StatusAction("Reintentar") {}
         )
         SelloNotice("Gasto borrado", actionLabel = "Deshacer", onAction = {})
         SlipSkeleton()
@@ -193,10 +195,9 @@ class ComponentScreenshotTest {
                         windowInsets = WindowInsets(0, 0, 0, 0)
                     ) { padding ->
                         Box(Modifier.fillMaxSize().padding(padding)) {
-                            EmptySlip(
-                                "Aún no hay gastos",
-                                "Anota el primero.",
-                                SelloIcon.ReceiptLong
+                            StatusSlip(
+                                StatusKind.Empty(SelloIcon.ReceiptLong, "Aún no hay gastos"),
+                                "Anota el primero."
                             )
                         }
                     }

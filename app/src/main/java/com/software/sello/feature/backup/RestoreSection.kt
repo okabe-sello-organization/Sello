@@ -28,13 +28,15 @@ import com.software.sello.designsystem.component.Bullet
 import com.software.sello.designsystem.component.BulletList
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ButtonTone
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.RestoreBody
 import com.software.sello.designsystem.component.RestoreHeading
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.Stamp
 import com.software.sello.designsystem.component.StampInk
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
@@ -83,42 +85,45 @@ fun RestoreSection(state: RestoreState, onAction: (RestoreAction) -> Unit) {
             )
         }
 
-        is RestoreStep.Rejected -> ErrorSlip(
-            title = stringResource(R.string.restore_rejected_title),
+        is RestoreStep.Rejected -> StatusSlip(
+            kind = StatusKind.ActionFailed(stringResource(R.string.restore_rejected_title)),
             message = stringResource(step.reason.message()),
-            retryLabel = stringResource(R.string.restore_choose_other),
-            onRetry = { onAction(RestoreAction.Choose) },
-            modifier = Modifier.testTag(RESTORE_REJECTED_TAG)
+            modifier = Modifier.testTag(RESTORE_REJECTED_TAG),
+            action = StatusAction(stringResource(R.string.restore_choose_other)) {
+                onAction(RestoreAction.Choose)
+            }
         )
 
-        RestoreStep.Failed -> ErrorSlip(
-            title = stringResource(R.string.restore_failed_title),
+        RestoreStep.Failed -> StatusSlip(
+            kind = StatusKind.ActionFailed(stringResource(R.string.restore_failed_title)),
             message = stringResource(R.string.restore_failed_body),
-            retryLabel = stringResource(R.string.restore_failed_action),
-            onRetry = { onAction(RestoreAction.Dismiss) },
-            modifier = Modifier.testTag(RESTORE_FAILED_TAG)
+            modifier = Modifier.testTag(RESTORE_FAILED_TAG),
+            action = StatusAction(stringResource(R.string.restore_failed_action)) {
+                onAction(RestoreAction.Dismiss)
+            }
         )
 
         is RestoreStep.Previewing -> Preview(state, step.staged, step.note(), false, onAction)
 
         is RestoreStep.Replacing -> Preview(state, step.staged, null, true, onAction)
 
-        is RestoreStep.Unknown -> ErrorSlip(
-            title = stringResource(R.string.restore_unknown_title),
+        is RestoreStep.Unknown -> StatusSlip(
+            kind = StatusKind.Unknown(stringResource(R.string.restore_unknown_title)),
             message = listOfNotNull(
                 stringResource(R.string.restore_unknown_body),
                 chosenSetAside(step.chosenSetAside)
             ).joinToString("\n\n"),
-            retryLabel = stringResource(
-                if (step.checking) {
-                    R.string.restore_unknown_checking
-                } else {
-                    R.string.restore_unknown_action
-                }
-            ),
-            onRetry = { onAction(RestoreAction.Check) },
-            loading = step.checking,
-            modifier = Modifier.testTag(RESTORE_UNKNOWN_TAG)
+            modifier = Modifier.testTag(RESTORE_UNKNOWN_TAG),
+            action = StatusAction(
+                stringResource(
+                    if (step.checking) {
+                        R.string.restore_unknown_checking
+                    } else {
+                        R.string.restore_unknown_action
+                    }
+                ),
+                busy = step.checking
+            ) { onAction(RestoreAction.Check) }
         )
 
         is RestoreStep.Restored -> RestoredSlip(

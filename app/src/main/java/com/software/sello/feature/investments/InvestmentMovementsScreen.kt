@@ -32,7 +32,6 @@ import com.software.sello.designsystem.component.BulkTotal
 import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.ChipRows
 import com.software.sello.designsystem.component.EntryHeading
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FieldMessage
 import com.software.sello.designsystem.component.FieldMessageText
 import com.software.sello.designsystem.component.FieldPill
@@ -45,6 +44,10 @@ import com.software.sello.designsystem.component.SelloChip
 import com.software.sello.designsystem.component.SelloNotice
 import com.software.sello.designsystem.component.SelloScaffold
 import com.software.sello.designsystem.component.SlipSkeleton
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.component.rememberSelectedFirst
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
@@ -131,11 +134,13 @@ fun InvestmentMovementsScreen(
             }
 
             state.loadFailed -> MovementPane(padding) {
-                ErrorSlip(
-                    stringResource(R.string.inversiones_failed_body),
-                    { onAction(InvestmentMovementsAction.Retry) },
-                    Modifier.testTag(INVESTMENT_MOVEMENTS_FAILED_TAG),
-                    title = stringResource(R.string.inversiones_failed_title)
+                StatusSlip(
+                    kind = StatusKind.LoadFailed(stringResource(R.string.inversiones_failed_title)),
+                    message = stringResource(R.string.inversiones_failed_body),
+                    modifier = Modifier.testTag(INVESTMENT_MOVEMENTS_FAILED_TAG),
+                    action = StatusAction(StatusSlipDefaults.retryLabel) {
+                        onAction(InvestmentMovementsAction.Retry)
+                    }
                 )
             }
 

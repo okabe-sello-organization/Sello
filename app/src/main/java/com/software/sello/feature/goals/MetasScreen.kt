@@ -38,7 +38,6 @@ import com.software.sello.R
 import com.software.sello.designsystem.component.AnswerSlip
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ButtonTone
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.MilestoneRow
 import com.software.sello.designsystem.component.MilestoneSpec
 import com.software.sello.designsystem.component.MilestoneState
@@ -46,6 +45,10 @@ import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.component.StampInk
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
@@ -96,22 +99,26 @@ fun MetasScreen(
             }
 
             MetasState.Failed -> item {
-                ErrorSlip(
+                StatusSlip(
+                    kind = StatusKind.LoadFailed(stringResource(R.string.metas_failed_title)),
                     message = stringResource(R.string.metas_failed_body),
-                    onRetry = { onAction(MetasAction.Retry) },
                     modifier = Modifier.testTag("metas.failed"),
-                    title = stringResource(R.string.metas_failed_title),
-                    icon = SelloIcon.Error
+                    action = StatusAction(StatusSlipDefaults.retryLabel) {
+                        onAction(MetasAction.Retry)
+                    }
                 )
             }
 
             is MetasState.Ready -> {
                 if (state.stale) {
                     item {
-                        ErrorSlip(
-                            stringResource(R.string.metas_stale),
-                            { onAction(MetasAction.Retry) },
-                            Modifier.testTag("metas.stale")
+                        StatusSlip(
+                            kind = StatusKind.Older,
+                            message = stringResource(R.string.metas_stale),
+                            modifier = Modifier.testTag("metas.stale"),
+                            action = StatusAction(StatusSlipDefaults.retryLabel) {
+                                onAction(MetasAction.Retry)
+                            }
                         )
                     }
                 }
@@ -188,7 +195,7 @@ fun MetasScreen(
     }
 }
 
-/** The empty state: the invitation and four empty stamp places, no button. */
+/** The empty state: the invitation, then four empty stamp places under it, no button. */
 @Composable
 private fun EmptyMetas() {
     val places = GoalPlace.entries.map { place ->
@@ -198,33 +205,16 @@ private fun EmptyMetas() {
             MilestoneState.Empty
         )
     }
-    Slip(Modifier.fillMaxWidth().testTag("metas.empty")) {
-        Column(
-            Modifier.fillMaxWidth().padding(vertical = SelloTheme.spacing.md),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                SelloIcon.Flag.painter(),
-                contentDescription = null,
-                tint = SelloTheme.colors.semantic.gain,
-                modifier = Modifier.size(44.dp)
-            )
-            Spacer(Modifier.height(SelloTheme.spacing.sm))
-            Text(
-                stringResource(R.string.metas_empty_title),
-                style = MaterialTheme.typography.headlineSmall,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.semantics { heading() }
-            )
-            Spacer(Modifier.height(SelloTheme.spacing.xs))
-            Text(
-                stringResource(R.string.metas_empty_body),
-                style = MaterialTheme.typography.bodyLarge,
-                color = SelloTheme.colors.inkSoft,
-                textAlign = TextAlign.Center
-            )
-            MilestoneRow(places)
-        }
+    Column(
+        Modifier.fillMaxWidth().testTag("metas.empty"),
+        verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        StatusSlip(
+            kind = StatusKind.Empty(SelloIcon.Flag, stringResource(R.string.metas_empty_title)),
+            message = stringResource(R.string.metas_empty_body)
+        )
+        MilestoneRow(places)
     }
 }
 

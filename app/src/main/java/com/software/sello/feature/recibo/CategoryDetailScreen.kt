@@ -39,8 +39,6 @@ import androidx.compose.ui.unit.dp
 import com.software.sello.R
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.CategoryCircle
-import com.software.sello.designsystem.component.EmptySlip
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FittedMoneyText
 import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.component.MoneyText
@@ -50,6 +48,10 @@ import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.component.Stamp
 import com.software.sello.designsystem.component.StampInk
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
@@ -61,7 +63,6 @@ import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.count.countText
 import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.month.MonthNames
-import com.software.sello.presentation.read.StaleSlip
 import java.time.YearMonth
 import java.util.Locale
 import kotlinx.coroutines.launch
@@ -112,10 +113,13 @@ fun CategoryDetailScreen(
                 Modifier.testTag(CATEGORY_DETAIL_LOADING_TAG)
             )
 
-            CategoryDetailState.Failed -> ErrorSlip(
+            CategoryDetailState.Failed -> StatusSlip(
+                kind = StatusKind.LoadFailed(),
                 message = stringResource(R.string.category_detail_failed),
-                onRetry = { onAction(CategoryDetailAction.Retry) },
-                modifier = Modifier.testTag(CATEGORY_DETAIL_FAILED_TAG)
+                modifier = Modifier.testTag(CATEGORY_DETAIL_FAILED_TAG),
+                action = StatusAction(StatusSlipDefaults.retryLabel) {
+                    onAction(CategoryDetailAction.Retry)
+                }
             )
 
             is CategoryDetailState.CarryFailed -> CarryProblemSlip(
@@ -124,22 +128,29 @@ fun CategoryDetailScreen(
                 onSetLimit = onSetMonthLimit
             )
 
-            CategoryDetailState.Gone -> EmptySlip(
-                title = stringResource(R.string.category_detail_gone_title),
-                body = stringResource(R.string.category_detail_gone_body),
-                icon = SelloIcon.Block,
+            CategoryDetailState.Gone -> StatusSlip(
+                kind = StatusKind.Gone(stringResource(R.string.category_detail_gone_title)),
+                message = stringResource(R.string.category_detail_gone_body),
                 modifier = Modifier.testTag(CATEGORY_DETAIL_GONE_TAG)
             )
 
             is CategoryDetailState.Ready -> {
                 state.carryProblem?.let {
-                    CarryProblemSlip(it, { onAction(CategoryDetailAction.Retry) }, onSetMonthLimit)
+                    CarryProblemSlip(
+                        it,
+                        { onAction(CategoryDetailAction.Retry) },
+                        onSetMonthLimit,
+                        olderFiguresShown = true
+                    )
                 }
                 if (state.stale) {
-                    StaleSlip(
-                        stringResource(R.string.recibo_stale),
-                        { onAction(CategoryDetailAction.Retry) },
-                        Modifier.testTag(CATEGORY_DETAIL_STALE_TAG)
+                    StatusSlip(
+                        kind = StatusKind.Older,
+                        message = stringResource(R.string.recibo_stale),
+                        modifier = Modifier.testTag(CATEGORY_DETAIL_STALE_TAG),
+                        action = StatusAction(StatusSlipDefaults.retryLabel) {
+                            onAction(CategoryDetailAction.Retry)
+                        }
                     )
                 }
                 HeaderSlip(
@@ -439,23 +450,33 @@ private fun Expenses(
     when (val list = state.expenses) {
         ExpenseListState.Loading -> SlipSkeleton(Modifier.testTag(CATEGORY_DETAIL_LIST_LOADING_TAG))
 
-        ExpenseListState.Failed -> ErrorSlip(
+        ExpenseListState.Failed -> StatusSlip(
+            kind = StatusKind.LoadFailed(),
             message = stringResource(R.string.category_detail_list_failed),
-            onRetry = { onAction(CategoryDetailAction.Retry) },
-            modifier = Modifier.testTag(CATEGORY_DETAIL_LIST_FAILED_TAG)
+            modifier = Modifier.testTag(CATEGORY_DETAIL_LIST_FAILED_TAG),
+            action = StatusAction(StatusSlipDefaults.retryLabel) {
+                onAction(CategoryDetailAction.Retry)
+            }
         )
 
-        ExpenseListState.Empty -> EmptySlip(
-            title = stringResource(
-                R.string.category_detail_empty_title,
-                months.inSentence(state.month)
+        ExpenseListState.Empty -> StatusSlip(
+            kind = StatusKind.Empty(
+                SelloIcon.ReceiptLong,
+                stringResource(
+                    R.string.category_detail_empty_title,
+                    months.inSentence(state.month)
+                )
             ),
-            body = stringResource(R.string.category_detail_empty_body),
-            icon = SelloIcon.ReceiptLong,
+            message = stringResource(R.string.category_detail_empty_body),
             modifier = Modifier.testTag(CATEGORY_DETAIL_EMPTY_TAG),
-            actionLabel = stringResource(R.string.category_detail_record_here)
-                .takeIf { state.canRecord },
-            onAction = onRecordHere.takeIf { state.canRecord }
+            action = if (state.canRecord) {
+                StatusAction(
+                    stringResource(R.string.category_detail_record_here),
+                    onClick = onRecordHere
+                )
+            } else {
+                null
+            }
         )
 
         is ExpenseListState.Rows -> ExpenseList(

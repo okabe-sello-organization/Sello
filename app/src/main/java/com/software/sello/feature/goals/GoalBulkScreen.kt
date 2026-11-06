@@ -34,7 +34,6 @@ import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.ChipRows
 import com.software.sello.designsystem.component.ConfirmSlip
 import com.software.sello.designsystem.component.EntryHeading
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FieldMessage
 import com.software.sello.designsystem.component.FieldMessageText
 import com.software.sello.designsystem.component.FieldPill
@@ -47,6 +46,10 @@ import com.software.sello.designsystem.component.SelloChip
 import com.software.sello.designsystem.component.SelloNotice
 import com.software.sello.designsystem.component.SelloScaffold
 import com.software.sello.designsystem.component.SlipSkeleton
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.component.rememberSelectedFirst
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
@@ -91,11 +94,13 @@ fun GoalBulkScreen(state: GoalBulkState, onAction: (GoalBulkAction) -> Unit) {
             }
 
             state.loadFailed -> MovementPane(padding) {
-                ErrorSlip(
-                    stringResource(R.string.goal_failed_body),
-                    { onAction(GoalBulkAction.Retry) },
-                    Modifier.testTag("goal.bulk.failed"),
-                    title = stringResource(R.string.goal_failed_title)
+                StatusSlip(
+                    kind = StatusKind.LoadFailed(stringResource(R.string.goal_failed_title)),
+                    message = stringResource(R.string.goal_failed_body),
+                    modifier = Modifier.testTag("goal.bulk.failed"),
+                    action = StatusAction(StatusSlipDefaults.retryLabel) {
+                        onAction(GoalBulkAction.Retry)
+                    }
                 )
             }
 

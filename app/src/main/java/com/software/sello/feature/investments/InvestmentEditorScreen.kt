@@ -57,7 +57,6 @@ import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.ConfirmSlip
 import com.software.sello.designsystem.component.EntryAmountSlip
 import com.software.sello.designsystem.component.EntryLayout
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FactLine
 import com.software.sello.designsystem.component.FieldMessage
 import com.software.sello.designsystem.component.FieldMessageText
@@ -77,6 +76,10 @@ import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloScaffold
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
@@ -176,10 +179,13 @@ fun InvestmentEditorScreen(
                     when {
                         state.loading -> SlipSkeleton(Modifier.testTag("investment.editor.loading"))
 
-                        state.loadFailed -> ErrorSlip(
-                            stringResource(R.string.investment_editor_load_failed),
-                            { onAction(InvestmentEditorAction.Retry) },
-                            Modifier.testTag("investment.editor.failed")
+                        state.loadFailed -> StatusSlip(
+                            kind = StatusKind.LoadFailed(),
+                            message = stringResource(R.string.investment_editor_load_failed),
+                            modifier = Modifier.testTag("investment.editor.failed"),
+                            action = StatusAction(StatusSlipDefaults.retryLabel) {
+                                onAction(InvestmentEditorAction.Retry)
+                            }
                         )
 
                         else -> identity()

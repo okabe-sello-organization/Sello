@@ -51,7 +51,6 @@ import com.software.sello.designsystem.component.ConfirmSlip
 import com.software.sello.designsystem.component.EntryAmountSlip
 import com.software.sello.designsystem.component.EntryLayout
 import com.software.sello.designsystem.component.EntryLine
-import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FieldMessage
 import com.software.sello.designsystem.component.FieldMessageText
 import com.software.sello.designsystem.component.FieldPill
@@ -70,6 +69,10 @@ import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.component.Stamp
 import com.software.sello.designsystem.component.StampInk
+import com.software.sello.designsystem.component.StatusAction
+import com.software.sello.designsystem.component.StatusKind
+import com.software.sello.designsystem.component.StatusSlip
+import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.component.rememberSelectedFirst
 import com.software.sello.designsystem.component.selloWindowLayout
 import com.software.sello.designsystem.icon.SelloIcon
@@ -80,7 +83,6 @@ import com.software.sello.domain.model.SourceName
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.income.incomeSourceLabel
 import com.software.sello.presentation.month.monthNames
-import com.software.sello.presentation.read.StaleSlip
 import com.software.sello.presentation.recurrence.FollowingChoice
 import com.software.sello.presentation.recurrence.RepeatAction
 import com.software.sello.presentation.recurrence.RepeatChoiceSheet
@@ -162,10 +164,13 @@ fun IncomeFormScreen(
             }
 
             state.loadFailed -> IncomePane(padding) {
-                ErrorSlip(
-                    stringResource(R.string.income_load_failed),
-                    { onAction(IncomeFormAction.Retry) },
-                    modifier = Modifier.testTag("income.loadFailed")
+                StatusSlip(
+                    kind = StatusKind.LoadFailed(),
+                    message = stringResource(R.string.income_load_failed),
+                    modifier = Modifier.testTag("income.loadFailed"),
+                    action = StatusAction(StatusSlipDefaults.retryLabel) {
+                        onAction(IncomeFormAction.Retry)
+                    }
                 )
             }
 
@@ -295,10 +300,13 @@ private fun IncomeAmount(state: IncomeFormState, onAction: (IncomeFormAction) ->
 private fun IncomeChoices(state: IncomeFormState, onAction: (IncomeFormAction) -> Unit) {
     // A refresh failed: the form keeps what it read and the draft stays.
     if (state.stale) {
-        StaleSlip(
-            stringResource(R.string.recibo_stale),
-            { onAction(IncomeFormAction.Retry) },
-            Modifier.testTag("income.form.stale")
+        StatusSlip(
+            kind = StatusKind.Older,
+            message = stringResource(R.string.recibo_stale),
+            modifier = Modifier.testTag("income.form.stale"),
+            action = StatusAction(StatusSlipDefaults.retryLabel) {
+                onAction(IncomeFormAction.Retry)
+            }
         )
     }
     val order = rememberSelectedFirst(state.sourceKeys, state.sourceKey) { it }
