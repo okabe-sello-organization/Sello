@@ -2,6 +2,7 @@ package com.software.sello.navigation
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
@@ -176,15 +177,10 @@ internal fun NavGraphBuilder.reciboDestinations(
     composable<UpcomingPaymentsRoute> {
         val state by shellState
         val notice by noticeState
-        ShellScreen(
+        UpcomingPaymentsFrame(
             state,
-            monthNames(),
             onShell,
-            navigation = null,
             onBack = { navigation.popBackStack() },
-            screenTitle = stringResource(R.string.upcoming_screen_title),
-            pastMonthRibbon = false,
-            entryDock = false,
             notice = notice?.let { { CorrectionNoticeBar(it, onUndo) } }
         ) { padding ->
             UpcomingPaymentsRoot(
@@ -203,15 +199,12 @@ internal fun NavGraphBuilder.reciboDestinations(
         val state by shellState
         val notice by noticeState
         val month = entry.toRoute<AdjustBudgetRoute>().month
-        ShellScreen(
+        AdjustBudgetFrame(
             state,
-            monthNames(),
+            // The month AdjustBudgetViewModel reads, with the same fallback.
+            runCatching { YearMonth.parse(month) }.getOrNull() ?: state.currentMonth,
             onShell,
-            navigation = null,
             onBack = { navigation.popBackStack() },
-            screenTitle = stringResource(R.string.adjust_title),
-            pastMonthRibbon = false,
-            entryDock = false,
             notice = notice?.let { { CorrectionNoticeBar(it, onUndo) } }
         ) { padding ->
             AdjustBudgetRoot(
@@ -228,6 +221,57 @@ internal fun NavGraphBuilder.reciboDestinations(
         }
     }
 }
+
+/**
+ * Pagos previstos' frame: its title over the month in progress, which it always shows, a back
+ * arrow, no month picker, tabs, ribbon or dock.
+ */
+@Composable
+internal fun UpcomingPaymentsFrame(
+    state: ShellState,
+    onShell: (ShellAction) -> Unit,
+    onBack: () -> Unit,
+    notice: (@Composable () -> Unit)?,
+    content: @Composable (PaddingValues) -> Unit
+) = ShellScreen(
+    state,
+    monthNames(),
+    onShell,
+    navigation = null,
+    onBack = onBack,
+    screenTitle = stringResource(R.string.upcoming_screen_title),
+    ownMonth = state.currentMonth,
+    pastMonthRibbon = false,
+    entryDock = false,
+    notice = notice,
+    content = content
+)
+
+/**
+ * Ajustar presupuesto's frame: its title over the [month] its route carries, the month it
+ * adjusts, a back arrow, no month picker, tabs, ribbon or dock.
+ */
+@Composable
+internal fun AdjustBudgetFrame(
+    state: ShellState,
+    month: YearMonth,
+    onShell: (ShellAction) -> Unit,
+    onBack: () -> Unit,
+    notice: (@Composable () -> Unit)?,
+    content: @Composable (PaddingValues) -> Unit
+) = ShellScreen(
+    state,
+    monthNames(),
+    onShell,
+    navigation = null,
+    onBack = onBack,
+    screenTitle = stringResource(R.string.adjust_title),
+    ownMonth = month,
+    pastMonthRibbon = false,
+    entryDock = false,
+    notice = notice,
+    content = content
+)
 
 /**
  * Recibo and the detail of one of its categories: one screen at a time where there is

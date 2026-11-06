@@ -141,20 +141,21 @@
       <figure data-shot="shell-waiting-dock" data-module="app" data-caption="Anotar disabled while archived is not known"></figure>
       <figure data-shot="settings-loaded" data-module="app" data-caption="A real one: Configuración"></figure>
       <figure data-shot="goal-detail-framed" data-module="app" data-caption="A goal: titleOnly with its band"></figure>
-      <p>Every screen pushed on top of a tab that still uses <code>ShellScreen</code> (Configuración, Respaldo, Borrar datos, Ingresos, Todos los gastos, a category from Resumen, Pagos previstos, Ajustar presupuesto, Pagos e ingresos fijos, Lo que Sello anotó, a goal, an investment, Dólar). Its title forms are in <code>shell-screen-title</code>, <code>shell-title-label</code>, <code>shell-subtitle</code>, <code>shell-title-only</code>.</p>
+      <p>Every screen pushed on top of a tab that still uses <code>ShellScreen</code> (Configuración, Respaldo, Borrar datos, Ingresos, Todos los gastos, a category from Resumen, Pagos previstos, Ajustar presupuesto, Pagos e ingresos fijos, Lo que Sello anotó, a goal, an investment, Dólar). Its title forms are in <code>shell-screen-title</code>, <code>shell-title-label</code>, <code>shell-subtitle</code>, <code>shell-title-only</code>; <code>ownMonth</code> in <code>adjust-budget-framed</code> and <code>upcoming-loading</code> on <a href="recibo.html">Recibo</a>.</p>
 
       <h3>Layout</h3>
       <ol>
         <li>The scaffold's own title row, on the band: a back arrow read as "Volver", the title, actions at the trailing edge. A long title takes two lines; if it still has no room beside the actions it moves under them.</li>
-        <li>The title is one of four forms, chosen by the parameters each destination passes:
+        <li>The title is one of five forms, chosen by the parameters each destination passes:
           <div class="table-wrap">
             <table>
               <thead><tr><th>Form</th><th>Looks like</th><th>Used by</th><th>Source</th></tr></thead>
               <tbody>
-                <tr><td><code>screenTitle</code></td><td>"Configuración · Octubre 2026" with a chevron; it opens the month picker</td><td>Configuración, Respaldo, Borrar datos, Pagos previstos, Ajustar presupuesto, Lo que Sello anotó</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:246</code></td></tr>
+                <tr><td><code>screenTitle</code></td><td>"Configuración · Octubre 2026" with a chevron; it opens the month picker</td><td>Configuración, Respaldo, Borrar datos, Lo que Sello anotó</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:259</code></td></tr>
                 <tr><td><code>titleLabel</code></td><td>"Ingresos de octubre" with a chevron</td><td>Ingresos</td><td><code>app/src/main/java/com/software/sello/navigation/IncomeDestinations.kt:52</code></td></tr>
-                <tr><td><code>showMonthAsSubtitle</code></td><td>The name as the title, "Octubre 2026" under it; no switcher</td><td>Todos los gastos, a category from Resumen</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:209</code></td></tr>
-                <tr><td><code>titleOnly</code></td><td>The plain title</td><td>Pagos e ingresos fijos, Dólar, a goal, an investment</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:208</code></td></tr>
+                <tr><td><code>showMonthAsSubtitle</code></td><td>The name as the title, the selected month ("Octubre 2026") under it; no switcher</td><td>Todos los gastos, a category from Resumen</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:220</code></td></tr>
+                <tr><td><code>ownMonth</code></td><td>Looks as <code>showMonthAsSubtitle</code>, but the month under the title is the screen's own, not the selected one; no switcher, no past-month ribbon</td><td>Ajustar presupuesto (the month its route carries), Pagos previstos (the month in progress)</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:219</code></td></tr>
+                <tr><td><code>titleOnly</code></td><td>The plain title</td><td>Pagos e ingresos fijos, Dólar, a goal, an investment</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:216</code></td></tr>
               </tbody>
             </table>
           </div>

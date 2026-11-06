@@ -9,6 +9,8 @@ import com.software.sello.captureStill
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloInk
+import com.software.sello.navigation.AdjustBudgetFrame
+import com.software.sello.navigation.octoberShell
 import com.software.sello.presentation.carry.CarryDirection
 import com.software.sello.presentation.carry.CarryFigures
 import com.software.sello.showSello
@@ -193,6 +195,27 @@ class AdjustBudgetScreenshotTest {
         file = "adjust-budget-loading-${Look(dark = true).label}",
         state = AdjustBudgetState.Loading
     )
+
+    /** Loading in the frame ReciboDestinations.kt gives it: the title names its month. */
+    private fun framed(look: Look) {
+        rule.showSello(look) {
+            AdjustBudgetFrame(octoberShell, october, {}, {}, null) { padding ->
+                AdjustBudgetScreen(
+                    state = AdjustBudgetState.Loading,
+                    sheet = LimitSheetState(october),
+                    onAction = {},
+                    onSheet = {},
+                    onEditCategory = {},
+                    contentPadding = padding
+                )
+            }
+        }
+        rule.captureStill("src/test/screenshots/adjust-budget-framed-${look.label}.png")
+    }
+
+    @Test fun framedLight() = framed(Look())
+
+    @Test fun framedDark() = framed(Look(dark = true))
 
     @Test
     fun failedLight() = capture(
