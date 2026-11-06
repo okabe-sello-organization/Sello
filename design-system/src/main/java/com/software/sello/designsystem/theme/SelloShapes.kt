@@ -17,8 +17,6 @@ data class SelloShapes(
     val stampLarge: CornerBasedShape = RoundedCornerShape(10.dp),
     val stampHero: CornerBasedShape = RoundedCornerShape(14.dp),
     val sheet: CornerBasedShape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-    /** A slip's corners, where a slip has no pinked edge. */
-    val slip: CornerBasedShape = RoundedCornerShape(11.dp),
     /** A box set inside a slip or sheet: a field, a picked row, an error box, a line. */
     val inset: CornerBasedShape = RoundedCornerShape(12.dp),
     /** A dashed panel on the desk: a plan or an invitation, not a record. */

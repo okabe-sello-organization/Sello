@@ -48,7 +48,10 @@ fun Modifier.dashedOutline(color: Color, width: Dp, corner: Dp): Modifier = draw
     drawDashedOutline(color, width.toPx(), corner.toPx())
 }
 
-/** [dashedOutline] with the corner of a shape token, such as `SelloTheme.shapes.panel`. */
+/**
+ * [dashedOutline] with the corner of a shape token, such as `SelloTheme.shapes.panel`. Only
+ * for shapes with the same radius on every corner: it reads the top-start corner alone.
+ */
 fun Modifier.dashedOutline(color: Color, width: Dp, shape: CornerBasedShape): Modifier =
     drawWithContent {
         drawContent()

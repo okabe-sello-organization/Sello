@@ -10,6 +10,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -51,6 +55,7 @@ class SelloIconButtonTest {
         ) { scheme ->
             val node = rule.onNodeWithTag("close")
             node.assertContentDescriptionEquals("Cerrar").assertIsEnabled()
+            node.assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
             val semantics = node.fetchSemanticsNode()
             with(semantics.layoutInfo.density) {
                 assertTrue(scheme, semantics.touchBoundsInRoot.width.toDp() >= 48.dp)

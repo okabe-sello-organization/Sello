@@ -20,7 +20,6 @@ class SelloTokensTest {
     @Test
     fun newCornerTokens() {
         val shapes = SelloShapes()
-        assertEquals(RoundedCornerShape(11.dp), shapes.slip)
         assertEquals(RoundedCornerShape(12.dp), shapes.inset)
         assertEquals(RoundedCornerShape(14.dp), shapes.panel)
     }

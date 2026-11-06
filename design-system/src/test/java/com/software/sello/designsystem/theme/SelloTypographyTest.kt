@@ -90,8 +90,6 @@ class SelloTypographyTest {
         val expected = mapOf(
             "barTitle" to (type.barTitle to listOf(24.0, 26.0, 800.0, -0.02)),
             "dialogTitle" to (type.dialogTitle to listOf(22.0, 26.0, 800.0, -0.02)),
-            "keypadKey" to (type.keypadKey to listOf(22.0, 26.0, 800.0, -0.01)),
-            "buttonLabel" to (type.buttonLabel to listOf(15.0, 20.0, 800.0, 0.0)),
             "rowTitle" to (type.rowTitle to listOf(14.0, 19.0, 800.0, 0.0)),
             "lineTitle" to (type.lineTitle to listOf(13.5, 18.0, 800.0, 0.0)),
             "groupLabel" to (type.groupLabel to listOf(12.5, 16.0, 800.0, 0.0)),
@@ -109,10 +107,10 @@ class SelloTypographyTest {
         }
         // Figures stay tabular; sentence text does not.
         val tabular =
-            listOf(type.barTitle, type.dialogTitle, type.keypadKey, type.figure, type.figureLarge)
+            listOf(type.barTitle, type.dialogTitle, type.figure, type.figureLarge)
         tabular.forEach { assertEquals("tnum", it.fontFeatureSettings) }
         val sentence =
-            listOf(type.buttonLabel, type.rowTitle, type.lineTitle, type.groupLabel, type.chipLabel)
+            listOf(type.rowTitle, type.lineTitle, type.groupLabel, type.chipLabel)
         sentence.forEach { assertEquals(null, it.fontFeatureSettings) }
     }
 

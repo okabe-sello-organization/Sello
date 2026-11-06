@@ -88,13 +88,6 @@ data class SelloType(
     val barTitle: TextStyle = SelloTypography.headlineSmall.copy(fontSize = 24.sp),
     /** A dialog slip's title: headlineSmall at 22sp. */
     val dialogTitle: TextStyle = SelloTypography.headlineSmall.copy(fontSize = 22.sp),
-    /** A digit on the amount keypad: titleLarge at 22sp on a 26sp line. */
-    val keypadKey: TextStyle = SelloTypography.titleLarge.copy(
-        fontSize = 22.sp,
-        lineHeight = 26.sp
-    ),
-    /** A button's label: labelLarge at 15sp. */
-    val buttonLabel: TextStyle = SelloTypography.labelLarge.copy(fontSize = 15.sp),
     /** The name on a list row (a category, goal, investment, schedule or choice). */
     val rowTitle: TextStyle = SelloTypography.bodyLarge.copy(fontWeight = FontWeight.W800),
     /** The title of a compact line: a bulk line, a change row, a chip on the band. */

@@ -140,7 +140,10 @@ private fun KeyRow(compact: Boolean, content: @Composable RowScope.() -> Unit) {
 private fun KeyLabel(text: String) {
     Text(
         text = text,
-        style = MaterialTheme.typography.titleLarge.copy(fontSize = 22.sp, lineHeight = 26.sp),
+        style = MaterialTheme.typography.titleLarge.copy(
+            fontSize = KeyLabelSize,
+            lineHeight = KeyLabelLine
+        ),
         color = SelloTheme.colors.ink
     )
 }
@@ -182,6 +185,10 @@ private fun RowScope.Key(
 }
 
 private val KeyGap = 6.dp
+
+/** A key's digit: titleLarge set larger, on its own line height. Only the keypad uses it. */
+private val KeyLabelSize = 22.sp
+private val KeyLabelLine = 26.sp
 private const val DISABLED_KEY_ALPHA = 0.38f
 
 private val HardwareDigits = mapOf(

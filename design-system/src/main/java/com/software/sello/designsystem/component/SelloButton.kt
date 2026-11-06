@@ -90,7 +90,7 @@ fun SelloButton(
         Text(
             text = text,
             style = if (kind == ButtonKind.Text) {
-                MaterialTheme.typography.labelLarge.copy(fontSize = 15.sp)
+                MaterialTheme.typography.labelLarge.copy(fontSize = TextButtonLabelSize)
             } else {
                 MaterialTheme.typography.labelLarge
             },
@@ -113,3 +113,6 @@ internal fun ButtonTone.inks(): Pair<Color, Color> {
 }
 
 private const val DISABLED_ALPHA = 0.38f
+
+/** A text button's label is set smaller than a filled or outlined one. */
+private val TextButtonLabelSize = 15.sp

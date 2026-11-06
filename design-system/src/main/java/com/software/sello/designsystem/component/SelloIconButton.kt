@@ -39,7 +39,7 @@ fun SelloIconButton(
         enabled = enabled,
         colors = IconButtonDefaults.iconButtonColors(
             contentColor = ink,
-            disabledContentColor = ink.copy(alpha = SelloTheme.alpha.disabled)
+            disabledContentColor = ink.copy(alpha = ink.alpha * SelloTheme.alpha.disabled)
         )
     ) {
         Icon(
