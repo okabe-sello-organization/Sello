@@ -8,9 +8,8 @@ import com.software.sello.Look
 import com.software.sello.captureStill
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
-import com.software.sello.navigation.ShellScreen
+import com.software.sello.navigation.UpcomingPaymentsFrame
 import com.software.sello.navigation.octoberShell
-import com.software.sello.presentation.month.monthNames
 import com.software.sello.showSello
 import java.time.LocalDate
 import java.time.YearMonth
@@ -56,16 +55,8 @@ class UpcomingPaymentsScreenshotTest {
     private fun capture(state: UpcomingState, file: String, look: Look = Look()) {
         rule.showSello(look) {
             if (state == UpcomingState.Loading) {
-                // As ReciboDestinations.kt frames Pagos previstos.
-                ShellScreen(
-                    octoberShell,
-                    monthNames(),
-                    {},
-                    onBack = {},
-                    screenTitle = "Pagos previstos",
-                    pastMonthRibbon = false,
-                    entryDock = false
-                ) { padding ->
+                // In the frame ReciboDestinations.kt gives Pagos previstos.
+                UpcomingPaymentsFrame(octoberShell, {}, {}, null) { padding ->
                     UpcomingPaymentsScreen(state, padding, {}, {}, {})
                 }
             } else {
