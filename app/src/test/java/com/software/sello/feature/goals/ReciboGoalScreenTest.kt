@@ -2,6 +2,9 @@ package com.software.sello.feature.goals
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
@@ -120,6 +123,43 @@ class ReciboGoalScreenTest {
         ).performClick()
 
         assertEquals(listOf<Any>(ReciboGoalAction.MarkComplete("curso")), actions)
+    }
+
+    /** Saving Marcar como lograda swaps the label for a spinner; nothing in the row moves. */
+    @Test
+    fun theReachedRowKeepsItsShapeWhileItSaves() {
+        var busy by mutableStateOf(false)
+        rule.showSello(Look()) {
+            Box(Modifier.width(412.dp)) {
+                ReachedRow(
+                    "Celular nuevo",
+                    "Llegó al 100 %",
+                    "Marcar como lograda",
+                    { actions += "complete" },
+                    Modifier.testTag("row"),
+                    busy = busy
+                )
+            }
+        }
+        val row = rule.onNodeWithTag("row").getUnclippedBoundsInRoot()
+        val name = rule.onNodeWithText("Celular nuevo", useUnmergedTree = true)
+            .getUnclippedBoundsInRoot()
+        val action = rule.onNodeWithText("Marcar como lograda").getUnclippedBoundsInRoot()
+        // Idle, everything fits on one line at 412 dp: the name sits beside the action.
+        assertTrue(name.right <= action.left && name.bottom > action.top)
+
+        busy = true
+        rule.waitForIdle()
+
+        assertEquals(row, rule.onNodeWithTag("row").getUnclippedBoundsInRoot())
+        assertEquals(
+            name,
+            rule.onNodeWithText("Celular nuevo", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        )
+        val saving = rule.onNodeWithContentDescription("Marcar como lograda")
+        saving.assertIsNotEnabled()
+        assertEquals(action, saving.getUnclippedBoundsInRoot())
+        rule.onNodeWithText("Marcar como lograda").assertDoesNotExist()
     }
 
     @Test

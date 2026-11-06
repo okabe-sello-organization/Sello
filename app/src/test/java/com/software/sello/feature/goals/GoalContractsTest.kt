@@ -47,7 +47,7 @@ class GoalContractsTest {
     }
 
     @Test
-    fun activeGoalCardPutsTheDateBesideTheTargetAndSpreadsItsPlaces() {
+    fun activeGoalCardPutsTheDateBesideTheTargetAndSharesItsPlacesEvenly() {
         val places = listOf("25 %", "50 %", "75 %", "Meta").map {
             MilestoneSpec(it, "$it, por alcanzar", MilestoneState.Empty)
         }
@@ -69,13 +69,20 @@ class GoalContractsTest {
             val middle = (date.top + date.bottom) / 2
             assertTrue(middle > target.top && middle < target.bottom)
             val card = rule.onNodeWithTag("card").getUnclippedBoundsInRoot()
-            val meta = rule.onNodeWithText(
-                "Meta",
-                useUnmergedTree = true
-            ).getUnclippedBoundsInRoot()
-            // The last place reaches the card's trailing padding, and the teeth follow closely.
-            assertTrue(card.right - meta.right < 40.dp)
-            assertTrue(card.bottom - meta.bottom < 44.dp)
+            val centres = places.map {
+                val label = rule.onNodeWithText(it.label, useUnmergedTree = true)
+                    .getUnclippedBoundsInRoot()
+                (label.left + label.right) / 2
+            }
+            val stamps = rule.onNodeWithTag(GOAL_CARD_STAMPS_TAG, useUnmergedTree = true)
+                .getUnclippedBoundsInRoot()
+            // MilestoneRow's evenly: each place centred in an equal share of the width, the
+            // last one's share ending at the card's trailing padding; the teeth follow the row
+            // closely.
+            val share = centres[1] - centres[0]
+            centres.zipWithNext().forEach { (a, b) -> assertTrue((b - a - share).value in -1f..1f) }
+            assertTrue(card.right - (centres.last() + share / 2) < 40.dp)
+            assertTrue(card.bottom - stamps.bottom < 44.dp)
         }
     }
 }

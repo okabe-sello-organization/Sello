@@ -91,7 +91,7 @@ fun IconChoiceGrid(
                                 .background(if (selected) fill else colors.paper)
                                 .then(
                                     if (used) {
-                                        Modifier.dashedBorder(colors.outline, shape)
+                                        Modifier.dashedOutline(colors.outline, 1.5.dp, shape)
                                     } else {
                                         Modifier.border(
                                             1.5.dp,
@@ -126,20 +126,6 @@ fun IconChoiceGrid(
             }
         }
     }
-}
-
-/** A dashed outline following [shape], for an icon another item already uses. */
-private fun Modifier.dashedBorder(color: Color, shape: Shape) = drawBehind {
-    val stroke = 1.5.dp.toPx()
-    val outline = shape.createOutline(size, layoutDirection, this)
-    drawOutline(
-        outline,
-        color,
-        style = Stroke(
-            stroke,
-            pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 3.dp.toPx()))
-        )
-    )
 }
 
 /** As many columns as fit at the minimum cell size, between one and [maxColumns]. */

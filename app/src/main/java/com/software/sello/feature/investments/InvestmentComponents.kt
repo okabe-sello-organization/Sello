@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.designsystem.component.dashedOutline
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.InvestmentInk
@@ -169,19 +170,7 @@ internal fun InvestmentRow(
         Box(
             Modifier.size(36.dp).then(
                 if (value == null) {
-                    Modifier.drawBehind {
-                        val stroke = 2.dp.toPx()
-                        drawCircle(
-                            colors.outline,
-                            radius = (size.minDimension - stroke) / 2,
-                            style = Stroke(
-                                stroke,
-                                pathEffect = PathEffect.dashPathEffect(
-                                    floatArrayOf(4.dp.toPx(), 3.dp.toPx())
-                                )
-                            )
-                        )
-                    }
+                    Modifier.dashedOutline(colors.outline, 2.dp, CircleShape)
                 } else {
                     Modifier.background(shade.fill, CircleShape)
                 }

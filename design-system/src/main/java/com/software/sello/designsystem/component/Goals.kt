@@ -267,30 +267,24 @@ fun MilestonePlace(
                 scaleY = scaleX
                 alpha = progress.value.coerceIn(0f, 1f)
                 rotationZ = if (earned) -8f else 0f
-            }.drawBehind {
+            }.then(
                 // Empty and ready places are dashed; an earned or kept place is a
                 // double ring: a 2.5dp edge, a paper gap, then a thin inner ring.
-                val edge = if (earned ||
-                    spec.state == MilestoneState.Ready
-                ) {
-                    2.5.dp.toPx()
+                if (earned) {
+                    Modifier
                 } else {
-                    2.dp.toPx()
+                    val edge = if (spec.state == MilestoneState.Ready) 2.5.dp else 2.dp
+                    Modifier.dashedOutline(color, edge, CircleShape)
                 }
-                drawCircle(
-                    color,
-                    radius = size.minDimension / 2 - edge / 2,
-                    style = Stroke(
-                        edge,
-                        pathEffect = if (earned) {
-                            null
-                        } else {
-                            PathEffect.dashPathEffect(
-                                floatArrayOf(4.dp.toPx(), 3.dp.toPx())
-                            )
-                        }
+            ).drawBehind {
+                val edge = 2.5.dp.toPx()
+                if (earned) {
+                    drawCircle(
+                        color,
+                        radius = size.minDimension / 2 - edge / 2,
+                        style = Stroke(edge)
                     )
-                )
+                }
                 if (earned && innerRing) {
                     drawCircle(
                         color,

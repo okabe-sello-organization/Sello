@@ -184,9 +184,9 @@ fun GoalMovementScreen(
     if (state.datePickerOpen) {
         MovementDatePicker(
             state.date,
-            state.today,
             { onAction(GoalMovementAction.DatePicked(it)) },
-            { onAction(GoalMovementAction.CloseDatePicker) }
+            { onAction(GoalMovementAction.CloseDatePicker) },
+            last = state.today
         )
     }
     if (state.composerOpen) Composer(state, onAction)

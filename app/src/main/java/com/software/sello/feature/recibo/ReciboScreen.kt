@@ -54,11 +54,15 @@ import androidx.compose.ui.unit.dp
 import com.software.sello.R
 import com.software.sello.designsystem.component.AnswerSlip
 import com.software.sello.designsystem.component.BandChip
+import com.software.sello.designsystem.component.ButtonKind
+import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.Footnote
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyStyle
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.designsystem.component.MoreMenuItem
+import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.component.Stamp
@@ -69,6 +73,7 @@ import com.software.sello.designsystem.component.StatusSlip
 import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.component.dashedOutline
+import com.software.sello.designsystem.component.signedText
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
@@ -276,13 +281,15 @@ internal fun ReservedFootnote(reserved: ReciboReserved, onClick: () -> Unit) {
 @Composable
 internal fun AdjustBudgetLink(onClick: () -> Unit) {
     val spoken = stringResource(R.string.recibo_adjust_budget_description)
-    val ink = SelloTheme.colors.brand
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
+    SelloButton(
+        text = stringResource(R.string.recibo_adjust_budget),
+        onClick = onClick,
+        kind = ButtonKind.Text,
+        trailingIcon = SelloIcon.ChevronRight,
+        // Starts at the slip's content edge, under the answer.
+        contentPadding = PaddingValues(0.dp),
         modifier = Modifier
             .padding(top = SelloTheme.spacing.xs)
-            .heightIn(min = SelloTheme.spacing.minTouchTarget)
-            .clickable(role = Role.Button, onClick = onClick)
             // Before the clear: a tag after it would be cleared with everything else.
             .testTag(RECIBO_ADJUST_TAG)
             .clearAndSetSemantics {
@@ -293,15 +300,7 @@ internal fun AdjustBudgetLink(onClick: () -> Unit) {
                     true
                 }
             }
-    ) {
-        Text(
-            text = stringResource(R.string.recibo_adjust_budget),
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.W800,
-            color = ink
-        )
-        Icon(SelloIcon.ChevronRight.painter(), null, Modifier.size(20.dp), tint = ink)
-    }
+    )
 }
 
 /**
@@ -428,7 +427,7 @@ private fun ClosedMonthNote(closed: ReciboClosedMonth) {
         text = stringResource(
             if (closed.carried) R.string.carry_closed else R.string.recibo_month_closed,
             closed.spent.digits,
-            closed.limit.text()
+            closed.limit.signedText(showPlus = false)
         ),
         style = MaterialTheme.typography.bodyMedium,
         color = SelloTheme.colors.inkSoft,
@@ -478,7 +477,11 @@ private fun CategoriesSlip(
                 description = categoryDescription(category),
                 onClick = { onAction(ReciboAction.OpenCategory(category.id)) },
                 actions = listOf(
-                    LineAction(editLabel) { onAction(ReciboAction.EditCategory(category.id)) }
+                    MoreMenuItem(
+                        editLabel,
+                        SelloIcon.EditNote,
+                        { onAction(ReciboAction.EditCategory(category.id)) }
+                    )
                 ),
                 modifier = Modifier
                     .testTag(reciboCategoryTag(category.id))
@@ -616,9 +619,6 @@ const val RECIBO_FIRST_RUN_TAG = "recibo:first-run"
 const val RECIBO_STALE_TAG = "recibo:stale"
 const val RECIBO_FAILED_TAG = "recibo:failed"
 
-/** A figure as a sentence writes it: grouped, with a true minus when negative. */
-internal fun MoneyTextValue.text(): String = (if (sign == MoneySign.Minus) "−" else "") + digits
-
 /**
  * Why a category's verdict is Excedido when an earlier deficit made it so (CP14): "Tu
  * límite del mes es 400.000: Comida trae −150.000 de meses anteriores.", or, when the
@@ -634,14 +634,14 @@ internal fun CarryWhyNote(why: CarryWhy, modifier: Modifier = Modifier) {
             why.carryMagnitude.digits,
             why.base.digits,
             names.inSentence(why.month),
-            why.capacity.text()
+            why.capacity.signedText(showPlus = false)
         )
 
         else -> stringResource(
             R.string.carry_why_overall,
-            why.capacity.text(),
+            why.capacity.signedText(showPlus = false),
             why.category,
-            why.carry.text()
+            why.carry.signedText(showPlus = false)
         )
     }
     Text(

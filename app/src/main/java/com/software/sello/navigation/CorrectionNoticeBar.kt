@@ -12,6 +12,7 @@ import com.software.sello.designsystem.component.ConfirmSlip
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.component.SelloNotice
+import com.software.sello.designsystem.component.signedText
 import com.software.sello.feature.goals.CelebrationTicket
 import com.software.sello.feature.goals.celebrationLine
 import com.software.sello.feature.investments.InvestmentMovementNoticeBar
@@ -324,7 +325,7 @@ internal fun CorrectionNoticeBar(notice: CorrectionNotice, onUndo: () -> Unit) {
                     R.plurals.notice_goal_movements,
                     count,
                     count,
-                    it.signedDigits()
+                    it.signedText()
                 )
             } ?: pluralStringResource(R.plurals.notice_goal_movements_plain, count, count)
             val spoken = net?.let {
@@ -496,13 +497,6 @@ internal fun CorrectionQuestionSlip(
 }
 
 const val CORRECTION_QUESTION_TAG = "correction:question"
-
-/** "+130.000" or "−50.000", as a receipt's net is written in a sentence. */
-private fun MoneyTextValue.signedDigits(): String = when (sign) {
-    MoneySign.Plus -> "+$digits"
-    MoneySign.Minus -> "−$digits"
-    MoneySign.None -> digits
-}
 
 /** What a saved category change says: carry turned on or off first, else a past limit. */
 @Composable

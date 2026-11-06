@@ -14,15 +14,19 @@ import com.software.sello.domain.model.Note
 import java.time.LocalDate
 
 /*
- * The goal and investment movement forms' shared parts, given the app's copy and rules.
+ * The entry and movement forms' shared parts, given the app's copy and rules.
  * What they look like is the design system's (component/Movement.kt); this only chooses
  * the words, so the forms keep calling them as before.
  */
 
-/** The form's close button. */
+/** The form's close button; not [enabled] while the form saves. */
 @Composable
-fun MovementCloseButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    CloseButtonPart(stringResource(R.string.expense_entry_close), onClick, modifier)
+fun MovementCloseButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
+) {
+    CloseButtonPart(stringResource(R.string.expense_entry_close), onClick, modifier, enabled)
 }
 
 /** The note line under the choices: the note, or the invitation to add one. */
@@ -99,19 +103,24 @@ fun MovementNoteComposer(
     )
 }
 
-/** The date picker of a movement, which offers no day after [today]. */
+/**
+ * A form's date picker, opened on [date]: only days from [first] to [last] can be picked,
+ * either end open when null. A movement already made passes today as [last].
+ */
 @Composable
 fun MovementDatePicker(
     date: LocalDate,
-    today: LocalDate,
     onPicked: (LocalDate) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    first: LocalDate? = null,
+    last: LocalDate? = null
 ) {
     DatePickerPart(
         date = date,
-        today = today,
         confirmLabel = stringResource(R.string.expense_entry_date_confirm),
         onPicked = onPicked,
-        onDismiss = onDismiss
+        onDismiss = onDismiss,
+        first = first,
+        last = last
     )
 }

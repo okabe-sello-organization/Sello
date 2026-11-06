@@ -501,8 +501,11 @@ class CategoryDetailScreenTest {
         show(ready(ExpenseListState.Rows(rows, more = false), category = archived))
 
         // The stamp replaces "Al día", in sight and in what is read aloud.
-        rule.onNodeWithTag(CATEGORY_DETAIL_ARCHIVED_TAG, useUnmergedTree = true)
+        val header = hasAnyAncestor(hasTestTag(CATEGORY_DETAIL_HEADER_TAG))
+        rule.onNode(hasContentDescription("Archivada") and header, useUnmergedTree = true)
             .assertIsDisplayed()
+        rule.onNode(hasContentDescription("Al día") and header, useUnmergedTree = true)
+            .assertDoesNotExist()
         rule.onNodeWithContentDescription("Te quedan aquí 287.600 pesos. Archivada.")
             .assertIsDisplayed()
     }

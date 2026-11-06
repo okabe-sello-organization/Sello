@@ -72,6 +72,9 @@ import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.income.incomeSourceLabel
+import com.software.sello.presentation.movement.MovementCloseButton
+import com.software.sello.presentation.movement.MovementDatePicker
+import com.software.sello.presentation.movement.MovementNoteLine
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -116,9 +119,7 @@ fun BulkEntryScreen(
         ),
         modifier = modifier,
         navigationIcon = {
-            IconButton(onClick = { onAction(BulkEntryAction.Back) }, enabled = !state.busy) {
-                Icon(SelloIcon.Close.painter(), stringResource(R.string.expense_entry_close))
-            }
+            MovementCloseButton({ onAction(BulkEntryAction.Back) }, enabled = !state.busy)
         },
         notice = state.removed?.let { removed ->
             {
@@ -401,14 +402,11 @@ private fun Choices(state: BulkEntryState, onAction: (BulkEntryAction) -> Unit) 
             )
         }
         val note = state.highlightedLine.note
-        EntryLine(
-            text = note.ifBlank { stringResource(R.string.expense_entry_add_note) },
-            icon = SelloIcon.EditNote,
-            onClick = { onAction(BulkEntryAction.OpenNote) },
-            modifier = Modifier.testTag(BULK_NOTE_TAG),
-            action = stringResource(R.string.expense_entry_edit_note),
-            placeholder = note.isBlank(),
-            enabled = state.editable
+        MovementNoteLine(
+            note,
+            state.editable,
+            { onAction(BulkEntryAction.OpenNote) },
+            Modifier.testTag(BULK_NOTE_TAG)
         )
     }
 }
@@ -566,43 +564,16 @@ private fun SourceNameSheet(
     )
 }
 
-/** Days after [today] cannot be chosen. The picker works in whole days, with no time or zone. */
-@OptIn(ExperimentalMaterial3Api::class)
+/** Days after [today] cannot be chosen. */
 @Composable
 private fun DayPicker(date: LocalDate, today: LocalDate, onAction: (BulkEntryAction) -> Unit) {
-    val picker = rememberDatePickerState(
-        initialSelectedDateMillis = date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
-        selectableDates = object : SelectableDates {
-            override fun isSelectableDate(utcTimeMillis: Long) = !day(utcTimeMillis).isAfter(today)
-
-            override fun isSelectableYear(year: Int) = year <= today.year
-        }
+    MovementDatePicker(
+        date,
+        onPicked = { onAction(BulkEntryAction.DatePicked(it)) },
+        onDismiss = { onAction(BulkEntryAction.CloseDatePicker) },
+        last = today
     )
-    DatePickerDialog(
-        onDismissRequest = { onAction(BulkEntryAction.CloseDatePicker) },
-        confirmButton = {
-            SelloButton(
-                text = stringResource(R.string.expense_entry_date_confirm),
-                onClick = {
-                    val picked = picker.selectedDateMillis?.let(::day)
-                    onAction(
-                        if (picked == null) {
-                            BulkEntryAction.CloseDatePicker
-                        } else {
-                            BulkEntryAction.DatePicked(picked)
-                        }
-                    )
-                },
-                modifier = Modifier.testTag(BULK_DATE_CONFIRM_TAG)
-            )
-        }
-    ) {
-        DatePicker(state = picker)
-    }
 }
-
-private fun day(utcMillis: Long): LocalDate =
-    Instant.ofEpochMilli(utcMillis).atZone(ZoneOffset.UTC).toLocalDate()
 
 private fun LineProblem.text() = when (this) {
     LineProblem.NoCategory -> R.string.bulk_choose_category
@@ -627,7 +598,6 @@ private const val REMOVED_NOTICE_MILLIS = 6_000L
 
 const val BULK_RECEIPT_TAG = "bulk:receipt"
 const val BULK_DATE_TAG = "bulk:date"
-const val BULK_DATE_CONFIRM_TAG = "bulk:date-confirm"
 const val BULK_CATEGORIES_TAG = "bulk:categories"
 const val BULK_SOURCES_TAG = "bulk:sources"
 const val BULK_SOURCE_NAME_TAG = "bulk:source-name"

@@ -19,6 +19,7 @@ import com.software.sello.R
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ChipFlow
 import com.software.sello.designsystem.component.FormField
+import com.software.sello.designsystem.component.MoreMenuItem
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloChip
 import com.software.sello.designsystem.component.Slip
@@ -184,18 +185,22 @@ fun CategoryExpensesScreen(
                         pinked = false,
                         contentPadding = PaddingValues(horizontal = SelloTheme.spacing.md)
                     ) {
-                        val delete =
-                            LineAction(stringResource(R.string.category_detail_expense_delete)) {
-                                onAction(CategoryExpensesAction.Delete(row.id))
-                            }
+                        val delete = MoreMenuItem(
+                            stringResource(R.string.category_detail_expense_delete),
+                            SelloIcon.Delete,
+                            { onAction(CategoryExpensesAction.Delete(row.id)) },
+                            loss = true
+                        )
                         ActionRow(
                             onClick = {
                                 onEdit(row.id)
                             },
                             actions = listOf(
-                                LineAction(stringResource(R.string.category_detail_expense_edit)) {
-                                    onEdit(row.id)
-                                },
+                                MoreMenuItem(
+                                    stringResource(R.string.category_detail_expense_edit),
+                                    SelloIcon.EditNote,
+                                    { onEdit(row.id) }
+                                ),
                                 delete
                             ),
                             swipeAway = delete,

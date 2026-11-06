@@ -49,6 +49,8 @@ import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.date.dateLabels
+import com.software.sello.presentation.movement.MovementCloseButton
+import com.software.sello.presentation.movement.MovementDatePicker
 import java.time.Instant
 import java.time.ZoneOffset
 
@@ -72,12 +74,10 @@ fun UsdRateEntryScreen(state: UsdRateEntryState, onAction: (UsdRateEntryAction) 
     SelloScaffold(
         title = stringResource(R.string.usd_rate_entry_title),
         navigationIcon = {
-            IconButton(
-                onClick = { onAction(UsdRateEntryAction.Back) },
-                modifier = Modifier.testTag(USD_RATE_ENTRY_CLOSE_TAG)
-            ) {
-                Icon(SelloIcon.Close.painter(), stringResource(R.string.expense_entry_close))
-            }
+            MovementCloseButton(
+                { onAction(UsdRateEntryAction.Back) },
+                Modifier.testTag(USD_RATE_ENTRY_CLOSE_TAG)
+            )
         }
     ) { padding ->
         when {
@@ -220,34 +220,14 @@ private fun Action(state: UsdRateEntryState, onAction: (UsdRateEntryAction) -> U
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RateDatePicker(state: UsdRateEntryState, onAction: (UsdRateEntryAction) -> Unit) {
-    val picker = rememberDatePickerState(
-        initialSelectedDateMillis =
-            state.date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
-        selectableDates = object : SelectableDates {
-            override fun isSelectableDate(utcTimeMillis: Long) =
-                !Instant.ofEpochMilli(utcTimeMillis)
-                    .atZone(ZoneOffset.UTC).toLocalDate().isAfter(state.today)
-
-            override fun isSelectableYear(year: Int) = year <= state.today.year
-        }
+    MovementDatePicker(
+        state.date,
+        onPicked = { onAction(UsdRateEntryAction.DatePicked(it)) },
+        onDismiss = { onAction(UsdRateEntryAction.CloseDatePicker) },
+        last = state.today
     )
-    DatePickerDialog(
-        onDismissRequest = { onAction(UsdRateEntryAction.CloseDatePicker) },
-        confirmButton = {
-            SelloButton(stringResource(R.string.expense_entry_date_confirm), {
-                picker.selectedDateMillis?.let {
-                    onAction(
-                        UsdRateEntryAction.DatePicked(
-                            Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()
-                        )
-                    )
-                } ?: onAction(UsdRateEntryAction.CloseDatePicker)
-            })
-        }
-    ) { DatePicker(picker) }
 }
 
 const val USD_RATE_ENTRY_CLOSE_TAG = "usd.rate.entry.close"

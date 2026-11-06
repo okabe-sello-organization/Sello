@@ -189,3 +189,13 @@ fun OptionSlip(
         }
     }
 }
+
+/** A section's title on the settings screen, such as Apariencia, read as a heading. */
+@Composable
+fun SectionTitle(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleMedium,
+        modifier = Modifier.padding(bottom = SelloTheme.spacing.sm).semantics { heading() }
+    )
+}

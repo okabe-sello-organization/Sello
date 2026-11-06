@@ -25,11 +25,13 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
+import com.software.sello.designsystem.component.AnswerSlip
 import com.software.sello.designsystem.component.CategoryCircle
 import com.software.sello.designsystem.component.FittedMoneyText
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.component.Slip
+import com.software.sello.designsystem.component.StampInk
 import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
@@ -61,15 +63,15 @@ internal fun ComparisonSlip(
 ) {
     val colors = SelloTheme.colors
     val typography = MaterialTheme.typography
-    Slip(modifier.fillMaxWidth()) {
-        Text(
-            question,
-            style = typography.bodyLarge,
-            fontWeight = FontWeight.W600,
-            color = colors.inkSoft,
-            modifier = Modifier.padding(bottom = 6.dp)
-        )
-        FittedMoneyText(difference)
+    // The question is the answer's label; a difference has no stamp and is never a loss.
+    AnswerSlip(
+        label = question,
+        amount = difference,
+        stamp = null,
+        ink = StampInk.Neutral,
+        modifier = modifier,
+        lossAmount = false
+    ) {
         Text(
             explanation,
             style = typography.titleMedium,

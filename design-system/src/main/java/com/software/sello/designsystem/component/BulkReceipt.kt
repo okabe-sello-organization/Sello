@@ -25,8 +25,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -482,26 +480,13 @@ private fun BulkLineRow(
                 Row(Modifier.padding(start = MarkSize + 10.dp, top = 2.dp)) { foot() }
             }
         }
-        DropdownMenu(
-            expanded = menuOpen,
-            onDismissRequest = { menuOpen = false },
-            containerColor = colors.paper,
-            modifier = Modifier.testTag(BULK_LINE_MENU_TAG)
-        ) {
-            DropdownMenuItem(
-                text = {
-                    Text(
-                        removeLabel,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = colors.ink
-                    )
-                },
-                onClick = {
-                    menuOpen = false
-                    remove()
-                }
-            )
-        }
+        // Quitar in loss ink, as the swipe that does the same uncovers it.
+        MoreMenuDropdown(
+            listOf(MoreMenuItem(removeLabel, SelloIcon.Delete, { remove() }, loss = true)),
+            menuOpen,
+            { menuOpen = false },
+            Modifier.testTag(BULK_LINE_MENU_TAG)
+        )
     }
 }
 
@@ -566,19 +551,7 @@ private fun LineMark(icon: SelloIcon?, tone: BulkMarkTone, missingInLoss: Boolea
         val ink = if (missingInLoss) colors.semantic.loss else colors.outline
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.size(MarkSize).drawBehind {
-                val stroke = 2.dp.toPx()
-                drawCircle(
-                    ink,
-                    radius = (size.minDimension - stroke) / 2,
-                    style = Stroke(
-                        stroke,
-                        pathEffect = PathEffect.dashPathEffect(
-                            floatArrayOf(4.dp.toPx(), 3.dp.toPx())
-                        )
-                    )
-                )
-            }
+            modifier = Modifier.size(MarkSize).dashedOutline(ink, 2.dp, CircleShape)
         ) {
             Text("?", fontWeight = FontWeight.W900, color = ink)
         }

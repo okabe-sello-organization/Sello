@@ -12,6 +12,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -60,10 +61,13 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.software.sello.designsystem.component.ButtonKind
+import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.MilestonePlace
 import com.software.sello.designsystem.component.MilestoneSpec
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.DialogBarIcons
@@ -244,7 +248,7 @@ internal fun CelebrationOverlay(
                         Plate(t, plateTitle, name, icon, amount, detail, onGain)
                     }
                 }
-                Actions(t, doneLabel, viewLabel, onDone, onView, gain, onGain)
+                Actions(t, doneLabel, viewLabel, onDone, onView)
             }
             if (!reduced) Confetti(t)
         }
@@ -442,9 +446,7 @@ private fun Actions(
     doneLabel: String,
     viewLabel: String,
     onDone: () -> Unit,
-    onView: () -> Unit,
-    gain: Color,
-    onGain: Color
+    onView: () -> Unit
 ) {
     val p = EaseOut.transform(beat(t, ACTIONS_AT, ACTIONS_MS))
     val ready = t >= ACTIONS_AT
@@ -457,39 +459,21 @@ private fun Actions(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.xs)
     ) {
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .heightIn(min = 56.dp)
-                .clip(SelloTheme.shapes.button)
-                .background(onGain)
-                .clickable(enabled = ready, role = Role.Button, onClick = onDone),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                doneLabel,
-                color = gain,
-                fontWeight = FontWeight.W800,
-                style = MaterialTheme.typography.titleMedium
-            )
-        }
-        Row(
-            Modifier
-                .heightIn(min = SelloTheme.spacing.minTouchTarget)
-                .clip(SelloTheme.shapes.button)
-                .clickable(enabled = ready, role = Role.Button, onClick = onView)
-                .padding(horizontal = SelloTheme.spacing.md),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            Text(
-                viewLabel,
-                color = onGain,
-                fontWeight = FontWeight.W800,
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Icon(SelloIcon.ChevronRight.painter(), null, Modifier.size(18.dp), tint = onGain)
-        }
+        SelloButton(
+            text = doneLabel,
+            onClick = onDone,
+            tone = ButtonTone.OnGain,
+            enabled = ready,
+            modifier = Modifier.fillMaxWidth()
+        )
+        SelloButton(
+            text = viewLabel,
+            onClick = onView,
+            kind = ButtonKind.Text,
+            tone = ButtonTone.OnGain,
+            trailingIcon = SelloIcon.ChevronRight,
+            enabled = ready
+        )
     }
 }
 

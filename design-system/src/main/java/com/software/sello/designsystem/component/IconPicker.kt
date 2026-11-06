@@ -65,24 +65,27 @@ fun IconPickerCircle(
     ) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.size(CircleSize).drawBehind {
-                if (icon != null) {
-                    drawCircle(fill)
-                } else {
-                    val stroke = 2.5.dp.toPx()
-                    drawCircle(fill.copy(alpha = EMPTY_TINT))
+            modifier = Modifier.size(CircleSize)
+                .drawBehind {
                     drawCircle(
-                        fill,
-                        radius = size.minDimension / 2 - stroke / 2,
-                        style = Stroke(
-                            stroke,
-                            pathEffect = PathEffect.dashPathEffect(
-                                floatArrayOf(5.dp.toPx(), 4.dp.toPx())
-                            )
-                        )
+                        if (icon !=
+                            null
+                        ) {
+                            fill
+                        } else {
+                            fill.copy(alpha = EMPTY_TINT)
+                        }
                     )
                 }
-            }
+                .then(
+                    if (icon ==
+                        null
+                    ) {
+                        Modifier.dashedOutline(fill, 2.5.dp, CircleShape)
+                    } else {
+                        Modifier
+                    }
+                )
         ) {
             Icon(
                 (icon ?: SelloIcon.Add).painter(),

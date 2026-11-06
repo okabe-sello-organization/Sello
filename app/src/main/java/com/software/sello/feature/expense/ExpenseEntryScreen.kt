@@ -72,6 +72,7 @@ import com.software.sello.designsystem.component.MoneyStyle
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.MoreSlip
 import com.software.sello.designsystem.component.MovementDiscardSlip
+import com.software.sello.designsystem.component.MovementPane
 import com.software.sello.designsystem.component.NoteComposer
 import com.software.sello.designsystem.component.SegmentedSwitch
 import com.software.sello.designsystem.component.SelloButton
@@ -100,6 +101,9 @@ import com.software.sello.presentation.corrections.CorrectionAnnouncementState
 import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.month.monthNames
+import com.software.sello.presentation.movement.MovementCloseButton
+import com.software.sello.presentation.movement.MovementDatePicker
+import com.software.sello.presentation.movement.MovementNoteLine
 import com.software.sello.presentation.recurrence.FollowingChoice
 import com.software.sello.presentation.recurrence.RepeatAction
 import com.software.sello.presentation.recurrence.RepeatChoiceSheet
@@ -189,9 +193,7 @@ fun ExpenseEntryScreen(
         modifier = modifier,
         band = SelloTheme.colors.band,
         navigationIcon = {
-            IconButton(onClick = { onAction(ExpenseEntryAction.Back) }) {
-                Icon(SelloIcon.Close.painter(), stringResource(R.string.expense_entry_close))
-            }
+            MovementCloseButton({ onAction(ExpenseEntryAction.Back) })
         },
         actions = {
             // Only for an expense that is recorded and has been read: nothing else
@@ -212,9 +214,11 @@ fun ExpenseEntryScreen(
         }
     ) { padding ->
         when {
-            state.loading -> Pane(padding) { SlipSkeleton(Modifier.testTag(ENTRY_LOADING_TAG)) }
+            state.loading -> MovementPane(padding) {
+                SlipSkeleton(Modifier.testTag(ENTRY_LOADING_TAG))
+            }
 
-            state.loadFailed -> Pane(padding) {
+            state.loadFailed -> MovementPane(padding) {
                 StatusSlip(
                     kind = StatusKind.LoadFailed(),
                     message = stringResource(
@@ -361,17 +365,6 @@ fun ExpenseEntryScreen(
     }
 }
 
-@Composable
-private fun Pane(padding: PaddingValues, content: @Composable () -> Unit) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md),
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(padding)
-    ) { content() }
-}
-
 /**
  * The slip being written: "Gasto en pesos" (or why the amount cannot be used, in its
  * place), the date, the chosen category's icon and the amount, which steps down in
@@ -466,14 +459,11 @@ private fun Choices(
             )
         }
     }
-    EntryLine(
-        text = state.note.ifBlank { stringResource(R.string.expense_entry_add_note) },
-        icon = SelloIcon.EditNote,
-        onClick = { onAction(ExpenseEntryAction.OpenNote) },
-        modifier = Modifier.testTag(ENTRY_NOTE_TAG),
-        action = stringResource(R.string.expense_entry_edit_note),
-        placeholder = state.note.isBlank(),
-        enabled = state.editable
+    MovementNoteLine(
+        state.note,
+        state.editable,
+        { onAction(ExpenseEntryAction.OpenNote) },
+        Modifier.testTag(ENTRY_NOTE_TAG)
     )
     state.noteProblem?.let {
         FieldMessageText(FieldMessage(stringResource(it.text())))
@@ -672,8 +662,7 @@ private fun NoteSheet(
     )
 }
 
-/** Days after [today] cannot be chosen. The picker works in whole days, with no time or zone. */
-@OptIn(ExperimentalMaterial3Api::class)
+/** One expense is dated today or earlier; while Se repite is on, today or later. */
 @Composable
 private fun DayPicker(
     date: LocalDate,
@@ -681,43 +670,14 @@ private fun DayPicker(
     repeating: Boolean,
     onAction: (ExpenseEntryAction) -> Unit
 ) {
-    // One expense is dated today or earlier; while Se repite is on, today or later.
-    val picker = rememberDatePickerState(
-        initialSelectedDateMillis = date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
-        selectableDates = object : SelectableDates {
-            override fun isSelectableDate(utcTimeMillis: Long) = if (repeating) {
-                !day(utcTimeMillis).isBefore(today)
-            } else {
-                !day(utcTimeMillis).isAfter(today)
-            }
-
-            override fun isSelectableYear(year: Int) =
-                if (repeating) year >= today.year else year <= today.year
-        }
+    MovementDatePicker(
+        date,
+        onPicked = { onAction(ExpenseEntryAction.DatePicked(it)) },
+        onDismiss = { onAction(ExpenseEntryAction.CloseDatePicker) },
+        first = today.takeIf { repeating },
+        last = today.takeUnless { repeating }
     )
-    DatePickerDialog(
-        onDismissRequest = { onAction(ExpenseEntryAction.CloseDatePicker) },
-        confirmButton = {
-            SelloButton(
-                text = stringResource(R.string.expense_entry_date_confirm),
-                onClick = {
-                    val picked = picker.selectedDateMillis?.let(::day)
-                    if (picked == null) {
-                        onAction(ExpenseEntryAction.CloseDatePicker)
-                    } else {
-                        onAction(ExpenseEntryAction.DatePicked(picked))
-                    }
-                },
-                modifier = Modifier.testTag(ENTRY_DATE_CONFIRM_TAG)
-            )
-        }
-    ) {
-        DatePicker(state = picker)
-    }
 }
-
-private fun day(utcMillis: Long): LocalDate =
-    Instant.ofEpochMilli(utcMillis).atZone(ZoneOffset.UTC).toLocalDate()
 
 private fun AmountProblem.text() = when (this) {
     AmountProblem.NotAnAmount -> R.string.expense_entry_amount_not_amount
@@ -792,7 +752,6 @@ const val ENTRY_AMOUNT_TAG = "expense-entry:amount"
 const val ENTRY_CATEGORIES_TAG = "expense-entry:categories"
 const val ENTRY_NEW_CATEGORY_TAG = "expense-entry:new-category"
 const val ENTRY_DATE_TAG = "expense-entry:date"
-const val ENTRY_DATE_CONFIRM_TAG = "expense-entry:date-confirm"
 const val ENTRY_NOTE_TAG = "expense-entry:note"
 const val ENTRY_KEYPAD_TAG = "expense-entry:keypad"
 
