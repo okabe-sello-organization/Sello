@@ -1,6 +1,7 @@
 package com.software.sello.feature.recurrence
 
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.presentation.corrections.ScheduleChange
 import com.software.sello.presentation.recurrence.RepeatAction
 import com.software.sello.presentation.recurrence.RepeatUi
 import java.time.LocalDate
@@ -19,6 +20,7 @@ enum class ScheduleMissing { Amount, Category, SourceName, Note, Repeat, Changes
 
 /** Why a change, a pause, a resume or the deletion did not happen. None of these wrote anything. */
 enum class ScheduleEditorError {
+    /** Refused, or a check found it was not written: nothing changed and it can be tried again. */
     NotSaved,
 
     /** The data was replaced meanwhile (restore or reset). */
@@ -86,6 +88,8 @@ data class ScheduleEditorState(
     val missing: ScheduleMissing? = ScheduleMissing.Changes,
     val busy: Boolean = false,
     val error: ScheduleEditorError? = null,
+    /** The write [error] is about, when it is about one: its wording names it. */
+    val attempted: ScheduleChange? = null,
     val confirmDelete: Boolean = false,
     val confirmDiscard: Boolean = false,
     val closed: Boolean = false

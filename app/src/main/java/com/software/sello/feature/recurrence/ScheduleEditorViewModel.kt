@@ -86,6 +86,8 @@ class ScheduleEditorViewModel(
         val loadFailed: Boolean = false,
         val busy: Boolean = false,
         val error: ScheduleEditorError? = null,
+        /** The write last sent or asked about; an unknown or failed one is named by it. */
+        val attempted: ScheduleChange? = null,
         val limitPulse: Int = 0,
         val atLimit: Boolean = false,
         val confirmDelete: Boolean = false,
@@ -475,6 +477,8 @@ class ScheduleEditorViewModel(
         change: ScheduleChange,
         settled: Settled<CommittedSchedule, ScheduleRejection>?
     ) {
+        // [change] is named only by the write that settles: a send refused as a second tap
+        // (null) leaves the first one's name.
         when (settled) {
             // Something is still in flight and will settle; or nothing was left to ask about.
             null -> if (!submission.pending) progress.update { it.copy(busy = false) }
@@ -483,16 +487,20 @@ class ScheduleEditorViewModel(
             is Settled.Committed -> done(change)
 
             is Settled.Unknown -> progress.update {
-                it.copy(busy = false, error = ScheduleEditorError.Unknown)
+                it.copy(busy = false, error = ScheduleEditorError.Unknown, attempted = change)
             }
 
+            // Asked with its own ID: nothing was written, and it can be tried again.
             Settled.NotCommitted -> {
-                progress.update { it.copy(busy = false) }
+                progress.update {
+                    it.copy(busy = false, error = ScheduleEditorError.NotSaved, attempted = change)
+                }
                 if (progress.value.stored == null) load()
             }
 
-            is Settled.Rejected ->
-                progress.update { it.copy(busy = false, error = error(settled.reason)) }
+            is Settled.Rejected -> progress.update {
+                it.copy(busy = false, error = error(settled.reason), attempted = change)
+            }
         }
     }
 
@@ -524,6 +532,7 @@ class ScheduleEditorViewModel(
 
     /** Asks storage how the saved operation ended. Only a receipt counts as done. */
     private suspend fun recover() {
+        // The change pending is saved with its operation, so a restart still names it.
         val change = ScheduleChange.entries.firstOrNull { it.name == submission.step }
         if (!submission.pending || change == null) {
             submission.clear()
@@ -643,6 +652,7 @@ class ScheduleEditorViewModel(
             },
             busy = progress.busy,
             error = progress.error,
+            attempted = progress.attempted.takeIf { progress.error != null },
             confirmDelete = progress.confirmDelete,
             confirmDiscard = progress.confirmDiscard,
             closed = progress.closed

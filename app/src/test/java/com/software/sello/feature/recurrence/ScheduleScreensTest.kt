@@ -31,6 +31,7 @@ import com.software.sello.designsystem.component.MORE_MENU_TAG
 import com.software.sello.designsystem.component.REPEAT_ROW_TAG
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.RepeatRule
+import com.software.sello.presentation.corrections.ScheduleChange
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.recurrence.RepeatChoice
 import com.software.sello.presentation.recurrence.RepeatUi
@@ -367,5 +368,68 @@ class ScheduleScreensTest {
         rule.onNodeWithText(
             "Sello deja de anotarlo desde hoy. Los gastos ya anotados no se borran."
         ).assertIsDisplayed()
+    }
+
+    @Test
+    fun anUnknownOrFailedWriteNamesWhatWasTriedAndWhatIsEdited() {
+        val shown = mutableStateOf(editing)
+        rule.showSello { ScheduleEditorScreen(shown.value, dateLabels()) { editorActions += it } }
+        val unknown = editing.copy(error = ScheduleEditorError.Unknown)
+        val notSaved = editing.copy(error = ScheduleEditorError.NotSaved, missing = null)
+        val cases = listOf(
+            unknown.copy(attempted = ScheduleChange.Changed) to listOf(
+                "Aún no sabemos si se guardó. Compruébalo antes de volver a intentarlo.",
+                "Comprobar si se guardó"
+            ),
+            unknown.copy(attempted = ScheduleChange.Paused) to listOf(
+                "Aún no sabemos si se pausó. Compruébalo antes de volver a intentarlo.",
+                "Comprobar si se pausó"
+            ),
+            unknown.copy(attempted = ScheduleChange.Resumed) to listOf(
+                "Aún no sabemos si se reanudó. Compruébalo antes de volver a intentarlo.",
+                "Comprobar si se reanudó"
+            ),
+            unknown.copy(attempted = ScheduleChange.Deleted) to listOf(
+                "Aún no sabemos si se borró. Compruébalo antes de volver a intentarlo.",
+                "Comprobar si se borró"
+            ),
+            notSaved.copy(attempted = ScheduleChange.Changed) to listOf(
+                "No se guardó. Lo que cambiaste sigue aquí.",
+                "Guardar cambios"
+            ),
+            notSaved.copy(attempted = ScheduleChange.Paused) to listOf(
+                "No se pudo pausar. El pago fijo sigue como estaba.",
+                "Guardar cambios"
+            ),
+            notSaved.copy(attempted = ScheduleChange.Resumed, income = true) to listOf(
+                "No se pudo reanudar. El ingreso fijo sigue como estaba.",
+                "Guardar cambios"
+            ),
+            notSaved.copy(attempted = ScheduleChange.Deleted) to listOf(
+                "No se pudo borrar. El pago fijo sigue como estaba.",
+                "Guardar cambios"
+            ),
+            notSaved.copy(attempted = ScheduleChange.Deleted, income = true) to listOf(
+                "No se pudo borrar. El ingreso fijo sigue como estaba.",
+                "Guardar cambios"
+            )
+        )
+
+        for ((state, words) in cases) {
+            shown.value = state
+            rule.onNodeWithTag("schedule-editor:error").assertTextEquals(words[0])
+            rule.onNodeWithTag(SCHEDULE_SAVE_TAG).assertTextEquals(words[1])
+        }
+    }
+
+    @Test
+    fun discardingAnIncomesChangesSaysTheIncomeStaysAsItWas() {
+        val shown = mutableStateOf(editing.copy(confirmDiscard = true))
+        rule.showSello { ScheduleEditorScreen(shown.value, dateLabels()) { editorActions += it } }
+        rule.onNodeWithText("El pago fijo queda como estaba.").assertIsDisplayed()
+
+        shown.value = editing.copy(confirmDiscard = true, income = true)
+
+        rule.onNodeWithText("El ingreso fijo queda como estaba.").assertIsDisplayed()
     }
 }
