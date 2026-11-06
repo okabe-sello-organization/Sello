@@ -152,8 +152,17 @@
     <section id="look-alikes">
       <h2>Feature-local parts that look like shared ones</h2>
       <ul>
-        <li><strong>Start-over warning slip</strong> (<code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:285</code>) is a typed-word confirmation like Reset's word slip (<code>app/src/main/java/com/software/sello/feature/reset/ResetScreen.kt:191</code>) and Category removal's (<code>app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:433</code>). It differs: a <code>headlineSmall</code> heading instead of <code>RestoreHeading</code>, the two buttons side by side in a <code>Row</code> (Cancelar first) instead of stacked full width, no busy state, and the field never disabled. The same screen's backup preview stacks its buttons like Reset. No screenshot of either slip. Findings: <a href="../findings.html#F16">F16</a>, <a href="../findings.html#F17">F17</a>.</li>
+        <li><strong>Start-over warning slip</strong> (<code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:285</code>) is a typed-word confirmation like Reset's word slip (<code>app/src/main/java/com/software/sello/feature/reset/ResetScreen.kt:191</code>) and Category removal's (<code>app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:433</code>). It differs: a <code>headlineSmall</code> heading instead of <code>RestoreHeading</code>, the two buttons side by side in a <code>Row</code> (Cancelar first) instead of stacked full width, no busy state, and the field never disabled. The same screen's backup preview stacks its buttons like Reset. No screenshot of either slip. Finding: <a href="../findings.html#M08">M08</a>.</li>
         <li><strong>Explanation slip</strong> resembles <a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a> (a failure with a retry) but is left-aligned with three stacked choices; that difference has a reason (three ways out, not one retry).</li>
+      </ul>
+    </section>
+
+    <section id="findings-here">
+      <h2>Findings here</h2>
+      <p class="muted">Places in this feature on the <a href="../findings.html">findings</a> page; shared parts it uses are listed there under their own files.</p>
+      <ul>
+        <li><strong>Misuse:</strong> <a href="../findings.html#M01">M01</a> <code>ErrorSlip</code>: <a href="../findings.html#M01-11">M01-11 (unsure)</a>.</li>
+        <li><strong>Copies:</strong> <a href="../findings.html#C10">C10</a> <code>ButtonPair</code>: <a href="../findings.html#C10-2">C10-2 (drifted)</a>; <a href="../findings.html#C23">C23</a> <code>RestoreHeading</code>: <a href="../findings.html#C23-3">C23-3</a>, <a href="../findings.html#C23-4">C23-4</a>.</li>
       </ul>
     </section>
 
