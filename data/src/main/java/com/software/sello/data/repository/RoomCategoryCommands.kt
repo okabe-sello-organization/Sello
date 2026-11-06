@@ -301,7 +301,15 @@ class RoomCategoryCommands(
                 next
             }
 
-            is EditCategory -> when (val edited = editAll(command, category, next, profile, month)) {
+            is EditCategory -> when (
+                val edited = editAll(
+                    command,
+                    category,
+                    next,
+                    profile,
+                    month
+                )
+            ) {
                 is Edited.Done -> edited.category
                 is Edited.Refused -> return edited.refused
             }
@@ -332,15 +340,20 @@ class RoomCategoryCommands(
         month: YearMonth
     ): Edited {
         fun refuse(reason: CategoryRejection) = Edited.Refused(refused(Specific(reason)))
-        if (command.month != month) return refuse(CategoryRejection.MonthMoved(month))
         val id = command.categoryId
         val limit = command.limit
         val empty = command.name == null && command.icon == null && limit == null &&
             command.carry == null
         // A past month's own limit is all a past month's form changes: carry is today's.
         val pastWithCarry = limit is LimitEdit.OfMonth &&
-            (command.carry != null || limit.month >= month)
+            (command.carry != null || limit.month >= command.month)
         if (empty || pastWithCarry) return refuse(CategoryRejection.NotOneEdit)
+        // A limit from the month on and carry apply to the month the person saw, never to
+        // the next one; a name, an icon or a past month's limit name no month of their own.
+        val forTheMonth = limit is LimitEdit.FromThisMonth || command.carry != null
+        if (forTheMonth && command.month != month) {
+            return refuse(CategoryRejection.MonthMoved(month))
+        }
         command.name?.let { name ->
             val holder = database.categoryDao().byNameKey(name.uniquenessKey)
             if (holder != null && holder.id != id.value) {

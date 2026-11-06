@@ -363,6 +363,11 @@ class EditCategoryContractTest {
                 refused
             )
             assertEquals(before, state())
+
+            // A name names no month: it saves once the month has moved on.
+            ledger.goTo("2027-02-01")
+            val renamed = ledger.categories.submit(edit(comida, 1, "2027-01", name = "Mercado"))
+            assertTrue("$renamed", renamed is Committed)
         }
 
     @Test

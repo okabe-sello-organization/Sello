@@ -149,7 +149,8 @@ enum class CarrySetting { On, Off }
  * Everything the category form changes, saved together in one transaction under one
  * receipt, or nothing at all (SELLO-188). A null part stays as it is; at least one part
  * changes. [month] is the current financial month the person saw: a limit from it onwards
- * and a carry change apply to it, and nothing is written once another month has begun.
+ * and a carry change apply to it, and are refused once another month has begun. A past
+ * month's limit is of a month before [month].
  *
  * [carry] goes with no limit or with [LimitEdit.FromThisMonth]: turning it on is checked
  * against the limit as the edit leaves it (CP3), and turning it off, or making the limit
