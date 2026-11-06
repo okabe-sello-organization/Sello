@@ -45,8 +45,8 @@
       <h3>Layout</h3>
       <ol>
         <li>The band (<code>colors.band</code>) reaches 100dp under the status bar (<code>Blotter.Short</code>) and grows with the bar and ribbon, drawn by <a href="../components.html#c-SelloScaffold"><code>SelloScaffold</code></a>.</li>
-        <li><code>MonthBar</code> (feature-local, <code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:62</code>): the month name large, the year smaller at 80% <code>onBand</code>, a chevron; the three are one button. Actions sit at the trailing edge (Recibo: the settings gear).</li>
-        <li>Over a past month, the past-month ribbon (<code>PastMonthRibbon</code>, <code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:167</code>): a calendar icon, "Estás viendo <b>septiembre</b>" with the month bold, and a white pill "Volver a octubre".</li>
+        <li><code>MonthBar</code> (feature-local, <code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:61</code>): the month name large, the year smaller at 80% <code>onBand</code>, a chevron; the three are one button. Actions sit at the trailing edge (Recibo: the settings gear).</li>
+        <li>Over a past month, the past-month ribbon (<code>PastMonthRibbon</code>, <code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:160</code>): a calendar icon, "Estás viendo <b>septiembre</b>" with the month bold, and a paper pill "Volver a octubre".</li>
         <li>The content on the desk, with 12dp side margins from the scaffold.</li>
         <li>A notice, when there is one, floats over the bottom of the content (it moves nothing).</li>
         <li>The dock: one full-width <a href="../components.html#c-EntryDock"><code>EntryDock</code></a> "+ Anotar". Resumen has none (owner decision noted at <code>app/src/main/java/com/software/sello/navigation/ResumenDestinations.kt:49</code>).</li>
@@ -95,7 +95,7 @@
 
       <h3>Layout</h3>
       <ol>
-        <li><code>TitleBar</code> (feature-local, <code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:121</code>) on the band: the tab name as a heading, then a <a href="../components.html#c-BandChip"><code>BandChip</code></a> "Nueva meta" or "Nueva inversión" once there is at least one; the chip turns into the round "+" alone when its label would push the title off its line.</li>
+        <li><code>TitleBar</code> (feature-local, <code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:118</code>) on the band: the tab name as a heading, then a <a href="../components.html#c-BandChip"><code>BandChip</code></a> "Nueva meta" or "Nueva inversión" once there is at least one; the chip turns into the round "+" alone when its label would push the title off its line.</li>
         <li>No month, no month switcher and no past-month ribbon (<code>titleOnly</code>, <code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:132</code>).</li>
         <li>The content, then a dock in the tab's own tone: Metas green with a flag ("Crear una meta" when empty, "Aportar a una meta" otherwise), Inversiones in ink with "+" ("Agregar inversión" / "Anotar movimiento"). No dock while the list is first read.</li>
         <li>The tab bar.</li>
@@ -109,7 +109,7 @@
             <tr><td>Not yet read</td><td>Title only, no chip, no dock.</td><td><code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:101</code>, <code>app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:95</code></td><td><code>metas-loading</code></td></tr>
             <tr><td>Empty</td><td>No chip; the dock creates the first one.</td><td><code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:104</code></td><td><code>metas-empty</code></td></tr>
             <tr><td>With items</td><td>Chip beside the title; dock records a movement.</td><td><code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:90</code></td><td><code>shell-titled</code></td></tr>
-            <tr><td>Compact chip</td><td>The chip is the round "+" alone when the title would not fit beside it.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:148</code></td><td>Not capturable: only at widths Sello does not support</td></tr>
+            <tr><td>Compact chip</td><td>The chip is the round "+" alone when the title would not fit beside it.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:141</code></td><td>Not capturable: only at widths Sello does not support</td></tr>
           </tbody>
         </table>
       </div>
@@ -467,10 +467,10 @@
             <tr><td><a href="../components.html#c-SelloNotice"><code>SelloNotice</code></a></td><td><code>:design-system</code> <code>Corrections.kt</code></td><td>Every correction; <code>busy</code> while undoing or checking; <code>confirmation</code> for recorded writes; <code>spoken</code> with the currency</td><td>One bar for what just happened, over the content so nothing moves</td></tr>
             <tr><td><a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a></td><td><code>:design-system</code> <code>Feedback.kt</code></td><td>Content form for the correction question; <code>destructive</code> only for Borrar; <code>busy</code></td><td>Asked before a change to later months is sent</td></tr>
             <tr><td><a href="../components.html#c-StatusBarInk"><code>StatusBarInk</code></a>, <a href="../components.html#c-statusBarLightIconsUnder"><code>statusBarLightIconsUnder</code></a></td><td><code>:design-system</code> <code>StatusBarInk.kt</code></td><td>Read by <code>SystemBarsFollowTheme</code>; the picker sheet keeps the band's icons</td><td>Status icons readable on band and desk</td></tr>
-            <tr><td><code>MonthBar</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:62</code></td><td>Recibo and Resumen top bar</td><td>"A tab gets the month bar" (<code>ShellScreen.kt:201</code>)</td></tr>
-            <tr><td><code>TitleBar</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:121</code></td><td>Metas and Inversiones top bar, with the chip</td><td>A tab not tied to a month</td></tr>
-            <tr><td><code>PastMonthRibbon</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:167</code></td><td>Under the month bar over a past month, polite live region</td><td>"Every screen that shows it says so and offers the way back" (<code>ShellScreen.kt:160</code>)</td></tr>
-            <tr><td><code>MonthSwitcher</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:213</code></td><td>The title of pushed screens that show a month</td><td>The month as a title that opens the picker</td></tr>
+            <tr><td><code>MonthBar</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:61</code></td><td>Recibo and Resumen top bar</td><td>"A tab gets the month bar" (<code>ShellScreen.kt:201</code>)</td></tr>
+            <tr><td><code>TitleBar</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:118</code></td><td>Metas and Inversiones top bar, with the chip</td><td>A tab not tied to a month</td></tr>
+            <tr><td><code>PastMonthRibbon</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:160</code></td><td>Under the month bar over a past month, polite live region</td><td>"Every screen that shows it says so and offers the way back" (<code>ShellScreen.kt:160</code>)</td></tr>
+            <tr><td><code>MonthSwitcher</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:206</code></td><td>The title of pushed screens that show a month</td><td>The month as a title that opens the picker</td></tr>
             <tr><td><code>MonthPicker</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/navigation/MonthPicker.kt:45</code></td><td>Same content in the sheet and the side panel</td><td>One picker for both window sizes</td></tr>
             <tr><td><code>CorrectionNoticeBar</code>, <code>StampNoticeBar</code>, <code>CorrectionQuestionSlip</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:68</code>, <code>:441</code>, <code>:472</code></td><td>Words for each notice; stamps on a ticket; the months list</td><td>Notices are said the same whatever screen shows them</td></tr>
           </tbody>
@@ -481,9 +481,9 @@
     <section id="look-alikes">
       <h2>Feature-local parts that look like shared ones</h2>
       <ul>
-        <li><code>MonthBar</code> (<code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:62</code>) and <code>TitleBar</code> (<code>:122</code>) are the same band row twice (min 56dp, start <code>spacing.lg</code>, end 6dp, <code>headlineSmall</code> copied to 24sp W800), and both stand where <a href="../components.html#c-SelloScaffold"><code>SelloScaffold</code></a>'s private title row (min 50dp, <code>titleLarge</code>) stands on every other screen. Shots: <code>components-bars-and-keypad.png</code> against <code>category-editor</code>.</li>
-        <li><code>MonthSwitcher</code> (<code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:213</code>) is a title button like <code>MonthBar</code>'s month button but in <code>titleLarge</code> copied to 21sp, with a 22dp chevron. Finding: <a href="../findings.html#hard-type">hard-coded type</a>.</li>
-        <li><code>PastMonthRibbon</code>'s "Volver a …" pill (<code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:193</code>) is a chip on the band like <a href="../components.html#c-BandChip"><code>BandChip</code></a>, built by hand: 40dp, 14dp padding, <code>paper</code> fill. Shot: <code>shell-past-month</code>.</li>
+        <li><code>MonthBar</code> (<code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:61</code>) and <code>TitleBar</code> (<code>:118</code>) are the same band row twice (min 56dp, start <code>spacing.lg</code>, end 6dp, <code>headlineSmall</code> copied to 24sp W800), and both stand where <a href="../components.html#c-SelloScaffold"><code>SelloScaffold</code></a>'s private title row (min 50dp, <code>titleLarge</code>) stands on every other screen. Shots: <code>components-bars-and-keypad.png</code> against <code>category-editor</code>.</li>
+        <li><code>MonthSwitcher</code> (<code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:206</code>) is a title button like <code>MonthBar</code>'s month button but in <code>titleLarge</code> copied to 21sp, with a 22dp chevron. Finding: <a href="../findings.html#hard-type">hard-coded type</a>.</li>
+        <li><code>PastMonthRibbon</code>'s "Volver a …" pill (<code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:192</code>) is a chip on the band like <a href="../components.html#c-BandChip"><code>BandChip</code></a>, built by hand: 40dp, 14dp padding, <code>paper</code> fill. Shot: <code>shell-past-month</code>.</li>
       </ul>
     </section>
 
