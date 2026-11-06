@@ -24,6 +24,7 @@ import java.time.YearMonth
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
@@ -198,6 +199,15 @@ class ResumenScreenshotTest {
 
     @Test
     fun suggestionDark() = shot("suggestion", ready, Look(dark = true), "resumen.suggestion")
+
+    /** Landscape (891 × 412): the summary slips left, the charts right. */
+    @Test
+    @Config(qualifiers = "w891dp-h412dp-mdpi")
+    fun twoPanesLight() = shot("two-panes", ready, Look())
+
+    @Test
+    @Config(qualifiers = "w891dp-h412dp-mdpi")
+    fun twoPanesDark() = shot("two-panes", ready, Look(dark = true))
 
     private companion object {
         /** The slip after Mes a mes: scrolled to it, the whole chart and its label show. */

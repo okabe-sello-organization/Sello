@@ -27,7 +27,9 @@ import com.software.sello.feature.goals.GoalDetailError
 import com.software.sello.feature.goals.ReciboGoal
 import com.software.sello.feature.goals.ReciboGoalPill
 import com.software.sello.feature.goals.ReciboGoalState
+import com.software.sello.navigation.CategoryEditAction
 import com.software.sello.navigation.CorrectionNoticeBar
+import com.software.sello.navigation.ShellDetail
 import com.software.sello.navigation.ShellScreen
 import com.software.sello.navigation.ShellState
 import com.software.sello.navigation.ShellTab
@@ -36,12 +38,15 @@ import com.software.sello.navigation.octoberShell
 import com.software.sello.presentation.carry.CarryProblem
 import com.software.sello.presentation.carry.CarryProblemKind
 import com.software.sello.presentation.corrections.CorrectionNotice
+import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.month.monthNames
 import com.software.sello.showSello
+import java.time.LocalDate
 import java.time.YearMonth
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
@@ -360,6 +365,8 @@ class ReciboScreenshotTest {
         "refused" to CorrectionNotice.NotDeleted,
         "undo-blocked" to CorrectionNotice.UndoBlocked,
         "restored" to CorrectionNotice.Restored,
+        // Deshacer asked after its time was over: the deletion stands.
+        "too-late" to CorrectionNotice.UndoTooLate,
         "recorded" to CorrectionNotice.ExpenseRecorded(plain("48.700"), "Comida"),
         // Borrar categoría done: the editor and the detail closed onto Recibo.
         "category-deleted" to CorrectionNotice.CategoryDeleted("Café", 34, movedTo = "Comida"),
@@ -402,6 +409,10 @@ class ReciboScreenshotTest {
     @Test fun noticeUndoBlockedLight() = notice("undo-blocked", Look())
 
     @Test fun noticeUndoBlockedDark() = notice("undo-blocked", Look(dark = true))
+
+    @Test fun noticeTooLateLight() = notice("too-late", Look())
+
+    @Test fun noticeTooLateDark() = notice("too-late", Look(dark = true))
 
     @Test fun noticeRestoredLight() = notice("restored", Look())
 
@@ -523,4 +534,64 @@ class ReciboScreenshotTest {
     @Test fun archivedLight() = shot("archived", withArchived, Look())
 
     @Test fun archivedDark() = shot("archived", withArchived, Look(dark = true))
+
+    /**
+     * Landscape (891 × 412): Recibo with Alimentación's detail beside it, as
+     * ReciboDestinations.kt lays out two panes; the open cell is tinted.
+     */
+    private fun twoPanes(look: Look) {
+        // 900.000 − 287.600 left = 612.400 spent.
+        val food = overspent.categories.first().copy(spent = plain("612.400"))
+        val detail = CategoryDetailState.Ready(
+            category = food,
+            month = YearMonth.of(2026, 10),
+            today = LocalDate.of(2026, 10, 22),
+            stale = false,
+            canRecord = true,
+            expenses = ExpenseListState.Rows(
+                listOf(
+                    ExpenseRow("1", LocalDate.of(2026, 10, 21), "Mercado", plain("48.700"), false),
+                    ExpenseRow("2", LocalDate.of(2026, 10, 18), null, plain("33.500"), false)
+                ),
+                more = true
+            )
+        )
+        rule.showSello(look) {
+            ShellScreen(
+                octoberShell.copy(detailCategoryId = food.id),
+                monthNames(),
+                {},
+                navigation = appTabs(ShellTab.Recibo),
+                actions = {
+                    IconButton(onClick = {}) {
+                        Icon(SelloIcon.Settings.painter(), stringResource(R.string.settings_open))
+                    }
+                },
+                detail = ShellDetail(food.name, actions = {
+                    CategoryEditAction(true) {}
+                }) { padding ->
+                    CategoryDetailScreen(
+                        state = detail,
+                        months = monthNames(),
+                        dates = dateLabels(),
+                        showName = true,
+                        onAction = {},
+                        onRecordHere = {},
+                        contentPadding = padding
+                    )
+                }
+            ) { padding ->
+                ReciboScreen(overspent, {}, padding, selectedCategoryId = food.id)
+            }
+        }
+        rule.captureStill("src/test/screenshots/recibo-two-panes-${look.label}.png")
+    }
+
+    @Test
+    @Config(qualifiers = "w891dp-h412dp-mdpi")
+    fun twoPanesLight() = twoPanes(Look())
+
+    @Test
+    @Config(qualifiers = "w891dp-h412dp-mdpi")
+    fun twoPanesDark() = twoPanes(Look(dark = true))
 }
