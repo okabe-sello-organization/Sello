@@ -28,6 +28,9 @@ enum class OperationKind(val key: String) {
     EnableCarry("category.enable_carry"),
     DisableCarry("category.disable_carry"),
 
+    /** The category form's changes, carry included, on one receipt, all or none (SELLO-188). */
+    EditCategory("category.edit"),
+
     /** A category deleted for good, with what it held moved or deleted (ADR 0024). */
     DeleteCategory("category.delete"),
     CreateGoal("goal.create"),

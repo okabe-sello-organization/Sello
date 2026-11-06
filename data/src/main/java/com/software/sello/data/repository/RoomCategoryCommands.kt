@@ -27,6 +27,7 @@ import com.software.sello.domain.policy.EffectiveDates
 import com.software.sello.domain.policy.SchedulePolicy
 import com.software.sello.domain.port.ArchiveCategory
 import com.software.sello.domain.port.AuditClock
+import com.software.sello.domain.port.CarrySetting
 import com.software.sello.domain.port.CategoryCommand
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
@@ -42,8 +43,10 @@ import com.software.sello.domain.port.CommittedCategoryChange
 import com.software.sello.domain.port.CreateCategory
 import com.software.sello.domain.port.DeleteCategory
 import com.software.sello.domain.port.DisableCarry
+import com.software.sello.domain.port.EditCategory
 import com.software.sello.domain.port.EnableCarry
 import com.software.sello.domain.port.FinancialClock
+import com.software.sello.domain.port.LimitEdit
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.RemovalPreviewFailure
 import com.software.sello.domain.port.RenameCategory
@@ -298,10 +301,118 @@ class RoomCategoryCommands(
                 next
             }
 
+            is EditCategory -> when (val edited = editAll(command, category, next, profile, month)) {
+                is Edited.Done -> edited.category
+                is Edited.Refused -> return edited.refused
+            }
+
             is DeleteCategory -> error("A deletion is decided above")
         }
         check(database.categoryDao().update(changed.toEntity()) == 1)
         return Written.Done(id)
+    }
+
+    private sealed interface Edited {
+        data class Done(val category: Category) : Edited
+
+        data class Refused(val refused: Written.Refused) : Edited
+    }
+
+    /**
+     * The category form's whole save (SELLO-188): name, icon, limit and carry, in this one
+     * transaction under one receipt. Every check comes first, each on the state the parts
+     * before it leave, since a refusal returned after a write would keep that write; only
+     * then is anything written. [next] is the category at its next version.
+     */
+    private suspend fun editAll(
+        command: EditCategory,
+        category: Category,
+        next: Category,
+        profile: FinancialProfile,
+        month: YearMonth
+    ): Edited {
+        fun refuse(reason: CategoryRejection) = Edited.Refused(refused(Specific(reason)))
+        if (command.month != month) return refuse(CategoryRejection.MonthMoved(month))
+        val id = command.categoryId
+        val limit = command.limit
+        val empty = command.name == null && command.icon == null && limit == null &&
+            command.carry == null
+        // A past month's own limit is all a past month's form changes: carry is today's.
+        val pastWithCarry = limit is LimitEdit.OfMonth &&
+            (command.carry != null || limit.month >= month)
+        if (empty || pastWithCarry) return refuse(CategoryRejection.NotOneEdit)
+        command.name?.let { name ->
+            val holder = database.categoryDao().byNameKey(name.uniquenessKey)
+            if (holder != null && holder.id != id.value) {
+                return refuse(CategoryRejection.NameTaken)
+            }
+        }
+        if (limit is LimitEdit.FromThisMonth && category.archived) {
+            return refuse(CategoryRejection.CategoryArchived)
+        }
+        if (limit is LimitEdit.OfMonth && !EffectiveDates.isStorable(limit.month)) {
+            return refuse(CategoryRejection.InvalidMonth)
+        }
+        val carry = CategoryCarry(database, id, month, clock.today.value.date)
+        // CP9–CP11: turning off and an unlimited limit from this month both drop the
+        // balance carried into it, once, with the one confirmation.
+        val unlimited = (limit as? LimitEdit.FromThisMonth)?.limit == BudgetLimit.Unlimited
+        var chains: List<CarryChain>? = null
+        if (command.carry == CarrySetting.Off || unlimited) {
+            when (val dropped = carry.drop(command.confirmedCarryIn)) {
+                CarryDecision.Unchanged -> if (command.carry == CarrySetting.Off) {
+                    return refuse(CategoryRejection.NotCarrying)
+                }
+
+                is CarryDecision.Chains -> chains = dropped.chains
+
+                is CarryDecision.Refused -> return Edited.Refused(refused(dropped.reason))
+            }
+        }
+        val decided = when (limit) {
+            null -> CarryDecision.Unchanged
+
+            is LimitEdit.FromThisMonth -> when (val asked = limit.limit) {
+                BudgetLimit.Unlimited -> CarryDecision.Unchanged
+                is BudgetLimit.Finite -> carry.finiteDefault(asked, after = chains)
+            }
+
+            is LimitEdit.OfMonth -> carry.monthLimit(
+                limit.month,
+                limit.limit,
+                profile.revision,
+                correctionIdentity(command),
+                command.confirmation
+            )
+        }
+        if (decided is CarryDecision.Refused) return Edited.Refused(refused(decided.reason))
+        val default = (limit as? LimitEdit.FromThisMonth)?.let {
+            DefaultLimit(id, month, AutomaticBudget.Limit(it.limit))
+        }
+        if (command.carry == CarrySetting.On) {
+            // CP3 on the limit as this edit leaves it.
+            chains = when (val enabled = carry.enable(category.archived, default)) {
+                is CarryDecision.Chains -> enabled.chains
+                is CarryDecision.Refused -> return Edited.Refused(refused(enabled.reason))
+                CarryDecision.Unchanged -> error("Turning carry on always decides the chains")
+            }
+        }
+        val limits = database.limitDao()
+        when (limit) {
+            null -> Unit
+
+            is LimitEdit.FromThisMonth -> {
+                limits.put(checkNotNull(default).toEntity())
+                // A new default sets this month too (D04), so its own limit gives way.
+                limits.removeMonth(id.value, month.toString())
+            }
+
+            is LimitEdit.OfMonth -> limits.put(MonthLimit(id, limit.month, limit.limit).toEntity())
+        }
+        chains?.let { carry.write(it) }
+        return Edited.Done(
+            next.copy(name = command.name ?: next.name, icon = command.icon ?: next.icon)
+        )
     }
 
     /**

@@ -133,6 +133,43 @@ data class DisableCarry(
     val confirmedCarryIn: Money? = null
 ) : CategoryEdit
 
+/** A limit the category form changes: from [EditCategory.month] onwards, or of one past month. */
+sealed interface LimitEdit {
+    /** As [SetDefaultLimit]: the default from the month on, replacing that month's own limit. */
+    data class FromThisMonth(val limit: BudgetLimit) : LimitEdit
+
+    /** As [SetMonthLimit] for a month before the current one. */
+    data class OfMonth(val month: YearMonth, val limit: BudgetLimit) : LimitEdit
+}
+
+/** Carry turned on or off in [EditCategory.month]. */
+enum class CarrySetting { On, Off }
+
+/**
+ * Everything the category form changes, saved together in one transaction under one
+ * receipt, or nothing at all (SELLO-188). A null part stays as it is; at least one part
+ * changes. [month] is the current financial month the person saw: a limit from it onwards
+ * and a carry change apply to it, and nothing is written once another month has begun.
+ *
+ * [carry] goes with no limit or with [LimitEdit.FromThisMonth]: turning it on is checked
+ * against the limit as the edit leaves it (CP3), and turning it off, or making the limit
+ * unlimited, drops the balance carried into [month] once, which must be [confirmedCarryIn]
+ * when it is not zero (CP9–CP11). [confirmation] is for a past month's correction (CP20).
+ */
+data class EditCategory(
+    override val operationId: OperationId,
+    override val generation: Long,
+    override val categoryId: CategoryId,
+    override val expectedVersion: Long,
+    val month: YearMonth,
+    val name: CategoryName? = null,
+    val icon: IconKey? = null,
+    val limit: LimitEdit? = null,
+    val carry: CarrySetting? = null,
+    val confirmedCarryIn: Money? = null,
+    val confirmation: CorrectionConfirmation? = null
+) : CategoryEdit
+
 /**
  * Deletes the category for good (ADR 0024), in one transaction: its limits and carry
  * always, and its expenses and fixed payments as [disposal] says. [confirmed] is the
@@ -179,6 +216,15 @@ sealed interface CategoryRejection {
 
     /** Carry cannot be turned on, for [reason] (ADR 0020 CP3, CP25). */
     data class CarryRefused(val reason: CarryEnableRefusal) : CategoryRejection
+
+    /**
+     * The edit changes nothing, or changes carry together with a past month's limit:
+     * the category form never sends either.
+     */
+    data object NotOneEdit : CategoryRejection
+
+    /** The edit was made for a month that is no longer the current one, [currentMonth]. */
+    data class MonthMoved(val currentMonth: YearMonth) : CategoryRejection
 
     /** Carry is not on this month, so there is nothing to turn off. */
     data object NotCarrying : CategoryRejection
