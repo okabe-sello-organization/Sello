@@ -6,17 +6,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.software.sello.R
-import com.software.sello.designsystem.component.Bullet
-import com.software.sello.designsystem.component.BulletList
-import com.software.sello.designsystem.component.ButtonKind
-import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.RestorePending
 import com.software.sello.designsystem.component.RestoredSlip as RestoredSlipPart
-import com.software.sello.designsystem.component.SelloButton
-import com.software.sello.designsystem.component.Slip
-import com.software.sello.designsystem.component.Stamp
-import com.software.sello.designsystem.component.StampInk
-import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
 import com.software.sello.domain.model.ThemePreference

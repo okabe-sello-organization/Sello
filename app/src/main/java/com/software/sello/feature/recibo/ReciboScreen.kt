@@ -139,7 +139,8 @@ fun ReciboScreen(
                         olderFiguresShown = true
                     )
                 }
-                if (state.stale) {
+                // A carry problem is the older figures' one notice; otherwise this says it.
+                if (state.stale && state.carryProblem == null) {
                     StatusSlip(
                         kind = StatusKind.Older,
                         message = stringResource(R.string.recibo_stale),

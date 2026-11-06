@@ -59,8 +59,8 @@ sealed interface StatusKind {
     data class ActionFailed(val title: String? = null) : StatusKind
 
     /**
-     * The outcome of something the person did is not known yet. Its action checks; it
-     * never says it failed.
+     * The outcome of something the person did is not known yet. Its action checks, or
+     * starts a safe new attempt when it cannot be checked; it never says it failed.
      */
     data class Unknown(val title: String? = null) : StatusKind
 

@@ -12,7 +12,6 @@ import com.software.sello.designsystem.component.CarryCorrectionContent as Carry
 import com.software.sello.designsystem.component.CarryCorrectionGroup
 import com.software.sello.designsystem.component.CarryCorrectionLine
 import com.software.sello.designsystem.component.CarryLine
-import com.software.sello.designsystem.component.ChangeRow
 import com.software.sello.designsystem.component.LineEmphasis
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
@@ -20,9 +19,6 @@ import com.software.sello.designsystem.component.StatusAction
 import com.software.sello.designsystem.component.StatusKind
 import com.software.sello.designsystem.component.StatusSlip
 import com.software.sello.designsystem.component.StatusSlipDefaults
-import com.software.sello.designsystem.icon.SelloIcon
-import com.software.sello.designsystem.icon.painter
-import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.CarryBreakdown as CarryParts
 import com.software.sello.domain.model.CarryMonth
 import com.software.sello.domain.model.CarryVerdict
@@ -450,8 +446,9 @@ fun carryProblem(
 /**
  * The failure in words, with the one action that can repair it: giving the month its limit
  * ([onSetLimit], with the category and month), or reading again ([onRetry]). With
- * [olderFiguresShown], the last good figures are shown under it and it says why they are
- * older; without, nothing could be read.
+ * [olderFiguresShown], the last good figures are shown under it: it is their one Older
+ * notice, saying why they are older, its title leading the sentence (Older has no title).
+ * Without, nothing could be read.
  */
 @Composable
 fun CarryProblemSlip(
@@ -474,7 +471,11 @@ fun CarryProblemSlip(
     when {
         problem.kind == CarryProblemKind.NoBase && month != null -> StatusSlip(
             kind = kind,
-            message = stringResource(R.string.carry_failed_no_base, dates.monthYear(month), who),
+            message = carrySaid(
+                olderFiguresShown,
+                title,
+                stringResource(R.string.carry_failed_no_base, dates.monthYear(month), who)
+            ),
             modifier = modifier.testTag(CARRY_PROBLEM_TAG),
             action = StatusAction(
                 stringResource(R.string.carry_failed_set_limit, dates.monthYear(month))
@@ -485,18 +486,31 @@ fun CarryProblemSlip(
 
         problem.kind == CarryProblemKind.Missing -> StatusSlip(
             kind = kind,
-            message = stringResource(R.string.carry_failed_missing, who),
+            message = carrySaid(
+                olderFiguresShown,
+                title,
+                stringResource(R.string.carry_failed_missing, who)
+            ),
             modifier = modifier.testTag(CARRY_PROBLEM_TAG),
             action = StatusAction(StatusSlipDefaults.retryLabel, onClick = onRetry)
         )
 
         else -> StatusSlip(
             kind = kind,
-            message = stringResource(R.string.carry_failed_damaged, who),
+            message = carrySaid(
+                olderFiguresShown,
+                title,
+                stringResource(R.string.carry_failed_damaged, who)
+            ),
             modifier = modifier.testTag(CARRY_PROBLEM_TAG),
             action = StatusAction(StatusSlipDefaults.retryLabel, onClick = onRetry)
         )
     }
 }
+
+/** The problem's sentence; over older figures, led by its title, which Older does not show. */
+@Composable
+private fun carrySaid(olderFiguresShown: Boolean, title: String, body: String): String =
+    if (olderFiguresShown) stringResource(R.string.carry_failed_older, title, body) else body
 
 const val CARRY_PROBLEM_TAG = "carry:problem"

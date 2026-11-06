@@ -207,7 +207,7 @@ private fun RestoreFromBackup(step: StartupRestoreStep, onAction: (StartupFailur
         is StartupRestoreStep.Restoring -> Preview(step.backup, true, onAction, modifier)
 
         StartupRestoreStep.Interrupted -> StatusSlip(
-            kind = StatusKind.ActionFailed(
+            kind = StatusKind.Unknown(
                 stringResource(R.string.startup_restore_interrupted_title)
             ),
             message = stringResource(R.string.startup_restore_interrupted_body),

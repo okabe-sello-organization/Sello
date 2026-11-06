@@ -370,9 +370,9 @@ private fun LimitSheet(sheet: LimitSheetState, onSheet: (LimitSheetAction) -> Un
                 kind = StatusKind.Older,
                 message = stringResource(R.string.recibo_stale),
                 modifier = Modifier.testTag("limit.sheet.stale"),
-                // Ignored while a save runs.
-                action = StatusAction(StatusSlipDefaults.retryLabel) {
-                    if (!sheet.busy) onSheet(LimitSheetAction.Retry)
+                // Busy while a save runs: said, and a press is ignored.
+                action = StatusAction(StatusSlipDefaults.retryLabel, busy = sheet.busy) {
+                    onSheet(LimitSheetAction.Retry)
                 }
             )
         }
