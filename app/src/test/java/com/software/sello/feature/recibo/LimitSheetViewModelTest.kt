@@ -18,6 +18,7 @@ import com.software.sello.domain.port.CategoryBudget
 import com.software.sello.domain.port.CategoryCommand
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
+import com.software.sello.domain.port.CategoryReads
 import com.software.sello.domain.port.CategoryRejection
 import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandRejection
@@ -197,6 +198,95 @@ class LimitSheetViewModelTest {
         )
         assertEquals(LimitScope.ThisMonth, state.scope)
         assertFalse(state.canSave)
+    }
+
+    /** A sheet whose category read waits for [gate]. */
+    private fun held(
+        gate: CompletableDeferred<Unit>,
+        saved: SavedStateHandle = SavedStateHandle(mapOf("month" to "2026-10"))
+    ): LimitSheetViewModel {
+        val slow = object : CategoryReads {
+            override suspend fun monthBudget(month: YearMonth) =
+                gate.await().let { reads.monthBudget(month) }
+        }
+        return LimitSheetViewModel(saved, commands, slow, snapshots, session, {
+            uuid(nextId++)
+        }, money, notices)
+    }
+
+    @Test
+    fun nothingTypedWhileTheCategoryIsReadIsTakenAndItsLimitShowsOnceRead() {
+        val gate = CompletableDeferred<Unit>()
+        val sheet = held(gate)
+        sheet.onAction(LimitSheetAction.Open(cafe))
+
+        sheet.type(150_000)
+        sheet.onAction(LimitSheetAction.TripleZero)
+        sheet.onAction(LimitSheetAction.Scope(LimitScope.FromThisMonth))
+        val loading = sheet.state.value
+        gate.complete(Unit)
+        snapshots.ready(excedido)
+        val read = sheet.state.value
+
+        assertTrue(loading.loading)
+        assertNull(loading.amount)
+        assertEquals(LimitScope.ThisMonth, loading.scope)
+        assertFalse(read.loading)
+        assertEquals("Café", read.name)
+        assertEquals("50.000 pesos", read.current?.spoken)
+        assertNull(read.amount)
+        assertEquals(LimitScope.ThisMonth, read.scope)
+        assertFalse(read.canSave)
+    }
+
+    @Test
+    fun afterAFailedReadRetryReadsTheCategoryAgainAndTypingWorks() {
+        reads.failure = StorageFailure.Unavailable("x")
+        val sheet = opened()
+        val failed = sheet.state.value
+        reads.failure = null
+
+        sheet.onAction(LimitSheetAction.Retry)
+        snapshots.ready(excedido)
+        sheet.type(150_000)
+        val typed = sheet.state.value
+
+        assertTrue(failed.loadFailed)
+        assertFalse(typed.loadFailed)
+        assertFalse(typed.loading)
+        assertEquals("Café", typed.name)
+        assertEquals("150.000 pesos", typed.amount?.spoken)
+        assertTrue(typed.canSave)
+    }
+
+    @Test
+    fun aRestoredDraftWaitsForTheReadUntouchedAndIsShownOnceRead() {
+        val gate = CompletableDeferred<Unit>()
+        val sheet = held(
+            gate,
+            SavedStateHandle(
+                mapOf(
+                    "month" to "2026-10",
+                    "limit.category" to cafe,
+                    "limit.digits" to "150000",
+                    "limit.scope" to LimitScope.FromThisMonth.name
+                )
+            )
+        )
+
+        sheet.onAction(LimitSheetAction.Backspace)
+        sheet.onAction(LimitSheetAction.ClearAll)
+        sheet.onAction(LimitSheetAction.Scope(LimitScope.ThisMonth))
+        val loading = sheet.state.value
+        gate.complete(Unit)
+        snapshots.ready(excedido)
+        val read = sheet.state.value
+
+        assertTrue(loading.loading)
+        assertFalse(read.loading)
+        assertEquals("150.000 pesos", read.amount?.spoken)
+        assertEquals(LimitScope.FromThisMonth, read.scope)
+        assertTrue(read.canSave)
     }
 
     @Test

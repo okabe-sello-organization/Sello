@@ -320,27 +320,26 @@ private fun LimitSheet(sheet: LimitSheetState, onSheet: (LimitSheetAction) -> Un
     val colors = SelloTheme.colors
     val locked = sheet.busy || sheet.error == LimitSheetError.Unknown
     SelloSheet(
-        // With carry the sheet edits the base (CP16, CP27).
-        title = stringResource(
-            if (sheet.carry !=
-                null
-            ) {
-                R.string.limit_sheet_title_base
-            } else {
-                R.string.limit_sheet_title
-            },
-            sheet.name
-        ),
+        // With carry the sheet edits the base (CP16, CP27). Until a name is read, no
+        // "Límite de " with nothing after it.
+        title = when {
+            sheet.name.isEmpty() -> stringResource(R.string.limit_sheet_title_unnamed)
+            sheet.carry != null -> stringResource(R.string.limit_sheet_title_base, sheet.name)
+            else -> stringResource(R.string.limit_sheet_title, sheet.name)
+        },
         onDismiss = { onSheet(LimitSheetAction.Close) },
         modifier = Modifier.testTag(LIMIT_SHEET_TAG)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            CategoryCircle(
-                CategoryIcons.iconFor(sheet.iconKey),
-                fraction = null,
-                size = 40.dp,
-                animate = false
-            )
+            // No icon is known until the category is read.
+            if (!sheet.loading && !sheet.loadFailed) {
+                CategoryCircle(
+                    CategoryIcons.iconFor(sheet.iconKey),
+                    fraction = null,
+                    size = 40.dp,
+                    animate = false
+                )
+            }
             Text(
                 text = sheet.spent?.let { spent ->
                     sheet.carry?.let {
@@ -363,6 +362,11 @@ private fun LimitSheet(sheet: LimitSheetState, onSheet: (LimitSheetAction) -> Un
             IconButton(onClick = { onSheet(LimitSheetAction.Close) }, enabled = !sheet.busy) {
                 Icon(SelloIcon.Close.painter(), stringResource(R.string.limit_sheet_close))
             }
+        }
+        // While the category is read: no amount, shortcuts or keypad to type into yet.
+        if (sheet.loading) {
+            SlipSkeleton(Modifier.testTag(LIMIT_SHEET_LOADING_TAG), lines = 2)
+            return@SelloSheet
         }
         if (sheet.loadFailed) {
             Text(stringResource(R.string.limit_sheet_failed), color = colors.semantic.loss)
@@ -590,6 +594,7 @@ const val ADJUST_TAG = "adjust"
 const val LIMIT_SHEET_ERROR_TAG = "limit.sheet.error"
 
 const val LIMIT_SHEET_TAG = "adjust:sheet"
+const val LIMIT_SHEET_LOADING_TAG = "adjust:sheet:loading"
 const val LIMIT_KEYPAD_TAG = "adjust:keypad"
 
 fun adjustRowTag(id: String) = "adjust:row:$id"

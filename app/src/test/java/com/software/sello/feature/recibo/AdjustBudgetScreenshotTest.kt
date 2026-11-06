@@ -159,6 +159,13 @@ class AdjustBudgetScreenshotTest {
 
     @Test fun limitSheetFailedOscuro() = limitSheet("failed", readFailed, dark = true)
 
+    /** The category is still being read: a plain title and a skeleton, nothing to type in. */
+    private val reading = LimitSheetState(october, categoryId = "cafe", loading = true)
+
+    @Test fun limitSheetLoadingClaro() = limitSheet("loading", reading, dark = false)
+
+    @Test fun limitSheetLoadingOscuro() = limitSheet("loading", reading, dark = true)
+
     @Test fun limitSheetBusyClaro() = limitSheet("busy", sheet.copy(busy = true), dark = false)
 
     @Test fun limitSheetBusyOscuro() = limitSheet("busy", sheet.copy(busy = true), dark = true)

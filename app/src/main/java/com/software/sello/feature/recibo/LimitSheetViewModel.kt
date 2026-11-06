@@ -92,7 +92,8 @@ class LimitSheetViewModel(
 
     fun onAction(action: LimitSheetAction) {
         val now = mutable.value
-        val editable = now.categoryId != null && !now.busy &&
+        // Nothing is taken until the category is read, so no draft outlives the read unseen.
+        val editable = now.categoryId != null && !now.loading && !now.busy &&
             now.error != LimitSheetError.Unknown
         when (action) {
             is LimitSheetAction.Open -> if (!now.busy) {
