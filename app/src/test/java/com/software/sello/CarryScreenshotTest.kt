@@ -125,8 +125,7 @@ class CarryScreenshotTest {
      * is −50.000; with Hogar and Transporte the month is 20.000 over: 0 por día beside the
      * signed deficit, never hiding it (CP14, CP15).
      */
-    @Test
-    fun deficitWithZeroAllowance() {
+    private fun deficitWithZeroAllowance(look: Look) {
         val sc11 = carryMonthOf(
             "2027-02-22",
             listOf(
@@ -141,21 +140,26 @@ class CarryScreenshotTest {
             ),
             mapOf(1 to ene)
         )
-        rule.showSello(Look()) {
+        rule.showSello(look) {
             ReciboScreen(render.recibo(ReadState.Ready(sc11)), {}, PaddingValues(12.dp))
         }
-        rule.captureStill("src/test/screenshots/carry-deficit-cobalto-light-font1.0.png")
+        rule.captureStill("src/test/screenshots/carry-deficit-${look.label}.png")
         // The carrying cell gives its signed carry: a deficit is never shown as a sobrante.
         rule.onNodeWithText("−150.000", useUnmergedTree = true).assertExists()
     }
+
+    @Test
+    fun deficitWithZeroAllowanceLight() = deficitWithZeroAllowance(Look())
+
+    @Test
+    fun deficitWithZeroAllowanceDark() = deficitWithZeroAllowance(Look(dark = true))
 
     /**
      * Colombian sizes on 22 feb 2027: Comida (base 2.000.000) brings +600.000 and Hogar
      * (base 3.500.000) −2.350.000 from ene; Transporte 500.000 does not carry. The month's
      * sum has to fit beside the cells' signed carries at the narrowest width.
      */
-    @Test
-    fun reciboInMillions() {
+    private fun reciboInMillions(look: Look) {
         val millions = carryMonthOf(
             "2027-02-22",
             listOf(
@@ -172,16 +176,21 @@ class CarryScreenshotTest {
             ),
             mapOf(1 to ene, 2 to ene)
         )
-        rule.showSello(Look()) {
+        rule.showSello(look) {
             ReciboScreen(render.recibo(ReadState.Ready(millions)), {}, PaddingValues(12.dp))
         }
-        rule.captureStill("src/test/screenshots/carry-recibo-millions-cobalto-light-font1.0.png")
+        rule.captureStill("src/test/screenshots/carry-recibo-millions-${look.label}.png")
     }
 
     @Test
-    fun categoryDetail() {
+    fun reciboInMillionsLight() = reciboInMillions(Look())
+
+    @Test
+    fun reciboInMillionsDark() = reciboInMillions(Look(dark = true))
+
+    private fun categoryDetail(look: Look) {
         val comida = render.categories(sc13).first { it.name == "Comida" }
-        rule.showSello(Look()) {
+        rule.showSello(look) {
             CategoryDetailScreen(
                 state = CategoryDetailState.Ready(
                     category = comida,
@@ -199,8 +208,14 @@ class CarryScreenshotTest {
                 contentPadding = PaddingValues(12.dp)
             )
         }
-        rule.captureStill("src/test/screenshots/carry-detail-cobalto-light-font1.0.png")
+        rule.captureStill("src/test/screenshots/carry-detail-${look.label}.png")
     }
+
+    @Test
+    fun categoryDetailLight() = categoryDetail(Look())
+
+    @Test
+    fun categoryDetailDark() = categoryDetail(Look(dark = true))
 
     /** Comida in abr of SC22: base 100.000, carry −40.000, capacity 60.000. */
     private val carrying = CategoryEditorState(
@@ -222,24 +237,33 @@ class CarryScreenshotTest {
         )
     )
 
-    @Test
-    fun editorCarrying() {
-        rule.showSello(Look()) { CategoryEditorScreen(carrying, {}) }
+    private fun editorCarrying(look: Look) {
+        rule.showSello(look) { CategoryEditorScreen(carrying, {}) }
         rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).revealed().assertIsDisplayed()
-        rule.captureStill("src/test/screenshots/carry-editor-cobalto-light-font1.0.png")
+        rule.captureStill("src/test/screenshots/carry-editor-${look.label}.png")
     }
 
     @Test
-    fun editorCarryOff() {
-        rule.showSello(Look()) {
+    fun editorCarryingLight() = editorCarrying(Look())
+
+    @Test
+    fun editorCarryingDark() = editorCarrying(Look(dark = true))
+
+    private fun editorCarryOff(look: Look) {
+        rule.showSello(look) {
             CategoryEditorScreen(carrying.copy(carry = CarryCard.Off(abr)), {})
         }
         rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).revealed().assertIsDisplayed()
-        rule.captureStill("src/test/screenshots/carry-editor-off-cobalto-light-font1.0.png")
+        rule.captureStill("src/test/screenshots/carry-editor-off-${look.label}.png")
     }
 
     @Test
-    fun dropQuestion() {
+    fun editorCarryOffLight() = editorCarryOff(Look())
+
+    @Test
+    fun editorCarryOffDark() = editorCarryOff(Look(dark = true))
+
+    private fun dropQuestion(look: Look) {
         val asked = carrying.copy(
             carryQuestion = CarryQuestion.Drop(
                 DropReason.Disable,
@@ -254,9 +278,15 @@ class CarryScreenshotTest {
                 )
             )
         )
-        rule.showSello(Look()) { CategoryEditorScreen(asked, {}) }
-        rule.captureStill("src/test/screenshots/carry-drop-cobalto-light-font1.0.png")
+        rule.showSello(look) { CategoryEditorScreen(asked, {}) }
+        rule.captureStill("src/test/screenshots/carry-drop-${look.label}.png")
     }
+
+    @Test
+    fun dropQuestionLight() = dropQuestion(Look())
+
+    @Test
+    fun dropQuestionDark() = dropQuestion(Look(dark = true))
 
     private fun closed(month: YearMonth, k: Long, c: Long, s: Long, r: Long, over: Boolean) =
         CarryMonth(
@@ -271,8 +301,7 @@ class CarryScreenshotTest {
         )
 
     /** SC25: deleting ene's 20.000 moves feb, mar and abr by +20.000; mar stays Excedido. */
-    @Test
-    fun deleteCorrection() {
+    private fun deleteCorrection(look: Look) {
         val sc25 = CarryCorrection(
             months = listOf(
                 CarryMonthChange(
@@ -326,20 +355,25 @@ class CarryScreenshotTest {
         )
         val comida = categoryIn(1, "Comida", 100_000, icon = "restaurant").category
         val list = CarryCorrectionText(money).list(sc25, mapOf(comida.id to comida))
-        rule.showSello(Look()) {
+        rule.showSello(look) {
             // The slip opens over a screen; the desk stands in for it.
             Box(Modifier.fillMaxSize().background(SelloTheme.colors.desk))
             CorrectionQuestionSlip(CorrectionQuestion(CorrectionKind.Delete, list), {}, {})
         }
-        rule.captureStill("src/test/screenshots/carry-delete-cobalto-light-font1.0.png")
+        rule.captureStill("src/test/screenshots/carry-delete-${look.label}.png")
     }
+
+    @Test
+    fun deleteCorrectionLight() = deleteCorrection(Look())
+
+    @Test
+    fun deleteCorrectionDark() = deleteCorrection(Look(dark = true))
 
     private fun hogar(month: YearMonth, k: Long, c: Long, s: Long, r: Long, verdict: CarryVerdict) =
         CarryMonth(month, ene, cop(1_000_000), cop(k), cop(c), cop(s), cop(r), verdict)
 
     /** SC47: catch-up records feb's 300.000 rent in Hogar's chain on 10 mar 2027. */
-    @Test
-    fun catchUpLines() {
+    private fun catchUpLines(look: Look) {
         val sc47 = CarryCorrection(
             months = listOf(
                 CarryMonthChange(
@@ -382,11 +416,17 @@ class CarryScreenshotTest {
             today = LocalDate.of(2027, 3, 10),
             carry = CatchUpCarry.Changed(list)
         )
-        rule.showSello(Look()) {
+        rule.showSello(look) {
             CatchUpRecordedScreen(state, PaddingValues(12.dp), {}) { _, _ -> }
         }
-        rule.captureStill("src/test/screenshots/carry-catch-up-cobalto-light-font1.0.png")
+        rule.captureStill("src/test/screenshots/carry-catch-up-${look.label}.png")
     }
+
+    @Test
+    fun catchUpLinesLight() = catchUpLines(Look())
+
+    @Test
+    fun catchUpLinesDark() = catchUpLines(Look(dark = true))
 
     private companion object {
         val InProgress = CarryVerdict.InProgress(Verdict.OnTrack)

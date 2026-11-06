@@ -9,6 +9,13 @@ import com.software.sello.captureStill
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloInk
+import com.software.sello.navigation.CategoryEditAction
+import com.software.sello.navigation.ShellDetail
+import com.software.sello.navigation.ShellScreen
+import com.software.sello.navigation.ShellTab
+import com.software.sello.navigation.appTabs
+import com.software.sello.navigation.detailTitle
+import com.software.sello.navigation.octoberShell
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.month.monthNames
 import com.software.sello.showSello
@@ -143,6 +150,13 @@ class CategoryDetailScreenshotTest {
     )
 
     @Test
+    fun deleteUnknownOscuro() = capture(
+        Look(dark = true),
+        "category-detail-delete-unknown-oscuro",
+        state = ready.copy(deleteProblem = DeleteProblem.Unknown)
+    )
+
+    @Test
     fun cobaltoLight() = capture(Look())
 
     @Test
@@ -150,4 +164,83 @@ class CategoryDetailScreenshotTest {
 
     @Test
     fun violetaLight() = capture(Look(ink = SelloInk.Violeta))
+
+    /** Recibo's month as already read, listing [food]: what names the detail meanwhile. */
+    private val recibo = ReciboState.Month(
+        ReciboSummary(ReciboAnswerLabel.Remaining, plain("287.600"), ReciboStamp.Over),
+        listOf(food),
+        stale = false
+    )
+
+    private fun shot(name: String, state: CategoryDetailState, dark: Boolean) {
+        rule.showSello(Look(dark = dark)) {
+            // Opened in Recibo, on a phone: ReciboDestinations.kt hands it to the frame as
+            // its ShellDetail, which draws its own title row (ShellScreen.kt): the name
+            // Recibo already lists while the detail is read (DetailIdentity.kt), and the
+            // edit pencil, disabled until the detail is ready.
+            ShellScreen(
+                octoberShell.copy(detailCategoryId = food.id),
+                monthNames(),
+                {},
+                navigation = appTabs(ShellTab.Recibo),
+                detail = ShellDetail(
+                    detailTitle(food.id, state, recibo) ?: "Categoría",
+                    actions = { CategoryEditAction(state is CategoryDetailState.Ready) {} }
+                ) { padding ->
+                    CategoryDetailScreen(
+                        state = state,
+                        months = monthNames(),
+                        dates = dateLabels(),
+                        showName = false,
+                        onAction = {},
+                        onRecordHere = {},
+                        contentPadding = padding
+                    )
+                }
+            ) {}
+        }
+        rule.captureStill(
+            "src/test/screenshots/category-detail-$name-${if (dark) "oscuro" else "claro"}.png"
+        )
+    }
+
+    @Test fun loadingClaro() = shot("loading", CategoryDetailState.Loading, dark = false)
+
+    @Test fun loadingOscuro() = shot("loading", CategoryDetailState.Loading, dark = true)
+
+    @Test fun failedClaro() = shot("failed", CategoryDetailState.Failed, dark = false)
+
+    @Test fun failedOscuro() = shot("failed", CategoryDetailState.Failed, dark = true)
+
+    @Test fun goneClaro() = shot("gone", CategoryDetailState.Gone, dark = false)
+
+    @Test fun goneOscuro() = shot("gone", CategoryDetailState.Gone, dark = true)
+
+    @Test fun staleClaro() = shot("stale", ready.copy(stale = true), dark = false)
+
+    @Test fun staleOscuro() = shot("stale", ready.copy(stale = true), dark = true)
+
+    private val listsLoading = ready.copy(
+        expenses = ExpenseListState.Loading,
+        insights = DetailInsightsState.Loading
+    )
+
+    @Test fun listsLoadingClaro() = shot("lists-loading", listsLoading, dark = false)
+
+    @Test fun listsLoadingOscuro() = shot("lists-loading", listsLoading, dark = true)
+
+    private val listsFailed = ready.copy(
+        expenses = ExpenseListState.Failed,
+        insights = DetailInsightsState.Failed
+    )
+
+    @Test fun listsFailedClaro() = shot("lists-failed", listsFailed, dark = false)
+
+    @Test fun listsFailedOscuro() = shot("lists-failed", listsFailed, dark = true)
+
+    private val empty = ready.copy(expenses = ExpenseListState.Empty)
+
+    @Test fun emptyClaro() = shot("empty", empty, dark = false)
+
+    @Test fun emptyOscuro() = shot("empty", empty, dark = true)
 }

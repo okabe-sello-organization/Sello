@@ -40,7 +40,13 @@
 
       <figure data-shot="metas" data-module="app" data-caption="Loaded: the total, then two active goal cards (the completed row is below the fold)"></figure>
       <figure data-shot="metas" data-module="app" data-variants="violeta-light-font1.0" data-caption="Loaded, Violeta ink"></figure>
-      <figure data-shot="metas-bulk" data-module="app" data-variants="cobalto-light-font1.0" data-caption="With Anotar varios offered at the foot of the active goals (412 dp)"></figure>
+      <figure data-shot="metas-bulk" data-module="app" data-caption="With Anotar varios offered at the foot of the active goals (412 dp)"></figure>
+      <figure data-shot="metas-loading" data-module="app" data-caption="Loading, in its frame"></figure>
+      <figure data-shot="metas-failed" data-module="app" data-caption="Nothing could be read"></figure>
+      <figure data-shot="metas-empty" data-module="app" data-caption="No goals"></figure>
+      <figure data-shot="metas-stale" data-module="app" data-caption="Older figures under the notice"></figure>
+      <figure data-shot="metas-busy" data-module="app" data-caption="Marcar como lograda being saved"></figure>
+      <figure data-shot="metas-completed" data-module="app" data-caption="The completed goals below the active ones"></figure>
 
       <h3>Layout</h3>
       <ol>
@@ -58,12 +64,12 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Loading</td><td>Two <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a>s (3 and 2 lines); no dock, no band chip.</td><td><code>MetasScreen.kt:88</code></td><td>no screenshot</td></tr>
-            <tr><td>Error (nothing loaded)</td><td><a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a> "No pudimos leer tus metas" / "Tus registros siguen guardados. Vuelve a intentarlo." with "Reintentar". Never shown as no goals.</td><td><code>MetasScreen.kt:98</code></td><td>no screenshot</td></tr>
-            <tr><td>Empty</td><td><code>EmptyMetas</code>: a green flag, "Ponle nombre a algo que quieras", the body sentence and four empty stamp places; no button on the slip — the dock says "Crear una meta".</td><td><code>MetasScreen.kt:193</code></td><td>no screenshot</td></tr>
-            <tr><td>Stale</td><td>An <code>ErrorSlip</code> with the default title and "No pudimos leer tus metas de nuevo. Te mostramos las de la última lectura." above the last good goals.</td><td><code>MetasScreen.kt:109</code></td><td>no screenshot (same notice on Recibo: <code>recibo-goals-stale</code>)</td></tr>
-            <tr><td>Busy</td><td>Marcar como lograda shows its spinner on every reached card while the completion is sent; cards stay tappable.</td><td><code>MetasScreen.kt:150</code></td><td>no screenshot</td></tr>
-            <tr><td>Celebrating</td><td>The Lograda moment over the tab (see <a href="#screen-celebrations">Celebrations</a>).</td><td><code>GoalDestinations.kt:124</code></td><td>no screenshot</td></tr>
+            <tr><td>Loading</td><td>Two <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a>s (3 and 2 lines); no dock, no band chip.</td><td><code>MetasScreen.kt:88</code></td><td><code>metas-loading</code></td></tr>
+            <tr><td>Error (nothing loaded)</td><td><a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a> "No pudimos leer tus metas" / "Tus registros siguen guardados. Vuelve a intentarlo." with "Reintentar". Never shown as no goals.</td><td><code>MetasScreen.kt:98</code></td><td><code>metas-failed</code></td></tr>
+            <tr><td>Empty</td><td><code>EmptyMetas</code>: a green flag, "Ponle nombre a algo que quieras", the body sentence and four empty stamp places; no button on the slip — the dock says "Crear una meta".</td><td><code>MetasScreen.kt:193</code></td><td><code>metas-empty</code></td></tr>
+            <tr><td>Stale</td><td>An <code>ErrorSlip</code> with the default title and "No pudimos leer tus metas de nuevo. Te mostramos las de la última lectura." above the last good goals.</td><td><code>MetasScreen.kt:109</code></td><td><code>metas-stale</code></td></tr>
+            <tr><td>Busy</td><td>Marcar como lograda shows its spinner on every reached card while the completion is sent; cards stay tappable.</td><td><code>MetasScreen.kt:150</code></td><td><code>metas-busy</code></td></tr>
+            <tr><td>Celebrating</td><td>The Lograda moment over the tab (see <a href="#screen-celebrations">Celebrations</a>).</td><td><code>GoalDestinations.kt:124</code></td><td><code>goal-detail-lograda</code> (the same moment)</td></tr>
             <tr><td>Refused / unknown outcome</td><td>No notice on Metas: <code>CompletionState.Failed</code> only re-enables the button. With an unknown outcome a second press does nothing (the completer waits on the pending submission), so nothing tells the person to check. See finding "A save that did not finish…".</td><td><code>MetasScreen.kt:148</code>, <code>app/src/main/java/com/software/sello/feature/goals/GoalCompleter.kt:93</code></td><td>no screenshot</td></tr>
             <tr><td>Restored after process death</td><td>The completion's pending operation is recovered (asked about, not resent) from <code>SavedStateHandle</code>; landed stamps are kept with <code>rememberSaveable</code>.</td><td><code>GoalCompleter.kt:86</code>, <code>MetasScreen.kt:74</code></td><td>no screenshot</td></tr>
             <tr><td>Stamp earned elsewhere</td><td>After a save on another screen, the notice bar shows a <code>CelebrationTicket</code> (a <a href="../components.html#c-StampTicket"><code>StampTicket</code></a>) instead of a plain correction notice.</td><td><code>GoalDestinations.kt:260</code>, <code>app/src/main/java/com/software/sello/feature/goals/GoalCelebrations.kt:78</code></td><td>no screenshot</td></tr>
@@ -94,8 +100,19 @@
 
       <figure data-shot="goal-replace-sheet" data-module="app" data-caption="The Hero card (dimmed under the replace sheet): Ya guardaste, percentage, bar, stamps, next stamp"></figure>
       <figure data-shot="goal-detail-movements" data-module="app" data-caption="Below the Hero: kept stamp line, facts, Aportes por mes, Movimientos with a note row and earned stamps"></figure>
-      <figure data-shot="goal-detail-movements-all" data-module="app" data-variants="claro" data-caption="All movements, grouped by month with each month's net"></figure>
+      <figure data-shot="goal-detail-movements-all" data-module="app" data-caption="All movements, grouped by month with each month's net"></figure>
       <figure data-shot="goal-detail-bulk-link" data-module="app" data-caption="Movements foot: Aportar varios at the start, Ver los N at the end"></figure>
+      <figure data-shot="goal-detail-framed" data-module="app" data-caption="The whole screen: band with the star pill, pencil, dock"></figure>
+      <figure data-shot="goal-detail-loading" data-module="app" data-caption="Loading"></figure>
+      <figure data-shot="goal-detail-failed" data-module="app" data-caption="Nothing could be read"></figure>
+      <figure data-shot="goal-detail-missing" data-module="app" data-caption="The goal is gone"></figure>
+      <figure data-shot="goal-detail-stale" data-module="app" data-caption="Older figures under the notice"></figure>
+      <figure data-shot="goal-detail-busy" data-module="app" data-caption="A star being saved"></figure>
+      <figure data-shot="goal-detail-unknown" data-module="app" data-caption="A save whose outcome is not known"></figure>
+      <figure data-shot="goal-detail-not-saved" data-module="app" data-caption="Not saved"></figure>
+      <figure data-shot="goal-detail-reached" data-module="app" data-caption="Reached: Marcar como lograda"></figure>
+      <figure data-shot="goal-detail-completed" data-module="app" data-caption="Completed: ⋮ only"></figure>
+      <figure data-shot="goal-detail-delete" data-module="app" data-caption="The delete confirm"></figure>
 
       <h3>Layout</h3>
       <ol>
@@ -114,16 +131,16 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Loading</td><td>One <code>SlipSkeleton</code>; title "Meta", no star, no dock.</td><td><code>GoalDetailScreen.kt:93</code></td><td>no screenshot</td></tr>
-            <tr><td>Error (nothing loaded)</td><td><code>ErrorSlip</code> "No pudimos leer esta meta" / "Tus registros siguen guardados. Vuelve a intentarlo."</td><td><code>GoalDetailScreen.kt:95</code></td><td>no screenshot</td></tr>
-            <tr><td>Missing</td><td>A plain slip "Esta meta ya no está" / "Tus otras metas siguen en Metas." when the goal is not on the board.</td><td><code>GoalDetailScreen.kt:103</code></td><td>no screenshot</td></tr>
-            <tr><td>Stale</td><td><code>ErrorSlip</code> with the list's copy "No pudimos leer tus metas de nuevo. Te mostramos las de la última lectura." above the last good goal.</td><td><code>GoalDetailScreen.kt:148</code></td><td>no screenshot</td></tr>
+            <tr><td>Loading</td><td>One <code>SlipSkeleton</code>; title "Meta", no star, no dock.</td><td><code>GoalDetailScreen.kt:93</code></td><td><code>goal-detail-loading</code></td></tr>
+            <tr><td>Error (nothing loaded)</td><td><code>ErrorSlip</code> "No pudimos leer esta meta" / "Tus registros siguen guardados. Vuelve a intentarlo."</td><td><code>GoalDetailScreen.kt:95</code></td><td><code>goal-detail-failed</code></td></tr>
+            <tr><td>Missing</td><td>A plain slip "Esta meta ya no está" / "Tus otras metas siguen en Metas." when the goal is not on the board.</td><td><code>GoalDetailScreen.kt:103</code></td><td><code>goal-detail-missing</code></td></tr>
+            <tr><td>Stale</td><td><code>ErrorSlip</code> with the list's copy "No pudimos leer tus metas de nuevo. Te mostramos las de la última lectura." above the last good goal.</td><td><code>GoalDetailScreen.kt:148</code></td><td><code>goal-detail-stale</code></td></tr>
             <tr><td>Empty movements</td><td>"Todavía no hay movimientos." inside the Movimientos slip; Aportes por mes is hidden.</td><td><code>GoalDetailScreen.kt:399</code></td><td>no screenshot</td></tr>
-            <tr><td>Reached (100 %, not lograda)</td><td>Next line "Llegaste al 100 %. Márcala como lograda para ganar el último sello." and the green "Marcar como lograda".</td><td><code>GoalDetailScreen.kt:290</code>, <code>GoalDetailScreen.kt:305</code></td><td>no screenshot</td></tr>
-            <tr><td>Completed</td><td>Read-only: no star, no pencil, no dock, no facts, no "Retirar dinero" or row taps; the Hero says "Meta lograda el … Lo que guardaste sigue aquí."; ⋮ offers "Borrar meta".</td><td><code>GoalDestinations.kt:162</code>, <code>GoalDetailScreen.kt:283</code></td><td>no screenshot</td></tr>
-            <tr><td>Busy</td><td>A star save or delete is running: the star pill and Marcar como lograda are disabled; the confirm slip shows its busy state.</td><td><code>GoalDetailScreen.kt:313</code>, <code>GoalDetailScreen.kt:517</code></td><td>no screenshot</td></tr>
-            <tr><td>Refused / unknown outcome</td><td><code>GoalSaveProblem</code> at the top: "No se guardó" + "No se guardó el cambio. Puedes intentarlo de nuevo." + outlined "Reintentar", or "Falta comprobar si se guardó" + warning line + outlined "Comprobar si se guardó". Hidden while the replace sheet is open (it reports there).</td><td><code>GoalDetailScreen.kt:145</code>, <code>app/src/main/java/com/software/sello/feature/goals/GoalSaveProblem.kt:29</code></td><td>no screenshot on this screen (same part on Recibo: <code>recibo-goals-mark-unknown</code>)</td></tr>
-            <tr><td>Confirm delete</td><td><a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a> "¿Borrar Viaje a la costa?" with "Se borran la meta y <strong>sus 6 movimientos</strong>. Esto no se puede deshacer." and "Borrar".</td><td><code>GoalDetailScreen.kt:168</code></td><td>no screenshot</td></tr>
+            <tr><td>Reached (100 %, not lograda)</td><td>Next line "Llegaste al 100 %. Márcala como lograda para ganar el último sello." and the green "Marcar como lograda".</td><td><code>GoalDetailScreen.kt:290</code>, <code>GoalDetailScreen.kt:305</code></td><td><code>goal-detail-reached</code></td></tr>
+            <tr><td>Completed</td><td>Read-only: no star, no pencil, no dock, no facts, no "Retirar dinero" or row taps; the Hero says "Meta lograda el … Lo que guardaste sigue aquí."; ⋮ offers "Borrar meta".</td><td><code>GoalDestinations.kt:162</code>, <code>GoalDetailScreen.kt:283</code></td><td><code>goal-detail-completed</code></td></tr>
+            <tr><td>Busy</td><td>A star save or delete is running: the star pill and Marcar como lograda are disabled; the confirm slip shows its busy state.</td><td><code>GoalDetailScreen.kt:313</code>, <code>GoalDetailScreen.kt:517</code></td><td><code>goal-detail-busy</code></td></tr>
+            <tr><td>Refused / unknown outcome</td><td><code>GoalSaveProblem</code> at the top: "No se guardó" + "No se guardó el cambio. Puedes intentarlo de nuevo." + outlined "Reintentar", or "Falta comprobar si se guardó" + warning line + outlined "Comprobar si se guardó". Hidden while the replace sheet is open (it reports there).</td><td><code>GoalDetailScreen.kt:145</code>, <code>app/src/main/java/com/software/sello/feature/goals/GoalSaveProblem.kt:29</code></td><td><code>goal-detail-unknown</code></td></tr>
+            <tr><td>Confirm delete</td><td><a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a> "¿Borrar Viaje a la costa?" with "Se borran la meta y <strong>sus 6 movimientos</strong>. Esto no se puede deshacer." and "Borrar".</td><td><code>GoalDetailScreen.kt:168</code></td><td><code>goal-detail-delete</code></td></tr>
             <tr><td>Stamp landing</td><td>When a save on Aportar/Retirar earned or returned stamps for this goal, they land or relight in the Hero's row; another goal's stamps show as a ticket in the notice bar.</td><td><code>GoalDestinations.kt:293</code>, <code>GoalDestinations.kt:302</code></td><td>no screenshot</td></tr>
             <tr><td>Restored after process death</td><td>Delete confirmation and "deleted" are kept in <code>SavedStateHandle</code>; a pending completion is recovered.</td><td><code>app/src/main/java/com/software/sello/feature/goals/GoalDetailViewModel.kt:72</code></td><td>no screenshot</td></tr>
           </tbody>
@@ -200,6 +217,17 @@
       <figure data-shot="goal-movement" data-module="app" data-caption="Aportar with a goal chosen"></figure>
       <figure data-shot="goal-movement" data-module="app" data-variants="violeta-light-font1.0,violeta-dark-font1.0" data-caption="Aportar, Violeta ink"></figure>
       <figure data-shot="goal-movement-unknown" data-module="app" data-caption="Unknown outcome: the form locks and the button becomes Comprobar si se guardó"></figure>
+      <figure data-shot="goal-movement-retiro" data-module="app" data-caption="Retirar"></figure>
+      <figure data-shot="goal-movement-correcting" data-module="app" data-caption="Correcting a saved aporte"></figure>
+      <figure data-shot="goal-movement-loading" data-module="app" data-caption="Loading"></figure>
+      <figure data-shot="goal-movement-failed" data-module="app" data-caption="Nothing could be read"></figure>
+      <figure data-shot="goal-movement-no-goals" data-module="app" data-caption="No active goals"></figure>
+      <figure data-shot="goal-movement-over" data-module="app" data-caption="A retiro of more than is saved"></figure>
+      <figure data-shot="goal-movement-busy" data-module="app" data-caption="Saving"></figure>
+      <figure data-shot="goal-movement-refused" data-module="app" data-caption="Not saved"></figure>
+      <figure data-shot="goal-movement-discard" data-module="app" data-caption="The discard confirm"></figure>
+      <figure data-shot="goal-movement-date-picker" data-module="app" data-caption="The date picker (Material's picker: the JVM screen runs in English, and draws it with square corners and no scrim)"></figure>
+      <figure data-shot="goal-movement-note" data-module="app" data-caption="The note composer"></figure>
 
       <h3>Layout</h3>
       <ol>
@@ -216,16 +244,16 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Loading</td><td><code>SlipSkeleton</code> in <code>MovementPane</code>.</td><td><code>GoalMovementScreen.kt:111</code></td><td>no screenshot</td></tr>
-            <tr><td>Error (nothing loaded)</td><td><code>ErrorSlip</code> "No pudimos leer esta meta" / "Tus registros siguen guardados. Vuelve a intentarlo."</td><td><code>GoalMovementScreen.kt:115</code></td><td>no screenshot</td></tr>
-            <tr><td>Empty</td><td>No active goal: "No tienes metas activas. Crea una en Metas." as a FactLine in place of the chips.</td><td><code>GoalMovementScreen.kt:239</code></td><td>no screenshot</td></tr>
+            <tr><td>Loading</td><td><code>SlipSkeleton</code> in <code>MovementPane</code>.</td><td><code>GoalMovementScreen.kt:111</code></td><td><code>goal-movement-loading</code></td></tr>
+            <tr><td>Error (nothing loaded)</td><td><code>ErrorSlip</code> "No pudimos leer esta meta" / "Tus registros siguen guardados. Vuelve a intentarlo."</td><td><code>GoalMovementScreen.kt:115</code></td><td><code>goal-movement-failed</code></td></tr>
+            <tr><td>Empty</td><td>No active goal: "No tienes metas activas. Crea una en Metas." as a FactLine in place of the chips.</td><td><code>GoalMovementScreen.kt:239</code></td><td><code>goal-movement-no-goals</code></td></tr>
             <tr><td>Stale</td><td>No notice: the last good goals stay in use.</td><td><code>app/src/main/java/com/software/sello/feature/goals/GoalMovementViewModel.kt:273</code></td><td>no screenshot</td></tr>
             <tr><td>Invalid input</td><td>Under the amount: "Más de lo guardado (…)", "Máximo 12 dígitos" or "Escribe un monto entero entre 1 y 999.999.999.999." (pasted text); "No se puede: el retiro de … del … usa este aporte. Borra o corrige ese retiro primero."; hints "Elige a qué meta va." and "Aún no cambiaste nada.".</td><td><code>GoalMovementScreen.kt:208</code>, <code>GoalMovementScreen.kt:290</code>, <code>GoalMovementScreen.kt:323</code></td><td>no screenshot</td></tr>
-            <tr><td>Busy</td><td>Button "Guardando…" with spinner; keypad, chips and switch disabled.</td><td><code>GoalMovementScreen.kt:339</code></td><td>no screenshot</td></tr>
+            <tr><td>Busy</td><td>Button "Guardando…" with spinner; keypad, chips and switch disabled.</td><td><code>GoalMovementScreen.kt:339</code></td><td><code>goal-movement-busy</code></td></tr>
             <tr><td>Unknown outcome</td><td>Warning "Aún no sabemos si se guardó. Compruébalo antes de volver a anotar." and the button "Comprobar si se guardó" (still Gain, still the flag); everything else locked.</td><td><code>GoalMovementScreen.kt:318</code>, <code>GoalMovementScreen.kt:334</code></td><td><code>goal-movement-unknown</code></td></tr>
-            <tr><td>Refused</td><td>Error lines: "No se guardó. Puedes intentarlo de nuevo.", "Tus datos cambiaron mientras escribías. No se anotó nada.", "Esta meta o este movimiento ya no está.", "La meta cambió mientras escribías. Revisa y vuelve a intentarlo.", "Esta meta ya está lograda: no se puede cambiar.", "No se borró. El movimiento sigue ahí.", future or invalid date.</td><td><code>GoalMovementScreen.kt:302</code></td><td>no screenshot</td></tr>
-            <tr><td>Correcting</td><td>Title "Corregir aporte"/"Corregir retiro", no switch, goal chips locked, "Borrar" on the band, button "Guardar cambios". Deleting is immediate with a 6-second Deshacer notice afterwards.</td><td><code>GoalMovementScreen.kt:98</code></td><td>no screenshot</td></tr>
-            <tr><td>Discard confirm</td><td><code>MovementDiscardSlip</code> "¿Descartar este movimiento?" / "Lo que escribiste no se guardará." / "Descartar".</td><td><code>GoalMovementScreen.kt:172</code></td><td>no screenshot</td></tr>
+            <tr><td>Refused</td><td>Error lines: "No se guardó. Puedes intentarlo de nuevo.", "Tus datos cambiaron mientras escribías. No se anotó nada.", "Esta meta o este movimiento ya no está.", "La meta cambió mientras escribías. Revisa y vuelve a intentarlo.", "Esta meta ya está lograda: no se puede cambiar.", "No se borró. El movimiento sigue ahí.", future or invalid date.</td><td><code>GoalMovementScreen.kt:302</code></td><td><code>goal-movement-refused</code></td></tr>
+            <tr><td>Correcting</td><td>Title "Corregir aporte"/"Corregir retiro", no switch, goal chips locked, "Borrar" on the band, button "Guardar cambios". Deleting is immediate with a 6-second Deshacer notice afterwards.</td><td><code>GoalMovementScreen.kt:98</code></td><td><code>goal-movement-correcting</code></td></tr>
+            <tr><td>Discard confirm</td><td><code>MovementDiscardSlip</code> "¿Descartar este movimiento?" / "Lo que escribiste no se guardará." / "Descartar".</td><td><code>GoalMovementScreen.kt:172</code></td><td><code>goal-movement-discard</code></td></tr>
             <tr><td>Restored draft</td><td>The typed amount, kind, goal, date and note come back from the saved draft.</td><td><code>GoalMovementViewModel.kt:101</code></td><td>no screenshot</td></tr>
           </tbody>
         </table>
@@ -253,7 +281,16 @@
 
       <figure data-shot="goal-editor" data-module="app" data-caption="Nueva meta, filled and ready to create"></figure>
       <figure data-shot="goal-editor" data-module="app" data-variants="violeta-light-font1.0" data-caption="Violeta ink"></figure>
-      <figure data-module="app" data-files="goal-editor-unresolved.png" data-caption="Editar meta with an unknown save: Comprobar si se guardó replaces the button, no ⋮"></figure>
+      <figure data-shot="goal-editor-unresolved" data-module="app" data-caption="Editar meta with an unknown save: Comprobar si se guardó replaces the button, no ⋮"></figure>
+      <figure data-shot="goal-editor-editing" data-module="app" data-caption="Editar meta as it opens, ¿Ya la lograste? at the foot"></figure>
+      <figure data-shot="goal-editor-icon-sheet" data-module="app" data-caption="The icon sheet"></figure>
+      <figure data-shot="goal-editor-month-sheet" data-module="app" data-caption="The month sheet"></figure>
+      <figure data-shot="goal-editor-completed" data-module="app" data-caption="A completed goal"></figure>
+      <figure data-shot="goal-editor-loading" data-module="app" data-caption="Loading"></figure>
+      <figure data-shot="goal-editor-failed" data-module="app" data-caption="Nothing could be read"></figure>
+      <figure data-shot="goal-editor-refused" data-module="app" data-caption="Not saved"></figure>
+      <figure data-shot="goal-editor-discard" data-module="app" data-caption="The discard confirm"></figure>
+      <figure data-shot="goal-editor-delete" data-module="app" data-caption="The delete confirm"></figure>
 
       <h3>Layout</h3>
       <ol>
@@ -271,16 +308,16 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Loading (editing)</td><td><code>SlipSkeleton</code>.</td><td><code>GoalEditorScreen.kt:143</code></td><td>no screenshot</td></tr>
-            <tr><td>Error (nothing loaded)</td><td><code>ErrorSlip</code> with the default title and "No pudimos leer esta meta. Tus registros siguen guardados."</td><td><code>GoalEditorScreen.kt:145</code></td><td>no screenshot</td></tr>
+            <tr><td>Loading (editing)</td><td><code>SlipSkeleton</code>.</td><td><code>GoalEditorScreen.kt:143</code></td><td><code>goal-editor-loading</code></td></tr>
+            <tr><td>Error (nothing loaded)</td><td><code>ErrorSlip</code> with the default title and "No pudimos leer esta meta. Tus registros siguen guardados."</td><td><code>GoalEditorScreen.kt:145</code></td><td><code>goal-editor-failed</code></td></tr>
             <tr><td>Empty form</td><td>Hints in order: "Elige un ícono.", "Escribe un nombre.", "Escribe cuánto necesitas."; the name field hint "¿Para qué estás guardando?".</td><td><code>GoalEditorScreen.kt:269</code>, <code>GoalEditorScreen.kt:396</code></td><td>no screenshot</td></tr>
             <tr><td>Invalid input</td><td>"Máximo 40 caracteres. Tu texto sigue aquí." or "El nombre tiene caracteres que no se pueden guardar." under the name; the amount pulses at its limit.</td><td><code>GoalEditorScreen.kt:389</code></td><td>no screenshot</td></tr>
             <tr><td>Busy</td><td>Button loading; pad, icon circle, month chip and name disabled.</td><td><code>GoalEditorScreen.kt:294</code></td><td>no screenshot</td></tr>
-            <tr><td>Refused</td><td>Error line "No se guardó. Puedes intentarlo de nuevo." or "La meta cambió mientras la editabas. Revisa los datos y vuelve a guardar."</td><td><code>GoalEditorScreen.kt:224</code></td><td>no screenshot</td></tr>
+            <tr><td>Refused</td><td>Error line "No se guardó. Puedes intentarlo de nuevo." or "La meta cambió mientras la editabas. Revisa los datos y vuelve a guardar."</td><td><code>GoalEditorScreen.kt:224</code></td><td><code>goal-editor-refused</code></td></tr>
             <tr><td>Unknown outcome</td><td>Warning "No sabemos si se guardó. Compruébalo antes de seguir." (or "Aún no sabemos si se borró…" after a delete) and a separate brand-tone "Comprobar si se guardó"/"Comprobar si se borró" button; no ⋮.</td><td><code>GoalEditorScreen.kt:249</code></td><td><code>goal-editor-unresolved</code></td></tr>
-            <tr><td>Completed goal</td><td>Only a FactLine "Esta meta ya está lograda. Solo se puede borrar." and the ⋮.</td><td><code>GoalEditorScreen.kt:151</code></td><td>no screenshot</td></tr>
-            <tr><td>Discard confirm</td><td><code>ConfirmSlip</code> "¿Descartar los cambios?" / "Lo que escribiste en esta meta no se guardará." / "Descartar" / "Seguir editando".</td><td><code>GoalEditorScreen.kt:207</code></td><td>no screenshot</td></tr>
-            <tr><td>Delete confirm</td><td><code>ConfirmSlip</code> as on the detail, with the movement count.</td><td><code>GoalEditorScreen.kt:197</code></td><td>no screenshot</td></tr>
+            <tr><td>Completed goal</td><td>Only a FactLine "Esta meta ya está lograda. Solo se puede borrar." and the ⋮.</td><td><code>GoalEditorScreen.kt:151</code></td><td><code>goal-editor-completed</code></td></tr>
+            <tr><td>Discard confirm</td><td><code>ConfirmSlip</code> "¿Descartar los cambios?" / "Lo que escribiste en esta meta no se guardará." / "Descartar" / "Seguir editando".</td><td><code>GoalEditorScreen.kt:207</code></td><td><code>goal-editor-discard</code></td></tr>
+            <tr><td>Delete confirm</td><td><code>ConfirmSlip</code> as on the detail, with the movement count.</td><td><code>GoalEditorScreen.kt:197</code></td><td><code>goal-editor-delete</code></td></tr>
             <tr><td>¿Ya la lograste? failed</td><td>A FieldMessageText inside that slip, warning or error.</td><td><code>GoalEditorScreen.kt:316</code></td><td>no screenshot</td></tr>
             <tr><td>Restored draft</td><td>Form fields, open month sheet and its year, and an open delete confirm come back from <code>SavedStateHandle</code>; the name does not take focus again.</td><td><code>app/src/main/java/com/software/sello/feature/goals/GoalEditorViewModel.kt:353</code>, <code>GoalEditorScreen.kt:105</code></td><td>no screenshot</td></tr>
             <tr><td>Stale</td><td>Does not exist: the editor reads once.</td><td><code>GoalEditorViewModel.kt:271</code></td><td>—</td></tr>
@@ -320,6 +357,11 @@
       <figure data-shot="goal-bulk-unknown" data-module="app" data-caption="Unknown outcome"></figure>
       <figure data-shot="goal-bulk-thirty-lines" data-module="app" data-caption="At the 30-line limit"></figure>
       <figure data-shot="bulk-receipt-goal" data-module="design-system" data-caption="The shared BulkReceipt in its goal form (design-system capture)"></figure>
+      <figure data-shot="goal-bulk-loading" data-module="app" data-caption="Loading"></figure>
+      <figure data-shot="goal-bulk-failed" data-module="app" data-caption="Nothing could be read"></figure>
+      <figure data-shot="goal-bulk-no-goals" data-module="app" data-caption="No active goal"></figure>
+      <figure data-shot="goal-bulk-discard" data-module="app" data-caption="The discard confirm"></figure>
+      <figure data-shot="goal-bulk-removed" data-module="app" data-caption="A line removed: Deshacer"></figure>
 
       <h3>Layout</h3>
       <ol>
@@ -335,15 +377,15 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Loading</td><td><code>SlipSkeleton</code> in <code>MovementPane</code>.</td><td><code>GoalBulkScreen.kt:89</code></td><td>no screenshot</td></tr>
-            <tr><td>Error (nothing loaded)</td><td><code>ErrorSlip</code> "No pudimos leer esta meta" / "Tus registros siguen guardados. Vuelve a intentarlo."</td><td><code>GoalBulkScreen.kt:93</code></td><td>no screenshot</td></tr>
+            <tr><td>Loading</td><td><code>SlipSkeleton</code> in <code>MovementPane</code>.</td><td><code>GoalBulkScreen.kt:89</code></td><td><code>goal-bulk-loading</code></td></tr>
+            <tr><td>Error (nothing loaded)</td><td><code>ErrorSlip</code> "No pudimos leer esta meta" / "Tus registros siguen guardados. Vuelve a intentarlo."</td><td><code>GoalBulkScreen.kt:93</code></td><td><code>goal-bulk-failed</code></td></tr>
             <tr><td>Empty</td><td>One empty line; with no active goal, "No hay metas activas." in error tone above the (empty) chips.</td><td><code>GoalBulkScreen.kt:290</code></td><td><code>goal-bulk-opening</code></td></tr>
             <tr><td>Invalid lines</td><td>Caption "Falta 1 meta" / "Falta 1 tipo" / "Máximo 30 por recibo"; per line "Elige una meta", "Elige Aportar o Retirar".</td><td><code>GoalBulkScreen.kt:169</code>, <code>GoalBulkScreen.kt:259</code></td><td><code>goal-bulk-missing-goal</code>, <code>goal-bulk-missing-type</code>, <code>goal-bulk-thirty-lines</code></td></tr>
             <tr><td>Refused</td><td>Caption "Revisa 2 renglones"; per line "Solo hay … disponibles", "La fecha no puede ser posterior a hoy", "Esa fecha no es válida"; error "No se guardó. Tu borrador sigue aquí." or "Una meta cambió mientras escribías. Revisa y vuelve a anotar."</td><td><code>GoalBulkScreen.kt:170</code>, <code>GoalBulkScreen.kt:346</code></td><td><code>goal-bulk-refused</code></td></tr>
             <tr><td>Busy</td><td>"Guardando…" with spinner; everything else disabled.</td><td><code>GoalBulkScreen.kt:371</code></td><td><code>goal-bulk-saving</code></td></tr>
             <tr><td>Unknown outcome</td><td>Warning "Aún no sabemos si se guardó. Compruébalo antes de volver a anotar." and "Comprobar si se guardó" (Gain, no icon).</td><td><code>GoalBulkScreen.kt:366</code></td><td><code>goal-bulk-unknown</code></td></tr>
             <tr><td>Stale</td><td>No notice: the last good goals stay in use.</td><td><code>app/src/main/java/com/software/sello/feature/goals/GoalBulkViewModel.kt:395</code></td><td>no screenshot</td></tr>
-            <tr><td>Discard confirm</td><td><code>ConfirmSlip</code> "¿Descartar 3 renglones?" / "Se borra lo que escribiste en este recibo. Esto no se puede deshacer." / "Descartar" / "Seguir anotando".</td><td><code>GoalBulkScreen.kt:135</code></td><td>no screenshot</td></tr>
+            <tr><td>Discard confirm</td><td><code>ConfirmSlip</code> "¿Descartar 3 renglones?" / "Se borra lo que escribiste en este recibo. Esto no se puede deshacer." / "Descartar" / "Seguir anotando".</td><td><code>GoalBulkScreen.kt:135</code></td><td><code>goal-bulk-discard</code></td></tr>
             <tr><td>Restored draft</td><td>Lines, highlight and keys are serialised and come back, including drafts saved before each line named its goal.</td><td><code>GoalBulkViewModel.kt:96</code></td><td>no screenshot</td></tr>
           </tbody>
         </table>
@@ -367,11 +409,13 @@
     <section id="screen-recibo-goal">
       <h2>Part: Recibo's goal slot</h2>
 
-      <figure data-shot="recibo-goals-one" data-module="app" data-variants="cobalto-light-font1.0" data-caption="One goal: the pill alone, no dots"></figure>
+      <figure data-shot="recibo-goals-one" data-module="app" data-caption="One goal: the pill alone, no dots"></figure>
       <figure data-shot="recibo-goals-three-second" data-module="app" data-caption="Three goals, on the second: the carousel and its dots"></figure>
       <figure data-shot="recibo-goals-five-reached" data-module="app" data-caption="Five goals, the shown one at 100 %: green pill with ✓"></figure>
-      <figure data-shot="recibo-goals-stale" data-module="app" data-variants="cobalto-light-font1.0" data-caption="Stale: the notice above the last good goals"></figure>
-      <figure data-shot="recibo-goals-mark-unknown" data-module="app" data-variants="cobalto-light-font1.0" data-caption="Marcar como lograda with an unknown outcome"></figure>
+      <figure data-shot="recibo-goals-stale" data-module="app" data-caption="Stale: the notice above the last good goals"></figure>
+      <figure data-shot="recibo-goals-mark-unknown" data-module="app" data-caption="Marcar como lograda with an unknown outcome"></figure>
+      <figure data-shot="recibo-goals-failed" data-module="app" data-caption="The slot could not be read"></figure>
+      <figure data-shot="recibo-goals-busy" data-module="app" data-caption="Marcar como lograda being saved"></figure>
 
       <h3>Layout</h3>
       <ol>
@@ -387,11 +431,11 @@
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
             <tr><td>Hidden</td><td>Nothing: a past month, no active goal, or the first read still on its way (there is no loading look).</td><td><code>ReciboGoal.kt:46</code></td><td>—</td></tr>
-            <tr><td>Error (nothing loaded)</td><td><code>ErrorSlip</code> "No pudimos leer tus metas" / "Tus registros siguen guardados. Vuelve a intentarlo."</td><td><code>ReciboGoal.kt:48</code></td><td>no screenshot</td></tr>
+            <tr><td>Error (nothing loaded)</td><td><code>ErrorSlip</code> "No pudimos leer tus metas" / "Tus registros siguen guardados. Vuelve a intentarlo."</td><td><code>ReciboGoal.kt:48</code></td><td><code>recibo-goals-failed</code></td></tr>
             <tr><td>Stale</td><td><code>ErrorSlip</code> (default title) with <code>metas_stale</code> above the pills.</td><td><code>ReciboGoal.kt:60</code></td><td><code>recibo-goals-stale</code></td></tr>
-            <tr><td>Busy</td><td>The pill's ✓ and the reached row's button are disabled (the row dims to 60 %); no spinner.</td><td><code>GoalComponents.kt:140</code>, <code>GoalComponents.kt:207</code></td><td>no screenshot</td></tr>
+            <tr><td>Busy</td><td>The pill's ✓ and the reached row's button are disabled (the row dims to 60 %); no spinner.</td><td><code>GoalComponents.kt:140</code>, <code>GoalComponents.kt:207</code></td><td><code>recibo-goals-busy</code></td></tr>
             <tr><td>Refused / unknown outcome</td><td><code>GoalSaveProblem</code> under the pill.</td><td><code>ReciboGoal.kt:98</code></td><td><code>recibo-goals-mark-unknown</code></td></tr>
-            <tr><td>Celebrating</td><td>The Lograda moment over Recibo.</td><td><code>ReciboDestinations.kt:373</code></td><td>no screenshot</td></tr>
+            <tr><td>Celebrating</td><td>The Lograda moment over Recibo.</td><td><code>ReciboDestinations.kt:373</code></td><td><code>goal-detail-lograda</code> (the same moment)</td></tr>
           </tbody>
         </table>
       </div>
@@ -413,6 +457,8 @@
     <section id="screen-celebrations">
       <h2>Part: Celebrations</h2>
 
+      <figure data-shot="goal-detail-lograda" data-module="app" data-caption="The Lograda moment"></figure>
+
       <h3>Layout</h3>
       <ol>
         <li><strong>Lograda moment</strong> (<code>LogradaMoment</code>, <code>app/src/main/java/com/software/sello/feature/goals/GoalCelebrations.kt:22</code>; <code>CelebrationOverlay</code>, <code>app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:171</code>): a full-screen <code>Dialog</code> on <code>desk</code>. Four 66 dp <a href="../components.html#c-MilestonePlace"><code>MilestonePlace</code></a>s land one by one, green floods out of the Meta stamp, the stamps rise and turn <code>onGain</code>, "¡Lo lograste!" rises (48 sp), a double-outlined plate is stamped ("META LOGRADA", icon and name, the amount between dashed rules, then the day and the count of aportes in capitals), paper chads fall, then "Listo" (filled onGain) and "Ver mi meta ›" fade in. Opened only after a confirmed completion; haptics on each landing; the status and navigation bar icons follow the flood (<code>DialogBarIcons</code>). With reduced motion it opens on the final frame without chads. Hosts: Metas, the goal detail, the editor and Recibo.</li>
@@ -425,7 +471,7 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Running</td><td>The timeline above; buttons are inert until they appear (3.1 s).</td><td><code>CelebrationOverlay.kt:450</code></td><td>no screenshot</td></tr>
+            <tr><td>Running</td><td>The timeline above; buttons are inert until they appear (3.1 s).</td><td><code>CelebrationOverlay.kt:450</code></td><td><code>goal-detail-lograda</code></td></tr>
             <tr><td>Reduced motion</td><td>Final frame at once, no chads.</td><td><code>CelebrationOverlay.kt:185</code></td><td>no screenshot</td></tr>
             <tr><td>Closed</td><td>"Listo", back or "Ver mi meta" close it; Deshacer's time starts then (about 10 s, 30 s with a screen reader).</td><td><code>GoalCompleter.kt:117</code></td><td>no screenshot</td></tr>
           </tbody>
@@ -502,17 +548,13 @@
       <h2>Gaps</h2>
       <div class="gaps">
         <ul>
-          <li>Metas: loading, error, empty, stale, busy, celebrating and the stamp ticket have no screenshot; the completed row is below the fold of <code>metas</code>.</li>
-          <li>Metas: no dark screenshot of <code>metas-bulk</code> or the Violeta capture.</li>
-          <li>Goal detail: no full-page capture — the tests render the screen without its band, so the star pill, pencil, ⋮ and dock are never captured; loading, error, missing, stale, reached, completed, busy, save problem and delete confirm have no screenshot; <code>goal-detail-movements-all</code> has no dark capture.</li>
-          <li>Replace sheet: busy and unknown outcome have no screenshot.</li>
-          <li>Aportar / Retirar: Retirar, correcting, loading, error, no goals, invalid input, busy, refused, discard and restored draft have no screenshot.</li>
-          <li>Editor: Editar meta (clean), the icon and month sheets, ¿Ya la lograste?, completed, loading, error, refused, discard and delete confirms have no screenshot; <code>goal-editor-unresolved</code> is light only and has no ink/theme suffix.</li>
-          <li>Aportar varios: loading, error, no active goal, discard and the undo notice have no screenshot.</li>
-          <li>Recibo's slot: error, busy and <code>ReachedRow</code> have no screenshot; <code>recibo-goals-one</code>, <code>-stale</code> and <code>-mark-unknown</code> are light only.</li>
-          <li>Celebrations: the Lograda moment and the stamp ticket have no screenshot.</li>
-          <li><code>app/src/test/screenshots/components-goals-and-investments.png</code> shows GoalCard and CompletedGoalRow but no test writes it any more; it is not linked here.</li>
-          <li>Not confirmed from the code: how the month sheet looks at the year limits, and how the stamp ticket is timed on screen (owned by the notice bar).</li>
+          <li>Replace sheet: busy and unknown outcome: no screenshot.</li>
+          <li>The stamp ticket: no screenshot (it is timed by the notice bar, not drawn from state).</li>
+          <li>Aportar / Retirar and the editor: invalid input and restored draft (drawn as the form with its values): no screenshot.</li>
+          <li>Recibo's slot: <code>ReachedRow</code> on its own: no screenshot.</li>
+          <li><code>app/src/test/screenshots/components</code><code>-goals-and-investments.png</code> shows GoalCard and CompletedGoalRow but no test writes it any more; it is not linked here.</li>
+          <li>The goal detail's frame is drawn in the test as <code>GoalDestinations</code> draws it (the destination itself needs a view model).</li>
+          <li>Not confirmed from the code: how the month sheet looks at the year limits.</li>
         </ul>
       </div>
     </section>

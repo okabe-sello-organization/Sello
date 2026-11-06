@@ -46,8 +46,14 @@
       <figure data-shot="schedules" data-module="app"
               data-variants="cobalto-light-font1.0,cobalto-dark-font1.0,violeta-light-font1.0"
               data-caption="Pagos: the month's plan, then each schedule by group (Cobalto light and dark, Violeta)"></figure>
-      <figure data-shot="schedules-stale" data-module="app" data-variants="cobalto-light-font1.0"
+      <figure data-shot="schedules-stale" data-module="app"
               data-caption="A refresh failed: the month as last read, under the notice"></figure>
+      <figure data-shot="schedules-incomes" data-module="app" data-caption="The Ingresos tab"></figure>
+      <figure data-shot="schedules-loading" data-module="app" data-caption="Loading"></figure>
+      <figure data-shot="schedules-failed" data-module="app" data-caption="Nothing could be read"></figure>
+      <figure data-shot="schedules-empty" data-module="app" data-caption="No fixed payments"></figure>
+      <figure data-shot="schedules-no-plan" data-module="app" data-caption="A sum that does not fit: no plan"></figure>
+      <figure data-shot="schedules-ended" data-module="app" data-caption="With an ended group"></figure>
 
       <h3>Layout</h3>
       <p>A <code>ShellScreen</code> with the title only, "Pagos e ingresos fijos" (no month to pick), a back arrow, no entry dock, and the correction notice bar when there is one (<code>app/src/main/java/com/software/sello/navigation/RecurrenceDestinations.kt:35</code>). A lazy list spaced by <code>spacing.md</code> (<code>app/src/main/java/com/software/sello/feature/recurrence/SchedulesScreen.kt:86</code>):</p>
@@ -64,12 +70,12 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Loading</td><td>The switch, then a <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a>.</td><td><code>…/SchedulesScreen.kt:103</code></td><td>no screenshot</td></tr>
-            <tr><td>Error (nothing read)</td><td><a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a> "No pudimos leer tus pagos fijos" / "Siguen guardados y Sello no anotó nada de más. Vuelve a intentarlo."</td><td><code>…/SchedulesScreen.kt:107</code></td><td>no screenshot</td></tr>
+            <tr><td>Loading</td><td>The switch, then a <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a>.</td><td><code>…/SchedulesScreen.kt:103</code></td><td><code>schedules-loading</code></td></tr>
+            <tr><td>Error (nothing read)</td><td><a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a> "No pudimos leer tus pagos fijos" / "Siguen guardados y Sello no anotó nada de más. Vuelve a intentarlo."</td><td><code>…/SchedulesScreen.kt:107</code></td><td><code>schedules-failed</code></td></tr>
             <tr><td>Loaded</td><td>The receipt and the groups.</td><td><code>…/SchedulesScreen.kt:117</code></td><td>schedules</td></tr>
-            <tr><td>Stale</td><td><code>StaleSlip</code> "No pudimos actualizar. Esto es lo último que se leyó y puede no estar al día." above the month as last read.</td><td><code>…/SchedulesScreen.kt:119</code>, <code>app/src/main/java/com/software/sello/feature/recurrence/SchedulesViewModel.kt:173</code></td><td>schedules-stale (light only)</td></tr>
-            <tr><td>Empty</td><td>The receipt at 0 in inkSoft with "Aún no tienes pagos fijos" or "Aún no tienes ingresos fijos", and the stub; no list, no footnote.</td><td><code>…/SchedulesScreen.kt:199</code></td><td>no screenshot</td></tr>
-            <tr><td>Plan not shown</td><td>A sum too large for an exact amount: the receipt holds only the stub.</td><td><code>…/SchedulesScreen.kt:162</code></td><td>no screenshot</td></tr>
+            <tr><td>Stale</td><td><code>StaleSlip</code> "No pudimos actualizar. Esto es lo último que se leyó y puede no estar al día." above the month as last read.</td><td><code>…/SchedulesScreen.kt:119</code>, <code>app/src/main/java/com/software/sello/feature/recurrence/SchedulesViewModel.kt:173</code></td><td>schedules-stale</td></tr>
+            <tr><td>Empty</td><td>The receipt at 0 in inkSoft with "Aún no tienes pagos fijos" or "Aún no tienes ingresos fijos", and the stub; no list, no footnote.</td><td><code>…/SchedulesScreen.kt:199</code></td><td><code>schedules-empty</code></td></tr>
+            <tr><td>Plan not shown</td><td>A sum too large for an exact amount: the receipt holds only the stub.</td><td><code>…/SchedulesScreen.kt:162</code></td><td><code>schedules-no-plan</code></td></tr>
             <tr><td>Busy, unknown outcome, refused</td><td>Do not exist: the list only reads.</td><td>—</td><td>—</td></tr>
             <tr><td>Restored</td><td>The tab chosen is kept in <code>SavedStateHandle</code>.</td><td><code>…/SchedulesViewModel.kt:134</code></td><td>—</td></tr>
           </tbody>
@@ -100,8 +106,16 @@
       <figure data-shot="schedule-editor" data-module="app"
               data-variants="cobalto-light-font1.0,cobalto-dark-font1.0,violeta-light-font1.0"
               data-caption="A fixed payment, unchanged (Cobalto light and dark, Violeta)"></figure>
-      <figure data-shot="schedule-editor-stale" data-module="app" data-variants="cobalto-light-font1.0"
+      <figure data-shot="schedule-editor-stale" data-module="app"
               data-caption="A refresh failed: the form on what was last read, under the notice"></figure>
+      <figure data-shot="schedule-editor-income" data-module="app" data-caption="An income"></figure>
+      <figure data-shot="schedule-editor-loading" data-module="app" data-caption="Loading"></figure>
+      <figure data-shot="schedule-editor-failed" data-module="app" data-caption="Nothing could be read"></figure>
+      <figure data-shot="schedule-editor-missing" data-module="app" data-caption="The amount cleared: what is missing"></figure>
+      <figure data-shot="schedule-editor-paused" data-module="app" data-caption="Paused because its category is archived"></figure>
+      <figure data-shot="schedule-editor-busy" data-module="app" data-caption="Saving"></figure>
+      <figure data-shot="schedule-editor-unknown" data-module="app" data-caption="The save outcome is not known"></figure>
+      <figure data-shot="schedule-editor-refused" data-module="app" data-caption="Refused: catch-up is pending"></figure>
 
       <h3>Layout</h3>
       <p>The entry's layout (<code>app/src/main/java/com/software/sello/feature/recurrence/ScheduleEditorScreen.kt:94</code>):</p>
@@ -120,15 +134,15 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Loading</td><td>SlipSkeleton under the top bar; no menu.</td><td><code>…/ScheduleEditorScreen.kt:132</code></td><td>no screenshot</td></tr>
-            <tr><td>Error (nothing read)</td><td>ErrorSlip "No pudimos leer este pago fijo. Sigue guardado; vuelve a intentarlo."</td><td><code>…/ScheduleEditorScreen.kt:136</code></td><td>no screenshot</td></tr>
+            <tr><td>Loading</td><td>SlipSkeleton under the top bar; no menu.</td><td><code>…/ScheduleEditorScreen.kt:132</code></td><td><code>schedule-editor-loading</code></td></tr>
+            <tr><td>Error (nothing read)</td><td>ErrorSlip "No pudimos leer este pago fijo. Sigue guardado; vuelve a intentarlo."</td><td><code>…/ScheduleEditorScreen.kt:136</code></td><td><code>schedule-editor-failed</code></td></tr>
             <tr><td>Loaded, unchanged</td><td>"Aún no cambiaste nada." and a disabled save.</td><td><code>…/ScheduleEditorScreen.kt:371</code></td><td>schedule-editor</td></tr>
-            <tr><td>Stale</td><td>StaleSlip above the choices; the draft stays.</td><td><code>…/ScheduleEditorScreen.kt:241</code></td><td>schedule-editor-stale (light only)</td></tr>
-            <tr><td>Missing</td><td>A hint: the category, Otro's name, the note, or "Con este final no se anotaría nada. Cambia el final o el día."</td><td><code>…/ScheduleEditorScreen.kt:371</code></td><td>no screenshot</td></tr>
-            <tr><td>Paused</td><td>The paused slip instead of "Pausar".</td><td><code>…/ScheduleEditorScreen.kt:313</code></td><td>no screenshot</td></tr>
-            <tr><td>Busy</td><td>"Guardando…" with a spinner; the form is disabled. Saving, pausing, resuming and deleting all use it.</td><td><code>…/ScheduleEditorScreen.kt:387</code></td><td>no screenshot</td></tr>
-            <tr><td>Unknown outcome</td><td>Warning "Aún no sabemos si se guardó. Compruébalo antes de volver a anotar." and "Comprobar si se guardó"; the form is frozen. The same words follow an unknown pause, resume or delete.</td><td><code>…/ScheduleEditorScreen.kt:382</code>, <code>:486</code></td><td>no screenshot</td></tr>
-            <tr><td>Refused</td><td>"No se guardó. Lo que cambiaste sigue aquí.", "Tus datos cambiaron…", "Este pago fijo ya no existe…", "…cambió mientras lo editabas…", "Sello aún está anotando lo pendiente…", "Esa categoría ya no recibe gastos. Elige otra.", start or end too early.</td><td><code>…/ScheduleEditorScreen.kt:483</code></td><td>no screenshot</td></tr>
+            <tr><td>Stale</td><td>StaleSlip above the choices; the draft stays.</td><td><code>…/ScheduleEditorScreen.kt:241</code></td><td>schedule-editor-stale</td></tr>
+            <tr><td>Missing</td><td>A hint: the category, Otro's name, the note, or "Con este final no se anotaría nada. Cambia el final o el día."</td><td><code>…/ScheduleEditorScreen.kt:371</code></td><td><code>schedule-editor-missing</code></td></tr>
+            <tr><td>Paused</td><td>The paused slip instead of "Pausar".</td><td><code>…/ScheduleEditorScreen.kt:313</code></td><td><code>schedule-editor-paused</code></td></tr>
+            <tr><td>Busy</td><td>"Guardando…" with a spinner; the form is disabled. Saving, pausing, resuming and deleting all use it.</td><td><code>…/ScheduleEditorScreen.kt:387</code></td><td><code>schedule-editor-busy</code></td></tr>
+            <tr><td>Unknown outcome</td><td>Warning "Aún no sabemos si se guardó. Compruébalo antes de volver a anotar." and "Comprobar si se guardó"; the form is frozen. The same words follow an unknown pause, resume or delete.</td><td><code>…/ScheduleEditorScreen.kt:382</code>, <code>:486</code></td><td><code>schedule-editor-unknown</code></td></tr>
+            <tr><td>Refused</td><td>"No se guardó. Lo que cambiaste sigue aquí.", "Tus datos cambiaron…", "Este pago fijo ya no existe…", "…cambió mientras lo editabas…", "Sello aún está anotando lo pendiente…", "Esa categoría ya no recibe gastos. Elige otra.", start or end too early.</td><td><code>…/ScheduleEditorScreen.kt:483</code></td><td><code>schedule-editor-refused</code></td></tr>
             <tr><td>Restored draft</td><td>Amount text, category or source, Otro's name, note, start, the composer, the start picker and Se repite come back from <code>SavedStateHandle</code>; a pending write is checked first.</td><td><code>app/src/main/java/com/software/sello/feature/recurrence/ScheduleEditorViewModel.kt:101</code>, <code>:114</code></td><td>no screenshot</td></tr>
             <tr><td>Closed</td><td>After a confirmed change the editor closes and a notice says "Cambios guardados. Aplican desde mañana.", "Pago fijo en pausa", "Pago fijo reanudado" or "Pago fijo borrado. Lo ya anotado se queda."</td><td><code>…/ScheduleEditorViewModel.kt:540</code>, <code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:362</code></td><td>no screenshot</td></tr>
           </tbody>
@@ -157,6 +171,12 @@
 
     <section id="slips-editor">
       <h2>Slips over the editor: delete and discard</h2>
+
+      <figure data-shot="schedule-editor-start-picker" data-module="app" data-caption="The start date picker (Material's picker: the JVM screen runs in English, and draws it with square corners and no scrim)"></figure>
+      <figure data-shot="schedule-editor-delete" data-module="app" data-caption="The delete slip"></figure>
+      <figure data-shot="schedule-editor-discard" data-module="app" data-caption="The discard slip"></figure>
+      <figure data-shot="schedule-editor-note" data-module="app" data-caption="The note composer"></figure>
+      <figure data-shot="schedule-editor-otro" data-module="app" data-caption="Otro&#x27;s name composer"></figure>
       <ul>
         <li><strong>Delete</strong> (<code>app/src/main/java/com/software/sello/feature/recurrence/ScheduleEditorScreen.kt:169</code>): <a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a> "¿Borrarlo?" with what stops and what stays; the action "Borrar" in red (default <code>destructive</code>).</li>
         <li><strong>Discard</strong> (<code>:186</code>): ConfirmSlip with Anotar's strings; "Descartar" in brand (<code>destructive = false</code>) and "Seguir editando".</li>
@@ -166,6 +186,15 @@
 
     <section id="sheet-repeat">
       <h2>Row and sheet: Se repite</h2>
+
+      <figure data-shot="schedule-editor-repeat-monthly" data-module="app" data-caption="Cada mes"></figure>
+      <figure data-shot="schedule-editor-repeat-twice" data-module="app" data-caption="Dos veces al mes"></figure>
+      <figure data-shot="schedule-editor-repeat-weeks" data-module="app" data-caption="Cada semana o más, with an end"></figure>
+      <figure data-shot="schedule-editor-repeat-days" data-module="app" data-caption="Cada cierto número de días"></figure>
+      <figure data-shot="schedule-editor-repeat-never" data-module="app" data-caption="An end before the first date: nothing would be recorded"></figure>
+      <figure data-shot="schedule-editor-repeat-end-picker" data-module="app" data-caption="The end date picker (Material's picker: the JVM screen runs in English, and draws it with square corners and no scrim)"></figure>
+      <figure data-shot="expense-entry-switch" data-module="app" data-caption="The row, off (in Anotar)"></figure>
+      <figure data-shot="expense-entry-repeat-on" data-module="app" data-caption="The row, on"></figure>
 
       <h3>Layout</h3>
       <ol>
@@ -178,9 +207,9 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Off / on</td><td>The row's placeholder or rule and next date.</td><td><code>…/RepeatParts.kt:93</code></td><td>no screenshot</td></tr>
+            <tr><td>Off / on</td><td>The row's placeholder or rule and next date.</td><td><code>…/RepeatParts.kt:93</code></td><td><code>expense-entry-switch</code>, <code>expense-entry-repeat-on</code></td></tr>
             <tr><td>Disabled</td><td>The row follows the form's <code>editable</code>.</td><td><code>…/RepeatParts.kt:109</code></td><td>no screenshot</td></tr>
-            <tr><td>Never records</td><td>"Con este final no se anotaría nada. Cambia el final o el día." and "Listo" off.</td><td><code>…/RepeatParts.kt:182</code>, <code>:194</code></td><td>no screenshot</td></tr>
+            <tr><td>Never records</td><td>"Con este final no se anotaría nada. Cambia el final o el día." and "Listo" off.</td><td><code>…/RepeatParts.kt:182</code>, <code>:194</code></td><td><code>schedule-editor-repeat-never</code></td></tr>
             <tr><td>Next today / later</td><td>"Próximo: hoy. Se anota en cuanto guardes." or "Próximo: …. Se anota solo en su fecha."</td><td><code>…/RepeatParts.kt:183</code></td><td>no screenshot</td></tr>
             <tr><td>Restored</td><td>The choice, the sheet's draft and whether the end picker is open are kept in <code>SavedStateHandle</code>.</td><td><code>app/src/main/java/com/software/sello/presentation/recurrence/RepeatDraft.kt:61</code></td><td>—</td></tr>
             <tr><td>Loading, error, busy, unknown</td><td>Do not exist: the sheet only edits a draft.</td><td>—</td><td>—</td></tr>
@@ -204,6 +233,9 @@
 
     <section id="slip-following">
       <h2>Slip: ¿Cambiar también los siguientes?</h2>
+
+      <figure data-shot="expense-entry-following" data-module="app" data-caption="Asked from a payment"></figure>
+      <figure data-shot="expense-entry-following-busy" data-module="app" data-caption="Busy"></figure>
       <p>Asked when an entry a schedule recorded is saved with new terms in Anotar or the income form (<code>app/src/main/java/com/software/sello/presentation/recurrence/RepeatParts.kt:306</code>, used at <code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:352</code> and <code>app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:239</code>). A <a href="../components.html#c-ChoiceSlip"><code>ChoiceSlip</code></a>: the title, "Este gasto lo anotó <strong>…</strong>, que se repite …. Los siguientes cambian desde mañana; los ya anotados no." with the schedule's name in bold ink, Outlined "Solo este", filled "Este y los siguientes", and a Text "Volver a editar".</p>
       <p>States: asked; busy (the answer given shows its spinner and nothing can be pressed). Its failures ("No se pudieron cambiar los siguientes…", "Los siguientes ya cambiaron; este todavía no…") are said by the entry form. No screenshot.</p>
       <h3>Key copy</h3>
@@ -244,7 +276,7 @@
       <figure data-shot="catch-up-recorded" data-module="app"
               data-variants="cobalto-light-font1.0,cobalto-dark-font1.0,violeta-light-font1.0"
               data-caption="Each entry Sello recorded, opening its edit (Cobalto light and dark, Violeta)"></figure>
-      <figure data-shot="carry-catch-up" data-module="app" data-variants="cobalto-light-font1.0"
+      <figure data-shot="carry-catch-up" data-module="app"
               data-caption="With what recording them did to carry"></figure>
 
       <h3>Layout</h3>
@@ -262,7 +294,7 @@
             <tr><td>Error</td><td>ErrorSlip "No pudimos leer lo que Sello anotó" / "Lo anotado sigue guardado en tu mes. Vuelve a intentarlo."</td><td><code>…/CatchUpNotice.kt:383</code></td><td>no screenshot</td></tr>
             <tr><td>Empty</td><td><a href="../components.html#c-EmptySlip"><code>EmptySlip</code></a> "Ya no queda nada por revisar" / "Lo que Sello anotó ya no está o ya lo revisaste.", Check icon.</td><td><code>…/CatchUpNotice.kt:392</code></td><td>no screenshot</td></tr>
             <tr><td>Loaded</td><td>The list.</td><td><code>…/CatchUpNotice.kt:400</code></td><td>catch-up-recorded</td></tr>
-            <tr><td>Carry changed / failed</td><td>The carry slip, or ErrorSlip "No pudimos calcular lo que sobra o falta" / "No pudimos leer cómo cambió lo que sobra o falta. Tus pagos sí se anotaron."</td><td><code>…/CatchUpNotice.kt:455</code></td><td>carry-catch-up (light only); failed no screenshot</td></tr>
+            <tr><td>Carry changed / failed</td><td>The carry slip, or ErrorSlip "No pudimos calcular lo que sobra o falta" / "No pudimos leer cómo cambió lo que sobra o falta. Tus pagos sí se anotaron."</td><td><code>…/CatchUpNotice.kt:455</code></td><td>carry-catch-up; failed no screenshot</td></tr>
             <tr><td>Busy, unknown, stale</td><td>Do not exist. "Listo" that cannot be kept leaves the list open (<code>done</code>).</td><td><code>…/CatchUpNotice.kt:174</code></td><td>—</td></tr>
           </tbody>
         </table>
@@ -321,13 +353,10 @@
       <h2>Gaps</h2>
       <div class="gaps">
         <ul>
-          <li>Pagos e ingresos fijos: Ingresos tab, loading, error, empty, plan not shown, ended group: no screenshot. Stale: no dark screenshot.</li>
-          <li>Schedule editor: an income, loading, error, missing hints, paused slip, busy, unknown outcome, refused, restored draft, the closing notices: no screenshot. Stale: no dark screenshot.</li>
-          <li>Start date picker, delete slip, discard slip, note and Otro composers: no screenshot.</li>
-          <li>Se repite: row (off and on), sheet for each kind, never-records, end picker: no screenshot.</li>
-          <li>¿Cambiar también los siguientes? (and its busy state): no screenshot.</li>
+          <li>Schedule editor: restored draft (drawn as the form with its values): no screenshot.</li>
+          <li>Schedule editor: the closing notices (they are shown on the screen it returns to, not by the editor): no screenshot.</li>
           <li>Catch-up bar with reduced motion, with the carry wording: no screenshot.</li>
-          <li>Lo que Sello anotó: loading, error, empty, carry failed: no screenshot. Carry changed: no dark screenshot.</li>
+          <li>Lo que Sello anotó: loading, error, empty, carry failed: no screenshot.</li>
         </ul>
       </div>
     </section>

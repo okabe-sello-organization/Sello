@@ -33,7 +33,12 @@
 
     <section id="screen-settings">
       <h2>Screen: Configuración</h2>
-      <p class="note">There is no screenshot test for this screen: no baseline exists for any of its states (see <a href="#gaps">Gaps</a>).</p>
+
+      <figure data-shot="settings-loaded" data-module="app" data-caption="Loaded in its frame: Tus datos first (backup two days old), then Lo que se repite, Apariencia"></figure>
+      <figure data-shot="settings-loading" data-module="app" data-caption="Loading: one skeleton slip"></figure>
+      <figure data-shot="settings-failed" data-module="app" data-caption="A preference could not be read: the ErrorSlip over the last good values"></figure>
+      <figure data-shot="settings-busy" data-module="app" data-caption="A write under way; counts and the rate unreadable"></figure>
+      <figure data-shot="settings-order-slip" data-module="app" data-caption="The OptionSlip for Orden de las categorías, open"></figure>
 
       <h3>Layout</h3>
       <p>One vertically scrolling <code>Column</code> with <code>spacing.md</code> between blocks (<code>app/src/main/java/com/software/sello/feature/settings/SettingsScreen.kt:96</code>). Top to bottom:</p>
@@ -53,16 +58,16 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Loading</td><td>One <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a> and nothing else, until the appearance, ordering and investment preferences have each answered once.</td><td><code>app/src/main/java/com/software/sello/feature/settings/SettingsScreen.kt:104</code>, <code>app/src/main/java/com/software/sello/feature/settings/SettingsViewModel.kt:108</code></td><td>no screenshot</td></tr>
+            <tr><td>Loading</td><td>One <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a> and nothing else, until the appearance, ordering and investment preferences have each answered once.</td><td><code>app/src/main/java/com/software/sello/feature/settings/SettingsScreen.kt:104</code>, <code>app/src/main/java/com/software/sello/feature/settings/SettingsViewModel.kt:108</code></td><td><code>settings-loading</code></td></tr>
             <tr><td>Empty</td><td>Does not exist: every preference has a default.</td><td><code>SettingsViewModel.kt:202</code></td><td>—</td></tr>
-            <tr><td>Error (nothing ever loaded)</td><td>Does not exist as its own state. A failed read with no last good value falls back to the defaults and shows the same ErrorSlip as the stale case.</td><td><code>SettingsViewModel.kt:73</code></td><td>no screenshot</td></tr>
-            <tr><td>Stale (read failed, last good kept)</td><td>The last good values stay on every control; an ErrorSlip with the default title "No se pudo cargar", the message "No pudimos leer o guardar tu configuración. Tus gastos y límites siguen igual; inténtalo de nuevo." and the default "Reintentar". Retry reads every source again.</td><td><code>SettingsScreen.kt:108</code>, <code>SettingsViewModel.kt:73</code>, <code>SettingsViewModel.kt:159</code></td><td>no screenshot</td></tr>
-            <tr><td>Busy (a write running)</td><td>The theme switch, ink swatches and the four picker rows are disabled (faded) until the write returns; a second choice is ignored.</td><td><code>SettingsScreen.kt:228</code>, <code>SettingsViewModel.kt:164</code></td><td>no screenshot</td></tr>
+            <tr><td>Error (nothing ever loaded)</td><td>Does not exist as its own state. A failed read with no last good value falls back to the defaults and shows the same ErrorSlip as the stale case.</td><td><code>SettingsViewModel.kt:73</code></td><td><code>settings-failed</code></td></tr>
+            <tr><td>Stale (read failed, last good kept)</td><td>The last good values stay on every control; an ErrorSlip with the default title "No se pudo cargar", the message "No pudimos leer o guardar tu configuración. Tus gastos y límites siguen igual; inténtalo de nuevo." and the default "Reintentar". Retry reads every source again.</td><td><code>SettingsScreen.kt:108</code>, <code>SettingsViewModel.kt:73</code>, <code>SettingsViewModel.kt:159</code></td><td><code>settings-failed</code></td></tr>
+            <tr><td>Busy (a write running)</td><td>The theme switch, ink swatches and the four picker rows are disabled (faded) until the write returns; a second choice is ignored.</td><td><code>SettingsScreen.kt:228</code>, <code>SettingsViewModel.kt:164</code></td><td><code>settings-busy</code></td></tr>
             <tr><td>Refused (write failed)</td><td>The same ErrorSlip as the stale case; the control keeps the stored value.</td><td><code>SettingsViewModel.kt:187</code>, <code>SettingsViewModel.kt:218</code></td><td>no screenshot</td></tr>
             <tr><td>Unknown outcome</td><td>Does not exist: preference writes report done or failed.</td><td><code>SettingsViewModel.kt:186</code></td><td>—</td></tr>
             <tr><td>Restored draft</td><td>Which OptionSlip is open survives recreation (<code>rememberSaveable</code>); there is no draft otherwise, every choice saves at once.</td><td><code>SettingsScreen.kt:95</code></td><td>no screenshot</td></tr>
-            <tr><td>Schedule count loading / unreadable</td><td>The "Pagos e ingresos fijos" row shows no value while loading, "No se pudieron leer" when the read failed, else "N pagos, N ingresos".</td><td><code>SettingsScreen.kt:185</code>, <code>SettingsViewModel.kt:112</code></td><td>no screenshot</td></tr>
-            <tr><td>Rate loading / none / unreadable</td><td>The "Dólar" row has no caption while loading, "Sin tasa todavía" with no rate, "No pudimos leer la tasa" on failure, or "Tasa del {day}" with the rate as the value.</td><td><code>SettingsScreen.kt:305</code>, <code>SettingsViewModel.kt:128</code></td><td>no screenshot</td></tr>
+            <tr><td>Schedule count loading / unreadable</td><td>The "Pagos e ingresos fijos" row shows no value while loading, "No se pudieron leer" when the read failed, else "N pagos, N ingresos".</td><td><code>SettingsScreen.kt:185</code>, <code>SettingsViewModel.kt:112</code></td><td><code>settings-busy</code></td></tr>
+            <tr><td>Rate loading / none / unreadable</td><td>The "Dólar" row has no caption while loading, "Sin tasa todavía" with no rate, "No pudimos leer la tasa" on failure, or "Tasa del {day}" with the rate as the value.</td><td><code>SettingsScreen.kt:305</code>, <code>SettingsViewModel.kt:128</code></td><td><code>settings-busy</code></td></tr>
           </tbody>
         </table>
       </div>
@@ -171,8 +176,7 @@
       <h2>Gaps</h2>
       <div class="gaps">
         <ul>
-          <li>No screenshot test exists for Configuración: no baseline for loaded, loading, stale/error, busy, an open OptionSlip, or the Tus datos card in any state. <code>app/src/test/java/com/software/sello/feature/settings/SettingsScreenTest.kt</code> checks only the order of sections.</li>
-          <li>No screenshot of <code>InkSwatches</code> (its behaviour is tested in <code>InkSwatchesTest.kt</code>).</li>
+          <li>No screenshot of <code>InkSwatches</code> on its own (its behaviour is tested in <code>InkSwatchesTest.kt</code>; it shows in settings-loaded).</li>
           <li>The ErrorSlip's default title "No se pudo cargar" is also shown after a failed write, where nothing failed to load; the message itself covers both. Could not confirm from the code whether this is intended.</li>
           <li>The entry dock (record an expense) shows on Configuración, while Respaldo and Borrar datos hide it (<code>entryDock = false</code>); the code gives no reason. Left to the Shell page.</li>
         </ul>

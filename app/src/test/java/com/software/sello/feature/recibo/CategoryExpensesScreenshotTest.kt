@@ -75,4 +75,40 @@ class CategoryExpensesScreenshotTest {
     @Test
     fun failedClaro() =
         capture(Look(), "category-expenses-failed-claro", CategoryExpensesState.Failed)
+
+    @Test
+    fun olderOscuro() =
+        capture(Look(dark = true), "category-expenses-stale-oscuro", ready.copy(stale = true))
+
+    @Test
+    fun deleteUnknownOscuro() = capture(
+        Look(dark = true),
+        "category-expenses-delete-unknown-oscuro",
+        ready.copy(problem = DeleteProblem.Unknown)
+    )
+
+    @Test
+    fun failedOscuro() =
+        capture(Look(dark = true), "category-expenses-failed-oscuro", CategoryExpensesState.Failed)
+
+    private val empty = ready.copy(rows = emptyList(), more = false, totalCount = 0)
+
+    @Test fun emptyClaro() = capture(Look(), "category-expenses-empty-claro", empty)
+
+    @Test fun emptyOscuro() = capture(Look(dark = true), "category-expenses-empty-oscuro", empty)
+
+    private val pageFailed = ready.copy(more = true, pageFailed = true)
+
+    @Test
+    fun pageFailedClaro() = capture(Look(), "category-expenses-page-failed-claro", pageFailed)
+
+    @Test
+    fun pageFailedOscuro() =
+        capture(Look(dark = true), "category-expenses-page-failed-oscuro", pageFailed)
+
+    private val busy = ready.copy(more = true, busy = true)
+
+    @Test fun busyClaro() = capture(Look(), "category-expenses-busy-claro", busy)
+
+    @Test fun busyOscuro() = capture(Look(dark = true), "category-expenses-busy-oscuro", busy)
 }

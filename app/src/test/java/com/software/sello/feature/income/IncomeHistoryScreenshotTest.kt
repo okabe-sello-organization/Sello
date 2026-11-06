@@ -112,4 +112,80 @@ class IncomeHistoryScreenshotTest {
     @Test
     fun variosOscuro() =
         capture(Look(dark = true), "income-history-varios", null, onRecordSeveral = {})
+
+    private fun shot(
+        name: String,
+        look: Look,
+        shown: IncomeHistoryState = state,
+        shownSplit: IncomeSplit? = split,
+        plan: IncomePlanState = IncomePlanState.None
+    ) {
+        rule.showSello(look) {
+            IncomeHistoryScreen(
+                shown, shownSplit, plan, null, today, {}, {}, {}, {}, PaddingValues(12.dp)
+            )
+        }
+        rule.captureStill("src/test/screenshots/income-history-$name-${look.label}.png")
+    }
+
+    @Test fun loadingLight() = shot("loading", Look(), IncomeHistoryState.Loading, null)
+
+    @Test fun loadingDark() = shot("loading", Look(dark = true), IncomeHistoryState.Loading, null)
+
+    @Test fun failedLight() = shot("failed", Look(), IncomeHistoryState.Failed, null)
+
+    @Test fun failedDark() = shot("failed", Look(dark = true), IncomeHistoryState.Failed, null)
+
+    private val empty = state.copy(total = pesos("0"), lines = emptyList())
+
+    @Test fun emptyLight() = shot("empty", Look(), empty, null)
+
+    @Test fun emptyDark() = shot("empty", Look(dark = true), empty, null)
+
+    /** The list read, the month's split not yet: the hero waits. */
+    @Test fun heroPendingLight() = shot("hero-pending", Look(), shownSplit = null)
+
+    @Test fun heroPendingDark() = shot("hero-pending", Look(dark = true), shownSplit = null)
+
+    private val pageFailed = state.copy(more = true, pageFailed = true)
+
+    @Test fun pageFailedLight() = shot("page-failed", Look(), pageFailed)
+
+    @Test fun pageFailedDark() = shot("page-failed", Look(dark = true), pageFailed)
+
+    /** Spent more than came in: the bar over its basis. */
+    private val over = IncomeSplit(
+        income = pesos("150.000"),
+        allocated = pesos("180.000"),
+        unallocated = pesos("30.000", minus = true),
+        over = true,
+        allocatedShare = 1f
+    )
+
+    @Test fun overLight() = shot("over", Look(), shownSplit = over)
+
+    @Test fun overDark() = shot("over", Look(dark = true), shownSplit = over)
+
+    /** The month's plan: what came in, what is still expected from the schedules. */
+    private val plan = IncomePlanState.Shown(
+        IncomePlanView(
+            recorded = pesos("150.000"),
+            expected = pesos("4.200.000"),
+            planned = pesos("4.350.000"),
+            unassigned = pesos("50.000"),
+            over = false,
+            items = listOf(
+                ExpectedLine("s1", "salary", null, LocalDate.of(2026, 10, 30), pesos("4.200.000"))
+            )
+        )
+    )
+
+    @Test fun planLight() = shot("plan", Look(), plan = plan)
+
+    @Test fun planDark() = shot("plan", Look(dark = true), plan = plan)
+
+    @Test fun planFailedLight() = shot("plan-failed", Look(), plan = IncomePlanState.Failed)
+
+    @Test
+    fun planFailedDark() = shot("plan-failed", Look(dark = true), plan = IncomePlanState.Failed)
 }

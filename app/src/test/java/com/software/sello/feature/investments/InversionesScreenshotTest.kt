@@ -32,7 +32,12 @@ import com.software.sello.domain.port.InvestmentBoard
 import com.software.sello.domain.port.InvestmentBoardState
 import com.software.sello.domain.port.InvestmentSummary
 import com.software.sello.domain.port.ReadState
+import com.software.sello.navigation.ShellScreen
+import com.software.sello.navigation.ShellTab
+import com.software.sello.navigation.appTabs
+import com.software.sello.navigation.octoberShell
 import com.software.sello.presentation.date.dateLabels
+import com.software.sello.presentation.month.monthNames
 import com.software.sello.showSello
 import com.software.sello.testing.testMoney
 import java.math.BigDecimal
@@ -168,9 +173,8 @@ class InversionesScreenshotTest {
     }
 
     /** The list's foot: Anotar varios, under the last investment (SELLO-142). */
-    @Test
-    fun foot() {
-        rule.showSello(Look()) {
+    private fun foot(look: Look) {
+        rule.showSello(look) {
             InversionesScreen(
                 shown,
                 {},
@@ -181,8 +185,14 @@ class InversionesScreenshotTest {
         }
         rule.onNodeWithTag(INVERSIONES_LIST_TAG)
             .performScrollToNode(hasTestTag(INVERSIONES_RECORD_SEVERAL_TAG))
-        rule.captureStill("src/test/screenshots/inversiones-foot-cobalto-light.png")
+        rule.captureStill("src/test/screenshots/inversiones-foot-${look.label}.png")
     }
+
+    @Test
+    fun footLight() = foot(Look())
+
+    @Test
+    fun footDark() = foot(Look(dark = true))
 
     @Test
     fun cobaltoLight() = capture(Look())
@@ -192,4 +202,52 @@ class InversionesScreenshotTest {
 
     @Test
     fun violetaLight() = capture(Look(ink = SelloInk.Violeta))
+
+    private fun shot(name: String, state: InversionesState, look: Look) {
+        rule.showSello(look) {
+            if (state == InversionesState.Loading) {
+                // As InvestmentDestinations.kt frames it before the list is read: no chip, no dock.
+                ShellScreen(
+                    octoberShell,
+                    monthNames(),
+                    {},
+                    navigation = appTabs(ShellTab.Inversiones),
+                    titleOnly = "Inversiones",
+                    entryDock = false
+                ) { padding ->
+                    InversionesScreen(state, {}, dateLabels(), padding)
+                }
+            } else {
+                InversionesScreen(state, {}, dateLabels(), PaddingValues(16.dp))
+            }
+        }
+        rule.captureStill("src/test/screenshots/inversiones-$name-${look.label}.png")
+    }
+
+    @Test fun loadingLight() = shot("loading", InversionesState.Loading, Look())
+
+    @Test fun loadingDark() = shot("loading", InversionesState.Loading, Look(dark = true))
+
+    @Test fun failedLight() = shot("failed", InversionesState.Failed, Look())
+
+    @Test fun failedDark() = shot("failed", InversionesState.Failed, Look(dark = true))
+
+    private val ready = shown as InversionesState.Ready
+
+    private val empty = ready.copy(total = null, rows = emptyList(), rate = null)
+
+    @Test fun emptyLight() = shot("empty", empty, Look())
+
+    @Test fun emptyDark() = shot("empty", empty, Look(dark = true))
+
+    @Test fun staleLight() = shot("stale", ready.copy(stale = true), Look())
+
+    @Test fun staleDark() = shot("stale", ready.copy(stale = true), Look(dark = true))
+
+    /** A dollar investment and no rate: no total can be given. */
+    private val noTotal = ready.copy(total = null, rate = null, missingRate = true)
+
+    @Test fun noTotalLight() = shot("no-total", noTotal, Look())
+
+    @Test fun noTotalDark() = shot("no-total", noTotal, Look(dark = true))
 }
