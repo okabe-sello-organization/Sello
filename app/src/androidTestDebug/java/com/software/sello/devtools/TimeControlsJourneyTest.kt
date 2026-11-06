@@ -3,6 +3,7 @@ package com.software.sello.devtools
 import android.content.Context
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
@@ -17,7 +18,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
-import androidx.compose.ui.text.AnnotatedString
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.software.sello.NightlyOnly
@@ -203,14 +203,13 @@ class TimeControlsJourneyTest {
         rule.onNode(hasSetTextAction() and hasAnyAncestor(hasTestTag(TOOLS_JUMP_FIELD_TAG)))
             .performScrollTo()
             .performTextInput("2026-10-01")
-        // The same pattern as the reset journey's word, waited for as a precaution; this
-        // check has not failed on CI.
+        // The text alone: the system keyboard may take what was typed as the word it is
+        // composing, and the field then reports it with an underline (#405).
         rule.await(
             hasSetTextAction() and hasAnyAncestor(hasTestTag(TOOLS_JUMP_FIELD_TAG)) and
-                SemanticsMatcher.expectValue(
-                    SemanticsProperties.EditableText,
-                    AnnotatedString("2026-10-01")
-                )
+                SemanticsMatcher("typed date is exactly 2026-10-01") {
+                    it.config.getOrNull(SemanticsProperties.EditableText)?.text == "2026-10-01"
+                }
         )
         // Pressed, not clicked by position: the keyboard may still be on its way and move
         // the screen, so a click may land where the control no longer is.
