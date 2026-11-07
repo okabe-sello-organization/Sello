@@ -24,7 +24,8 @@ import com.software.sello.presentation.month.monthNames
 
 /**
  * Día a día, opened from Recibo's and Resumen's magnifier and Resumen's stub, always on the
- * shared month. A row opens today's editor; its correction and undo come back as a notice.
+ * shared month. A row, of the month or of a search, opens today's editor; its correction
+ * and undo come back as a notice, over the same list or results.
  */
 internal fun NavGraphBuilder.movementDestinations(
     navigation: NavHostController,
@@ -39,6 +40,8 @@ internal fun NavGraphBuilder.movementDestinations(
         val notice by noticeState
         val model: DayByDayViewModel = viewModel(factory = viewModels)
         val days by model.state.collectAsStateWithLifecycle()
+        val query by model.query.collectAsStateWithLifecycle()
+        val found by model.found.collectAsStateWithLifecycle()
         ShellScreen(
             state,
             monthNames(),
@@ -52,6 +55,8 @@ internal fun NavGraphBuilder.movementDestinations(
         ) { padding ->
             DayByDayScreen(
                 days,
+                query,
+                found,
                 model::onAction,
                 onExpense = {
                     navigation.navigate(ExpenseEditRoute(it)) { launchSingleTop = true }

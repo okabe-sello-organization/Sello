@@ -4,6 +4,12 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.assertContentDescriptionEquals
+import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -16,6 +22,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.domain.port.MovementFilter
 import com.software.sello.showSello
 import java.time.LocalDate
+import java.time.YearMonth
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -31,9 +38,15 @@ class DayByDayScreenTest {
     private val actions = mutableListOf<DayByDayAction>()
     private val opened = mutableListOf<String>()
 
-    private fun show(state: DayByDayState) = rule.showSello {
+    private fun show(
+        state: DayByDayState,
+        query: String = "",
+        found: SearchState = SearchState.Off
+    ) = rule.showSello {
         DayByDayScreen(
             state,
+            query,
+            found,
             { actions += it },
             { opened += "gasto $it" },
             { opened += "ingreso $it" },
@@ -147,5 +160,110 @@ class DayByDayScreenTest {
             hasText("No hay ingresos en octubre") and hasAnyAncestor(hasTestTag("dayByDay.none"))
         ).assertExists()
         rule.onNode(hasText("Anotar gasto")).assertDoesNotExist()
+    }
+
+    @Test
+    fun typingSearches() {
+        show(dayByDayReady)
+
+        rule.onNodeWithTag(SEARCH_TAG).performTextInput("rappi")
+
+        assertEquals(listOf<DayByDayAction>(DayByDayAction.Search("rappi")), actions)
+    }
+
+    @Test
+    fun theClearButtonEmptiesTheField() {
+        show(dayByDayReady, query = "rappi", found = foundRappi)
+        rule.onNodeWithContentDescription("Borrar la búsqueda").performClick()
+        assertEquals(listOf<DayByDayAction>(DayByDayAction.Search("")), actions)
+    }
+
+    @Test
+    fun resultsAreHeadedByMonthWithTheirCountAndSumAndEachRowSaysItsDay() {
+        show(dayByDayReady, query = "rappi", found = foundRappi)
+
+        rule.onNodeWithText("En todos los meses").assertExists()
+        rule.onNode(hasText("9 gastos", substring = true)).assertExists()
+        rule.onNodeWithTag("dayByDay.found.expenses", useUnmergedTree = true)
+            .assertTextContains("214.800", substring = true)
+        val october = foundMonthTag(YearMonth.of(2026, 10))
+        rule.onNodeWithTag(october).assertContentDescriptionEquals(
+            "Octubre 2026: 3 encontrados, 61.200 pesos"
+        )
+        assertEquals(
+            "Rappi, almuerzo, Alimentación · sáb 3, 20.600 pesos",
+            rule.onNodeWithTag(movementTag("11")).fetchSemanticsNode().config
+                .getOrNull(SemanticsProperties.ContentDescription)?.single()
+        )
+        // The day list's headings and month count give way to the results.
+        rule.onNodeWithTag("dayByDay.count").assertDoesNotExist()
+        rule.onNodeWithTag(dayTag(LocalDate.of(2026, 10, 6))).assertDoesNotExist()
+    }
+
+    @Test
+    fun anAmountSearchSaysSoAndCountsIncomesApart() {
+        show(dayByDayReady, query = "18.000", found = foundAmount)
+
+        rule.onNodeWithText("Monto exacto 18.000").assertExists()
+        rule.onNode(hasText("14 gastos", substring = true)).assertExists()
+        rule.onNode(hasText("1 ingreso", substring = true)).assertExists()
+        // Today's result says hoy instead of its weekday.
+        assertEquals(
+            "Almuerzo, Alimentación · hoy, 18.000 pesos",
+            rule.onNodeWithTag(movementTag("1")).fetchSemanticsNode().config
+                .getOrNull(SemanticsProperties.ContentDescription)?.single()
+        )
+        rule.onNodeWithTag("dayByDay.found.more").performScrollTo().performClick()
+        assertEquals(listOf<DayByDayAction>(DayByDayAction.MoreFound), actions)
+    }
+
+    @Test
+    fun aResultOpensItsOwnEditor() {
+        show(dayByDayReady, query = "18.000", found = foundAmount)
+
+        rule.onNodeWithTag(movementTag("24")).performScrollTo().performClick()
+        rule.onNodeWithTag(movementTag("23")).performScrollTo().performClick()
+
+        assertEquals(listOf("gasto 24", "ingreso 23"), opened)
+    }
+
+    @Test
+    fun nothingFoundSaysWhatWasSearchedWithoutAButton() {
+        show(
+            dayByDayReady,
+            query = "plomería",
+            found = foundRappi.copy(words = "plomería", expenses = null, months = emptyList())
+        )
+
+        val none = hasAnyAncestor(hasTestTag("dayByDay.found.none"))
+        rule.onNode(hasText("No encontramos «plomería»") and none).assertExists()
+        rule.onNodeWithText("Busca otra palabra o un monto exacto, como 18.000.").assertExists()
+        rule.onNode(hasClickAction() and none).assertDoesNotExist()
+        // The chips stay, so another can be picked.
+        rule.onNodeWithTag("dayByDay.chips").assertExists()
+    }
+
+    @Test
+    fun aFailedSearchKeepsTheQueryAndOffersReintentar() {
+        show(
+            dayByDayReady,
+            query = "rappi",
+            found = SearchState.Failed("rappi", MovementFilter.All, DayByDayProblem.Unread)
+        )
+
+        rule.onNodeWithTag(SEARCH_TAG).assertTextEquals("rappi")
+        rule.onNode(hasText("Reintentar") and hasAnyAncestor(hasTestTag("dayByDay.found.failed")))
+            .performClick()
+        assertEquals(listOf<DayByDayAction>(DayByDayAction.Retry), actions)
+    }
+
+    @Test
+    fun anEmptyMonthStillOffersTheSearch() {
+        show(dayByDayReady.copy(days = emptyList(), totalCount = 0))
+
+        rule.onNodeWithTag(SEARCH_TAG).assertExists()
+        // Nothing typed: nothing to clear.
+        rule.onNodeWithContentDescription("Borrar la búsqueda").assertDoesNotExist()
+        rule.onNodeWithText("Buscar en todos tus movimientos").assertExists()
     }
 }

@@ -626,7 +626,7 @@ fun MoreMenuDropdown(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-FormField">
-<h3><code>FormField</code> <span class="src"><code>component/FormField.kt:45</code></span></h3>
+<h3><code>FormField</code> <span class="src"><code>component/FormField.kt:52</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>A labelled text input. It shows exactly what was typed: it does not trim, cut at a limit or remove characters. The caller validates and passes back a <code>message</code>; an error message also marks the field invalid for screen readers. <code>counter</code> is a ready-made count such as `25/24`. <code>visualTransformation</code> changes only how the value is drawn, never the value: see <code>DigitGrouping</code>.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/category.html">category · 2</a> <a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/investments.html">investments · 2</a> <a class="tag" href="features/recibo.html">recibo · 1</a> <a class="tag" href="features/reset.html">reset · 1</a> <a class="tag" href="features/startup.html">startup · 1</a></dd>
@@ -648,6 +648,24 @@ fun MoreMenuDropdown(
 
 <p class="muted">Also visible in screen baselines: <code>category-editor</code>.</p>
 <figure data-shot="category-editor" data-module="app" data-caption="Seen in Editar categoría: the Nombre field"></figure>
+<div class="gaps"><p>No component capture.</p></div>
+</article>
+<article class="component" id="c-SearchField">
+<h3><code>SearchField</code> <span class="src"><code>component/FormField.kt:142</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A search input: a magnifier, the <code>placeholder</code> while nothing is typed and, once something is, a clear button said as <code>clearLabel</code> that empties it. Like <code>FormField</code> it shows exactly what was typed and is underlined in the rule ink, the brand's while focused; the keyboard's search key puts the keyboard away. Screen readers call the field by its <code>placeholder</code>. It lives beside <code>FormField</code> to share its cursor and keyboard handling.</dd>
+<dt>Used by</dt><dd>Día a día's search (SELLO-193) · 1</dd>
+</dl>
+<pre><code>fun SearchField(
+    value: String,
+    onValueChange: (String) -&gt; Unit,
+    placeholder: String,
+    clearLabel: String,
+    modifier: Modifier = Modifier
+)</code></pre>
+
+<p class="muted">Also visible in screen baselines: <code>day-by-day-search-words</code>.</p>
+<figure data-shot="day-by-day-search-words" data-module="app" data-caption="Seen in Día a día: a search across every month"></figure>
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-FieldMessageText">
