@@ -44,6 +44,7 @@ import com.software.sello.domain.port.ScheduleCatchUpStore
 import com.software.sello.domain.port.ScheduleCommands
 import com.software.sello.domain.port.ScheduleReads
 import com.software.sello.domain.port.ScheduleRecordReads
+import com.software.sello.domain.port.YearSnapshots
 import com.software.sello.platform.deviceZone
 import java.time.ZoneId
 import kotlinx.coroutines.NonCancellable
@@ -125,6 +126,9 @@ fun storageModule(storage: FinancialStorage): Module = module {
     }
     single<ResumenSnapshots> {
         storage.resumenSnapshots(get(), get<DispatcherProvider>().default)
+    }
+    single<YearSnapshots> {
+        storage.yearSnapshots(get(), get<DispatcherProvider>().default)
     }
     single<ExpenseReads> { storage.expenseReads }
     single<IncomeCommands> { storage.incomeCommands(get(), get(), get(), get()) }

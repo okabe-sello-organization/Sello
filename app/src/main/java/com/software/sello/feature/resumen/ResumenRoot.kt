@@ -15,7 +15,8 @@ fun ResumenRoot(
     onExpense: () -> Unit,
     padding: PaddingValues,
     onSchedules: () -> Unit,
-    onAdjustLimit: (String) -> Unit
+    onAdjustLimit: (String) -> Unit,
+    onYear: (Int) -> Unit
 ) {
     val model: ResumenViewModel = viewModel(factory = factory)
     val state by model.state.collectAsStateWithLifecycle()
@@ -27,6 +28,15 @@ fun ResumenRoot(
         onExpense,
         padding,
         onAdjustLimit,
-        onSchedules
+        onSchedules,
+        onYear
     )
+}
+
+/** Tu año inside the shell's [padding]. */
+@Composable
+fun YearRoot(factory: ViewModelProvider.Factory, padding: PaddingValues) {
+    val model: YearViewModel = viewModel(factory = factory)
+    val state by model.state.collectAsStateWithLifecycle()
+    YearScreen(state, model::onAction, padding)
 }

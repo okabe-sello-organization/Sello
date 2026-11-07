@@ -41,6 +41,10 @@ interface IncomeDao {
     @Query("SELECT * FROM income WHERE id = :id")
     suspend fun byId(id: String): IncomeEntity?
 
+    /** The stored date of the earliest income, or null when there is none. */
+    @Query("SELECT MIN(effective_date) FROM income")
+    suspend fun earliestDate(): String?
+
     /** The highest sequence in use, or null when there is no income. */
     @Query("SELECT MAX(sequence) FROM income")
     suspend fun highestSequence(): Long?

@@ -63,6 +63,7 @@ import com.software.sello.domain.model.SpendingDirection
 import com.software.sello.presentation.carry.CarryBreakdownSection
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.date.dateLabels
+import java.time.YearMonth
 
 @Composable
 fun ResumenScreen(
@@ -73,7 +74,8 @@ fun ResumenScreen(
     onExpense: () -> Unit,
     padding: PaddingValues,
     onAdjustLimit: (String) -> Unit = {},
-    onSchedules: () -> Unit = {}
+    onSchedules: () -> Unit = {},
+    onYear: (Int) -> Unit = {}
 ) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val layout = selloWindowLayout(maxWidth, maxHeight)
@@ -106,13 +108,13 @@ fun ResumenScreen(
                             SummarySlips(state, onIncome, onSchedules, onAction, onCategory)
                         }
                         ResumenPane(Modifier.weight(1f)) {
-                            ChartSlips(state, onAction, onExpense, onAdjustLimit)
+                            ChartSlips(state, onAction, onExpense, onAdjustLimit, onYear)
                         }
                     }
                 } else {
                     ResumenPane(content) {
                         SummarySlips(state, onIncome, onSchedules, onAction, onCategory)
-                        ChartSlips(state, onAction, onExpense, onAdjustLimit)
+                        ChartSlips(state, onAction, onExpense, onAdjustLimit, onYear)
                     }
                 }
             }
@@ -338,7 +340,8 @@ private fun ChartSlips(
     state: ResumenState.Ready,
     onAction: (ResumenAction) -> Unit,
     onExpense: () -> Unit,
-    onAdjustLimit: (String) -> Unit
+    onAdjustLimit: (String) -> Unit,
+    onYear: (Int) -> Unit
 ) {
     if (state.empty) {
         StatusSlip(
@@ -353,7 +356,20 @@ private fun ChartSlips(
         return
     }
     Slip(Modifier.fillMaxWidth().testTag("resumen.history")) {
-        ResumenHeading(stringResource(R.string.resumen_month_by_month))
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.weight(1f)) {
+                ResumenHeading(stringResource(R.string.resumen_month_by_month))
+            }
+            // Tu año of the month on screen.
+            SelloButton(
+                text = stringResource(R.string.resumen_see_year),
+                onClick = { onYear(YearMonth.parse(state.month).year) },
+                modifier = Modifier.testTag(RESUMEN_SEE_YEAR_TAG),
+                kind = ButtonKind.Text,
+                contentPadding = PaddingValues(start = SelloTheme.spacing.sm),
+                trailingIcon = SelloIcon.ChevronRight
+            )
+        }
         state.normalMonth?.let { normal ->
             Row(
                 Modifier.fillMaxWidth().testTag("resumen.normal"),
@@ -617,12 +633,12 @@ private fun Weekdays(
 }
 
 @Composable
-private fun ResumenNote(text: String) {
+internal fun ResumenNote(text: String) {
     Text(text, style = MaterialTheme.typography.bodySmall, color = SelloTheme.colors.inkSoft)
 }
 
 @Composable
-private fun ResumenHeading(text: String) {
+internal fun ResumenHeading(text: String) {
     // Resumen asks a small question over each slip's answer.
     Text(
         text,
@@ -660,3 +676,5 @@ private fun carrySpoken(point: ResumenPoint): String {
 }
 
 const val RESUMEN_DISMISS_FAILED_TAG = "resumen.suggestion.dismissFailed"
+
+const val RESUMEN_SEE_YEAR_TAG = "resumen.seeYear"
