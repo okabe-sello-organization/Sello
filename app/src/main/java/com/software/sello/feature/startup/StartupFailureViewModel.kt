@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.port.AppRestart
 import com.software.sello.domain.port.DocumentSource
+import com.software.sello.platform.SystemColor
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,12 +25,15 @@ import kotlinx.coroutines.launch
 class StartupFailureViewModel(
     private val saved: SavedStateHandle,
     private val recovery: StartupRecovery,
-    private val restart: AppRestart
+    private val restart: AppRestart,
+    systemColor: SystemColor
 ) : ViewModel() {
     private val mutable = MutableStateFlow(
         StartupFailureState(
             confirming = saved[KEY_CONFIRMING] ?: false,
-            typed = saved[KEY_TYPED] ?: ""
+            typed = saved[KEY_TYPED] ?: "",
+            // Read once: the app starts again after a restore from here.
+            phone = systemColor.color.value
         )
     )
     val state: StateFlow<StartupFailureState> = mutable.asStateFlow()

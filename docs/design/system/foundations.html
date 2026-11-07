@@ -65,8 +65,10 @@
           and later: <code>hueOf(argb)</code> (<code>HuePalette.kt:96</code>) turns the phone's accent
           (<code>system_accent1_500</code>) into its whole OKLCH degree, rounded to the nearest, 359.5° and
           above to 0°, and the app is drawn in <code>HueInk</code> of it, the hue as it is, none moved or
-          blocked. A grey accent has no hue: <code>hueOf</code> gives none, as on Android 11, where Sistema
-          is not offered and is drawn in Cobalto.</p>
+          blocked. A grey accent (a monochrome style) has no hue: <code>hueOf</code> gives none, Sistema
+          is still offered and chosen, and the app is drawn in Cobalto until the phone has a colour
+          again. Android 11 has no accent at all: Sistema is not offered there and is drawn in
+          Cobalto. <code>PhoneColor</code> (None, Grey or a Hue) tells the three apart.</p>
         <figure data-shot="settings-tuya" data-module="app" data-files="settings-tuya-tuya22-light-font1.0.png, settings-tuya-tuya22-dark-font1.0.png" data-caption="Configuración drawn in Tuya at 22° (Rojo), light and dark: the generator's palette; the stamp keeps its own green"></figure>
         <figure data-shot="settings-sistema" data-module="app" data-files="settings-sistema-tuya240-light-font1.0.png, settings-sistema-tuya240-dark-font1.0.png" data-caption="Configuración drawn in Sistema on a phone with a blue wallpaper (240°), light and dark: the generator's shades of the phone's hue, not Material's"></figure>
         <figure data-shot="settings-tu-tinta" data-module="app" data-caption="Tu tinta: two previews in the hue being chosen, inside their own SelloTheme(HueInk(hue)), and the slider's track in the light band of every hue"></figure>

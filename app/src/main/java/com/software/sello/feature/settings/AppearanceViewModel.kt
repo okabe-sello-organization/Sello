@@ -6,6 +6,7 @@ import com.software.sello.domain.model.AppearancePreference
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
+import com.software.sello.platform.PhoneColor
 import com.software.sello.platform.SystemColor
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -33,12 +34,12 @@ class AppearanceViewModel(
                 )
             }
         },
-        systemColor.hue
-    ) { state, hue -> state.copy(systemHue = hue) }
+        systemColor.color
+    ) { state, phone -> state.copy(phone = phone) }
         .stateIn(
             viewModelScope,
             SharingStarted.Eagerly,
-            AppearanceState(loading = true, systemHue = systemColor.hue.value)
+            AppearanceState(loading = true, phone = systemColor.color.value)
         )
 
     /**
@@ -48,10 +49,10 @@ class AppearanceViewModel(
     fun onShown() = systemColor.refresh()
 }
 
-/** [systemHue] is the phone's colour, for Sistema: null when it has none. */
+/** [phone] is the phone's accent colour, for Sistema. */
 data class AppearanceState(
     val appearance: AppearancePreference = AppearancePreference(),
     val loading: Boolean = false,
     val failure: PreferenceFailure? = null,
-    val systemHue: Int? = null
+    val phone: PhoneColor = PhoneColor.None
 )

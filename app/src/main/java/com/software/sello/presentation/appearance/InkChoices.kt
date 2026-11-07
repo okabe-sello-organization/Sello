@@ -10,6 +10,8 @@ import com.software.sello.designsystem.theme.ThemeInk
 import com.software.sello.designsystem.theme.hueName
 import com.software.sello.domain.model.AppearancePreference
 import com.software.sello.domain.model.InkPreference
+import com.software.sello.platform.PhoneColor
+import com.software.sello.platform.hue
 
 /** One hand-made ink a person can pick: its stored preference, its palettes and its name. */
 class InkChoice(val preference: InkPreference, val ink: SelloInk, @StringRes val label: Int)
@@ -24,34 +26,31 @@ val InkChoices = listOf(
 )
 
 /**
- * The ink Sello is drawn in and Apariencia shows chosen: the one picked, but Sistema on a
- * phone with no colour of its own ([systemHue] null, as on Android 11) is Cobalto. The choice
- * itself is kept, so the phone's colour is taken again once there is one.
+ * The ink Apariencia shows chosen and restore names: the one picked, but Sistema on a phone
+ * that has no accent at all ([PhoneColor.None], Android 11), where it is not offered, is
+ * Cobalto. The choice itself is kept, so a phone that has one takes it again.
  */
-fun InkPreference.shown(systemHue: Int?): InkPreference =
-    if (this == InkPreference.Sistema && systemHue == null) InkPreference.Cobalto else this
+fun InkPreference.shown(phone: PhoneColor): InkPreference =
+    if (this == InkPreference.Sistema && phone == PhoneColor.None) InkPreference.Cobalto else this
 
 /**
  * What the app is drawn in for this preference: a hand-made palette, or the palette of
- * Tuya's hue or of the phone's, [systemHue].
+ * Tuya's hue or of the [phone]'s. Sistema with no hue to take, on Android 11 or with a grey
+ * accent, is drawn in Cobalto.
  */
-fun InkPreference.themeInk(systemHue: Int?): ThemeInk = when (this) {
+fun InkPreference.themeInk(phone: PhoneColor): ThemeInk = when (this) {
     InkPreference.Cobalto -> SelloInk.Cobalto
-
     InkPreference.Violeta -> SelloInk.Violeta
-
-    // As [shown]: Cobalto on a phone with no colour of its own.
-    InkPreference.Sistema -> systemHue?.let(::HueInk) ?: SelloInk.Cobalto
-
+    InkPreference.Sistema -> phone.hue?.let(::HueInk) ?: SelloInk.Cobalto
     is InkPreference.Tuya -> HueInk(hue.degrees)
 }
 
 /**
- * Where Tu tinta's slider starts: Tuya's hue, in use or kept, or else the hue of the ink in
- * use, the phone's [systemHue] for Sistema.
+ * Where Tu tinta's slider starts: Tuya's hue, in use or kept, or else the hue of the ink the
+ * app is drawn in, the [phone]'s for Sistema.
  */
-fun AppearancePreference.startingHue(systemHue: Int?): Int =
-    tuyaHue?.degrees ?: when (val drawn = ink.themeInk(systemHue)) {
+fun AppearancePreference.startingHue(phone: PhoneColor): Int =
+    tuyaHue?.degrees ?: when (val drawn = ink.themeInk(phone)) {
         is SelloInk -> drawn.hue
         is HueInk -> drawn.hue
     }

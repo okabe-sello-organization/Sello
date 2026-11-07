@@ -25,6 +25,7 @@ import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ScheduleBookState
 import com.software.sello.domain.port.ScheduleReads
+import com.software.sello.platform.PhoneColor
 import com.software.sello.platform.SystemColor
 import com.software.sello.presentation.appearance.startingHue
 import com.software.sello.presentation.money.MoneyFormatter
@@ -166,7 +167,7 @@ class SettingsViewModel(
                     schedules = old.schedules,
                     rate = old.rate,
                     tuya = old.tuya,
-                    systemHue = old.systemHue
+                    phone = old.phone
                 )
             }
         },
@@ -175,7 +176,7 @@ class SettingsViewModel(
         busy.map { value -> { old: SettingsState -> old.copy(busy = value) } },
         writeFailure.map { value -> { old: SettingsState -> old.copy(writeFailure = value) } },
         tuya.map { value -> { old: SettingsState -> old.copy(tuya = value) } },
-        systemColor.hue.map { value -> { old: SettingsState -> old.copy(systemHue = value) } }
+        systemColor.color.map { value -> { old: SettingsState -> old.copy(phone = value) } }
     ).runningFold(SettingsState(loading = true)) { old, change -> change(old) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, SettingsState(loading = true))
 
@@ -220,7 +221,7 @@ class SettingsViewModel(
         when (action) {
             SettingsAction.Tuya.Open -> {
                 tuyaFailed.value = false
-                handle[KEY_TUYA_HUE] = state.value.run { appearance.startingHue(systemHue) }
+                handle[KEY_TUYA_HUE] = state.value.run { appearance.startingHue(phone) }
             }
 
             is SettingsAction.Tuya.HueChanged -> {
@@ -302,8 +303,8 @@ data class SettingsState(
     val rate: RateLine = RateLine.Loading,
     /** The Tu tinta sheet while it is open; null when it is closed. */
     val tuya: TuyaDraft? = null,
-    /** The phone's colour, for Sistema: null when it has none (Android 11). */
-    val systemHue: Int? = null
+    /** The phone's accent colour, for Sistema. */
+    val phone: PhoneColor = PhoneColor.None
 ) {
     val failure: PreferenceFailure?
         get() = writeFailure ?: appearanceFailure ?: orderingFailure ?: investmentsFailure

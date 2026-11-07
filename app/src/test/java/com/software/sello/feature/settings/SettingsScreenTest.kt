@@ -34,6 +34,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.domain.model.AppearancePreference
 import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
+import com.software.sello.platform.PhoneColor
 import com.software.sello.showSello
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -251,7 +252,7 @@ class SettingsScreenTest {
     @Test
     fun sistemaSitsBetweenVioletaAndTuyaAndAppliesAtOnce() {
         val actions = mutableListOf<SettingsAction>()
-        showSettings(SettingsState(loading = false, systemHue = 220), actions)
+        showSettings(SettingsState(loading = false, phone = PhoneColor.Hue(220)), actions)
 
         val names = listOf("Cobalto", "Violeta", "Sistema", "Tuya").map {
             ink(it).getUnclippedBoundsInRoot().left
@@ -269,7 +270,8 @@ class SettingsScreenTest {
     @Test
     fun chosenSistemaNamesThePhonesColourInLowerCase() {
         val actions = mutableListOf<SettingsAction>()
-        val state = SettingsState(loading = false, appearance = sistema, systemHue = 220)
+        val state =
+            SettingsState(loading = false, appearance = sistema, phone = PhoneColor.Hue(220))
         showSettings(state, actions)
 
         ink("Sistema").assertIsSelected()
@@ -284,7 +286,11 @@ class SettingsScreenTest {
         var phoneHue by mutableIntStateOf(24)
         rule.showSello {
             SettingsScreen(
-                state = SettingsState(loading = false, appearance = sistema, systemHue = phoneHue),
+                state = SettingsState(
+                    loading = false,
+                    appearance = sistema,
+                    phone = PhoneColor.Hue(phoneHue)
+                ),
                 onAction = {},
                 contentPadding = PaddingValues(),
                 onOpenSchedules = {},
@@ -303,7 +309,7 @@ class SettingsScreenTest {
     @Test
     fun onAndroid11SistemaIsNotOfferedAndARestoredOneShowsCobaltoChosen() {
         val actions = mutableListOf<SettingsAction>()
-        val state = SettingsState(loading = false, appearance = sistema, systemHue = null)
+        val state = SettingsState(loading = false, appearance = sistema, phone = PhoneColor.None)
         showSettings(state, actions)
 
         ink("Sistema").assertDoesNotExist()
@@ -311,5 +317,30 @@ class SettingsScreenTest {
         ink("Tuya").assertIsNotSelected()
         rule.onNodeWithTag(SETTINGS_INK_NOTE_TAG).assertDoesNotExist()
         assertEquals(emptyList<SettingsAction>(), actions)
+    }
+
+    @Test
+    fun aGreyAccentKeepsSistemaChosenInCobaltoAndSaysSo() {
+        val actions = mutableListOf<SettingsAction>()
+        val state = SettingsState(loading = false, appearance = sistema, phone = PhoneColor.Grey)
+        showSettings(state, actions)
+
+        ink("Sistema").assertIsSelected()
+        ink("Cobalto").assertIsNotSelected()
+        rule.onNodeWithTag(SETTINGS_INK_NOTE_TAG).assertTextEquals(
+            "Tu teléfono no tiene un color de acento: Sello usa Cobalto mientras tanto."
+        )
+    }
+
+    @Test
+    fun aGreyAccentStillOffersSistema() {
+        val actions = mutableListOf<SettingsAction>()
+        showSettings(SettingsState(loading = false, phone = PhoneColor.Grey), actions)
+
+        ink("Sistema").assertIsNotSelected().performClick()
+        assertEquals(
+            listOf<SettingsAction>(SettingsAction.InkChosen(InkPreference.Sistema)),
+            actions
+        )
     }
 }

@@ -23,6 +23,7 @@ import com.software.sello.feature.backup.ExportState
 import com.software.sello.feature.backup.TusDatos
 import com.software.sello.navigation.ShellScreen
 import com.software.sello.navigation.ShellState
+import com.software.sello.platform.PhoneColor
 import com.software.sello.presentation.appearance.shown
 import com.software.sello.presentation.month.monthNames
 import com.software.sello.revealed
@@ -71,7 +72,7 @@ class SettingsScreenshotTest {
         schedules = ScheduleCountLine.Read(payments = 4, incomes = 1),
         rate = RateLine.Read("4.150,25", LocalDate.of(2026, 10, 20)),
         // A phone on Android 12 or later with a blue wallpaper, as the mock's.
-        systemHue = 240
+        phone = PhoneColor.Hue(240)
     )
 
     private fun capture(
@@ -103,7 +104,7 @@ class SettingsScreenshotTest {
                         TusDatos(backup, {}, export, {}, true, {}, {}, {})
                     }
                 }
-                state.tuya?.let { TuyaSheet(it, state.appearance.ink.shown(state.systemHue)) {} }
+                state.tuya?.let { TuyaSheet(it, state.appearance.ink.shown(state.phone)) {} }
             }
         }
         if (open != null) rule.onNodeWithTag(open).revealed().performClick()
@@ -302,7 +303,7 @@ class SettingsScreenshotTest {
     )
 
     /** A red wallpaper: the hue as it is, and the note. */
-    private val sistemaRed = sistema.copy(systemHue = 24)
+    private val sistemaRed = sistema.copy(phone = PhoneColor.Hue(24))
 
     @Test
     fun sistemaRedLight() =
@@ -317,7 +318,7 @@ class SettingsScreenshotTest {
     )
 
     /** Android 11, after restoring a backup made with Sistema: Cobalto, and no Sistema. */
-    private val android11 = sistema.copy(systemHue = null)
+    private val android11 = sistema.copy(phone = PhoneColor.None)
 
     @Test
     fun android11Light() = capture("android-11", Look(), android11, reveal = SETTINGS_INK_TAG)
@@ -325,4 +326,15 @@ class SettingsScreenshotTest {
     @Test
     fun android11Dark() =
         capture("android-11", Look(dark = true), android11, reveal = SETTINGS_INK_TAG)
+
+    /** A monochrome style: a grey accent, Sistema still chosen and drawn in Cobalto. */
+    private val sistemaGrey = sistema.copy(phone = PhoneColor.Grey)
+
+    @Test
+    fun sistemaGreyLight() =
+        capture("sistema-grey", Look(), sistemaGrey, reveal = SETTINGS_INK_NOTE_TAG)
+
+    @Test
+    fun sistemaGreyDark() =
+        capture("sistema-grey", Look(dark = true), sistemaGrey, reveal = SETTINGS_INK_NOTE_TAG)
 }

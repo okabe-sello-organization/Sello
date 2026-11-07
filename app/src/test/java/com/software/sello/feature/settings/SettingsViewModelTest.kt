@@ -24,6 +24,7 @@ import com.software.sello.feature.investments.HandInvestmentReads
 import com.software.sello.feature.investments.rateEntry
 import com.software.sello.feature.investments.ratesBoard
 import com.software.sello.feature.recurrence.HandScheduleReads
+import com.software.sello.platform.PhoneColor
 import com.software.sello.platform.SystemColor
 import com.software.sello.testing.testMoney
 import java.time.LocalDate
@@ -60,9 +61,9 @@ class SettingsViewModelTest {
     private val investments = HandInvestmentReads(ReadState.Loading)
     private val investmentSettings = HandInvestmentPreferences()
 
-    /** The hue of the phone's accent colour; null as on Android 11. */
-    private var phoneHue: Int? = 140
-    private val systemColor = SystemColor { phoneHue }
+    /** The phone's accent colour: a hue, grey, or none as on Android 11. */
+    private var phone: PhoneColor = PhoneColor.Hue(140)
+    private val systemColor = SystemColor { phone }
 
     private fun settings(handle: SavedStateHandle = SavedStateHandle()) = SettingsViewModel(
         handle,
@@ -486,27 +487,50 @@ class SettingsViewModelTest {
     fun thePhonesColourIsShownAndFollowedWhenReadAgain() = runTest {
         val model = settings()
         runCurrent()
-        assertEquals(140, model.state.value.systemHue)
+        assertEquals(PhoneColor.Hue(140), model.state.value.phone)
 
-        phoneHue = 24
+        phone = PhoneColor.Hue(24)
         // Not read again until Sello is back on screen.
         runCurrent()
-        assertEquals(140, model.state.value.systemHue)
+        assertEquals(PhoneColor.Hue(140), model.state.value.phone)
         systemColor.refresh()
         runCurrent()
-        assertEquals(24, model.state.value.systemHue)
+        assertEquals(PhoneColor.Hue(24), model.state.value.phone)
+
+        // A monochrome style: grey, which is still an accent.
+        phone = PhoneColor.Grey
+        systemColor.refresh()
+        runCurrent()
+        assertEquals(PhoneColor.Grey, model.state.value.phone)
+    }
+
+    @Test
+    fun withAGreyAccentSistemaCanStillBeChosenAndTuTintaStartsOnCobalto() = runTest {
+        phone = PhoneColor.Grey
+        systemColor.refresh()
+        val model = settings()
+        runCurrent()
+
+        model.onAction(SettingsAction.InkChosen(InkPreference.Sistema))
+        runCurrent()
+        assertEquals(listOf<InkPreference>(InkPreference.Sistema), appearance.inkWrites)
+        assertEquals(InkPreference.Sistema, model.state.value.appearance.ink)
+
+        model.onAction(SettingsAction.Tuya.Open)
+        runCurrent()
+        assertEquals(TuyaDraft(hue = 267), model.tuya())
     }
 
     @Test
     fun onAndroid11ThereIsNoPhoneColourAndARestoredSistemaStaysStored() = runTest {
-        phoneHue = null
+        phone = PhoneColor.None
         systemColor.refresh()
         val model = settings()
         appearance.values.value =
             PreferenceRead.Ready(AppearancePreference(ink = InkPreference.Sistema))
         runCurrent()
 
-        assertNull(model.state.value.systemHue)
+        assertEquals(PhoneColor.None, model.state.value.phone)
         // The choice is kept as stored; the screen shows it as Cobalto.
         assertEquals(InkPreference.Sistema, model.state.value.appearance.ink)
         assertEquals(emptyList<InkPreference>(), appearance.inkWrites)

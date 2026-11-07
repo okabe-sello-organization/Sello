@@ -25,7 +25,9 @@ and [ADR 0008](../decisions/0008-unreadable-storage-start-over.md) define the ru
 | Backup format 4 | schema 9 | Read with its investments and rates, in pesos, largest value first | `BackupRoundTripTest`, `InvestmentBackupTest` (JVM) |
 | Backup format 5 | schema 9 | Read with its investment settings; every category off, no starting deficit | `BackupRoundTripTest`, `CarryBackupTest` (JVM); `CarryBackupRestoreTest.sc42AVersionFiveFileRestoresWithEveryCategoryOffOverAnEnabledOne` (device) |
 | Backup format 6 | schema 9 | Read with its carry chains and financial month; the chosen goal is its one star | `BackupRoundTripTest`, `CarryBackupTest`, `StarredGoalBackupTest` (JVM); `GoalBackupRestoreTest.everyStarComesBackAndReplacesTheStarsThereNeverMerges` (device) |
-| Backup format 7 (current) | schema 9 | Written and read byte for byte; restored with the same figures on a fresh installation | `BackupRoundTripTest` (JVM); `RecoveryRetentionTest`, `GoalBackupRestoreTest`, `InvestmentBackupRestoreTest`, `CarryBackupRestoreTest` (device) |
+| Backup format 7 | schema 9 | Read with its stars; no hue, so its ink is Cobalto or Violeta; `tuya` refused | `BackupRoundTripTest`, `StarredGoalBackupTest` (JVM) |
+| Backup format 8 | schema 9 | Read with Tuya's hue; `sistema` refused | `BackupRoundTripTest` (JVM) |
+| Backup format 9 (current) | schema 9 | Written and read byte for byte, Sistema and Tuya's hue included; restored with the same figures and ink on a fresh installation | `BackupRoundTripTest` (JVM); `RecoveryRetentionTest`, `GoalBackupRestoreTest`, `InvestmentBackupRestoreTest`, `CarryBackupRestoreTest`, `RestoreCommandContractTest.aTuyaBackupRestoresTuyaWithItsHue` (device) |
 | Erase all with goals | schema 9 | Every goal, its history, the undo copy and the stars removed | `GoalBackupRestoreTest.erasingEverythingRemovesEveryGoalItsHistoryAndTheStars` |
 | A newer backup format | — | Refused as "Lo hizo una versión más nueva de Sello"; nothing changes | `RestoreCommandContractTest.aFileThatCannotBeRestoredChangesNothingAndIsNotKept` (version 10) |
 

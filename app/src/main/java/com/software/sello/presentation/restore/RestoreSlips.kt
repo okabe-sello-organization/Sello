@@ -15,7 +15,9 @@ import com.software.sello.domain.port.BackupSummary
 import com.software.sello.domain.port.PendingPreferences
 import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.RestoreRejection
+import com.software.sello.platform.PhoneColor
 import com.software.sello.presentation.appearance.label
+import com.software.sello.presentation.appearance.shown
 import com.software.sello.presentation.count.countText
 import com.software.sello.presentation.investments.label
 import com.software.sello.presentation.investments.newInvestmentLabel
@@ -24,12 +26,13 @@ import com.software.sello.presentation.investments.newInvestmentLabel
  * A replaced history: Restaurado when every preference was applied too, otherwise D09's
  * slip naming only the preferences still pending, or saying the backup's preferences could
  * not be read. Also shown at start-up. [note], when given, is one more line before the
- * buttons.
+ * buttons. [phone] is this phone's accent colour: a pending ink is named as it will show.
  */
 @Composable
 internal fun RestoredSlip(
     outcome: RestoreOutcome.Restored,
     applying: Boolean,
+    phone: PhoneColor,
     onApply: () -> Unit,
     onLeave: () -> Unit,
     note: String? = null
@@ -74,7 +77,7 @@ internal fun RestoredSlip(
             modifier = Modifier.testTag(RESTORE_PENDING_TAG),
             note = note,
             pending = RestorePending(
-                items = pendingItems(preferences),
+                items = pendingItems(preferences, phone),
                 label = stringResource(applyLabel(preferences)),
                 note = stringResource(R.string.restore_pending_note),
                 applying = applying
@@ -85,29 +88,31 @@ internal fun RestoredSlip(
 }
 
 @Composable
-private fun pendingItems(preferences: PendingPreferences): List<String> = listOfNotNull(
-    preferences.appearance?.let {
-        stringResource(
-            R.string.restore_pending_appearance,
-            stringResource(it.theme.label()),
-            it.ink.label()
-        )
-    },
-    preferences.ordering?.let {
-        stringResource(
-            R.string.restore_pending_ordering,
-            stringResource(it.order.label()),
-            stringResource(it.direction.label())
-        )
-    },
-    preferences.investments?.let {
-        stringResource(
-            R.string.restore_pending_investments,
-            stringResource(it.newCurrency.newInvestmentLabel()),
-            stringResource(it.order.label())
-        )
-    }
-)
+private fun pendingItems(preferences: PendingPreferences, phone: PhoneColor): List<String> =
+    listOfNotNull(
+        preferences.appearance?.let {
+            stringResource(
+                R.string.restore_pending_appearance,
+                stringResource(it.theme.label()),
+                // Sistema on a phone without an accent (Android 11) will show as Cobalto.
+                it.ink.shown(phone).label()
+            )
+        },
+        preferences.ordering?.let {
+            stringResource(
+                R.string.restore_pending_ordering,
+                stringResource(it.order.label()),
+                stringResource(it.direction.label())
+            )
+        },
+        preferences.investments?.let {
+            stringResource(
+                R.string.restore_pending_investments,
+                stringResource(it.newCurrency.newInvestmentLabel()),
+                stringResource(it.order.label())
+            )
+        }
+    )
 
 internal fun RestoreRejection.message() = when (this) {
     RestoreRejection.Unreadable -> R.string.restore_rejected_unreadable

@@ -8,6 +8,7 @@ import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
+import com.software.sello.platform.PhoneColor
 import com.software.sello.platform.SystemColor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -20,7 +21,6 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 
@@ -46,13 +46,13 @@ class AppearanceViewModelTest {
 
     /** How many times the phone's colour was read, and what it says now. */
     private var reads = 0
-    private var phoneHue: Int? = 140
+    private var phone: PhoneColor = PhoneColor.Hue(140)
 
     private fun model() = AppearanceViewModel(
         preferences,
         SystemColor {
             reads++
-            phoneHue
+            phone
         }
     )
 
@@ -60,32 +60,32 @@ class AppearanceViewModelTest {
     fun thePhonesColourIsReadAgainEachTimeSelloIsOnScreen() = runTest {
         val model = model()
         runCurrent()
-        assertEquals(140, model.state.value.systemHue)
+        assertEquals(PhoneColor.Hue(140), model.state.value.phone)
         assertEquals(InkPreference.Sistema, model.state.value.appearance.ink)
 
         // The wallpaper changed while Sello was away: nothing moves until it is back.
-        phoneHue = 24
+        phone = PhoneColor.Hue(24)
         runCurrent()
-        assertEquals(140, model.state.value.systemHue)
+        assertEquals(PhoneColor.Hue(140), model.state.value.phone)
 
         model.onShown()
         runCurrent()
-        assertEquals(24, model.state.value.systemHue)
+        assertEquals(PhoneColor.Hue(24), model.state.value.phone)
         assertEquals(2, reads)
     }
 
     @Test
     fun onAndroid11ThePhoneHasNoColourAndSistemaIsDrawnInCobalto() = runTest {
-        phoneHue = null
+        phone = PhoneColor.None
         val model = model()
         runCurrent()
         model.onShown()
         runCurrent()
 
-        assertNull(model.state.value.systemHue)
+        assertEquals(PhoneColor.None, model.state.value.phone)
         assertEquals(
             AppearanceTheme(SelloInk.Cobalto, false),
-            model.state.value.appearance.asSelloTheme(false, model.state.value.systemHue)
+            model.state.value.appearance.asSelloTheme(false, model.state.value.phone)
         )
     }
 }

@@ -9,6 +9,8 @@ import com.software.sello.domain.port.DocumentSource
 import com.software.sello.domain.port.PendingPreferences
 import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.RestoreRejection
+import com.software.sello.platform.PhoneColor
+import com.software.sello.platform.SystemColor
 import java.time.Instant
 import java.time.ZoneId
 import kotlinx.coroutines.CompletableDeferred
@@ -103,7 +105,7 @@ class StartupFailureViewModelTest {
     fun resetMain() = Dispatchers.resetMain()
 
     private fun viewModel(handle: SavedStateHandle = saved) =
-        StartupFailureViewModel(handle, recovery) { restarts++ }
+        StartupFailureViewModel(handle, recovery, { restarts++ }, SystemColor { PhoneColor.None })
 
     /** Restaurar un respaldo, then the open dialog answers with [source]. */
     private fun StartupFailureViewModel.choose(source: String? = "content://provider/document/7") {
