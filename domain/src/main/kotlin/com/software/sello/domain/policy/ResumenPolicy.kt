@@ -180,10 +180,7 @@ object ResumenPolicy {
                 -1 -> SpendingDirection.Less
                 else -> SpendingDirection.Same
             },
-            previousSpent.takeIf { it.signum() > 0 }?.let {
-                BigDecimal(difference * THOUSAND).divide(BigDecimal(it), 0, RoundingMode.HALF_UP)
-                    .toBigIntegerExact()
-            }
+            percentTenths(difference, previousSpent)
         )
     }
 
@@ -217,6 +214,16 @@ object ResumenPolicy {
             }
         )
     }
+
+    /**
+     * [difference] over [previous] in tenths of a per cent, half up, or null when [previous]
+     * is zero. Tu año compares years with the same rounding.
+     */
+    internal fun percentTenths(difference: BigInteger, previous: BigInteger): BigInteger? =
+        previous.takeIf { it.signum() > 0 }?.let {
+            BigDecimal(difference * THOUSAND).divide(BigDecimal(it), 0, RoundingMode.HALF_UP)
+                .toBigIntegerExact()
+        }
 
     /**
      * The months shown run from the first with something recorded. Of those, the

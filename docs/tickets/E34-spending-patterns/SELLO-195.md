@@ -2,7 +2,7 @@
 
 - **Type:** Story
 - **Priority:** P2
-- **Status:** Ready
+- **Status:** Done
 - **Depends on:** None
 - **Gate:** G1
 

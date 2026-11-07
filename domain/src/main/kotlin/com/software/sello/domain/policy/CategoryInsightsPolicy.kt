@@ -168,6 +168,14 @@ object CategoryInsightsPolicy {
         }
         val weekday = counted.groupBy { it.date.dayOfWeek }.entries
             .sortedBy { it.key.value }.maxByOrNull { sum(it.value) }?.key
+        val repeats = when (
+            val read = RepeatedNotesPolicy.top(
+                selected.expenses.filter { it.categoryId == id && YearMonth.from(it.date) == month }
+            )
+        ) {
+            is Outcome.Failure -> return Outcome.Failure(SnapshotFailure.Unrepresentable)
+            is Outcome.Success -> read.value
+        }
         return Outcome.Success(
             CategoryInsights(
                 budget, id, allowance, comparison, elapsed,
@@ -196,7 +204,8 @@ object CategoryInsightsPolicy {
                         it.size
                     )
                 },
-                history
+                history,
+                repeats = repeats
             )
         )
     }

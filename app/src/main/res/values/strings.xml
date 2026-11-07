@@ -249,6 +249,16 @@
     <plurals name="category_detail_days"><item quantity="one">%d día</item><item quantity="other">%d días</item></plurals>
     <string name="category_detail_compared_to">Frente a %1$s</string>
     <string name="category_detail_numbers">En números</string>
+    <string name="category_detail_repeats">Lo que más se repite</string>
+    <string name="category_detail_repeats_note_col">Nota</string>
+    <string name="category_detail_repeats_times_col">Veces</string>
+    <string name="category_detail_repeats_total_col">Total</string>
+    <string name="category_detail_repeats_note">Total: la suma de todos los gastos con esa nota en el mes. Los gastos sin nota no cuentan. Toca una para verlos.</string>
+    <string name="category_detail_repeat_open">Ver estos gastos</string>
+    <plurals name="category_detail_repeat_spoken">
+        <item quantity="one">%1$s, %2$s vez, total %3$s</item>
+        <item quantity="other">%1$s, %2$s veces, total %3$s</item>
+    </plurals>
     <plurals name="category_detail_count_days"><item quantity="one">%1$s en %2$d día</item><item quantity="other">%1$s en %2$d días</item></plurals>
     <string name="category_detail_each_time">En promedio</string>
     <string name="category_detail_largest">El mayor</string>
@@ -805,6 +815,46 @@
     <string name="resumen_suggestion_dismiss_failed">No pudimos descartar la sugerencia. Tus gastos y límites siguen igual; inténtalo de nuevo.</string>
     <string name="resumen_and">" y "</string>
     <string name="resumen_insufficient_history">Con un mes más de datos verás aquí tu historia entre meses. Aún no hay promedios ni comparaciones.</string>
+    <string name="resumen_see_year">Ver tu año</string>
+    <string name="year_title">Tu año</string>
+    <string name="year_previous">Año anterior</string>
+    <string name="year_next">Año siguiente</string>
+    <string name="year_load_failed">No pudimos leer tu año. Intenta de nuevo.</string>
+    <string name="year_empty">Nada anotado en %1$d</string>
+    <string name="year_empty_body">Cuando haya gastos o ingresos de ese año, aquí verás cómo te fue.</string>
+    <string name="year_hero_question">¿Cómo va tu año?</string>
+    <string name="year_hero_closed">¿Cómo te fue en %1$d?</string>
+    <string name="year_hero_more">%1$s más que en %2$d</string>
+    <string name="year_hero_less">%1$s menos que en %2$d</string>
+    <string name="year_hero_same">Lo mismo que en %1$d</string>
+    <string name="year_hero_trend_same_day">%1$s %% al mismo día del año</string>
+    <string name="year_hero_trend_whole">%1$s %% que %2$s completo</string>
+    <string name="year_hero_same_days">Del 1 de enero al %1$s de cada año</string>
+    <string name="year_hero_capped_days">Del 1 de enero al %1$s de %2$d · al %3$s</string>
+    <string name="year_hero_whole_years">Años completos</string>
+    <string name="year_hero_spent_through">gastados del 1 de enero al %1$s</string>
+    <string name="year_hero_spent_in">gastados en %1$d</string>
+    <string name="year_month_in_progress">%1$s en curso</string>
+    <string name="year_marks_legend">✓ dentro del límite, ✗ por encima</string>
+    <string name="year_mark_within">cumplido</string>
+    <string name="year_mark_over">excedido</string>
+    <string name="year_month_upcoming">aún no empieza</string>
+    <string name="year_income_title">Lo que entró</string>
+    <string name="year_income_in">Entró en %1$d</string>
+    <string name="year_categories_title">¿En qué se fue?</string>
+    <string name="year_category_percent">%1$d %%</string>
+    <plurals name="year_marks_within">
+        <item quantity="one">%1$d mes cumplido</item>
+        <item quantity="other">%1$d meses cumplidos</item>
+    </plurals>
+    <plurals name="year_marks_over">
+        <item quantity="one">%1$d excedido</item>
+        <item quantity="other">%1$d excedidos</item>
+    </plurals>
+    <plurals name="year_categories_all">
+        <item quantity="one">Ver la %1$d categoría</item>
+        <item quantity="other">Ver las %1$d categorías</item>
+    </plurals>
     <string name="settings_title">Configuración</string>
     <string name="settings_open">Abrir configuración</string>
     <string name="settings_preferences_failed">No pudimos leer o guardar tu configuración. Tus gastos y límites siguen igual; inténtalo de nuevo.</string>

@@ -2,14 +2,11 @@ package com.software.sello.data.repository
 
 import androidx.room.withTransaction
 import com.software.sello.data.local.SelloDatabase
-import com.software.sello.domain.model.CategoryCarryInput
 import com.software.sello.domain.model.Income
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ResumenSnapshot
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
-import com.software.sello.domain.policy.CategoryInMonth
-import com.software.sello.domain.policy.ResumenMonthInput
 import com.software.sello.domain.policy.ResumenPolicy
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.FinancialDay
@@ -30,9 +27,7 @@ class RoomResumenSnapshots(
     private class Rows(
         val generation: Long,
         val revision: Long,
-        val months: List<ResumenMonthInput>,
-        /** Per month, the carry rows of each category a chain covers then (ADR 0020 CP16). */
-        val carry: List<List<CarryRows>>,
+        val months: List<ResumenMonthRows>,
         val incomes: List<Income>
     )
 
@@ -48,16 +43,9 @@ class RoomResumenSnapshots(
             is Outcome.Failure -> return Outcome.Failure(SnapshotFailure.Storage(read.error))
         }
         return withContext(computation) {
-            val months = ArrayList<ResumenMonthInput>(rows.months.size)
-            for ((input, carry) in rows.months.zip(rows.carry)) {
-                val carryover = ArrayList<CategoryCarryInput>(carry.size)
-                for (category in carry) {
-                    when (val read = category.snapshotInput(today.date)) {
-                        is Outcome.Success -> carryover += read.value
-                        is Outcome.Failure -> return@withContext read
-                    }
-                }
-                months += input.copy(carryover = carryover)
+            val months = when (val read = rows.months.inputs(today.date)) {
+                is Outcome.Success -> read.value
+                is Outcome.Failure -> return@withContext read
             }
             ResumenPolicy.snapshot(
                 month,
@@ -75,10 +63,7 @@ class RoomResumenSnapshots(
             is Outcome.Success -> budget.value
             is Outcome.Failure -> return budget
         }
-        val months = mutableListOf<ResumenMonthInput>()
-        val carry = mutableListOf<List<CarryRows>>()
-        // Each month's carry from the chain covering it alone, read in this transaction
-        // (SELLO-038 consumer boundary, as RoomMonthlySnapshots).
+        val months = mutableListOf<ResumenMonthRows>()
         val chains = when (val read = database.everyCarryChain()) {
             is Outcome.Success -> read.value
             is Outcome.Failure -> return read
@@ -92,29 +77,16 @@ class RoomResumenSnapshots(
                     is Outcome.Failure -> return read
                 }
             }
-            val expenses = when (val read = database.monthExpenses(period)) {
+            months += when (val read = database.resumenMonthRows(budget, chains)) {
                 is Outcome.Success -> read.value
                 is Outcome.Failure -> return read
             }
-            months += ResumenMonthInput(
-                period,
-                budget.categories.map { CategoryInMonth(it.category, it.state) },
-                expenses
-            )
-            val covered = ArrayList<CarryRows>()
-            for ((category, of) in chains) {
-                when (val read = database.carryInRows(category, of, period)) {
-                    is Outcome.Success -> read.value?.let { covered += it }
-                    is Outcome.Failure -> return read
-                }
-            }
-            carry += covered
         }
         val incomes = when (val read = database.monthIncomes(month)) {
             is Outcome.Success -> read.value
             is Outcome.Failure -> return read
         }
-        return Outcome.Success(Rows(selected.generation, selected.revision, months, carry, incomes))
+        return Outcome.Success(Rows(selected.generation, selected.revision, months, incomes))
     }
 
     override fun observe(month: YearMonth): Flow<ResumenSnapshotState> = observeOn(

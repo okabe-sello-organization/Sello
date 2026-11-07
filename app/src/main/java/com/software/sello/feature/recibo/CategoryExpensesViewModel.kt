@@ -69,7 +69,7 @@ enum class ListDock {
 }
 
 sealed interface CategoryExpensesAction {
-    data class Show(val categoryId: String) : CategoryExpensesAction
+    data class Show(val categoryId: String, val search: String = "") : CategoryExpensesAction
     data class Search(val query: String) : CategoryExpensesAction
     data class Sort(val order: ExpenseOrder) : CategoryExpensesAction
     data object More : CategoryExpensesAction
@@ -173,7 +173,13 @@ class CategoryExpensesViewModel(
 
     fun onAction(action: CategoryExpensesAction) {
         when (action) {
-            is CategoryExpensesAction.Show -> saved["expenseCategory"] = action.categoryId
+            is CategoryExpensesAction.Show -> {
+                // Opened for a note (SELLO-195): seeded once; a search kept or edited since stays.
+                if (saved.get<String>("expenseCategory") == null && action.search.isNotEmpty()) {
+                    saved["expenseSearch"] = action.search.cutToSearchLimit()
+                }
+                saved["expenseCategory"] = action.categoryId
+            }
 
             is CategoryExpensesAction.Search ->
                 saved["expenseSearch"] = action.query.cutToSearchLimit()

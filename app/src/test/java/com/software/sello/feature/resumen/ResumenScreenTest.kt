@@ -54,6 +54,7 @@ class ResumenScreenTest {
     private var category: String? = null
     private var adjusted: String? = null
     private var schedulesClicks = 0
+    private var year: Int? = null
 
     private fun show(
         ink: SelloInk = SelloInk.Cobalto,
@@ -78,7 +79,8 @@ class ResumenScreenTest {
                     { expenseClicks++ },
                     PaddingValues(),
                     { adjusted = it },
-                    { schedulesClicks++ }
+                    { schedulesClicks++ },
+                    onYear = { year = it }
                 )
             }
         }
@@ -135,6 +137,15 @@ class ResumenScreenTest {
         rule.runOnIdle { assertEquals("00000000-0000-4000-8000-000000000001", category) }
         rule.onNodeWithTag("resumen.openIncome").performScrollTo().performClick()
         rule.runOnIdle { assertEquals(1, incomeClicks) }
+    }
+
+    @Test
+    fun mesAMesOpensTuAnoOnTheYearOfTheMonthOnScreen() {
+        state.value = (resumenExample(money) as ResumenState.Ready).copy(month = "2025-12")
+        show()
+        rule.onNodeWithTag(RESUMEN_SEE_YEAR_TAG).performScrollTo().assertTextContains("Ver tu año")
+            .performClick()
+        rule.runOnIdle { assertEquals(2025, year) }
     }
 
     @Test
