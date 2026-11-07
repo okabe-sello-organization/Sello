@@ -26,6 +26,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -55,7 +56,8 @@ fun SettingRow(
     onClick: (() -> Unit)? = null,
     tone: SettingTone = SettingTone.Normal,
     divider: Boolean = true,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    valueDescription: String? = null
 ) {
     val colors = SelloTheme.colors
     val accent = if (tone == SettingTone.Loss) colors.semantic.loss else colors.brand
@@ -107,7 +109,13 @@ fun SettingRow(
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.inkSoft,
                 textAlign = TextAlign.End,
-                modifier = Modifier.weight(VALUE_WEIGHT, fill = false)
+                modifier = Modifier.weight(VALUE_WEIGHT, fill = false).then(
+                    if (valueDescription == null) {
+                        Modifier
+                    } else {
+                        Modifier.semantics { contentDescription = valueDescription }
+                    }
+                )
             )
         }
         if (onClick != null && tone == SettingTone.Normal) {

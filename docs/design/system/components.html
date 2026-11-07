@@ -1664,7 +1664,7 @@ fun StatusSlip(
 <article class="component" id="c-SettingRow">
 <h3><code>SettingRow</code> <span class="src"><code>component/Settings.kt:49</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>One line of Configuración: <code>icon</code>, <code>title</code> with an optional <code>caption</code> under it, and <code>value</code> at the end. With <code>onClick</code> the whole row is one button and a chevron says it leads somewhere, unless it is the <code>SettingTone.Loss</code> row, which is red instead. A dashed rule above separates it from the row before; the first row under a heading has none. When they don't fit on one line, the title and value share the width and each wraps.</dd>
+<dt>Purpose</dt><dd>One line of Configuración: <code>icon</code>, <code>title</code> with an optional <code>caption</code> under it, and <code>value</code> at the end. With <code>onClick</code> the whole row is one button and a chevron says it leads somewhere, unless it is the <code>SettingTone.Loss</code> row, which is red instead. A dashed rule above separates it from the row before; the first row under a heading has none. When they don't fit on one line, the title and value share the width and each wraps. A value with an amount, such as "Hasta 20.000", gives <code>valueDescription</code> so it is said as one: "Hasta 20.000 pesos".</dd>
 <dt>Variants</dt><dd><code>tone</code>: <code>SettingTone.Normal</code> or <code>Loss</code> (red, no chevron). With or without <code>onClick</code>, <code>caption</code>, <code>value</code>, <code>divider</code>.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 2</a> <a class="tag" href="features/settings.html">settings · 8</a></dd>
 </dl>
@@ -1677,7 +1677,8 @@ fun StatusSlip(
     onClick: (() -&gt; Unit)? = null,
     tone: SettingTone = SettingTone.Normal,
     divider: Boolean = true,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    valueDescription: String? = null
 )</code></pre>
 
 <p class="muted">Also visible in screen baselines: <code>settings-loaded</code>.</p>

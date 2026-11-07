@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertContentDescriptionEquals
@@ -94,6 +95,24 @@ class SettingsScreenTest {
         rule.onNodeWithTag(SETTINGS_SMALL_EXPENSES_TAG).performClick()
 
         assertEquals(1, opened)
+    }
+
+    @Test
+    fun gastosHormigasLineIsSpokenAsAnAmountInPesos() {
+        rule.showSello {
+            SettingsScreen(
+                state = SettingsState(loading = false, smallExpenseLine = "20.000"),
+                onAction = {},
+                contentPadding = PaddingValues(),
+                onOpenSchedules = {},
+                onOpenRate = {}
+            ) { Text("Tus datos") }
+        }
+
+        // As the UI sweep reads a row: what a screen reader says for the whole button.
+        val row = rule.onNodeWithTag(SETTINGS_SMALL_EXPENSES_TAG).revealed().fetchSemanticsNode()
+        val spoken = row.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty()
+        assertEquals(listOf("Hasta 20.000 pesos"), spoken)
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.software.sello.feature.resumen
 
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -56,6 +57,7 @@ class SmallExpensesSlipTest {
 
         rule.onNodeWithText("Gastos hormiga").assertIsDisplayed()
         rule.onNodeWithText("20.000 o menos").assertIsDisplayed()
+            .assertContentDescriptionEquals("20.000 pesos o menos")
         rule.onNodeWithText("en 38 gastos pequeños, del 1 al 28 · 13 % de lo que gastaste")
             .assertIsDisplayed()
         rule.onNodeWithText("Del 1 al 28 de cada mes").assertIsDisplayed()

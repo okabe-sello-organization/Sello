@@ -383,6 +383,10 @@ private fun SummaryControls(state: SettingsState, onOpenSmallExpenses: () -> Uni
             value = state.smallExpenseLine?.let {
                 stringResource(R.string.small_expense_value, it)
             },
+            // Said as an amount, as every figure is: "Hasta 20.000 pesos".
+            valueDescription = state.smallExpenseLine?.let {
+                stringResource(R.string.small_expense_spoken, it)
+            },
             onClick = onOpenSmallExpenses,
             divider = false,
             modifier = Modifier.testTag(SETTINGS_SMALL_EXPENSES_TAG)

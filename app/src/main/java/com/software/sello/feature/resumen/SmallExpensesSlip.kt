@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
@@ -78,7 +79,11 @@ private fun Shown(small: ResumenSmallExpenses.Shown, hero: ResumenHero) {
             verticalAlignment = Alignment.Top
         ) {
             ResumenHeading(stringResource(R.string.small_expense_title))
-            ResumenNote(stringResource(R.string.resumen_small_line, small.line))
+            val line = stringResource(R.string.resumen_small_line_spoken, small.line)
+            ResumenNote(
+                stringResource(R.string.resumen_small_line, small.line),
+                Modifier.semantics { contentDescription = line }
+            )
         }
         MoneyText(
             small.total,

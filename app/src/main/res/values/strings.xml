@@ -774,6 +774,7 @@
     <string name="resumen_where_basis">Lo gastado en %1$s</string>
     <!-- Gastos hormiga in Resumen (SELLO-194) -->
     <string name="resumen_small_line">%1$s o menos</string>
+    <string name="resumen_small_line_spoken">%1$s pesos o menos</string>
     <plurals name="resumen_small_count">
         <item quantity="one">en %1$d gasto pequeño</item>
         <item quantity="other">en %1$d gastos pequeños</item>

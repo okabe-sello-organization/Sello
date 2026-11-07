@@ -620,8 +620,13 @@ private fun Weekdays(
 }
 
 @Composable
-internal fun ResumenNote(text: String) {
-    Text(text, style = MaterialTheme.typography.bodySmall, color = SelloTheme.colors.inkSoft)
+internal fun ResumenNote(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text,
+        modifier,
+        style = MaterialTheme.typography.bodySmall,
+        color = SelloTheme.colors.inkSoft
+    )
 }
 
 @Composable
