@@ -7,6 +7,7 @@ import com.software.sello.domain.model.CategoryOrderingPreference
 import com.software.sello.domain.model.CorrectionAnnouncementPreference
 import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.DismissedSuggestion
+import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.InvestmentPreference
@@ -35,7 +36,16 @@ sealed interface PreferenceWrite {
 interface AppearancePreferences {
     fun observeAppearance(): Flow<PreferenceRead<AppearancePreference>>
     suspend fun setTheme(theme: ThemePreference): PreferenceWrite
+
+    /** The ink picked in Configuración. Tuya's hue is kept when another ink is chosen. */
     suspend fun setInk(ink: InkPreference): PreferenceWrite
+
+    /**
+     * A restore's ink and Tuya's kept hue, exactly as the backup has them, in one write: a
+     * null [tuyaHue] forgets it. Refused with [PreferenceFailure.InvalidValue] when Tuya is
+     * [ink] and [tuyaHue] is not its hue.
+     */
+    suspend fun restoreInk(ink: InkPreference, tuyaHue: InkHue?): PreferenceWrite
 }
 
 /** The two persisted controls that affect Recibo's presentation order. */

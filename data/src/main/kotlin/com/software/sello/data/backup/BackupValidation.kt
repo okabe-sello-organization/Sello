@@ -29,6 +29,7 @@ import com.software.sello.domain.model.IconKey
 import com.software.sello.domain.model.Income
 import com.software.sello.domain.model.IncomeId
 import com.software.sello.domain.model.IncomeSource
+import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.Investment
 import com.software.sello.domain.model.InvestmentAmount
@@ -104,7 +105,6 @@ internal object WireNames {
         ThemePreference.Light to "light",
         ThemePreference.Dark to "dark"
     )
-    val inks = InkPreference.entries.associateWith { it.id }
     val orders = mapOf(
         CategoryOrder.MostUsed to "most_used",
         CategoryOrder.Alphabetical to "alphabetical",
@@ -177,16 +177,16 @@ private fun flag(element: JsonElement, path: String): Boolean {
 }
 
 /**
- * Checks a decoded file completely, older versions read as version 7 included; the
+ * Checks a decoded file completely, older versions read as version 8 included; the
  * first problem rejects all of it.
  */
-internal fun validate(file: BackupFileV7): Outcome<BackupContents, BackupRejection> = try {
+internal fun validate(file: BackupFileV8): Outcome<BackupContents, BackupRejection> = try {
     Outcome.Success(contentsOf(file))
 } catch (rejected: Rejected) {
     Outcome.Failure(rejected.rejection)
 }
 
-private fun contentsOf(file: BackupFileV7): BackupContents {
+private fun contentsOf(file: BackupFileV8): BackupContents {
     val financial = file.financial
     val version = whole(file.version, "version")
     val revision = whole(financial.sourceRevision, "financial.sourceRevision")
@@ -997,11 +997,8 @@ private fun carryChains(
 private fun <T> Map<T, String>.decode(text: String, path: String): T =
     entries.firstOrNull { it.value == text }?.key ?: invalid(path)
 
-private fun preferences(wire: PreferencesV5) = PortablePreferences(
-    appearance = AppearancePreference(
-        theme = WireNames.themes.decode(wire.theme, "preferences.theme"),
-        ink = WireNames.inks.decode(wire.ink, "preferences.ink")
-    ),
+private fun preferences(wire: PreferencesV8) = PortablePreferences(
+    appearance = appearance(wire, WireNames.themes.decode(wire.theme, "preferences.theme")),
     ordering = CategoryOrderingPreference(
         order = WireNames.orders.decode(wire.categoryOrder, "preferences.categoryOrder"),
         direction = WireNames.directions.decode(
@@ -1020,3 +1017,21 @@ private fun preferences(wire: PreferencesV5) = PortablePreferences(
         )
     )
 )
+
+/**
+ * The ink and Tuya's hue: a bare whole degree from 0 to 359, required with Tuya and kept,
+ * if the file has one, beside another ink. A hue outside it is refused, never wrapped or
+ * clipped.
+ */
+private fun appearance(wire: PreferencesV8, theme: ThemePreference): AppearancePreference {
+    val hue = optionalWhole(wire.inkHue, "preferences.inkHue")?.let {
+        InkHue.of(it) ?: invalid("preferences.inkHue")
+    }
+    val ink = InkPreference.of(wire.ink, hue) ?: when {
+        // Tuya without its hue.
+        InkPreference.of(wire.ink, InkHue.of(0)) != null -> invalid("preferences.inkHue")
+
+        else -> invalid("preferences.ink")
+    }
+    return AppearancePreference(theme, ink, hue)
+}

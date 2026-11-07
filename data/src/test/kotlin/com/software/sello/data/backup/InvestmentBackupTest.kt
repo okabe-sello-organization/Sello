@@ -227,7 +227,7 @@ class InvestmentBackupTest {
     @Test
     fun `the same contents always make the same file`() {
         assertEquals(
-            version4AsVersion7(file),
+            version7AsVersion8(version4AsVersion7(file)),
             String(codec.encode(accepted(file).contents).value())
         )
     }

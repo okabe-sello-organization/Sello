@@ -1,4 +1,4 @@
-# Backup file format, version 7
+# Backup file format, version 8
 
 Rules: [architecture](../../ARCHITECTURE.md) §7, [D05, D08 and D09](../decisions/0001-mvp-contract.md#d08--privacy-and-portable-files),
 [ADR 0003](../decisions/0003-mvp-transaction-amount-range.md). Code: `data/.../backup`.
@@ -14,7 +14,7 @@ its financial zone (`BackupFormat.fileName`). MIME type: `application/json`.
 
 ## Shape
 
-Sello writes version 7 (SELLO-143) and reads versions 1 to 7. Version 2 is version 1
+Sello writes version 8 (SELLO-202) and reads versions 1 to 8. Version 2 is version 1
 plus `financial.goals` and `financial.featuredGoal` (SELLO-088); version 3 is version 2
 plus `financial.schedules` and each expense's and income's `origin` (SELLO-099);
 version 4 is version 3 plus `financial.investments` and `financial.usdRates` (SELLO-108);
@@ -22,18 +22,19 @@ version 5 is version 4 plus `preferences.investmentCurrency` and
 `preferences.investmentOrder` (SELLO-120); version 6 is version 5 plus `financial.carryChains`
 (SELLO-040, [ADR 0020](../decisions/0020-signed-carryover-policy.md) CP26) and `financial.financialMonth`;
 version 7 is version 6 with `financial.starredGoals` in place of `financial.featuredGoal`
-(SELLO-143). A version 1 file
+(SELLO-143); version 8 is version 7 plus `preferences.inkHue` (SELLO-202). A version 1 file
 reads as having no goals, versions 1 and 2 as having no schedules and no origins, versions
 1 to 3 as having no investments and no rates, versions 1 to 4 as starting investments in
 `COP`, largest value first, and versions 1 to 5 as having no carry chains: **every category
 is off and no starting deficit or surplus is guessed**; versions 2 to 6 read with their
-`featuredGoal` as the one starred goal, or none when that goal is completed. A backup with
-none of them is still version 7, so an app that reads only version 6 cannot read it.
+`featuredGoal` as the one starred goal, or none when that goal is completed, and versions
+1 to 7 as having no hue: their ink is Cobalto or Violeta. A backup with none of them is
+still version 8, so an app that reads only version 7 cannot read it.
 
 ```json
 {
   "format": "sello-backup",
-  "version": 7,
+  "version": 8,
   "exportedAt": "2026-10-22T14:30:00Z",
   "financial": {
     "sourceRevision": 9,
@@ -83,7 +84,7 @@ SC43 and SC22). The `invalid-*.json` files beside them each break one rule.
 | Key | Value |
 | --- | --- |
 | `format` | Always `"sello-backup"`. |
-| `version` | `1` to `7`. Any other number is refused as a version this app cannot read. |
+| `version` | `1` to `8`. Any other number is refused as a version this app cannot read. |
 | `exportedAt` | When the backup was made, UTC. |
 | `financial.sourceRevision` | The revision all financial rows were read at: one transaction, one revision. Informative; a restore does not reuse it. |
 | `financial.zone` | The financial zone, an IANA identifier such as `America/Bogota`. |
@@ -112,11 +113,19 @@ SC43 and SC22). The `invalid-*.json` files beside them each break one rule.
 | `usdRates` (v4) | `id`, `rateHundredths`, `date`, `sequence`, `createdAt` |
 | `carryChains` (v6) | `categoryId`, `start` (month), `end` (month or `null`) |
 
-`preferences` has `theme` (`system`, `light`, `dark`), `ink` (`cobalto`, `violeta`),
-`categoryOrder` (`most_used`, `alphabetical`, `amount_spent`, `limit`,
+`preferences` has `theme` (`system`, `light`, `dark`), `ink` (`cobalto`, `violeta` and,
+from version 8, `tuya`), from version 8 `inkHue`, `categoryOrder` (`most_used`, `alphabetical`, `amount_spent`, `limit`,
 `latest_expense_added`), `categoryDirection` (`descending`, `ascending`) and, from
 version 5, `investmentCurrency` (`COP`, `USD`) and `investmentOrder` (`largest_value`,
 `return`, `alphabetical`, `newest`, `latest_update`).
+
+`inkHue` is Tuya's hue: a bare whole OKLCH degree from `0` to `359`. It is required when
+`ink` is `tuya`, and may also be given beside `cobalto` or `violeta`: the hue the person
+set for Tuya, kept while another ink is in use, so Tuya keeps its colour after a restore.
+`null` means Tuya has no hue yet. A hue outside `0` to `359`, written as text or with a
+fraction, or missing for `tuya`, is refused, never wrapped or clipped; a restore writes the
+ink and the hue exactly as the file has them, and a reset forgets the hue.
+A file before version 8 that says `tuya` is refused.
 
 Every key is required, even when its value is `null`, and no other key is allowed.
 
@@ -315,6 +324,6 @@ there as above.
 
 ## Changing the format
 
-Any change to keys, meanings or rules is a new `version`. Versions 1 to 7 stay
+Any change to keys, meanings or rules is a new `version`. Versions 1 to 8 stay
 readable for as long as the app supports restoring them; nothing translates older Sello
 databases or other apps' files.

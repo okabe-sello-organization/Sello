@@ -12,6 +12,7 @@ import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
 import com.software.sello.domain.model.CategoryOrderingPreference
 import com.software.sello.domain.model.IncomeSource
+import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ThemePreference
@@ -74,6 +75,8 @@ class RestoreAfterSetAsideTest {
         override suspend fun setTheme(theme: ThemePreference) = write(theme)
 
         override suspend fun setInk(ink: InkPreference) = write(ink)
+
+        override suspend fun restoreInk(ink: InkPreference, tuyaHue: InkHue?) = setInk(ink)
 
         override fun observeCategoryOrdering(): Flow<PreferenceRead<CategoryOrderingPreference>> =
             emptyFlow()

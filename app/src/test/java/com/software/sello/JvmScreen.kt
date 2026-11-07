@@ -12,8 +12,10 @@ import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpSize
+import com.software.sello.designsystem.theme.HueInk
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.designsystem.theme.ThemeInk
 
 /*
  * Screen tests on the JVM (ADR 0022). A test class runs with
@@ -24,7 +26,7 @@ import com.software.sello.designsystem.theme.SelloTheme
 
 /** How a screen is shown: the ink, light or dark, the font scale and, if set, a window. */
 data class Look(
-    val ink: SelloInk = SelloInk.Cobalto,
+    val ink: ThemeInk = SelloInk.Cobalto,
     val dark: Boolean = false,
     val fontScale: Float = 1f,
     /** A window of this size inside the screen; null for the whole screen. */
@@ -32,8 +34,15 @@ data class Look(
     /** Pixels per dp; null keeps the screen's. Pin it when a test asserts pixel sizes. */
     val density: Float? = null
 ) {
-    /** A short name for a screenshot file, such as `cobalto-dark-font1.0`. */
-    val label get() = "${ink.name.lowercase()}-${if (dark) "dark" else "light"}-font$fontScale"
+    /** A short name for a screenshot file, such as `cobalto-dark-font1.0` or `tuya22-light-font1.0`. */
+    val label: String
+        get() {
+            val name = when (ink) {
+                is SelloInk -> ink.name.lowercase()
+                is HueInk -> "tuya${ink.hue}"
+            }
+            return "$name-${if (dark) "dark" else "light"}-font$fontScale"
+        }
 }
 
 /** Shows [content] in Sello's theme as [look] says, with motion reduced so nothing is mid-animation. */

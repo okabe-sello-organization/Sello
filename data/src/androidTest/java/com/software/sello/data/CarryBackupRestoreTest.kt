@@ -10,6 +10,7 @@ import com.software.sello.domain.model.AppearancePreference
 import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
 import com.software.sello.domain.model.CategoryOrderingPreference
+import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Outcome
@@ -92,6 +93,8 @@ class CarryBackupRestoreTest {
 
         override suspend fun setInk(ink: InkPreference) = write()
 
+        override suspend fun restoreInk(ink: InkPreference, tuyaHue: InkHue?) = setInk(ink)
+
         override fun observeCategoryOrdering(): Flow<PreferenceRead<CategoryOrderingPreference>> =
             flowOf(
                 PreferenceRead.Ready(
@@ -112,11 +115,12 @@ class CarryBackupRestoreTest {
     private var nextId = 5_000
 
     /**
-     * A file as Sello wrote it at version 5: no chains, no financial month and, with no goal
-     * starred, no chosen goal.
+     * A file as Sello wrote it at version 5: no chains, no financial month, no ink hue and,
+     * with no goal starred, no chosen goal.
      */
-    private fun String.asVersion5() = replace("\"version\": 7,", "\"version\": 5,")
+    private fun String.asVersion5() = replace("\"version\": 8,", "\"version\": 5,")
         .also { check(it.contains("\"starredGoals\": [],")) }
+        .replace(Regex("\\s+\"inkHue\": null,"), "")
         .replace("\"starredGoals\": [],", "\"featuredGoal\": null,")
         .replace(Regex(",\\s+\"carryChains\": \\[[^]]*]"), "")
         .replace(Regex("\\s+\"financialMonth\": \"[0-9-]+\","), "")

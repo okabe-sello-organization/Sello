@@ -11,6 +11,7 @@ import com.software.sello.domain.model.AppearancePreference
 import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
 import com.software.sello.domain.model.CategoryOrderingPreference
+import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Note
@@ -844,6 +845,8 @@ class CategoryRemovalContractTest {
         override suspend fun setTheme(theme: ThemePreference): PreferenceWrite = error("read only")
 
         override suspend fun setInk(ink: InkPreference): PreferenceWrite = error("read only")
+
+        override suspend fun restoreInk(ink: InkPreference, tuyaHue: InkHue?) = setInk(ink)
 
         override fun observeCategoryOrdering(): Flow<PreferenceRead<CategoryOrderingPreference>> =
             flowOf(PreferenceRead.Ready(CategoryOrderingPreference()))

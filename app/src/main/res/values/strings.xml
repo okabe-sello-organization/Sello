@@ -798,6 +798,25 @@
     <string name="settings_ink_caption">El color de los sellos, la franja y los botones</string>
     <string name="settings_ink_cobalto">Cobalto</string>
     <string name="settings_ink_violeta">Violeta</string>
+    <string name="settings_ink_tuya">Tuya</string>
+    <!-- Tuya with the name of its colour, as restore and Tu tinta name it: "Tuya (Rojo)". -->
+    <string name="settings_ink_tuya_named">Tuya (%1$s)</string>
+    <!-- Under the swatches while Tuya is chosen: "Rojo. Toca Tuya para cambiarla." -->
+    <string name="settings_ink_tuya_note">%1$s. Toca Tuya para cambiarla.</string>
+    <string name="tuya_title">Tu tinta</string>
+    <string name="tuya_slider">Tono de tu tinta</string>
+    <string name="tuya_meaning_note">El rojo y el verde también marcan excesos y metas.</string>
+    <!-- %1$s is the ink still in use, as settings_ink_* or settings_ink_tuya_named name it. -->
+    <string name="tuya_failed">No se pudo guardar. Sigues con %1$s.</string>
+    <string name="tuya_use">Usar esta tinta</string>
+    <string name="tuya_retry">Reintentar</string>
+    <string name="tuya_cancel">Cancelar</string>
+    <!-- The sample screen in Tu tinta's two previews: a month, its remaining figure and the dock. -->
+    <string name="tuya_preview_month">Octubre</string>
+    <string name="tuya_preview_label">Restante</string>
+    <string name="tuya_preview_stamp">Al día</string>
+    <string name="tuya_preview_amount">350.000</string>
+    <string name="tuya_preview_dock">Anotar</string>
     <string name="settings_recibo">Recibo</string>
     <string name="settings_order">Orden de las categorías</string>
     <string name="settings_order_caption">Con los gastos del mes que ves</string>

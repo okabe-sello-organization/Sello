@@ -1,11 +1,16 @@
 package com.software.sello.feature.settings
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
 import com.software.sello.captureStill
+import com.software.sello.designsystem.theme.HueInk
+import com.software.sello.domain.model.AppearancePreference
+import com.software.sello.domain.model.InkHue
+import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.port.BackupSummary
 import com.software.sello.domain.port.LastBackup
 import com.software.sello.domain.port.PreferenceFailure
@@ -72,29 +77,34 @@ class SettingsScreenshotTest {
         state: SettingsState = loaded,
         backup: BackupState = recent,
         export: ExportState = ExportState(),
-        open: String? = null
+        open: String? = null,
+        reveal: String? = null
     ) {
         rule.showSello(look) {
-            ShellScreen(
-                state = ShellState(
-                    currentMonth = YearMonth.of(2026, 10),
-                    selectedMonth = YearMonth.of(2026, 10),
-                    monthPickerOpen = false,
-                    pickerYear = 2026,
-                    pendingEntry = null
-                ),
-                names = monthNames(),
-                onAction = {},
-                onBack = {},
-                screenTitle = "Configuración",
-                pastMonthRibbon = false
-            ) { padding ->
-                SettingsScreen(state, {}, padding, {}, {}) {
-                    TusDatos(backup, {}, export, {}, true, {}, {}, {})
+            Box {
+                ShellScreen(
+                    state = ShellState(
+                        currentMonth = YearMonth.of(2026, 10),
+                        selectedMonth = YearMonth.of(2026, 10),
+                        monthPickerOpen = false,
+                        pickerYear = 2026,
+                        pendingEntry = null
+                    ),
+                    names = monthNames(),
+                    onAction = {},
+                    onBack = {},
+                    screenTitle = "Configuración",
+                    pastMonthRibbon = false
+                ) { padding ->
+                    SettingsScreen(state, {}, padding, {}, {}) {
+                        TusDatos(backup, {}, export, {}, true, {}, {}, {})
+                    }
                 }
+                state.tuya?.let { TuyaSheet(it, state.appearance.ink) {} }
             }
         }
         if (open != null) rule.onNodeWithTag(open).revealed().performClick()
+        if (reveal != null) rule.onNodeWithTag(reveal).revealed()
         rule.captureStill("src/test/screenshots/settings-$name-${look.label}.png")
     }
 
@@ -218,4 +228,56 @@ class SettingsScreenshotTest {
 
     @Test
     fun dataJustSavedDark() = capture("data-just-saved", Look(dark = true), backup = justSaved)
+
+    // SELLO-202: Tuya and Tu tinta.
+
+    private val red = InkPreference.Tuya(InkHue.of(22)!!)
+
+    private val tuyaChosen = loaded.copy(appearance = AppearancePreference(ink = red))
+
+    @Test
+    fun tuyaLight() =
+        capture("tuya", Look(ink = HueInk(22)), tuyaChosen, reveal = SETTINGS_INK_NOTE_TAG)
+
+    @Test
+    fun tuyaDark() = capture(
+        "tuya",
+        Look(ink = HueInk(22), dark = true),
+        tuyaChosen,
+        reveal = SETTINGS_INK_NOTE_TAG
+    )
+
+    private val tuyaKept =
+        loaded.copy(appearance = AppearancePreference(tuyaHue = InkHue.of(22)!!))
+
+    @Test
+    fun tuyaKeptLight() = capture("tuya-kept", Look(), tuyaKept, reveal = SETTINGS_INK_TAG)
+
+    @Test
+    fun tuyaKeptDark() =
+        capture("tuya-kept", Look(dark = true), tuyaKept, reveal = SETTINGS_INK_TAG)
+
+    private val sheet = loaded.copy(tuya = TuyaDraft(hue = 200))
+
+    @Test fun tuTintaLight() = capture("tu-tinta", Look(), sheet)
+
+    @Test fun tuTintaDark() = capture("tu-tinta", Look(dark = true), sheet)
+
+    private val redSheet = loaded.copy(tuya = TuyaDraft(hue = 22))
+
+    @Test fun tuTintaRedLight() = capture("tu-tinta-red", Look(), redSheet)
+
+    @Test fun tuTintaRedDark() = capture("tu-tinta-red", Look(dark = true), redSheet)
+
+    private val failedSheet = loaded.copy(tuya = TuyaDraft(hue = 200, failed = true))
+
+    @Test fun tuTintaFailedLight() = capture("tu-tinta-failed", Look(), failedSheet)
+
+    @Test fun tuTintaFailedDark() = capture("tu-tinta-failed", Look(dark = true), failedSheet)
+
+    private val savingSheet = loaded.copy(busy = true, tuya = TuyaDraft(hue = 200, saving = true))
+
+    @Test fun tuTintaSavingLight() = capture("tu-tinta-saving", Look(), savingSheet)
+
+    @Test fun tuTintaSavingDark() = capture("tu-tinta-saving", Look(dark = true), savingSheet)
 }

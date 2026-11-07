@@ -26,9 +26,9 @@
       <h2>Entry points</h2>
       <ul>
         <li>The gear icon in Recibo's top bar ("Abrir configuración", <code>settings_open</code>): <code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:301</code>, navigating with <code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:101</code>.</li>
-        <li>The destination itself, inside <code>ShellScreen</code> with a back arrow and the title "Configuración" (<code>settings_title</code>), no past-month ribbon, and the entry dock still shown: <code>app/src/main/java/com/software/sello/navigation/SettingsDestinations.kt:24</code>. System Back pops: <code>app/src/main/java/com/software/sello/navigation/SettingsDestinations.kt:53</code>.</li>
+        <li>The destination itself, inside <code>ShellScreen</code> with a back arrow and the title "Configuración" (<code>settings_title</code>), no past-month ribbon, and the entry dock still shown: <code>app/src/main/java/com/software/sello/navigation/SettingsDestinations.kt:25</code>. System Back pops: <code>app/src/main/java/com/software/sello/navigation/SettingsDestinations.kt:54</code>.</li>
       </ul>
-      <p>From Configuración the person goes on to Pagos e ingresos fijos (<code>SettingsDestinations.kt:40</code>), Dólar (<code>SettingsDestinations.kt:42</code>), <a href="backup.html">Respaldo</a> (<code>SettingsDestinations.kt:47</code>) and <a href="reset.html">Borrar datos</a> (<code>SettingsDestinations.kt:49</code>).</p>
+      <p>From Configuración the person goes on to Pagos e ingresos fijos (<code>SettingsDestinations.kt:41</code>), Dólar (<code>SettingsDestinations.kt:43</code>), <a href="backup.html">Respaldo</a> (<code>SettingsDestinations.kt:48</code>) and <a href="reset.html">Borrar datos</a> (<code>SettingsDestinations.kt:50</code>).</p>
     </section>
 
     <section id="screen-settings">
@@ -39,17 +39,19 @@
       <figure data-shot="settings-failed" data-module="app" data-caption="A preference could not be read: an Older StatusSlip over the last good values"></figure>
       <figure data-shot="settings-busy" data-module="app" data-caption="A write under way; counts and the rate unreadable"></figure>
       <figure data-shot="settings-order-slip" data-module="app" data-caption="The OptionSlip for Orden de las categorías, open"></figure>
+      <figure data-shot="settings-tuya-kept" data-module="app" data-caption="Cobalto in use with Tuya's hue kept from before: Tuya keeps its colour and badge, unselected"></figure>
+      <figure data-shot="settings-tuya" data-module="app" data-files="settings-tuya-tuya22-light-font1.0.png, settings-tuya-tuya22-dark-font1.0.png" data-caption="Tuya chosen at 22° (Rojo): the whole app in that ink, Tuya selected with its edit badge and the note naming its colour"></figure>
 
       <h3>Layout</h3>
-      <p>One vertically scrolling <code>Column</code> with <code>spacing.md</code> between blocks (<code>app/src/main/java/com/software/sello/feature/settings/SettingsScreen.kt:100</code>). Top to bottom:</p>
+      <p>One vertically scrolling <code>Column</code> with <code>spacing.md</code> between blocks (<code>app/src/main/java/com/software/sello/feature/settings/SettingsScreen.kt:117</code>). Top to bottom:</p>
       <ol>
-        <li>A <a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> only when a preference read failed (Older, over the last good values) or a write failed (ActionFailed) (<code>SettingsScreen.kt:112</code>).</li>
-        <li><strong>Tus datos</strong>, a slot filled by navigation with Respaldo's <code>TusDatosRoot</code> (<code>SettingsScreen.kt:127</code>; described on the <a href="backup.html#screen-tus-datos">Backup page</a>): backup card, Exportar row and "Borrar todos los datos".</li>
-        <li><strong>Lo que se repite</strong>: a <a href="../components.html#c-Slip"><code>Slip</code></a> with a section title and one <a href="../components.html#c-SettingRow"><code>SettingRow</code></a> "Pagos e ingresos fijos" showing the count (<code>SettingsScreen.kt:195</code>).</li>
-        <li><strong>Apariencia</strong>: a Slip with the "Tema" row and a <a href="../components.html#c-SegmentedSwitch"><code>SegmentedSwitch</code></a> Sistema / Claro / Oscuro, then the "Tinta" row and the feature-local <code>InkSwatches</code> (<code>SettingsScreen.kt:221</code>).</li>
-        <li><strong>Recibo</strong>: a Slip with "Orden de las categorías" and "Dirección" rows, each opening an <a href="../components.html#c-OptionSlip"><code>OptionSlip</code></a> (<code>SettingsScreen.kt:263</code>).</li>
-        <li><strong>Inversiones</strong>: a Slip with "Moneda al crear" and "Orden de la lista" (each opening an OptionSlip) and "Dólar", which leads to the rate screen (<code>SettingsScreen.kt:288</code>).</li>
-        <li>A centred <code>bodySmall</code> footer in <code>inkSoft</code>: "Sello · tus datos no salen de este teléfono" (<code>SettingsScreen.kt:132</code>).</li>
+        <li>A <a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> only when a preference read failed (Older, over the last good values) or a write failed (ActionFailed) (<code>SettingsScreen.kt:125</code>).</li>
+        <li><strong>Tus datos</strong>, a slot filled by navigation with Respaldo's <code>TusDatosRoot</code> (<code>SettingsScreen.kt:140</code>; described on the <a href="backup.html#screen-tus-datos">Backup page</a>): backup card, Exportar row and "Borrar todos los datos".</li>
+        <li><strong>Lo que se repite</strong>: a <a href="../components.html#c-Slip"><code>Slip</code></a> with a section title and one <a href="../components.html#c-SettingRow"><code>SettingRow</code></a> "Pagos e ingresos fijos" showing the count (<code>SettingsScreen.kt:209</code>).</li>
+        <li><strong>Apariencia</strong>: a Slip with the "Tema" row and a <a href="../components.html#c-SegmentedSwitch"><code>SegmentedSwitch</code></a> Sistema / Claro / Oscuro, then the "Tinta" row and the feature-local <code>InkSwatches</code>: Cobalto, Violeta, then Tuya (<code>SettingsScreen.kt:235</code>). Tuya is a rainbow with a + until it is chosen; chosen, it is its ink's colour with an edit badge, and a <code>bodySmall</code> note in <code>inkSoft</code> names the colour: "Rojo. Toca Tuya para cambiarla." (<code>SettingsScreen.kt:285</code>). Choosing another ink keeps Tuya's hue: Tuya keeps its colour and badge, unselected, with no note, and Tu tinta reopens on it.</li>
+        <li><strong>Recibo</strong>: a Slip with "Orden de las categorías" and "Dirección" rows, each opening an <a href="../components.html#c-OptionSlip"><code>OptionSlip</code></a> (<code>SettingsScreen.kt:302</code>).</li>
+        <li><strong>Inversiones</strong>: a Slip with "Moneda al crear" and "Orden de la lista" (each opening an OptionSlip) and "Dólar", which leads to the rate screen (<code>SettingsScreen.kt:327</code>).</li>
+        <li>A centred <code>bodySmall</code> footer in <code>inkSoft</code>: "Sello · tus datos no salen de este teléfono" (<code>SettingsScreen.kt:146</code>).</li>
       </ol>
       <p>Section titles, Tus datos' among them, are the design system's <a href="../components.html#c-SectionTitle"><code>SectionTitle</code></a>: <code>titleMedium</code>, bottom padding <code>spacing.sm</code>, heading semantics. The first <code>SettingRow</code> under each title passes <code>divider = false</code>.</p>
 
@@ -58,29 +60,29 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Loading</td><td>One <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a> and nothing else, until the appearance, ordering and investment preferences have each answered once.</td><td><code>app/src/main/java/com/software/sello/feature/settings/SettingsScreen.kt:108</code>, <code>app/src/main/java/com/software/sello/feature/settings/SettingsViewModel.kt:108</code></td><td><code>settings-loading</code></td></tr>
-            <tr><td>Empty</td><td>Does not exist: every preference has a default.</td><td><code>SettingsViewModel.kt:202</code></td><td>—</td></tr>
-            <tr><td>Error (nothing ever loaded)</td><td>Does not exist as its own state. A failed read with no last good value falls back to the defaults and shows the same <a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> Older as the stale case.</td><td><code>SettingsViewModel.kt:73</code></td><td><code>settings-failed</code></td></tr>
-            <tr><td>Stale (read failed, last good kept)</td><td>The last good values stay on every control; a <a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> Older (no title) with the message "No pudimos leer o guardar tu configuración. Tus gastos y límites siguen igual; inténtalo de nuevo." and the default "Reintentar". Retry reads every source again.</td><td><code>SettingsScreen.kt:112</code>, <code>SettingsViewModel.kt:73</code>, <code>SettingsViewModel.kt:159</code></td><td><code>settings-failed</code></td></tr>
-            <tr><td>Busy (a write running)</td><td>The theme switch, ink swatches and the four picker rows are disabled (faded) until the write returns; a second choice is ignored.</td><td><code>SettingsScreen.kt:240</code>, <code>SettingsViewModel.kt:164</code></td><td><code>settings-busy</code></td></tr>
-            <tr><td>Refused (write failed)</td><td>A <a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> ActionFailed with the same message; the control keeps the stored value.</td><td><code>SettingsViewModel.kt:187</code>, <code>SettingsViewModel.kt:218</code></td><td><code>settings-failed</code> (the same slip)</td></tr>
-            <tr><td>Unknown outcome</td><td>Does not exist: preference writes report done or failed.</td><td><code>SettingsViewModel.kt:186</code></td><td>—</td></tr>
-            <tr><td>Restored draft</td><td>Which OptionSlip is open survives recreation (<code>rememberSaveable</code>); there is no draft otherwise, every choice saves at once.</td><td><code>SettingsScreen.kt:99</code></td><td>Drawn as the open slip: <code>settings-order-slip</code></td></tr>
-            <tr><td>Schedule count loading / unreadable</td><td>The "Pagos e ingresos fijos" row shows no value while loading, "No se pudieron leer" when the read failed, else "N pagos, N ingresos".</td><td><code>SettingsScreen.kt:197</code>, <code>SettingsViewModel.kt:112</code></td><td><code>settings-busy</code></td></tr>
-            <tr><td>Rate loading / none / unreadable</td><td>The "Dólar" row has no caption while loading, "Sin tasa todavía" with no rate, "No pudimos leer la tasa" on failure, or "Tasa del {day}" with the rate as the value.</td><td><code>SettingsScreen.kt:317</code>, <code>SettingsViewModel.kt:128</code></td><td><code>settings-busy</code></td></tr>
+            <tr><td>Loading</td><td>One <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a> and nothing else, until the appearance, ordering and investment preferences have each answered once.</td><td><code>app/src/main/java/com/software/sello/feature/settings/SettingsScreen.kt:121</code>, <code>app/src/main/java/com/software/sello/feature/settings/SettingsViewModel.kt:126</code></td><td><code>settings-loading</code></td></tr>
+            <tr><td>Empty</td><td>Does not exist: every preference has a default.</td><td><code>SettingsViewModel.kt:284</code></td><td>—</td></tr>
+            <tr><td>Error (nothing ever loaded)</td><td>Does not exist as its own state. A failed read with no last good value falls back to the defaults and shows the same <a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> Older as the stale case.</td><td><code>SettingsViewModel.kt:91</code></td><td><code>settings-failed</code></td></tr>
+            <tr><td>Stale (read failed, last good kept)</td><td>The last good values stay on every control; a <a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> Older (no title) with the message "No pudimos leer o guardar tu configuración. Tus gastos y límites siguen igual; inténtalo de nuevo." and the default "Reintentar". Retry reads every source again.</td><td><code>SettingsScreen.kt:125</code>, <code>SettingsViewModel.kt:91</code>, <code>SettingsViewModel.kt:179</code></td><td><code>settings-failed</code></td></tr>
+            <tr><td>Busy (a write running)</td><td>The theme switch, ink swatches and the four picker rows are disabled (faded) until the write returns; a second choice is ignored.</td><td><code>SettingsScreen.kt:253</code>, <code>SettingsViewModel.kt:185</code></td><td><code>settings-busy</code></td></tr>
+            <tr><td>Refused (write failed)</td><td>A <a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> ActionFailed with the same message; the control keeps the stored value.</td><td><code>SettingsViewModel.kt:209</code>, <code>SettingsViewModel.kt:302</code></td><td><code>settings-failed</code> (the same slip)</td></tr>
+            <tr><td>Unknown outcome</td><td>Does not exist: preference writes report done or failed.</td><td><code>SettingsViewModel.kt:189</code></td><td>—</td></tr>
+            <tr><td>Restored draft</td><td>Which OptionSlip is open survives recreation (<code>rememberSaveable</code>). The hue being chosen in Tu tinta survives rotation and process death in the view model's <code>SavedStateHandle</code>, so the sheet comes back open on it. Every other choice saves at once.</td><td><code>SettingsScreen.kt:112</code>, <code>SettingsViewModel.kt:66</code></td><td>Drawn as the open slip: <code>settings-order-slip</code>, <code>settings-tu-tinta</code></td></tr>
+            <tr><td>Schedule count loading / unreadable</td><td>The "Pagos e ingresos fijos" row shows no value while loading, "No se pudieron leer" when the read failed, else "N pagos, N ingresos".</td><td><code>SettingsScreen.kt:211</code>, <code>SettingsViewModel.kt:130</code></td><td><code>settings-busy</code></td></tr>
+            <tr><td>Rate loading / none / unreadable</td><td>The "Dólar" row has no caption while loading, "Sin tasa todavía" with no rate, "No pudimos leer la tasa" on failure, or "Tasa del {day}" with the rate as the value.</td><td><code>SettingsScreen.kt:332</code>, <code>SettingsViewModel.kt:146</code></td><td><code>settings-busy</code></td></tr>
           </tbody>
         </table>
       </div>
 
       <h3>Controls</h3>
       <ul>
-        <li><strong>Pagos e ingresos fijos</strong> row: opens the schedules list (<code>onOpenSchedules</code>, <code>SettingsScreen.kt:214</code>).</li>
-        <li><strong>Tema</strong> switch: sends <code>SettingsAction.ThemeChosen</code>; the app's theme follows the stored preference through <code>AppearanceViewModel</code> (<code>app/src/main/java/com/software/sello/feature/settings/AppearanceViewModel.kt:15</code>, <code>app/src/main/java/com/software/sello/feature/settings/AppearanceTheme.kt:10</code>).</li>
-        <li><strong>Tinta</strong> swatches (radio group): send <code>SettingsAction.InkChosen</code> (<code>SettingsScreen.kt:250</code>).</li>
-        <li><strong>Orden de las categorías</strong> and <strong>Dirección</strong> rows: open an OptionSlip; a choice sends <code>OrderChosen</code> / <code>DirectionChosen</code> and closes it; Cancelar, Back or a tap outside closes it (<code>SettingsScreen.kt:141</code>, <code>SettingsScreen.kt:153</code>).</li>
-        <li><strong>Moneda al crear</strong> and <strong>Orden de la lista</strong> rows: the same, with <code>NewInvestmentCurrencyChosen</code> / <code>InvestmentOrderChosen</code> (<code>SettingsScreen.kt:167</code>, <code>SettingsScreen.kt:179</code>).</li>
-        <li><strong>Dólar</strong> row: opens the rate screen (<code>onOpenRate</code>, <code>SettingsScreen.kt:330</code>).</li>
-        <li><strong>Reintentar</strong> on the StatusSlip: <code>SettingsAction.Retry</code> clears the write failure and re-reads (<code>SettingsViewModel.kt:159</code>).</li>
+        <li><strong>Pagos e ingresos fijos</strong> row: opens the schedules list (<code>onOpenSchedules</code>, <code>SettingsScreen.kt:227</code>).</li>
+        <li><strong>Tema</strong> switch: sends <code>SettingsAction.ThemeChosen</code>; the app's theme follows the stored preference through <code>AppearanceViewModel</code> (<code>app/src/main/java/com/software/sello/feature/settings/AppearanceViewModel.kt:15</code>, <code>app/src/main/java/com/software/sello/feature/settings/AppearanceTheme.kt:11</code>).</li>
+        <li><strong>Tinta</strong> swatches (radio group): Cobalto and Violeta send <code>SettingsAction.InkChosen</code> (<code>SettingsScreen.kt:273</code>); Tuya, set or not, opens <a href="#sheet-tu-tinta">Tu tinta</a> with <code>SettingsAction.Tuya.Open</code> (<code>SettingsScreen.kt:280</code>).</li>
+        <li><strong>Orden de las categorías</strong> and <strong>Dirección</strong> rows: open an OptionSlip; a choice sends <code>OrderChosen</code> / <code>DirectionChosen</code> and closes it; Cancelar, Back or a tap outside closes it (<code>SettingsScreen.kt:154</code>, <code>SettingsScreen.kt:166</code>).</li>
+        <li><strong>Moneda al crear</strong> and <strong>Orden de la lista</strong> rows: the same, with <code>NewInvestmentCurrencyChosen</code> / <code>InvestmentOrderChosen</code> (<code>SettingsScreen.kt:180</code>, <code>SettingsScreen.kt:192</code>).</li>
+        <li><strong>Dólar</strong> row: opens the rate screen (<code>onOpenRate</code>, <code>SettingsScreen.kt:368</code>).</li>
+        <li><strong>Reintentar</strong> on the StatusSlip: <code>SettingsAction.Retry</code> clears the write failure and re-reads (<code>SettingsViewModel.kt:179</code>).</li>
       </ul>
 
       <h3>Key copy</h3>
@@ -90,11 +92,63 @@
         <li>Sections: "Lo que se repite" (<code>settings_recurring</code>), "Apariencia" (<code>settings_appearance</code>), "Recibo" (<code>settings_recibo</code>), "Inversiones" (<code>settings_investments</code>)</li>
         <li>"Pagos e ingresos fijos" (<code>schedules_title</code>); "%1$s, %2$s" (<code>settings_schedules_count</code>) with plurals <code>settings_payments</code>, <code>settings_incomes</code>; "No se pudieron leer" (<code>settings_schedules_unreadable</code>)</li>
         <li>"Tema" (<code>settings_theme</code>): "Sistema", "Claro", "Oscuro" (<code>settings_theme_system</code>, <code>settings_theme_light</code>, <code>settings_theme_dark</code>)</li>
-        <li>"Tinta" (<code>settings_ink</code>), caption "El color de los sellos, la franja y los botones" (<code>settings_ink_caption</code>); "Cobalto", "Violeta" (<code>settings_ink_cobalto</code>, <code>settings_ink_violeta</code>)</li>
+        <li>"Tinta" (<code>settings_ink</code>), caption "El color de los sellos, la franja y los botones" (<code>settings_ink_caption</code>); "Cobalto", "Violeta", "Tuya" (<code>settings_ink_cobalto</code>, <code>settings_ink_violeta</code>, <code>settings_ink_tuya</code>); "%1$s. Toca Tuya para cambiarla." (<code>settings_ink_tuya_note</code>); "Tuya (%1$s)" where restore or Tu tinta names it (<code>settings_ink_tuya_named</code>)</li>
         <li>"Orden de las categorías" (<code>settings_order</code>), caption "Con los gastos del mes que ves" (<code>settings_order_caption</code>); options "Más usadas", "Alfabético", "Monto gastado", "Límite", "Último gasto agregado"</li>
         <li>"Dirección" (<code>settings_direction</code>): "Mayor a menor", "Menor a mayor"</li>
         <li>"Moneda al crear" (<code>settings_investment_currency</code>), "Orden de la lista" (<code>settings_investment_order</code>), "Dólar" (<code>usd_rate_title</code>), "Tasa del %1$s" (<code>settings_rate_date</code>), "Sin tasa todavía" (<code>settings_rate_none</code>), "No pudimos leer la tasa" (<code>settings_rate_unreadable</code>)</li>
         <li>"Sello · tus datos no salen de este teléfono" (<code>settings_footer</code>)</li>
+      </ul>
+    </section>
+
+    <section id="sheet-tu-tinta">
+      <h2>Sheet: Tu tinta</h2>
+
+      <figure data-shot="settings-tu-tinta" data-module="app" data-caption="Opened from Cobalto, moved to 200° (Petróleo): a light and a dark preview, the name, the slider; nothing is saved yet"></figure>
+      <figure data-shot="settings-tu-tinta-red" data-module="app" data-caption="A red hue (22°): the note says red and green also mark overspending and goals; it can still be used"></figure>
+      <figure data-shot="settings-tu-tinta-failed" data-module="app" data-caption="The save failed: the hue stays, the app keeps Cobalto and says so, Reintentar"></figure>
+      <figure data-shot="settings-tu-tinta-saving" data-module="app" data-caption="Saving: Usar esta tinta shows a spinner; Cancelar and the slider take nothing"></figure>
+
+      <h3>Layout</h3>
+      <p>A <a href="../components.html#c-SelloSheet"><code>SelloSheet</code></a> titled "Tu tinta" over the whole of Configuración, top bar and dock included: <code>TuyaSheetRoot</code> is drawn after the screen in its destination and shares its view model (<code>SettingsScreen.kt:86</code>, <code>SettingsDestinations.kt:56</code>). Top to bottom (<code>TuyaSheet.kt:75</code>):</p>
+      <ol>
+        <li>Two previews side by side, Claro and Oscuro: a small Recibo (band with the month and a gear, the remaining figure with an "Al día" <a href="../components.html#c-Stamp"><code>Stamp</code></a>, and an Anotar bar) drawn inside its own <code>SelloTheme(HueInk(hue))</code>, so every colour is the generator's. Sample content; hidden from TalkBack (<code>TuyaSheet.kt:167</code>).</li>
+        <li>The colour's name, <code>titleLarge</code>, centred (<code>hueName</code>).</li>
+        <li>The hue slider: a 28 dp track drawn in the light band of 61 evenly spaced hues and a 34 dp thumb in the chosen one, ringed in <code>paper</code> and <code>outline</code>; 48 dp tall (<code>TuyaSheet.kt:250</code>).</li>
+        <li>The note "El rojo y el verde también marcan excesos y metas." in <code>bodySmall</code> <code>ink</code> on red (0–49°) and green (122–195°) hues. Its line is always laid out, so the buttons never move.</li>
+        <li>After a failed save, a <a href="../components.html#c-FieldMessageText"><code>FieldMessageText</code></a> error.</li>
+        <li>A <a href="../components.html#c-ButtonPair"><code>ButtonPair</code></a> sharing 1:2, so the action keeps one line beside its spinner: Cancelar (outlined) and Usar esta tinta (filled), or Reintentar after a failure.</li>
+      </ol>
+
+      <h3>States</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
+          <tbody>
+            <tr><td>Open</td><td>The sheet starts on Tuya's hue, in use or kept from before; with none yet, on the hue of the ink in use: Cobalto 267°, Violeta 286°. The app keeps its ink until Usar esta tinta.</td><td><code>SettingsViewModel.kt:214</code>, <code>InkChoices.kt:38</code></td><td><code>settings-tu-tinta</code></td></tr>
+            <tr><td>Red or green hue</td><td>The note line shows; every hue can be used.</td><td><code>TuyaSheet.kt:116</code></td><td><code>settings-tu-tinta-red</code></td></tr>
+            <tr><td>Busy (saving)</td><td>Usar esta tinta shows its spinner; Cancelar, the slider, the scrim and back take nothing; a second tap does nothing. The swatches behind are disabled too.</td><td><code>SettingsViewModel.kt:215</code>, <code>TuyaSheet.kt:155</code></td><td><code>settings-tu-tinta-saving</code></td></tr>
+            <tr><td>Saved</td><td>The sheet closes and every screen takes the ink at once, through <code>AppearanceViewModel</code>.</td><td><code>SettingsViewModel.kt:230</code></td><td><code>settings-tuya</code></td></tr>
+            <tr><td>Refused (save failed)</td><td>The sheet stays open on the chosen hue and says "No se pudo guardar. Sigues con Cobalto." (the ink in use, "Tuya (Rojo)" for a Tuya); the button reads Reintentar. Moving the hue clears the message. The screen behind shows no second message.</td><td><code>TuyaSheet.kt:135</code></td><td><code>settings-tu-tinta-failed</code></td></tr>
+            <tr><td>Restored draft</td><td>Rotation or process death while open brings the sheet back on the same hue, not saving.</td><td><code>SettingsViewModel.kt:66</code></td><td>—</td></tr>
+            <tr><td>Loading, empty, unknown outcome</td><td>Do not exist: it opens from loaded settings, always has a hue, and a preference write reports done or failed.</td><td>—</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Controls</h3>
+      <ul>
+        <li><strong>Slider</strong>: a tap or drag picks the hue under the finger (0 at the left end, 359 at the right) with <code>SettingsAction.Tuya.HueChanged</code>. TalkBack reads "Tono de tu tinta" and the colour's name as its state, and moves it with <code>setProgress</code>, a step at a time; a step past an end stops there (<code>TuyaSheet.kt:269</code>).</li>
+        <li><strong>Usar esta tinta</strong> / <strong>Reintentar</strong>: <code>SettingsAction.Tuya.Use</code> stores Tuya with its hue in one write.</li>
+        <li><strong>Cancelar</strong>, back (<code>TuyaSheet.kt:81</code>) and the scrim: <code>SettingsAction.Tuya.Cancel</code> closes it and forgets the hue; the ink stays.</li>
+      </ul>
+
+      <h3>Key copy</h3>
+      <ul>
+        <li>"Tu tinta" (<code>tuya_title</code>); slider "Tono de tu tinta" (<code>tuya_slider</code>); the names "Rosa" to "Fucsia" (<code>sello_hue_*</code>, in <code>:design-system</code>)</li>
+        <li>"El rojo y el verde también marcan excesos y metas." (<code>tuya_meaning_note</code>)</li>
+        <li>"No se pudo guardar. Sigues con %1$s." (<code>tuya_failed</code>)</li>
+        <li>"Cancelar", "Usar esta tinta", "Reintentar" (<code>tuya_cancel</code>, <code>tuya_use</code>, <code>tuya_retry</code>)</li>
+        <li>Preview sample: "Octubre", "Restante", "Al día", "350.000", "Anotar" (<code>tuya_preview_*</code>); "Claro", "Oscuro" (<code>settings_theme_light</code>, <code>settings_theme_dark</code>)</li>
       </ul>
     </section>
 
@@ -142,9 +196,21 @@
             </tr>
             <tr>
               <td><code>InkSwatches</code> (feature-local)</td>
-              <td><code>app/src/main/java/com/software/sello/feature/settings/SettingsComponents.kt:31</code></td>
-              <td>One 44 dp round swatch per ink in its light band colour, in a 56 dp ring that is <code>ink</code> when chosen; a radio group; indented <code>start = 26.dp</code> under the Tinta row (<code>SettingsScreen.kt:258</code>)</td>
-              <td>"The ink's own swatch, not the active scheme: it previews an ink" (<code>SelloInk.swatch</code>, its light band)</td>
+              <td><code>app/src/main/java/com/software/sello/feature/settings/SettingsComponents.kt:51</code></td>
+              <td>One 44 dp round swatch per ink in its light band colour, in a 56 dp ring that is <code>ink</code> when chosen; a radio group; indented <code>start = 26.dp</code> under the Tinta row (<code>SettingsScreen.kt:283</code>). Tuya without a hue is a sweep of every generated hue with a <code>paper</code> + (<code>SettingsComponents.kt:111</code>); chosen, a 22 dp <code>paper</code> badge with a pencil in <code>inkSoft</code>, ringed in <code>rule</code>, sits at its lower edge (<code>SettingsComponents.kt:123</code>)</td>
+              <td>"The ink's own swatch, not the active scheme: it previews an ink" (<code>ThemeInk.swatch</code>, its light band)</td>
+            </tr>
+            <tr>
+              <td><a href="../components.html#c-SelloSheet"><code>SelloSheet</code></a>, <a href="../components.html#c-ButtonPair"><code>ButtonPair</code></a>, <a href="../components.html#c-SelloButton"><code>SelloButton</code></a>, <a href="../components.html#c-FieldMessageText"><code>FieldMessageText</code></a>, <a href="../components.html#c-Stamp"><code>Stamp</code></a></td>
+              <td><code>:design-system</code></td>
+              <td>Tu tinta: the sheet, Cancelar / Usar esta tinta (busy while saving), the failure line, and the stamp in the previews</td>
+              <td>A choice made in a sheet over the screen, saved with one button</td>
+            </tr>
+            <tr>
+              <td><code>HueSlider</code>, <code>TuyaPreview</code> (feature-local)</td>
+              <td><code>app/src/main/java/com/software/sello/feature/settings/TuyaSheet.kt:250</code>, <code>TuyaSheet.kt:167</code></td>
+              <td>The hue slider and the two previews of Tu tinta</td>
+              <td>No other feature picks a hue or previews a theme</td>
             </tr>
             <tr>
               <td><a href="../components.html#c-SectionTitle"><code>SectionTitle</code></a></td>
@@ -156,7 +222,7 @@
               <td><code>TusDatos</code> (Respaldo's, slotted in)</td>
               <td><code>app/src/main/java/com/software/sello/feature/backup/TusDatos.kt:99</code></td>
               <td>First block of the screen, given by navigation</td>
-              <td>"It belongs to Respaldo's feature and saves and restores through Respaldo's sessions" (<code>SettingsScreen.kt:55</code>)</td>
+              <td>"It belongs to Respaldo's feature and saves and restores through Respaldo's sessions" (<code>SettingsScreen.kt:57</code>)</td>
             </tr>
           </tbody>
         </table>
@@ -166,7 +232,8 @@
     <section id="look-alikes">
       <h2>Feature-local parts that look like shared ones</h2>
       <ul>
-        <li><code>InkSwatches</code> (<code>SettingsComponents.kt:31</code>) is a radio choice like <a href="../components.html#c-SegmentedSwitch"><code>SegmentedSwitch</code></a> and <a href="../components.html#c-OptionSlip"><code>OptionSlip</code></a>, but drawn as colour circles. Disabled, it fades by <code>SelloTheme.alpha.disabled</code> like SettingRow; it hard-codes a <code>6.dp</code> gap and a <code>2.5.dp</code> ring. No other feature draws colour swatches.</li>
+        <li><code>InkSwatches</code> (<code>SettingsComponents.kt:51</code>) is a radio choice like <a href="../components.html#c-SegmentedSwitch"><code>SegmentedSwitch</code></a> and <a href="../components.html#c-OptionSlip"><code>OptionSlip</code></a>, but drawn as colour circles. Disabled, it fades by <code>SelloTheme.alpha.disabled</code> like SettingRow; it hard-codes a <code>6.dp</code> gap and a <code>2.5.dp</code> ring. No other feature draws colour swatches.</li>
+        <li><code>HueSlider</code> (<code>TuyaSheet.kt:250</code>) is a slider of its own, not Material's: its track is drawn in the generator's colours and TalkBack reads the colour's name. It hard-codes a 28 dp track and a 34 dp thumb.</li>
         <li>The schedule count and the rate say "unreadable" in a row caption, where a failed preference read shows an Older <code>StatusSlip</code>.</li>
       </ul>
     </section>
@@ -182,7 +249,8 @@
       <h2>Gaps</h2>
       <div class="gaps">
         <ul>
-          <li><code>InkSwatches</code> is captured as part of settings-loaded, not on its own; its behaviour is tested in <code>InkSwatchesTest.kt</code>.</li>
+          <li><code>InkSwatches</code> is captured as part of settings-loaded and settings-tuya, not on its own; its behaviour is tested in <code>InkSwatchesTest.kt</code>.</li>
+          <li>Tu tinta has no device journey: its draft, save and failure are tested on the JVM (<code>SettingsViewModelTest.kt</code>, <code>SettingsScreenTest.kt</code>).</li>
           <li>The entry dock (record an expense) shows on Configuración, while Respaldo and Borrar datos hide it (<code>entryDock = false</code>); the code gives no reason. Left to the Shell page.</li>
         </ul>
       </div>

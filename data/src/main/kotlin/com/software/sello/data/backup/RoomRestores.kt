@@ -621,7 +621,7 @@ class RoomRestores(
         var investmentsLeft = pending.preferences.investments
         appearanceLeft?.let { wanted ->
             val saved = appearance.setTheme(wanted.theme).saved() &&
-                appearance.setInk(wanted.ink).saved()
+                appearance.restoreInk(wanted.ink, wanted.tuyaHue).saved()
             if (saved && markApplied(APPEARANCE)) appearanceLeft = null
         }
         orderingLeft?.let { wanted ->

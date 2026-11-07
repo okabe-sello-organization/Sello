@@ -110,7 +110,9 @@
       "cobalto-dark-font1.0": "Cobalto dark",
       "violeta-light-font1.0": "Violeta light",
       "violeta-dark-font1.0": "Violeta dark",
-      "cobalto-light": "Cobalto light"
+      "cobalto-light": "Cobalto light",
+      "tuya22-light-font1.0": "Tuya 22° light",
+      "tuya22-dark-font1.0": "Tuya 22° dark"
     };
     return known[variant] || variant;
   }
@@ -155,7 +157,7 @@
     }
     if (files) {
       return Promise.resolve(split(files).map(function (file) {
-        var match = file.match(/-(claro|oscuro|(?:cobalto|violeta)-(?:light|dark)-font[\d.]+)\.png$/);
+        var match = file.match(/-(claro|oscuro|(?:cobalto|violeta|tuya\d+)-(?:light|dark)-font[\d.]+)\.png$/);
         return [file, match ? variantLabel(match[1]) : ""];
       }));
     }

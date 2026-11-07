@@ -133,7 +133,29 @@ class HuePaletteTest {
             assertThrows(IllegalArgumentException::class.java) { hueColors(hue, isDark = false) }
             assertThrows(IllegalArgumentException::class.java) { hueName(hue) }
             assertThrows(IllegalArgumentException::class.java) { hueMeaning(hue) }
+            assertThrows(IllegalArgumentException::class.java) { HueInk(hue) }
         }
+    }
+
+    @Test
+    fun aHueInkDrawsTheGeneratedPaletteAndItsSwatchIsItsLightBand() {
+        // Hue 147's light band, typed as aGreenHueMatchesThePrototype has it.
+        assertEquals(rgb(0x00621E), HueInk(147).swatch)
+        for (hue in 0..359) {
+            val ink = HueInk(hue)
+            assertEquals("hue $hue", hueColors(hue, isDark = false).band, ink.swatch)
+        }
+        for (dark in listOf(false, true)) {
+            assertEquals(hueColors(147, dark), selloColors(HueInk(147), dark))
+        }
+    }
+
+    @Test
+    fun eachHandMadeInkStartsAHuePickerAtItsOwnBrandHue() {
+        // Cobalto's brand #1F3BE0 is 266.6° and Violeta's #5B2BD6 285.9° in OKLCH.
+        assertEquals(267, SelloInk.Cobalto.hue)
+        assertEquals(286, SelloInk.Violeta.hue)
+        assertEquals(SelloInk.Cobalto.swatch, HueInk(SelloInk.Cobalto.hue).swatch)
     }
 
     /**

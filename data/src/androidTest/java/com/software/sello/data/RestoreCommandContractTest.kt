@@ -18,6 +18,7 @@ import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.DefaultLimit
 import com.software.sello.domain.model.ExpenseId
 import com.software.sello.domain.model.IncomeSource
+import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.InvestmentPreference
@@ -113,6 +114,14 @@ class RestoreCommandContractTest {
         override suspend fun setTheme(theme: ThemePreference) = write(theme, failAppearance)
 
         override suspend fun setInk(ink: InkPreference) = write(ink, failAppearance)
+
+        /** Tuya's hue each restore wrote beside its ink, which [written] holds. */
+        val tuyaHues = mutableListOf<InkHue?>()
+
+        override suspend fun restoreInk(ink: InkPreference, tuyaHue: InkHue?) =
+            write(ink, failAppearance).also {
+                if (it is PreferenceWrite.Saved) tuyaHues += tuyaHue
+            }
 
         override fun observeCategoryOrdering(): Flow<PreferenceRead<CategoryOrderingPreference>> =
             emptyFlow()
@@ -337,6 +346,47 @@ class RestoreCommandContractTest {
         assertEquals(emptyList<String>(), stagingFiles())
     }
 
+    /** [ink] and Tuya's kept [tuyaHue] restored from a file that holds them (SELLO-202). */
+    private suspend fun restoreAppearance(ink: InkPreference, tuyaHue: InkHue?) {
+        currentHistory()
+        val brought = wanted.copy(
+            appearance = AppearancePreference(ThemePreference.Dark, ink, tuyaHue)
+        )
+
+        val outcome = restores().replace(stage(g01(brought)))
+
+        assertEquals(
+            PendingPreferences(null, null),
+            (outcome as RestoreOutcome.Restored).preferences
+        )
+        assertEquals(
+            listOf<Any>(
+                ThemePreference.Dark,
+                ink,
+                CategoryOrder.Alphabetical,
+                CategoryOrderDirection.Ascending
+            ),
+            preferences.written
+        )
+        assertEquals(listOf(tuyaHue), preferences.tuyaHues)
+    }
+
+    @Test
+    fun aTuyaBackupRestoresTuyaWithItsHue() = runBlocking {
+        val red = InkHue.of(22)!!
+        restoreAppearance(InkPreference.Tuya(red), red)
+    }
+
+    @Test
+    fun aCobaltoBackupRestoresTuyasKeptHueBesideIt() = runBlocking {
+        restoreAppearance(InkPreference.Cobalto, InkHue.of(147)!!)
+    }
+
+    @Test
+    fun aBackupWithoutAHueForgetsTheOneOnThisPhone() = runBlocking {
+        restoreAppearance(InkPreference.Violeta, null)
+    }
+
     /**
      * What the backup brings counts as reviewed: the notice is marked seen at the
      * restore's commit, once. A later retry of the preferences never moves it back past
@@ -383,7 +433,7 @@ class RestoreCommandContractTest {
 
         val truncated = restores().stage(bytes.copyOf(bytes.size / 2))
         val newer = restores().stage(
-            String(bytes).replaceFirst("\"version\": 7", "\"version\": 8").toByteArray()
+            String(bytes).replaceFirst("\"version\": 8", "\"version\": 9").toByteArray()
         )
 
         assertEquals(Outcome.Failure(StageFailure.Rejected(RestoreRejection.Damaged)), truncated)

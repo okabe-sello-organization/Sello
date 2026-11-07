@@ -13,8 +13,12 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.selloColors
+import com.software.sello.domain.model.AppearancePreference
+import com.software.sello.domain.model.InkHue
+import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.port.BackupSummary
 import com.software.sello.domain.port.PendingPreferences
 import com.software.sello.domain.port.RestoreOutcome
@@ -77,6 +81,26 @@ class RestoreSectionTest {
 
         rule.onNodeWithText("Ir al recibo").assertIsDisplayed()
         rule.onNodeWithText(SET_ASIDE).assertIsDisplayed()
+    }
+
+    @Test
+    fun anAppearanceStillToApplyNamesTuyaAndItsColour() {
+        show(
+            RestoreStep.Restored(
+                RestoreOutcome.Restored(
+                    BackupSummary(2, 3, 1, 0, 0),
+                    PendingPreferences(
+                        AppearancePreference(
+                            ThemePreference.Dark,
+                            InkPreference.Tuya(InkHue.of(22)!!)
+                        ),
+                        null
+                    )
+                )
+            )
+        )
+
+        rule.onNodeWithText("Apariencia: Oscuro, Tuya (Rojo)").assertIsDisplayed()
     }
 
     @Test
