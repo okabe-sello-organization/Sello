@@ -479,6 +479,29 @@ class YearPolicyTest {
     }
 
     @Test
+    fun carryCountsTowardsTheMonthsOverTheLimit() {
+        // Comida, base 100.000, carrying from January (SC03): 250.000 in January is over;
+        // February holds 100.000 − 150.000 = −50.000, so nothing spent is over by 50.000;
+        // March holds 100.000 − 50.000 = 50.000, so 80.000 is over, though under the base.
+        // Without carry only January is over, one month: no record.
+        val spent = listOf("2027-01-10" to 250_000L, "2027-03-10" to 80_000L)
+        val snapshot = read(
+            2027,
+            "2027-04-05",
+            spent.map { expense(it.first, it.second, category = 1) },
+            carry = { month ->
+                listOf(comidaInput(listOf(chain(ene)), ene, month, "2027-04-05", spent))
+            },
+            categories = { listOf(line(1, "Comida", 100_000)) }
+        )
+
+        val records = found(snapshot)
+
+        assertEquals("Comida", records.mostOver?.category?.name?.value)
+        assertEquals(3, records.mostOver?.months)
+    }
+
+    @Test
     fun oneMonthOverItsLimitIsNoRecord() {
         val categories = listOf(line(1, "Hogar", null), line(2, "Café", 50_000))
         val expenses = listOf(

@@ -34,6 +34,11 @@ sealed interface YearState {
         val categories: List<YearCategoryRow>,
         /** Récords del año; null with fewer than two finished months with expenses. */
         val records: YearRecordSlip?,
+        /**
+         * Without [records], whether more months may still bring them: only in the year in
+         * progress. A finished year without them shows no Récords slip.
+         */
+        val recordsLater: Boolean,
         /** Nothing recorded in the year, neither expenses nor incomes. */
         val empty: Boolean,
         val stale: Boolean,

@@ -96,6 +96,7 @@ class YearRenderModel(
                 )
             },
             records = records(snapshot.records),
+            recordsLater = inProgress && snapshot.records == YearRecords.TooFew,
             empty = snapshot.expenseCount == 0 && snapshot.incomeCount == 0,
             stale = stale,
             asOf = snapshot.asOf.format(
