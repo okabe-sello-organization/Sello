@@ -79,6 +79,7 @@ enum class SelloIcon(@DrawableRes val filled: Int, @DrawableRes val outlined: In
     Restaurant(R.drawable.ic_sello_restaurant),
     Savings(R.drawable.ic_sello_savings),
     School(R.drawable.ic_sello_school),
+    Search(R.drawable.ic_sello_search),
     Sell(R.drawable.ic_sello_sell),
     Settings(R.drawable.ic_sello_settings),
     ShoppingCart(R.drawable.ic_sello_shopping_cart),

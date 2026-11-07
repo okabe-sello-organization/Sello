@@ -17,6 +17,7 @@ import com.software.sello.data.local.dao.GoalDao
 import com.software.sello.data.local.dao.IncomeDao
 import com.software.sello.data.local.dao.InvestmentDao
 import com.software.sello.data.local.dao.LimitDao
+import com.software.sello.data.local.dao.MovementDao
 import com.software.sello.data.local.dao.OperationReceiptDao
 import com.software.sello.data.local.dao.ProfileDao
 import com.software.sello.data.local.dao.ScheduleDao
@@ -88,6 +89,8 @@ abstract class SelloDatabase : RoomDatabase() {
     abstract fun expenseDao(): ExpenseDao
 
     abstract fun incomeDao(): IncomeDao
+
+    abstract fun movementDao(): MovementDao
 
     abstract fun operationReceiptDao(): OperationReceiptDao
 

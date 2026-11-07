@@ -79,25 +79,27 @@
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-SlipStub">
-<h3><code>SlipStub</code> <span class="src"><code>component/SlipStub.kt:43</code></span></h3>
+<h3><code>SlipStub</code> <span class="src"><code>component/SlipStub.kt:44</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>The tear-off stub under a slip's <code>TearLine</code>: two halves side by side, split by a dashed rule, each a <code>StubButton</code> to where the slip's figures come from. Both halves get the same width and the taller one sets the height.</dd>
+<dt>Purpose</dt><dd>The tear-off stub under a slip's <code>TearLine</code>: two or more parts side by side, split by dashed rules, each a <code>StubButton</code> to where the slip's figures come from. Every part gets the same width and the tallest sets the height. Resumen's has three: Ingresos · Fijos · Día a día.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/resumen.html">resumen · 1</a></dd>
 </dl>
 <pre><code>fun SlipStub(
     start: @Composable () -&gt; Unit,
     end: @Composable () -&gt; Unit,
     modifier: Modifier = Modifier
-)</code></pre>
+)
+
+fun SlipStub(parts: List&lt;@Composable () -&gt; Unit&gt;, modifier: Modifier = Modifier)</code></pre>
 
 <p class="muted">Also visible in screen baselines: <code>resumen-closed</code>.</p>
-<figure data-shot="resumen-closed" data-module="app" data-caption="Seen in Resumen: the Ingresos | Fijos stub"></figure>
+<figure data-shot="resumen-closed" data-module="app" data-caption="Seen in Resumen: the Ingresos | Fijos | Día a día stub"></figure>
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-StubButton">
-<h3><code>StubButton</code> <span class="src"><code>component/SlipStub.kt:74</code></span></h3>
+<h3><code>StubButton</code> <span class="src"><code>component/SlipStub.kt:88</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>One half of a <code>SlipStub</code>: an icon, a short <code>title</code> in the brand ink and, when known, one <code>fact</code> under it, centred in the half. One button, said as <code>label</code> then the fact; <code>label</code> should contain the <code>title</code> so a spoken command finds it. <code>minHeight</code> may be lowered for a compact stub, never below a 48dp target.</dd>
+<dt>Purpose</dt><dd>One part of a <code>SlipStub</code>: an icon beside a short <code>title</code> in the brand ink and, when known, one <code>fact</code> under them, centred in the part. One button, said as <code>label</code> then the fact; <code>label</code> should contain the <code>title</code> so a spoken command finds it. <code>minHeight</code> may be lowered for a compact stub, never below a 48dp target.</dd>
 <dt>Variants</dt><dd><code>fact</code> under the title, <code>minHeight</code> (56 dp, never under 48 dp).</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/recurrence.html">recurrence · 1</a> <a class="tag" href="features/resumen.html">resumen · 2</a></dd>
 </dl>
