@@ -50,8 +50,10 @@ build contains none of this code (see Checks).
 - **An image of a month's budget**, only when the person taps Compartir on Resumen's
   bar, sees the exact image in a preview and taps Compartir imagen, then picks an app in
   the share sheet. It shows the month and the day its figures are from, what is left of
-  the total limit with its stamp (Al día, Al límite, Excedido, Cumplido), spent against
-  that limit and each category's name, spent and limit, the categories Recibo lists. It
+  the total limit with its stamp (Al día, Al límite, Excedido, Cumplido) and spent
+  against that limit, or, when no category has a limit, Has gastado este mes with the
+  total spent and the Sin límite stamp, then each category's name, spent and limit, the
+  categories Recibo lists. It
   never holds notes, income, goals, investments, settings or payments still to come: its
   render model has no field for them, and its headline ignores reserved payments. The
   preview says so before anything is written; Cancelar writes nothing, and older figures
