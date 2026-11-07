@@ -318,4 +318,23 @@ class DayByDayViewModelTest {
 
         assertEquals(DayByDayState.Failed(DayByDayProblem.Damaged), model.state.value)
     }
+
+    @Test
+    fun aDayTooLargeIsReadAgainByItselfOnceTheMonthChanges() = runTest {
+        movements.failure = MovementReadFailure.Unrepresentable
+        snapshots.of(october).value = ReadState.Ready(octoberSnapshot())
+        val model = model()
+        watch(model)
+        assertEquals(DayByDayState.Failed(DayByDayProblem.TooLarge), model.state.value)
+
+        // The person corrects the expense elsewhere: storage and the month move to revision 8.
+        movements.failure = null
+        mockMonth()
+        movements.revision = 8
+        snapshots.of(october).value = ReadState.Ready(octoberSnapshot(revision = 8))
+
+        // No Reintentar was needed: the new revision read the month again.
+        assertEquals(6, model.ready.listed)
+        assertNull(model.ready.pageFailure)
+    }
 }

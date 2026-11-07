@@ -200,9 +200,10 @@ class MonthMovementsReadTest {
             ledger.categories.submit(ledger.createCategory("Mercado"))
         }
         sameMoment {
-            receiveNow("2026-10-20", 900_000)
             spendNow(100, "2026-10-20", 1_000)
             spendNow(100, "2026-10-20", 2_000)
+            // Created last: only the kind tie-break puts it after the expenses.
+            receiveNow("2026-10-20", 900_000)
         }
 
         val pages = listOf(0, 1, 2).map { read(MovementFilter.All, offset = it, limit = 1) }
