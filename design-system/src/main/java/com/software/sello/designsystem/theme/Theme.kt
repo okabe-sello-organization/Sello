@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 
 /**
  * Sello's theme. The ink is the user's choice, one of Sello's own or one built from a hue;
@@ -23,6 +24,7 @@ fun SelloTheme(
     val colors = remember(ink, darkTheme) { selloColors(ink, darkTheme) }
     val shapes = remember { SelloShapes() }
     CompositionLocalProvider(
+        LocalSelloInk provides ink,
         LocalSelloColors provides colors,
         LocalSelloShapes provides shapes,
         LocalSelloReducedMotion provides reducedMotion
@@ -38,6 +40,14 @@ fun SelloTheme(
 
 /** Reads the tokens of the nearest [SelloTheme]. */
 object SelloTheme {
+    /**
+     * The ink the nearest [SelloTheme] is drawn in, so a part that must stay light, such as
+     * an image to share, can be drawn in the same ink with `darkTheme = false`.
+     */
+    val ink: ThemeInk
+        @Composable @ReadOnlyComposable
+        get() = LocalSelloInk.current
+
     val colors: SelloColors
         @Composable @ReadOnlyComposable
         get() = LocalSelloColors.current
@@ -63,3 +73,5 @@ object SelloTheme {
         @Composable @ReadOnlyComposable
         get() = LocalSelloReducedMotion.current
 }
+
+private val LocalSelloInk = staticCompositionLocalOf<ThemeInk> { SelloInk.Cobalto }

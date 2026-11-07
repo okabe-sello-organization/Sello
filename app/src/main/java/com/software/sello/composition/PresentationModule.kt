@@ -53,6 +53,7 @@ import com.software.sello.feature.reset.ResetViewModel
 import com.software.sello.feature.resumen.ResumenViewModel
 import com.software.sello.feature.settings.AppearanceViewModel
 import com.software.sello.feature.settings.SettingsViewModel
+import com.software.sello.feature.share.ShareMonthViewModel
 import com.software.sello.feature.startup.StartupFailureViewModel
 import com.software.sello.feature.startup.StartupRecovery
 import com.software.sello.navigation.MonthSession
@@ -127,6 +128,7 @@ private fun Module.viewModels() {
     factoryOf(::CorrectionAnnouncementsViewModel)
     factoryOf(::CategoryManagementViewModel)
     factoryOf(::ReciboViewModel)
+    factoryOf(::ShareMonthViewModel)
     factoryOf(::ReciboGoalViewModel)
     factoryOf(::InversionesViewModel)
     factoryOf(::UsdRateViewModel)

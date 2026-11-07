@@ -1874,4 +1874,26 @@
     <string name="limit_sheet_carry">De meses anteriores %1$s · gastaste %2$s en %3$s</string>
     <string name="limit_sheet_amount_base">Límite base en pesos</string>
     <string name="limit_sheet_fact_capacity">Tu límite de %1$s, con lo de meses anteriores, pasaría a %2$s.</string>
+    <!-- Compartir el mes (SELLO-198): an image of the month's budget only. -->
+    <string name="share_month_open">Compartir el mes</string>
+    <string name="share_month_title">Compartir %1$s</string>
+    <string name="share_month_as_of">al %1$d de %2$s</string>
+    <string name="share_month_closed">Mes cerrado</string>
+    <string name="share_month_spent_of">Gastado %1$s de %2$s</string>
+    <string name="share_month_spent">Gastado %1$s</string>
+    <string name="share_month_limit">de %1$s</string>
+    <string name="share_month_no_limit">sin límite</string>
+    <string name="share_month_brand">Sello</string>
+    <string name="share_month_budget_only">Solo el presupuesto del mes</string>
+    <string name="share_month_hint">Se comparte solo esta imagen: el mes, lo que queda y cada categoría con su gasto y su límite. Sin notas, ingresos, metas ni inversiones.</string>
+    <string name="share_month_confirm">Compartir imagen</string>
+    <string name="share_month_cancel">Cancelar</string>
+    <string name="share_month_waiting">Las cifras de %1$s no se pudieron leer de nuevo. Para compartir, espera a que estén al día.</string>
+    <string name="share_month_read_failed">No se pudo leer %1$s, así que no hay imagen que compartir.</string>
+    <string name="share_month_empty_title">Nada que compartir</string>
+    <string name="share_month_empty">%1$s no tiene categorías todavía.</string>
+    <string name="share_month_failed">No se pudo preparar la imagen. No salió nada del teléfono.</string>
+    <string name="share_month_line_spoken">%1$s: gastado %2$s de %3$s.</string>
+    <string name="share_month_line_spoken_open">%1$s: gastado %2$s, sin límite.</string>
+    <string name="share_month_chooser">Compartir el presupuesto del mes</string>
 </resources>

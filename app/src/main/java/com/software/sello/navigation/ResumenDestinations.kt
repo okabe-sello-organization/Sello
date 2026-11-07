@@ -20,6 +20,8 @@ import com.software.sello.feature.recibo.CategoryDetailScreen
 import com.software.sello.feature.recibo.CategoryDetailState
 import com.software.sello.feature.recibo.CategoryDetailViewModel
 import com.software.sello.feature.resumen.ResumenRoot
+import com.software.sello.feature.share.ShareMonthButton
+import com.software.sello.feature.share.ShareMonthRoot
 import com.software.sello.presentation.corrections.CorrectionAnnouncementState
 import com.software.sello.presentation.corrections.CorrectionAnnouncementsViewModel
 import com.software.sello.presentation.corrections.CorrectionNotice
@@ -48,6 +50,11 @@ internal fun NavGraphBuilder.resumenDestinations(
             navigation = tabs,
             // Resumen reads the month: no Anotar here (owner, 2026-10-26).
             entryDock = false,
+            // Share the month on screen, then Configuración, as on Recibo's bar.
+            actions = {
+                ShareMonthButton(viewModels)
+                SettingsAction { navigation.navigate(SettingsRoute) { launchSingleTop = true } }
+            },
             notice = notice?.let { { CorrectionNoticeBar(it, onUndo) } }
         ) { padding ->
             ResumenRoot(viewModels, {
@@ -59,6 +66,8 @@ internal fun NavGraphBuilder.resumenDestinations(
             }
         }
         BackHandler(enabled = !state.monthPickerOpen) { tabs.onSelect("recibo") }
+        // After the screen's own back, so that back closes the sheet first.
+        ShareMonthRoot(viewModels)
     }
     composable<ResumenCategoryRoute> { entry ->
         val state by shellState

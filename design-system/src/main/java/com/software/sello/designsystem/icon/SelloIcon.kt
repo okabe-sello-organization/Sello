@@ -80,6 +80,7 @@ enum class SelloIcon(@DrawableRes val filled: Int, @DrawableRes val outlined: In
     School(R.drawable.ic_sello_school),
     Sell(R.drawable.ic_sello_sell),
     Settings(R.drawable.ic_sello_settings),
+    Share(R.drawable.ic_sello_share),
     ShoppingCart(R.drawable.ic_sello_shopping_cart),
     Sort(R.drawable.ic_sello_sort),
     Spa(R.drawable.ic_sello_spa),
