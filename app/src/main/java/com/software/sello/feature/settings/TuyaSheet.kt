@@ -138,7 +138,7 @@ internal fun TuyaSheet(
         }
         ButtonPair(
             firstWeight = 1f,
-            secondWeight = 1f,
+            secondWeight = 2f,
             first = {
                 SelloButton(
                     text = stringResource(R.string.tuya_cancel),
