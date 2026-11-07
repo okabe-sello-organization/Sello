@@ -77,6 +77,13 @@ class DayByDayViewModel(
     /** The month and chip whose rows [state] holds, to tell its own rows from another's. */
     private var listedFor: Request? = null
 
+    /**
+     * The month and chip [wanted] counts pages for. Coming back from a row's editor after
+     * sharing stopped observes the same month and chip again: its pages are kept, so the row
+     * opened is still listed. Only another month or chip starts at one page.
+     */
+    private var pagesFor: Request? = null
+
     /** The search and chip whose results [found] holds. */
     private var foundFor: Found? = null
 
@@ -109,7 +116,10 @@ class DayByDayViewModel(
     val state: StateFlow<DayByDayState> = combine(session.selectedMonth, chip) { month, chip ->
         Request(month, chip)
     }.flatMapLatest { request ->
-        wanted.value = PAGE_SIZE
+        if (request != pagesFor) {
+            pagesFor = request
+            wanted.value = PAGE_SIZE
+        }
         combine(monthOf(request.month), wanted) { snapshot, count -> snapshot to count }
             .flatMapLatest { (snapshot, count) -> load(request, snapshot, count) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DayByDayState.Loading)
