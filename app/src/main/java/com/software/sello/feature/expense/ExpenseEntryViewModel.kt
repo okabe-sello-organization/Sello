@@ -4,7 +4,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.software.sello.domain.model.CategoryId
+import com.software.sello.domain.model.Expense
 import com.software.sello.domain.model.ExpenseId
+import com.software.sello.domain.model.FrequentExpense
 import com.software.sello.domain.model.MonthlySnapshot
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.Outcome
@@ -15,6 +17,7 @@ import com.software.sello.domain.model.TextError
 import com.software.sello.domain.model.TransactionAmountError
 import com.software.sello.domain.policy.AmountDraft
 import com.software.sello.domain.policy.AmountDraftError
+import com.software.sello.domain.policy.FrequentExpensesPolicy
 import com.software.sello.domain.port.ChangeSchedule
 import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommittedExpense
@@ -53,6 +56,7 @@ import com.software.sello.presentation.submission.Settled
 import com.software.sello.presentation.submission.Submission
 import java.time.LocalDate
 import java.time.YearMonth
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -61,6 +65,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -87,6 +92,10 @@ import kotlinx.serialization.Serializable
  * With Se repite on, a new expense becomes a schedule instead: [schedules] keeps it and
  * catch-up records each payment on its date, this one included when it starts today.
  * Nothing is recorded here. The choice is kept in [saved] like the rest of the draft.
+ *
+ * For a new expense it reads the last 90 days once, beside the form and never before it,
+ * and offers what is recorded most (SELLO-199): ⚡ Frecuentes and the note's suggestions.
+ * Picking one only fills the draft; it is saved, like any draft, by Anotar gasto.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ExpenseEntryViewModel(
@@ -99,7 +108,9 @@ class ExpenseEntryViewModel(
     private val money: MoneyFormatter,
     private val corrections: Corrections,
     private val schedules: ScheduleCommands,
-    private val scheduleReads: ScheduleReads
+    private val scheduleReads: ScheduleReads,
+    /** Where the frequent expenses are grouped, off the main thread. */
+    private val computation: CoroutineDispatcher
 ) : ViewModel() {
     private val correctionText = CarryCorrectionText(money)
 
@@ -234,6 +245,37 @@ class ExpenseEntryViewModel(
     /** The note being written in its composer; kept in [saved] so a restart reopens it. */
     private val noteDraft: StateFlow<String?> = saved.getStateFlow(KEY_NOTE_DRAFT, null)
 
+    /** The sheet of frequent expenses is open; kept in [saved] so a restart reopens it. */
+    private val frequentOpen: StateFlow<Boolean> = saved.getStateFlow(KEY_FREQUENT_OPEN, false)
+
+    /**
+     * The last 90 days' expenses, read once for a new expense; null while they are read, when
+     * the read failed or when there were more than one read may hold. Then nothing is offered.
+     */
+    private val recent = MutableStateFlow<List<Expense>?>(null)
+
+    /**
+     * Every group of the last 90 days in the categories the form offers, most repeated
+     * first. Empty until both are read, and when the usual amount could not be worked out.
+     * Up to 5.000 expenses are grouped on [computation], never on the main thread.
+     */
+    private val groups: StateFlow<List<FrequentExpense>> =
+        combine(recent, month) { expenses, month ->
+            val snapshot = good(month)
+            if (expenses == null || snapshot == null) {
+                emptyList()
+            } else {
+                val offered = eligible(snapshot).map { it.id }.toSet()
+                val today = clock.today.value.date
+                when (
+                    val read = FrequentExpensesPolicy.groups(expenses, today, offered)
+                ) {
+                    is Outcome.Failure -> emptyList()
+                    is Outcome.Success -> read.value
+                }
+            }
+        }.flowOn(computation).stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
     val state: StateFlow<ExpenseEntryState> =
         combine(
             draft,
@@ -241,9 +283,11 @@ class ExpenseEntryViewModel(
             month,
             clock.today,
             // Se repite is read from saved state when rendering; this only says it changed.
-            combine(noteDraft, repeat.changes) { note, _ -> note }
-        ) { draft, progress, month, today, note ->
-            render(draft, progress, month, today.date, note)
+            combine(noteDraft, repeat.changes, groups, frequentOpen) { note, _, groups, open ->
+                Aside(note, groups, open)
+            }
+        ) { draft, progress, month, today, aside ->
+            render(draft, progress, month, today.date, aside)
         }.stateIn(
             viewModelScope,
             SharingStarted.Eagerly,
@@ -252,9 +296,16 @@ class ExpenseEntryViewModel(
                 progress.value,
                 month.value,
                 clock.today.value.date,
-                noteDraft.value
+                Aside(noteDraft.value, groups.value, frequentOpen.value)
             )
         )
+
+    /** What is rendered beside the draft: the note being written and the frequent expenses. */
+    private data class Aside(
+        val writing: String?,
+        val groups: List<FrequentExpense>,
+        val frequentOpen: Boolean
+    )
 
     init {
         viewModelScope.launch {
@@ -271,6 +322,7 @@ class ExpenseEntryViewModel(
                 submission.pending -> recover()
             }
         }
+        if (!editing) viewModelScope.launch { readRecent() }
         if (editing && progress.value.original == null) viewModelScope.launch { loadOriginal() }
         if (editing && saved.get<String>(KEY_ORIGIN_SCHEDULE) != null) {
             viewModelScope.launch { loadFollowing() }
@@ -323,6 +375,20 @@ class ExpenseEntryViewModel(
         val book = (scheduleReads.book() as? Outcome.Success)?.value ?: return
         val following = book.schedules.firstOrNull { it.schedule.id.value == id }
         progress.update { it.copy(following = following) }
+    }
+
+    /**
+     * The last 90 days, read once beside the form. A failed read, or one with more than a
+     * read may hold, offers nothing: never a part taken for the whole.
+     */
+    private suspend fun readRecent() {
+        val today = clock.today.value.date
+        val read = reads.between(
+            FrequentExpensesPolicy.since(today),
+            today,
+            ExpenseReads.MAX_RECENT
+        )
+        recent.value = (read as? Outcome.Success)?.value?.takeIf { it.next == null }?.expenses
     }
 
     private fun prefilledAmount(): AmountDraft {
@@ -441,6 +507,15 @@ class ExpenseEntryViewModel(
 
             ExpenseEntryAction.NoteCancelled -> saved[KEY_NOTE_DRAFT] = null
 
+            ExpenseEntryAction.OpenFrequent ->
+                if (now.editable && now.frequent.isNotEmpty()) saved[KEY_FREQUENT_OPEN] = true
+
+            ExpenseEntryAction.CloseFrequent -> saved[KEY_FREQUENT_OPEN] = false
+
+            is ExpenseEntryAction.FrequentPicked -> if (now.editable && !editing) {
+                fill(action.categoryId, action.key, now)
+            }
+
             // Created from Nueva: chosen once the month can offer it, unless the form has
             // moved on to saving meanwhile.
             is ExpenseEntryAction.CategoryCreated -> if (!editing) {
@@ -529,6 +604,28 @@ class ExpenseEntryViewModel(
                 progress.update { it.copy(error = null) }
             }
         }
+    }
+
+    /**
+     * Fills the category, the note and the usual amount of the frequent expense picked, and
+     * closes the sheet or the composer it came from. Only one the form offers, in a category
+     * it offers, is taken. The date and Se repite stay as they are; nothing is saved.
+     */
+    private fun fill(categoryId: String, key: String, now: ExpenseEntryState) {
+        val picked = groups.value.firstOrNull {
+            it.categoryId.value == categoryId && it.key == key
+        } ?: return
+        if (now.categories.none { it.id == categoryId }) return
+        edit {
+            it.copy(
+                amount = AmountDraft.paste(picked.usual.money.minorUnits.toString()),
+                categoryId = categoryId,
+                note = picked.note.value
+            )
+        }
+        saved[KEY_NOTE_DRAFT] = null
+        saved[KEY_FREQUENT_OPEN] = false
+        progress.update { it.copy(atLimit = false, error = null) }
     }
 
     /** A schedule starts today or later; a single expense is dated today or earlier. */
@@ -987,8 +1084,9 @@ class ExpenseEntryViewModel(
         progress: Progress,
         month: SnapshotState,
         today: LocalDate,
-        writing: String?
+        aside: Aside
     ): ExpenseEntryState {
+        val writing = aside.writing
         val snapshot = good(month)
         val original = progress.original
         val categories = snapshot?.let { eligible(it, original?.categoryId) }.orEmpty()
@@ -1000,6 +1098,14 @@ class ExpenseEntryViewModel(
         val waitingForOriginal = editing && original == null && progress.error == null
         val currentMonth = YearMonth.from(today)
         val repeating = if (editing) RepeatUi() else repeat.ui(draft.date)
+        // Only for a new expense still being written; a correction is never offered any.
+        val offering = !editing && progress.recorded == null
+        val names = categories.associateBy { it.id }
+        val frequent = FrequentExpensesPolicy.frequent(aside.groups)
+            .takeIf { offering }.orEmpty().mapNotNull { entry(it, names) }
+        val suggestions = noteDraft?.takeIf { offering }
+            ?.let { FrequentExpensesPolicy.suggestions(aside.groups, it) }
+            .orEmpty().mapNotNull { entry(it, names) }
         return ExpenseEntryState(
             loading = progress.recorded == null && !progress.originalUnreadable &&
                 (month is ReadState.Loading || waitingForOriginal),
@@ -1054,10 +1160,26 @@ class ExpenseEntryViewModel(
                 )
             },
             followingSaved = followingTerms.read() == terms(draft),
+            frequent = frequent,
+            frequentOpen = aside.frequentOpen && frequent.isNotEmpty(),
+            noteSuggestions = suggestions,
             pastMonths = original?.let {
                 listOf(YearMonth.from(it.date), YearMonth.from(draft.date)).distinct()
                     .filter { month -> month != currentMonth }
             }.orEmpty()
+        )
+    }
+
+    private fun entry(group: FrequentExpense, names: Map<String, EntryCategory>): EntryFrequent? {
+        val category = names[group.categoryId.value] ?: return null
+        return EntryFrequent(
+            categoryId = category.id,
+            key = group.key,
+            note = group.note.value,
+            categoryName = category.name,
+            iconKey = category.iconKey,
+            count = group.count,
+            usual = money.format(group.usual.money)
         )
     }
 
@@ -1093,6 +1215,7 @@ class ExpenseEntryViewModel(
         private const val KEY_ORIGINAL = "expense.original"
         private const val KEY_CATEGORY_DEFAULTED = "expense.categoryDefaulted"
         private const val KEY_NOTE_DRAFT = "expense.note.draft"
+        private const val KEY_FREQUENT_OPEN = "expense.frequent.open"
         private const val KEY_OPERATION = "expense.operation"
         private const val KEY_SAVED_EXPENSE = "expense.saved"
         private const val KEY_SAVED_SCHEDULE = "expense.saved.schedule"

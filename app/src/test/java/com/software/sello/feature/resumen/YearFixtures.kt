@@ -5,10 +5,15 @@ import com.software.sello.domain.model.PastVerdict
 import com.software.sello.domain.model.SpendingDirection
 import com.software.sello.domain.model.YearCategory
 import com.software.sello.domain.model.YearComparison
+import com.software.sello.domain.model.YearExpenseRecord
 import com.software.sello.domain.model.YearMonthLine
+import com.software.sello.domain.model.YearMonthRecord
 import com.software.sello.domain.model.YearMonthStatus
+import com.software.sello.domain.model.YearOverRecord
+import com.software.sello.domain.model.YearRecords
 import com.software.sello.domain.model.YearSnapshot
 import com.software.sello.feature.expense.categoryIn
+import com.software.sello.feature.expense.storedExpense
 import java.math.BigInteger
 import java.time.LocalDate
 import java.time.YearMonth
@@ -19,7 +24,8 @@ internal fun yearSnapshot(
     asOf: String = "2026-11-06",
     firstYear: Int = 2025,
     comparison: Boolean = true,
-    empty: Boolean = false
+    empty: Boolean = false,
+    records: YearRecords? = null
 ): YearSnapshot {
     val today = LocalDate.parse(asOf)
     // Both add up to the year's 14.230.000: to 6 November, or a whole finished year.
@@ -96,6 +102,7 @@ internal fun yearSnapshot(
         } else {
             null
         },
+        records = records ?: if (empty) YearRecords.TooFew else mockRecords(year),
         categories = if (empty) {
             emptyList()
         } else {
@@ -109,3 +116,22 @@ internal fun yearSnapshot(
         }
     )
 }
+
+/**
+ * The mock's records: March 1.840.000 the dearest, August 1.020.000 the calmest, the
+ * 1.200.000 Matrícula of 3 February the biggest, Entretenimiento over in four months.
+ */
+internal fun mockRecords(year: Int = 2026, mostOver: Boolean = true, note: String? = "Matrícula") =
+    YearRecords.Found(
+        dearest = YearMonthRecord(YearMonth.of(year, 3), Money.cop(1_840_000)),
+        calmest = YearMonthRecord(YearMonth.of(year, 8), Money.cop(1_020_000)),
+        biggest = YearExpenseRecord(
+            storedExpense(50, 1, "$year-02-03", 1_200_000, note),
+            categoryIn(1, "Hogar", null).category
+        ),
+        mostOver = if (mostOver) {
+            YearOverRecord(categoryIn(4, "Entretenimiento", null).category, 4)
+        } else {
+            null
+        }
+    )

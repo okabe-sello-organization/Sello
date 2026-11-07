@@ -7,6 +7,7 @@ import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.YearSnapshot
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.YearSnapshots
+import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.month.MonthNames
 import com.software.sello.presentation.read.LastGoodRead
@@ -33,9 +34,10 @@ class YearViewModel(
     reads: YearSnapshots,
     money: MoneyFormatter,
     months: MonthNames,
+    dates: DateLabels,
     clock: FinancialClock
 ) : ViewModel() {
-    private val render = YearRenderModel(money, months)
+    private val render = YearRenderModel(money, months, dates)
     private val attempts = MutableStateFlow(0)
     private var expiry: Job? = null
 

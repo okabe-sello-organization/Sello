@@ -9,6 +9,7 @@ import com.software.sello.domain.model.SpendingDirection
 import com.software.sello.domain.port.ReadState
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.testing.HandYearSnapshots
+import com.software.sello.testing.testDateLabels
 import com.software.sello.testing.testMoney
 import com.software.sello.testing.testMonthNames
 import kotlinx.coroutines.Dispatchers
@@ -38,7 +39,7 @@ class YearViewModelTest {
     fun reset() = Dispatchers.resetMain()
 
     private fun model(saved: SavedStateHandle = SavedStateHandle(mapOf("year" to 2026))) =
-        YearViewModel(saved, reads, testMoney(), testMonthNames(), clock)
+        YearViewModel(saved, reads, testMoney(), testMonthNames(), testDateLabels(), clock)
 
     private fun TestScope.watch(model: YearViewModel) =
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.state.collect {} }

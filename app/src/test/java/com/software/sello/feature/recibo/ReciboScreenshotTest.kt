@@ -157,11 +157,43 @@ class ReciboScreenshotTest {
         rule.captureStill("src/test/screenshots/recibo-invitation-${look.label}.png")
     }
 
-    /** 1 to 7 January: the year card in the invitation's place (SELLO-200). */
+    /**
+     * 3 January 2027, the mock's: 2.310.000 left of the month, 79.650 a day for the 29 days
+     * from today to the 31st, and the year card in the invitation's place (SELLO-200).
+     */
+    private val january = ReciboState.Month(
+        ReciboSummary(
+            ReciboAnswerLabel.Remaining,
+            plain("2.310.000"),
+            ReciboStamp.OnTrack,
+            perDay = ReciboPerDay(plain("79.650"), 29)
+        ),
+        listOf(
+            category(
+                id = "a",
+                name = "Alimentación",
+                headline = ReciboHeadline.Remaining,
+                amount = plain("850.000"),
+                stamp = ReciboStamp.OnTrack,
+                limit = "900.000",
+                fraction = 0.06f
+            ),
+            category(
+                id = "b",
+                name = "Hogar",
+                headline = ReciboHeadline.Remaining,
+                amount = plain("1.100.000"),
+                stamp = ReciboStamp.OnTrack,
+                limit = "1.500.000",
+                fraction = 0.27f
+            )
+        ),
+        stale = false,
+        invitation = ReciboInvitation(YearMonth.of(2026, 12), closesYear = true)
+    )
+
     private fun captureYearCard(look: Look) {
-        val invited = overspent.copy(
-            invitation = ReciboInvitation(YearMonth.of(2026, 12), closesYear = true)
-        )
+        val invited = january
         rule.showSello(look) {
             Box(Modifier.fillMaxSize().background(SelloTheme.colors.desk)) {
                 ReciboScreen(invited, {}, PaddingValues(12.dp))

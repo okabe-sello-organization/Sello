@@ -13,6 +13,7 @@ import com.software.sello.domain.policy.EffectiveDates
 import com.software.sello.domain.port.ExpenseCursor
 import com.software.sello.domain.port.ExpensePage
 import com.software.sello.domain.port.ExpenseReads
+import java.time.LocalDate
 import java.time.YearMonth
 
 class RoomExpenseReads(private val database: SelloDatabase) : ExpenseReads {
@@ -47,6 +48,31 @@ class RoomExpenseReads(private val database: SelloDatabase) : ExpenseReads {
             is Outcome.Success -> {
                 val last = expenses.value.lastOrNull()
                 val next = last?.takeIf { rows.size > limit }
+                    ?.let { ExpenseCursor(it.date, it.sequence) }
+                Outcome.Success(ExpensePage(expenses.value, next))
+            }
+        }
+    }
+
+    override suspend fun between(
+        from: LocalDate,
+        through: LocalDate,
+        limit: Int
+    ): Outcome<ExpensePage, StorageFailure> = reading {
+        require(limit in 1..ExpenseReads.MAX_RECENT) {
+            "a read holds 1 to ${ExpenseReads.MAX_RECENT} expenses"
+        }
+        // One more than asked for, only to learn whether any was left out.
+        val rows = database.expenseDao().newestBetween(
+            from = EffectiveDates.storedText(from),
+            through = EffectiveDates.storedText(through),
+            limit = limit + 1
+        )
+        when (val expenses = rows.take(limit).decodeAll { it.toDomain() }) {
+            is Outcome.Failure -> expenses
+
+            is Outcome.Success -> {
+                val next = expenses.value.lastOrNull()?.takeIf { rows.size > limit }
                     ?.let { ExpenseCursor(it.date, it.sequence) }
                 Outcome.Success(ExpensePage(expenses.value, next))
             }

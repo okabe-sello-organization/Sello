@@ -1,6 +1,6 @@
 # SELLO-E36 — Frequent expenses
 
-- **Status:** Backlog
+- **Status:** Done
 - **Increment:** Post-MVP
 - **Goal:** The person fills Anotar with an expense they record often in one tap, then saves it as usual.
 - **Exit:** Anotar offers frequent expenses from "⚡ Frecuentes" and while writing the note, as in the approved mock, filling the usual amount; none is ever saved without Anotar gasto.

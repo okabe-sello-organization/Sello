@@ -56,7 +56,7 @@ fun MovementPane(padding: PaddingValues, content: @Composable () -> Unit) {
 
 /**
  * The note line under the choices: the [note], or [addLabel] as an invitation while it is
- * blank; [editLabel] names the action.
+ * blank; [editLabel] names the action. [trailing] is a control of its own at the line's end.
  */
 @Composable
 fun MovementNoteLine(
@@ -65,7 +65,8 @@ fun MovementNoteLine(
     editLabel: String,
     enabled: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    trailing: (@Composable () -> Unit)? = null
 ) {
     EntryLine(
         text = note.ifBlank { addLabel },
@@ -74,7 +75,8 @@ fun MovementNoteLine(
         modifier = modifier,
         action = editLabel,
         placeholder = note.isBlank(),
-        enabled = enabled
+        enabled = enabled,
+        trailing = trailing
     )
 }
 

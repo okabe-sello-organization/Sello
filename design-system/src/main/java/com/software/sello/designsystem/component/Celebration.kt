@@ -167,9 +167,10 @@ data class CelebrationAction(
  * A big moment, presentation only, as a goal's ¡Lo lograste!: a full-screen dialog on the
  * desk where [stamps] land at [landAtMillis] (each by 1400 ms, before the flood), [flood]
  * spreads out of the last one, the stamps rise in [onFlood], [title] rises, the [plate] is
- * stamped, paper chads in [chadColors] (five) fall, then [primary] (filled) and [secondary]
+ * stamped, paper chads in [chadColors] (five, taken in turn) fall, then [primary] (filled) and [secondary]
  * (a link) fade in, both in [actionTone]. With reduced motion it opens on the final screen,
- * without chads. [onDismiss] is Back.
+ * without chads. [onDismiss] is Back. It is decoration, so a mismatch degrades instead of
+ * failing: a stamp without its own time lands with the last one, and no colours means no chads.
  */
 @Composable
 fun CelebrationMoment(
@@ -189,7 +190,6 @@ fun CelebrationMoment(
     stampRowWidth: Dp = 300.dp,
     plate: @Composable ColumnScope.() -> Unit
 ) {
-    require(landAtMillis.size == stamps.size && chadColors.size == CHAD_COLORS)
     val reduced = SelloTheme.reducedMotion
     val clock = remember { Animatable(if (reduced) END_MS.toFloat() else 0f) }
     val haptics = LocalHapticFeedback.current
@@ -199,7 +199,7 @@ fun CelebrationMoment(
             return@LaunchedEffect
         }
         // Run the clock in legs so the landings and the plate get their haptic as they hit.
-        for ((at, strong) in hits(landAtMillis)) {
+        for ((at, strong) in hits(stamps.indices.map { landAt(landAtMillis, it) })) {
             clock.animateTo(
                 at,
                 tween((at - clock.value).toInt().coerceAtLeast(0), easing = LinearEasing)
@@ -264,7 +264,7 @@ fun CelebrationMoment(
                 }
                 Actions(t, actionTone, primary, secondary)
             }
-            if (!reduced) Confetti(t, chadColors)
+            if (!reduced && chadColors.isNotEmpty()) Confetti(t, chadColors)
         }
     }
 }
@@ -287,6 +287,10 @@ private fun hits(landAtMillis: List<Int>): List<Pair<Float, Boolean>> {
     }
     return hits + ((PLATE_AT + PLATE_MS * 0.65f) to true)
 }
+
+/** When stamp [index] lands: its own time, or with the last one when it has none. */
+private fun landAt(landAtMillis: List<Int>, index: Int): Int =
+    landAtMillis.getOrElse(index) { landAtMillis.lastOrNull() ?: 0 }
 
 /** Visible and announced only from [at]; before then the slot keeps its place, unseen. */
 private fun Modifier.from(t: Float, at: Int) =
@@ -319,7 +323,7 @@ private fun Stamps(
         stamps.withIndex().chunked(perRow).forEach { row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 row.forEach { (index, stamp) ->
-                    val at = landAtMillis[index]
+                    val at = landAt(landAtMillis, index)
                     val p = beat(t, at, LAND_MS)
                     val stops = listOf(0f, 0.6f, 0.82f, 1f)
                     Box(
@@ -461,7 +465,7 @@ private fun Confetti(t: Float, palette: List<Color>) {
             }
             val x = size.width * chad.left + chad.driftDp.dp.toPx() * p
             val y = start + fall * p
-            val color = palette[chad.color].copy(alpha = alpha)
+            val color = palette[chad.color % palette.size].copy(alpha = alpha)
             rotate(chad.spin * p, Offset(x + w / 2, y + h / 2)) {
                 when (chad.kind) {
                     0 -> drawCircle(color, w / 2, Offset(x + w / 2, y + h / 2))
@@ -482,9 +486,6 @@ private fun Confetti(t: Float, palette: List<Color>) {
         }
     }
 }
-
-/** How many colours the chads take, in turn. */
-const val CHAD_COLORS = 5
 
 /** A faded stamp's ink, as the mock's month that went over (no alpha token). */
 private const val FADED = 0.45f

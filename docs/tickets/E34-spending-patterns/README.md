@@ -1,6 +1,6 @@
 # SELLO-E34 — Spending patterns
 
-- **Status:** Backlog
+- **Status:** Done
 - **Increment:** Post-MVP
 - **Goal:** The person sees where small purchases add up, which expenses repeat inside a category, and how the whole year went.
 - **Exit:** Resumen has the Gastos hormiga slip with its line in Configuración, category detail has Lo que más se repite, and Tu año opens from Resumen and from a new-year invitation on Recibo, with its records, as in the approved mock.
