@@ -19,7 +19,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -167,6 +169,51 @@ class DayByDayViewModelTest {
         model.onAction(DayByDayAction.More)
         assertEquals(25, model.ready.listed)
         assertFalse(model.ready.more)
+    }
+
+    @Test
+    fun comingBackFromAnEditorKeepsEveryPageListed() = runTest {
+        val many = (1..60).map { spent(100 + it, food, "2026-10-01", 1_000L * it) }
+        movements.rows = many
+        snapshots.of(october).value = ReadState.Ready(octoberSnapshot())
+        val model = model()
+        val screen = watch(model)
+        model.onAction(DayByDayAction.More)
+        assertEquals(40, model.ready.listed)
+
+        // The 40th row's editor stays open longer than sharing waits, then Back.
+        screen.cancel()
+        advanceTimeBy(6_000)
+        runCurrent()
+        watch(model)
+        runCurrent()
+
+        assertEquals(40, model.ready.listed)
+        assertEquals(many[39].expense.id.value, model.ready.days.last().rows.last().id)
+        assertTrue(model.ready.more)
+    }
+
+    @Test
+    fun anotherChipOrMonthStartsAtOnePage() = runTest {
+        movements.rows = (1..60).map { spent(100 + it, food, "2026-10-01", 1_000L * it) }
+        snapshots.of(october).value = ReadState.Ready(octoberSnapshot())
+        val model = model()
+        watch(model)
+        model.onAction(DayByDayAction.More)
+        assertEquals(40, model.ready.listed)
+
+        model.onAction(DayByDayAction.Filter(MovementFilter.Expenses))
+        assertEquals(20, model.ready.listed)
+
+        model.onAction(DayByDayAction.More)
+        assertEquals(40, model.ready.listed)
+        val september = YearMonth.of(2026, 9)
+        session.select(september)
+        snapshots.of(september).value = ReadState.Ready(
+            octoberSnapshot().let { it.copy(budget = it.budget.copy(month = september)) }
+        )
+        assertEquals(september, model.ready.month)
+        assertEquals(20, model.ready.listed)
     }
 
     @Test
