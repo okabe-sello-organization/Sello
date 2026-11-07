@@ -17,11 +17,11 @@ import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.ReadState
+import com.software.sello.feature.resumen.yearSnapshot
 import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
-import com.software.sello.feature.resumen.yearSnapshot
 import com.software.sello.testing.HandSnapshots
 import com.software.sello.testing.HandYearSnapshots
 import com.software.sello.testing.testMoney

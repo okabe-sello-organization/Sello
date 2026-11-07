@@ -263,7 +263,10 @@ private fun YearPlate(state: YearCloseState, year: String, ink: Color) {
 @Composable
 private fun YearFacts(state: YearCloseState.Ready, ink: Color) {
     val facts = buildList {
-        add(count(state.expenses) to pluralStringResource(R.plurals.year_close_expenses, state.expenses))
+        add(
+            count(state.expenses) to
+                pluralStringResource(R.plurals.year_close_expenses, state.expenses)
+        )
         add(
             count(state.recordedDays) to
                 pluralStringResource(R.plurals.year_close_days, state.recordedDays)

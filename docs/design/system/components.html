@@ -1459,7 +1459,7 @@ fun StatusSlip(
 <dl>
 <dt>Purpose</dt><dd>One stamp place. <code>diameter</code> is 60dp on cards, 66dp in the celebration and 34dp, with a smaller <code>labelSize</code> and no <code>innerRing</code>, in a movement row; <code>ink</code> replaces the state's colour where the place sits on green. <code>land</code> brings an earned stamp down once, after <code>landDelayMillis</code> so stamps earned together come down in turn; <code>relight</code> lights a stamp earned again from its kept ink instead. Reduced motion shows it at once.</dd>
 <dt>Variants</dt><dd><code>MilestoneSpec.state</code>: <code>MilestoneState.Empty</code>, <code>Earned</code>, <code>Kept</code>, <code>Ready</code>. <code>diameter</code> 60 dp on cards, 66 dp in the celebration, 34 dp in a movement row. <code>land</code>, <code>relight</code>.</dd>
-<dt>Used by</dt><dd><a class="tag" href="features/goals.html">goals · 2</a> <span class="muted">Inside the design system: <code>Goals.kt</code>.</span></dd>
+<dt>Used by</dt><dd><a class="tag" href="features/goals.html">goals · 2</a> <span class="muted">Inside the design system: <code>Goals.kt</code>, <code>Celebration.kt</code> (the year's months, 46 dp).</span></dd>
 </dl>
 <pre><code>fun MilestonePlace(
     spec: MilestoneSpec,
@@ -1511,6 +1511,35 @@ fun StatusSlip(
 
 <p class="muted">Also visible in screen baselines: <code>metas-ticket</code>.</p>
 <figure data-shot="metas-ticket" data-module="app" data-caption="Seen in Metas: the ticket in the notice bar"></figure>
+<div class="gaps"><p>No component capture.</p></div>
+</article>
+<article class="component" id="c-CelebrationMoment">
+<h3><code>CelebrationMoment</code> <span class="src"><code>component/Celebration.kt</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A big moment, presentation only, on the goal's locked timeline: a full-screen <code>Dialog</code> on <code>desk</code> where the stamps land at <code>landAtMillis</code> (each by 1.4 s), <code>flood</code> spreads out of the last one, the stamps rise in <code>onFlood</code>, the title rises, the plate (a double outline around the caller's content) is stamped, paper chads fall, then the filled <code>primary</code> and the <code>secondary</code> link fade in. The bar icons follow the flood. With reduced motion it opens on the final screen, without chads. Haptics on each landing at least 0.3 s after the last one that buzzed, on the last landing and on the plate.</dd>
+<dt>Variants</dt><dd>The goal's ¡Lo lograste! (four 66 dp stamps in a row, green flood, <code>ButtonTone.OnGain</code>) and the year's ¡Un año con Sello! (twelve 46 dp stamps six to a row, some <code>faded</code>, the band, <code>ButtonTone.OnBand</code>).</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/recibo.html">recibo · 1</a></dd>
+</dl>
+<pre><code>fun CelebrationMoment(
+    title: String,
+    stamps: List&lt;CelebrationStamp&gt;,
+    landAtMillis: List&lt;Int&gt;,
+    flood: Color,
+    onFlood: Color,
+    chadColors: List&lt;Color&gt;,
+    actionTone: ButtonTone,
+    primary: CelebrationAction,
+    secondary: CelebrationAction,
+    onDismiss: () -&gt; Unit,
+    modifier: Modifier = Modifier,
+    stampDiameter: Dp = 66.dp,
+    stampsPerRow: Int = stamps.size,
+    stampRowWidth: Dp = 300.dp,
+    plate: @Composable ColumnScope.() -&gt; Unit
+)</code></pre>
+
+<p class="muted">Also visible in screen baselines: <code>goal-detail-lograda</code>, <code>year-close-reduced</code>, <code>year-close-final</code>.</p>
+<figure data-shot="year-close-final" data-module="app" data-caption="Seen in the year's big moment, with motion"></figure>
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-MovementPane">

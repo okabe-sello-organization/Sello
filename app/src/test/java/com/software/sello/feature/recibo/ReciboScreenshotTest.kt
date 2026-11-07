@@ -157,6 +157,28 @@ class ReciboScreenshotTest {
         rule.captureStill("src/test/screenshots/recibo-invitation-${look.label}.png")
     }
 
+    /** 1 to 7 January: the year card in the invitation's place (SELLO-200). */
+    private fun captureYearCard(look: Look) {
+        val invited = overspent.copy(
+            invitation = ReciboInvitation(YearMonth.of(2026, 12), closesYear = true)
+        )
+        rule.showSello(look) {
+            Box(Modifier.fillMaxSize().background(SelloTheme.colors.desk)) {
+                ReciboScreen(invited, {}, PaddingValues(12.dp))
+            }
+        }
+        rule.captureStill("src/test/screenshots/recibo-year-card-${look.label}.png")
+    }
+
+    @Test
+    fun yearCardCobaltoLight() = captureYearCard(Look())
+
+    @Test
+    fun yearCardCobaltoDark() = captureYearCard(Look(dark = true))
+
+    @Test
+    fun yearCardVioletaLight() = captureYearCard(Look(ink = SelloInk.Violeta))
+
     @Test
     fun invitationCobaltoLight() = captureInvited(Look())
 
