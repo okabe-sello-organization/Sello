@@ -16,6 +16,7 @@ import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.InvestmentPreference
+import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.BackupSummary
@@ -26,6 +27,7 @@ import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceReset
 import com.software.sello.domain.port.PreferenceWrite
+import com.software.sello.domain.port.SmallExpensePreferences
 import com.software.sello.domain.port.ResetOutcome
 import com.software.sello.domain.port.Resets
 import com.software.sello.domain.port.RestoreOutcome
@@ -71,10 +73,12 @@ class EraseThenRestoreTest {
         AppearancePreferences,
         CategoryOrderingPreferences,
         InvestmentPreferences,
+        SmallExpensePreferences,
         PreferenceReset {
         var appearance = AppearancePreference()
         var ordering = CategoryOrderingPreference()
         var investments = InvestmentPreference()
+        var line = SmallExpenseLine.DEFAULT
         var lastBackup: String? = null
         var failReset = false
         var failAppearance = false
@@ -90,6 +94,7 @@ class EraseThenRestoreTest {
             appearance = AppearancePreference()
             ordering = CategoryOrderingPreference()
             investments = InvestmentPreference()
+            line = SmallExpenseLine.DEFAULT
             lastBackup = null
         }
 
@@ -128,11 +133,19 @@ class EraseThenRestoreTest {
         override suspend fun setInvestmentOrder(order: InvestmentOrder) = saved {
             investments = investments.copy(order = order)
         }
+
+        override fun observeSmallExpenseLine(): Flow<PreferenceRead<SmallExpenseLine>> =
+            flowOf(PreferenceRead.Ready(line))
+
+        override suspend fun setSmallExpenseLine(line: SmallExpenseLine) = saved {
+            this.line = line
+        }
     }
 
     private val store = Store().apply {
         appearance = AppearancePreference(ThemePreference.Light, InkPreference.Cobalto)
         ordering = CategoryOrderingPreference(CategoryOrder.Limit, CategoryOrderDirection.Ascending)
+        line = SmallExpenseLine.of(50_000)!!
         lastBackup = "sello-mercado.json"
     }
     private val lima = ZoneId.of("America/Lima")
@@ -142,13 +155,15 @@ class EraseThenRestoreTest {
     private val restored = PortablePreferences(
         AppearancePreference(ThemePreference.Dark, InkPreference.Violeta),
         CategoryOrderingPreference(CategoryOrder.Alphabetical, CategoryOrderDirection.Ascending),
-        InvestmentPreference(Currency.USD, InvestmentOrder.Return)
+        InvestmentPreference(Currency.USD, InvestmentOrder.Return),
+        SmallExpenseLine.of(8_000)!!
     )
 
     /** One process: the storage the composition builds, with its restores and resets. */
     private inner class Process {
         private val storage = ledger.storage()
         val restores: Restores = storage.restores(
+            store,
             store,
             store,
             store,
@@ -219,6 +234,7 @@ class EraseThenRestoreTest {
         assertEquals(restored.appearance, store.appearance)
         assertEquals(restored.ordering, store.ordering)
         assertEquals(restored.investments, store.investments)
+        assertEquals(restored.smallExpenseLine, store.line)
         assertNull(store.lastBackup)
     }
 
@@ -391,6 +407,7 @@ class EraseThenRestoreTest {
         assertEquals(AppearancePreference(), store.appearance)
         assertEquals(CategoryOrderingPreference(), store.ordering)
         assertEquals(InvestmentPreference(), store.investments)
+        assertEquals(SmallExpenseLine.DEFAULT, store.line)
         assertNull(store.lastBackup)
         assertFalse(reset("pending.properties").exists())
         assertEquals(restoredHistory, history())
@@ -454,6 +471,7 @@ class EraseThenRestoreTest {
         val older = RoomRestores(
             ledger.database,
             files.restoreFolder,
+            store,
             store,
             store,
             store,

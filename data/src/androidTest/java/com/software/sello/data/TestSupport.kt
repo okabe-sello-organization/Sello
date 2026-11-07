@@ -24,6 +24,7 @@ import com.software.sello.domain.model.InvestmentPreference
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.CatchUpNoticePreferences
 import com.software.sello.domain.port.DispatcherProvider
@@ -31,6 +32,7 @@ import com.software.sello.domain.port.InvestmentPreferences
 import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
+import com.software.sello.domain.port.SmallExpensePreferences
 import java.io.File
 import java.time.Instant
 import java.time.LocalDate
@@ -174,6 +176,21 @@ class NoticeSeen : CatchUpNoticePreferences {
         if (fail) return PreferenceWrite.Failed(PreferenceFailure.Unavailable)
         marks += at
         seen = at
+        return PreferenceWrite.Saved
+    }
+}
+
+/** Gastos hormiga's line as a test sets it; [fail] refuses writes. */
+class HandSmallExpensePreferences(var value: SmallExpenseLine = SmallExpenseLine.DEFAULT) :
+    SmallExpensePreferences {
+    var fail = false
+
+    override fun observeSmallExpenseLine(): Flow<PreferenceRead<SmallExpenseLine>> =
+        flowOf(PreferenceRead.Ready(value))
+
+    override suspend fun setSmallExpenseLine(line: SmallExpenseLine): PreferenceWrite {
+        if (fail) return PreferenceWrite.Failed(PreferenceFailure.Unavailable)
+        value = line
         return PreferenceWrite.Saved
     }
 }

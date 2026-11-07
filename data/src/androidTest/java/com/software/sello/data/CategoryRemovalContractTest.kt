@@ -878,6 +878,7 @@ class CategoryRemovalContractTest {
             Preferences,
             Preferences,
             HandInvestmentPreferences(),
+            HandSmallExpensePreferences(),
             { Instant.parse("2026-10-22T19:30:00Z") },
             ledger.clock,
             realDispatchers

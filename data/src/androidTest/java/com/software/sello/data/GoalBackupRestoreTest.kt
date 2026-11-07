@@ -64,6 +64,7 @@ class GoalBackupRestoreTest {
     private val today = LocalDate.of(2026, 10, 9)
     private val dispatchers = realDispatchers
     private val investments = HandInvestmentPreferences()
+    private val smallExpenses = HandSmallExpensePreferences()
     private val preferences = object : AppearancePreferences, CategoryOrderingPreferences {
         override fun observeAppearance(): Flow<PreferenceRead<AppearancePreference>> = flowOf(
             PreferenceRead.Ready(
@@ -149,6 +150,7 @@ class GoalBackupRestoreTest {
         preferences,
         preferences,
         investments,
+        smallExpenses,
         { ledger.audit },
         ledger.clock,
         dispatchers
@@ -161,6 +163,7 @@ class GoalBackupRestoreTest {
         preferences,
         preferences,
         investments,
+        smallExpenses,
         NoticeSeen(),
         { uuid(nextId++) },
         { target.audit },
