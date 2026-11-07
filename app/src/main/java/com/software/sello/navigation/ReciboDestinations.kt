@@ -436,7 +436,10 @@ internal fun CategoryEditAction(enabled: Boolean, onClick: () -> Unit) {
 @Composable
 internal fun SettingsAction(onClick: () -> Unit) {
     IconButton(onClick = onClick, modifier = Modifier.testTag(SETTINGS_ACTION_TAG)) {
-        Icon(SelloIcon.Settings.painter(), contentDescription = stringResource(R.string.settings_open))
+        Icon(
+            SelloIcon.Settings.painter(),
+            contentDescription = stringResource(R.string.settings_open)
+        )
     }
 }
 

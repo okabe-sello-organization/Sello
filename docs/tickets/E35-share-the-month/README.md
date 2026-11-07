@@ -1,6 +1,6 @@
 # SELLO-E35 — Share the month
 
-- **Status:** Backlog
+- **Status:** Done
 - **Increment:** Post-MVP
 - **Goal:** The person sends an image of the month's budget to a partner or family through Android's share sheet.
 - **Exit:** The month's budget is shared as an image from the place the owner picks, with only the approved content, and the privacy page describes it.

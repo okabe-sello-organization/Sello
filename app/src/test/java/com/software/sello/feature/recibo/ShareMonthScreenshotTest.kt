@@ -1,4 +1,4 @@
-package com.software.sello.feature.share
+package com.software.sello.feature.recibo
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -15,8 +15,6 @@ import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.HueInk
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
-import com.software.sello.feature.recibo.ReciboAnswerLabel
-import com.software.sello.feature.recibo.ReciboStamp
 import com.software.sello.presentation.month.monthNames
 import com.software.sello.showSello
 import java.time.LocalDate
@@ -119,7 +117,9 @@ class ShareMonthScreenshotTest {
                 ShareMonthSheet(state, onAction = {})
             }
         }
-        rule.captureStill("src/test/screenshots/share-sheet-$name-${if (dark) "oscuro" else "claro"}.png")
+        rule.captureStill(
+            "src/test/screenshots/share-sheet-$name-${if (dark) "oscuro" else "claro"}.png"
+        )
     }
 
     private val ready = ShareMonthState.Open(october, SharePreview.Ready(image))
@@ -137,10 +137,12 @@ class ShareMonthScreenshotTest {
     fun sheetFailed() = captureSheet("failed", ready.copy(step = ShareStep.Failed))
 
     @Test
-    fun sheetWaiting() = captureSheet("waiting", ShareMonthState.Open(october, SharePreview.Waiting))
+    fun sheetWaiting() =
+        captureSheet("waiting", ShareMonthState.Open(october, SharePreview.Waiting))
 
     @Test
-    fun sheetLoading() = captureSheet("loading", ShareMonthState.Open(october, SharePreview.Loading))
+    fun sheetLoading() =
+        captureSheet("loading", ShareMonthState.Open(october, SharePreview.Loading))
 
     @Test
     fun sheetReadFailed() =

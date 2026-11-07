@@ -1,4 +1,4 @@
-package com.software.sello.feature.share
+package com.software.sello.feature.recibo
 
 import androidx.compose.ui.graphics.ImageBitmap
 

@@ -43,6 +43,7 @@ import com.software.sello.feature.recibo.CategoryDetailViewModel
 import com.software.sello.feature.recibo.CategoryExpensesViewModel
 import com.software.sello.feature.recibo.LimitSheetViewModel
 import com.software.sello.feature.recibo.ReciboViewModel
+import com.software.sello.feature.recibo.ShareMonthViewModel
 import com.software.sello.feature.recibo.UpcomingPaymentsViewModel
 import com.software.sello.feature.recurrence.CatchUpNoticeViewModel
 import com.software.sello.feature.recurrence.CatchUpRunner
@@ -53,7 +54,6 @@ import com.software.sello.feature.reset.ResetViewModel
 import com.software.sello.feature.resumen.ResumenViewModel
 import com.software.sello.feature.settings.AppearanceViewModel
 import com.software.sello.feature.settings.SettingsViewModel
-import com.software.sello.feature.share.ShareMonthViewModel
 import com.software.sello.feature.startup.StartupFailureViewModel
 import com.software.sello.feature.startup.StartupRecovery
 import com.software.sello.navigation.MonthSession

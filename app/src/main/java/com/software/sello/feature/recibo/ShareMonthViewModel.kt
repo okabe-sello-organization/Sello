@@ -1,4 +1,4 @@
-package com.software.sello.feature.share
+package com.software.sello.feature.recibo
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -60,7 +60,9 @@ class ShareMonthViewModel(
     }
 
     val state: StateFlow<ShareMonthState> =
-        combine(open, session.selectedMonth, attempt) { isOpen, month, _ -> month.takeIf { isOpen } }
+        combine(open, session.selectedMonth, attempt) { isOpen, month, _ ->
+            month.takeIf { isOpen }
+        }
             .flatMapLatest { month ->
                 if (month == null) {
                     flowOf(null)

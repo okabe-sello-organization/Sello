@@ -12,7 +12,7 @@ import com.software.sello.domain.port.ExportShares
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.MonotonicClock
 import com.software.sello.domain.port.RecordIdSource
-import com.software.sello.feature.share.ImagePng
+import com.software.sello.feature.recibo.ImagePng
 import com.software.sello.platform.AndroidDocumentReader
 import com.software.sello.platform.AndroidDocumentWriter
 import com.software.sello.platform.AndroidExportShares

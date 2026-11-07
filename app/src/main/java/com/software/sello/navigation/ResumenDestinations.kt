@@ -19,9 +19,11 @@ import com.software.sello.feature.recibo.CategoryDetailAction
 import com.software.sello.feature.recibo.CategoryDetailScreen
 import com.software.sello.feature.recibo.CategoryDetailState
 import com.software.sello.feature.recibo.CategoryDetailViewModel
+import com.software.sello.feature.recibo.ShareMonthAction
+import com.software.sello.feature.recibo.ShareMonthButton
+import com.software.sello.feature.recibo.ShareMonthRoot
+import com.software.sello.feature.recibo.ShareMonthViewModel
 import com.software.sello.feature.resumen.ResumenRoot
-import com.software.sello.feature.share.ShareMonthButton
-import com.software.sello.feature.share.ShareMonthRoot
 import com.software.sello.presentation.corrections.CorrectionAnnouncementState
 import com.software.sello.presentation.corrections.CorrectionAnnouncementsViewModel
 import com.software.sello.presentation.corrections.CorrectionNotice
@@ -43,6 +45,7 @@ internal fun NavGraphBuilder.resumenDestinations(
     composable<ResumenRoute> {
         val state by shellState
         val notice by noticeState
+        val share: ShareMonthViewModel = viewModel(factory = viewModels)
         ShellScreen(
             state,
             monthNames(),
@@ -52,7 +55,7 @@ internal fun NavGraphBuilder.resumenDestinations(
             entryDock = false,
             // Share the month on screen, then Configuración, as on Recibo's bar.
             actions = {
-                ShareMonthButton(viewModels)
+                ShareMonthButton { share.onAction(ShareMonthAction.Open) }
                 SettingsAction { navigation.navigate(SettingsRoute) { launchSingleTop = true } }
             },
             notice = notice?.let { { CorrectionNoticeBar(it, onUndo) } }

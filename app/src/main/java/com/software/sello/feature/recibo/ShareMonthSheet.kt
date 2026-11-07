@@ -1,4 +1,4 @@
-package com.software.sello.feature.share
+package com.software.sello.feature.recibo
 
 import android.content.ActivityNotFoundException
 import android.content.ClipData
@@ -28,8 +28,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -63,9 +63,6 @@ import com.software.sello.designsystem.component.signedText
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
-import com.software.sello.feature.recibo.answerLabel
-import com.software.sello.feature.recibo.stampInk
-import com.software.sello.feature.recibo.stampText
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.month.MonthNames
 import com.software.sello.presentation.month.monthNames
@@ -82,10 +79,9 @@ const val SHARE_FAILED_TAG = "share.failed"
 
 /** Resumen's share button: opens the preview of the month on screen; nothing is written. */
 @Composable
-fun ShareMonthButton(viewModels: ViewModelProvider.Factory) {
-    val model: ShareMonthViewModel = viewModel(factory = viewModels)
+fun ShareMonthButton(onClick: () -> Unit) {
     IconButton(
-        onClick = { model.onAction(ShareMonthAction.Open) },
+        onClick = onClick,
         modifier = Modifier.testTag(SHARE_MONTH_ACTION_TAG)
     ) {
         Icon(SelloIcon.Share.painter(), stringResource(R.string.share_month_open))
@@ -95,8 +91,8 @@ fun ShareMonthButton(viewModels: ViewModelProvider.Factory) {
 /**
  * The preview sheet over the whole of Resumen while it is open. Compartir imagen draws the
  * image shown into a PNG, has it placed in `cache/exports/` and opens Android's share
- * sheet with read access to that one file. The view model is the screen entry's own, as
- * [ShareMonthButton]'s.
+ * sheet with read access to that one file. The view model is the screen entry's own, which
+ * [ShareMonthButton] opens.
  */
 @Composable
 fun ShareMonthRoot(viewModels: ViewModelProvider.Factory) {
@@ -137,20 +133,21 @@ fun ShareMonthRoot(viewModels: ViewModelProvider.Factory) {
         }
         model.onAction(ShareMonthAction.Opened)
     }
-    ShareMonthSheet(open, model::onAction, capture = Modifier.recordInto(layer))
+    ShareMonthSheet(open, model::onAction, imageModifier = Modifier.recordInto(layer))
 }
 
 /**
  * Compartir [month]: the exact image, what is and isn't in it, Compartir imagen and
  * Cancelar. Older figures or a failed read show why there is nothing to share instead.
- * While the image is drawn and placed nothing can be pressed. [capture] goes on the image
+ * While the image is drawn and placed nothing can be pressed. [imageModifier] goes on the image
  * itself, so what is shared is what is shown.
  */
 @Composable
 fun ShareMonthSheet(
     state: ShareMonthState.Open,
     onAction: (ShareMonthAction) -> Unit,
-    capture: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    imageModifier: Modifier = Modifier
 ) {
     val names = monthNames()
     val month = names.inSentence(state.month)
@@ -159,7 +156,7 @@ fun ShareMonthSheet(
     SelloSheet(
         title = stringResource(R.string.share_month_title, month),
         onDismiss = cancel,
-        modifier = Modifier.testTag(SHARE_SHEET_TAG)
+        modifier = modifier.testTag(SHARE_SHEET_TAG)
     ) {
         val retry = StatusAction(StatusSlipDefaults.retryLabel) { onAction(ShareMonthAction.Retry) }
         when (val preview = state.preview) {
@@ -172,7 +169,7 @@ fun ShareMonthSheet(
                     Modifier
                         .clip(ImageCorner)
                         .border(1.dp, SelloTheme.colors.rule, ImageCorner)
-                        .then(capture)
+                        .then(imageModifier)
                 )
                 Text(
                     stringResource(R.string.share_month_hint),
@@ -397,13 +394,13 @@ private fun Track(fraction: Float, over: Boolean) {
 }
 
 /**
- * Draws the image as usual and also records it, at least [ExportWidthPx] wide, into
+ * Draws the image as usual and also records it, at least [EXPORT_WIDTH_PX] wide, into
  * [layer], from which Compartir imagen takes the PNG. The rounded corner and border around
  * it are on screen only: the PNG is the whole paper.
  */
 private fun Modifier.recordInto(layer: GraphicsLayer): Modifier = drawWithContent {
     drawContent()
-    val scale = max(1f, ExportWidthPx / size.width)
+    val scale = max(1f, EXPORT_WIDTH_PX / size.width)
     layer.record(
         size = IntSize(ceil(size.width * scale).toInt(), ceil(size.height * scale).toInt())
     ) {
@@ -415,4 +412,4 @@ private val ImageCorner = RoundedCornerShape(14.dp)
 private val TrackCorner = RoundedCornerShape(4.dp)
 
 /** A phone screen's width, so the image reads sharply when opened full screen. */
-private const val ExportWidthPx = 1080f
+private const val EXPORT_WIDTH_PX = 1080f

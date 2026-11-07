@@ -1,12 +1,10 @@
-package com.software.sello.feature.share
+package com.software.sello.feature.recibo
 
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.feature.expense.categoryIn
 import com.software.sello.feature.expense.monthOf
 import com.software.sello.feature.expense.storedExpense
-import com.software.sello.feature.recibo.ReciboAnswerLabel
-import com.software.sello.feature.recibo.ReciboStamp
 import com.software.sello.testing.testMoney
 import java.lang.reflect.Modifier
 import java.lang.reflect.ParameterizedType
@@ -107,7 +105,10 @@ class MonthShareRenderModelTest {
         )!!
 
         assertEquals(ReciboAnswerLabel.Remaining, image.label)
-        assertEquals(MoneyTextValue(MoneySign.Minus, "", "50.000", "menos 50.000 pesos"), image.amount)
+        assertEquals(
+            MoneyTextValue(MoneySign.Minus, "", "50.000", "menos 50.000 pesos"),
+            image.amount
+        )
         assertEquals(ReciboStamp.Over, image.stamp)
         assertEquals(plain("950.000"), image.spent)
         assertEquals(plain("900.000"), image.limit)
@@ -196,7 +197,8 @@ class MonthShareRenderModelTest {
         )
         // Everything reachable from the image, through every Sello type it holds.
         val reachable = reachableFields(MonthShareImage::class.java)
-        val forbidden = Regex("note|income|ingreso|goal|meta|invest|setting|preference|theme|order|ink")
+        val forbidden =
+            Regex("note|income|ingreso|goal|meta|invest|setting|preference|theme|order|ink")
         assertEquals(
             emptyList<String>(),
             reachable.filter { forbidden.containsMatchIn(it.lowercase()) }

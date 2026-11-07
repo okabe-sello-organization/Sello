@@ -1,4 +1,4 @@
-package com.software.sello.feature.share
+package com.software.sello.feature.recibo
 
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.ImageBitmapConfig
@@ -13,7 +13,6 @@ import com.software.sello.domain.port.SharedExport
 import com.software.sello.feature.expense.categoryIn
 import com.software.sello.feature.expense.monthOf
 import com.software.sello.feature.expense.storedExpense
-import com.software.sello.feature.recibo.HandOrderings
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
@@ -163,7 +162,9 @@ class ShareMonthViewModelTest {
         assertEquals(listOf(image), png.images)
         assertEquals(listOf("sello-2026-10.png image/png 3"), shares.placed)
         assertEquals(
-            ShareStep.ReadyToShare(SharedExport("content://exports/sello-2026-10.png", "image/png")),
+            ShareStep.ReadyToShare(
+                SharedExport("content://exports/sello-2026-10.png", "image/png")
+            ),
             viewModel.open().step
         )
 
@@ -266,7 +267,9 @@ private class HandPng : ImagePng {
 private class HandShares : ExportShares {
     val placed = mutableListOf<String>()
     var cleared = 0
-    var answer: suspend (String) -> SharedExport? = { SharedExport("content://exports/$it", "image/png") }
+    var answer: suspend (
+        String
+    ) -> SharedExport? = { SharedExport("content://exports/$it", "image/png") }
 
     override suspend fun place(bytes: ByteArray, name: String, mimeType: String): SharedExport? {
         placed += "$name $mimeType ${bytes.size}"

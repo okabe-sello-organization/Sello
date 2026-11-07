@@ -1,12 +1,9 @@
-package com.software.sello.feature.share
+package com.software.sello.feature.recibo
 
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.domain.model.CategoryOrderingPreference
 import com.software.sello.domain.model.MonthlySnapshot
 import com.software.sello.domain.model.OverallBudget
-import com.software.sello.feature.recibo.ReciboAnswerLabel
-import com.software.sello.feature.recibo.ReciboRenderModel
-import com.software.sello.feature.recibo.ReciboStamp
 import com.software.sello.presentation.money.MoneyFormatter
 import java.time.LocalDate
 import java.time.YearMonth

@@ -5,7 +5,7 @@
 > subject to the user's current instructions.
 
 **Snapshot:** 2026-11-06 · **Product baseline:** `main`; the release candidate is `0.1.0` from `a20ae90f`, and the [candidate checklist](../release/candidate-checklist.md) leaves only the owner's steps (the [MVP checklist](../release/mvp-checklist.md) is the October record).
-Done: E01–E10, E12, E13, E15–E32 and E37; E33–E36 are in the backlog. The owner dropped E14 and the
+Done: E01–E10, E12, E13, E15–E32, E35 and E37; E33, E34 and E36 are in the backlog. The owner dropped E14 and the
 release tickets SELLO-043 and SELLO-113 on 2026-10-29. Each ticket's
 file under [docs/tickets](../tickets/README.md) and the pull request that closed it carry
 the details, and `python3 scripts/quality/tickets.py status` prints the current board.
@@ -79,6 +79,13 @@ This summary is refreshed when an epic closes and adds no verification claims.
   offered on Android 11, where a restored Sistema shows Cobalto) in Sello's own shades,
   read again each time Sello is on screen. Red and green hues get a note; gain, loss and
   warn never follow the ink. Backups carry the ink and Tuya's hue.
+- Compartir el mes ([E35](../tickets/E35-share-the-month/README.md)): Resumen's bar
+  shares the month on screen as an image, after a preview sheet that shows it and says
+  what it holds: the month, Recibo's headline and stamp, spent against the total limit
+  and each category's spent and limit. Never notes, income, goals, investments or
+  settings. Light paper in the person's ink; older figures wait for a fresh read. The PNG
+  goes through the export FileProvider in `cache/exports/`. Resumen's bar also gained
+  Configuración.
 - Signed carryover ([E09](../tickets/E09-signed-carryover/README.md)): per category,
   opt-in and off by default; next carry = (base + carry) − spending, with no cap.
   Verdicts and allowance use base + carry; turning off or archiving with a balance
@@ -167,7 +174,7 @@ What each ticket changed is in its pull request, linked from the ticket file
   the walk on the owner's phone, and the go/no-go. Distributing it is a separate,
   owner-authorized action. No release was published, signed with the owner's key or
   tagged; the only tag, `design-system-v1`, marks E32's design, not a release.
-- E33–E36 (everyday features, #410) are in the backlog. Dropped on 2026-10-29: SELLO-043 (carryover release), SELLO-113
+- E33, E34 and E36 (everyday features, #410) are in the backlog. Dropped on 2026-10-29: SELLO-043 (carryover release), SELLO-113
   (the `0.2.0` release) and E14 with SELLO-074 (manual TalkBack, Switch Access and
   keyboard walks). The automated accessibility checks from SELLO-033 stay.
 - Open GitHub issues are not tickets.

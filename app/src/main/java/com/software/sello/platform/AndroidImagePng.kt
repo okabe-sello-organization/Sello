@@ -4,11 +4,11 @@ import android.graphics.Bitmap
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import com.software.sello.domain.port.DispatcherProvider
-import com.software.sello.feature.share.ImagePng
+import com.software.sello.feature.recibo.ImagePng
 import java.io.ByteArrayOutputStream
 import kotlinx.coroutines.withContext
 
-/** PNG through Android's own encoder: lossless, with no metadata of any kind. */
+/** PNG through Android's own encoder, which is lossless. */
 class AndroidImagePng(private val dispatchers: DispatcherProvider) : ImagePng {
     override suspend fun encode(image: ImageBitmap): ByteArray? = withContext(dispatchers.default) {
         val drawn = image.asAndroidBitmap()
@@ -19,7 +19,16 @@ class AndroidImagePng(private val dispatchers: DispatcherProvider) : ImagePng {
             drawn
         }
         val out = ByteArrayOutputStream()
-        if (bitmap.compress(Bitmap.CompressFormat.PNG, PNG_QUALITY, out)) out.toByteArray() else null
+        if (bitmap.compress(
+                Bitmap.CompressFormat.PNG,
+                PNG_QUALITY,
+                out
+            )
+        ) {
+            out.toByteArray()
+        } else {
+            null
+        }
     }
 
     private companion object {
