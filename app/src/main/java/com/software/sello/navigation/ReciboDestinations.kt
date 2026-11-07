@@ -348,15 +348,7 @@ private fun ReciboDestination(
             navigation = tabs,
             actions = {
                 DayByDayBarAction(onOpenDayByDay)
-                IconButton(
-                    onClick = onOpenSettings,
-                    modifier = Modifier.testTag(SETTINGS_ACTION_TAG)
-                ) {
-                    Icon(
-                        SelloIcon.Settings.painter(),
-                        contentDescription = stringResource(R.string.settings_open)
-                    )
-                }
+                SettingsAction(onOpenSettings)
             },
             detail = shownId?.let { id ->
                 ShellDetail(title, archived = archived(shownDetail), actions = {
@@ -446,6 +438,17 @@ internal fun archived(detail: CategoryDetailState): Boolean =
 internal fun CategoryEditAction(enabled: Boolean, onClick: () -> Unit) {
     IconButton(onClick, enabled = enabled, modifier = Modifier.testTag(CATEGORY_DETAIL_EDIT_TAG)) {
         Icon(SelloIcon.EditNote.painter(), stringResource(R.string.category_detail_edit))
+    }
+}
+
+/** Configuración, on Recibo's and Resumen's bars. */
+@Composable
+internal fun SettingsAction(onClick: () -> Unit) {
+    IconButton(onClick = onClick, modifier = Modifier.testTag(SETTINGS_ACTION_TAG)) {
+        Icon(
+            SelloIcon.Settings.painter(),
+            contentDescription = stringResource(R.string.settings_open)
+        )
     }
 }
 

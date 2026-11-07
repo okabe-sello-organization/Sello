@@ -57,7 +57,8 @@ fun registerManifestCheck(variant: String, applicationId: String) =
                 "androidx.startup.InitializationProvider" to
                     "AndroidX start-up initializers; not exported",
                 "androidx.core.content.FileProvider" to
-                    "exports the person shares (SELLO-121); not exported, only cache/exports/"
+                    "exports and month images the person shares (SELLO-121, SELLO-198); " +
+                        "not exported, only cache/exports/"
             )
             val grantingProviders = mapOf(
                 "androidx.core.content.FileProvider" to "$applicationId.exports"

@@ -19,6 +19,10 @@ import com.software.sello.feature.recibo.CategoryDetailAction
 import com.software.sello.feature.recibo.CategoryDetailScreen
 import com.software.sello.feature.recibo.CategoryDetailState
 import com.software.sello.feature.recibo.CategoryDetailViewModel
+import com.software.sello.feature.recibo.ShareMonthAction
+import com.software.sello.feature.recibo.ShareMonthButton
+import com.software.sello.feature.recibo.ShareMonthRoot
+import com.software.sello.feature.recibo.ShareMonthViewModel
 import com.software.sello.feature.resumen.ResumenRoot
 import com.software.sello.feature.resumen.YearRoot
 import com.software.sello.presentation.corrections.CorrectionAnnouncementState
@@ -42,6 +46,7 @@ internal fun NavGraphBuilder.resumenDestinations(
     composable<ResumenRoute> {
         val state by shellState
         val notice by noticeState
+        val share: ShareMonthViewModel = viewModel(factory = viewModels)
         ShellScreen(
             state,
             monthNames(),
@@ -49,7 +54,12 @@ internal fun NavGraphBuilder.resumenDestinations(
             navigation = tabs,
             // Resumen reads the month: no Anotar here (owner, 2026-10-26).
             entryDock = false,
-            actions = { DayByDayBarAction { navigation.openDayByDay() } },
+            // The magnifier, sharing the month on screen, then Configuración (SELLO-198 mock).
+            actions = {
+                DayByDayBarAction { navigation.openDayByDay() }
+                ShareMonthButton { share.onAction(ShareMonthAction.Open) }
+                SettingsAction { navigation.navigate(SettingsRoute) { launchSingleTop = true } }
+            },
             notice = notice?.let { { CorrectionNoticeBar(it, onUndo) } }
         ) { padding ->
             ResumenRoot(
@@ -67,6 +77,8 @@ internal fun NavGraphBuilder.resumenDestinations(
             )
         }
         BackHandler(enabled = !state.monthPickerOpen) { tabs.onSelect("recibo") }
+        // After the screen's own back, so that back closes the sheet first.
+        ShareMonthRoot(viewModels)
     }
     composable<YearRoute> {
         val state by shellState

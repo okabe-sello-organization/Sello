@@ -12,9 +12,11 @@ import com.software.sello.domain.port.ExportShares
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.MonotonicClock
 import com.software.sello.domain.port.RecordIdSource
+import com.software.sello.feature.recibo.ImagePng
 import com.software.sello.platform.AndroidDocumentReader
 import com.software.sello.platform.AndroidDocumentWriter
 import com.software.sello.platform.AndroidExportShares
+import com.software.sello.platform.AndroidImagePng
 import com.software.sello.platform.AndroidScreenReader
 import com.software.sello.platform.AndroidSystemAccent
 import com.software.sello.platform.AndroidTimeSignals
@@ -69,6 +71,7 @@ fun androidModule(context: Context): Module = module {
     single<DocumentWriter> { AndroidDocumentWriter(context.contentResolver, get()) }
     single<DocumentReader> { AndroidDocumentReader(context.contentResolver, get()) }
     single<ExportShares> { AndroidExportShares(context, get()) }
+    single<ImagePng> { AndroidImagePng(get()) }
     single<AppRestart> { ProcessAppRestart(context) }
     single<ScreenReader> { AndroidScreenReader(context) }
     // One reading of the phone's colour for the whole app, so every screen shows the same.
