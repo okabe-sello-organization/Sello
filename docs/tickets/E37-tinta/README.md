@@ -1,6 +1,6 @@
 # SELLO-E37 — Tinta propia y del sistema
 
-- **Status:** In Progress
+- **Status:** Done
 - **Increment:** Post-MVP
 - **Goal:** The person can give Sello any colour they like, or let it follow their phone's colour, and the app still reads as clearly as Cobalto.
 - **Exit:** SELLO-201 to SELLO-203 are Done: Apariencia › Tinta offers Cobalto, Violeta, Sistema (Android 12 and later) and Tuya; every palette comes from one generator that keeps Cobalto's contrast at every hue; backups carry the choice; the design pages show the result.

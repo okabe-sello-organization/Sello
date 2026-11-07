@@ -6,8 +6,8 @@ import java.time.YearMonth
 enum class ThemePreference { System, Light, Dark }
 
 /**
- * The ink a person picked, in picker order: one of Sello's hand-made inks, or [Tuya], their
- * own hue. This is deliberately not a design-system type. [id] is what preferences and
+ * The ink a person picked, in picker order: one of Sello's hand-made inks, [Sistema], the
+ * phone's colour, or [Tuya], their own hue. This is deliberately not a design-system type. [id] is what preferences and
  * backups write: never change or reuse one, since both MUST keep accepting every id ever
  * written.
  */
@@ -22,6 +22,14 @@ sealed interface InkPreference {
         override val id = "violeta"
     }
 
+    /**
+     * The phone's accent colour, read again whenever it is shown: never stored as a hue.
+     * Where the phone has none (before Android 12), Sello is drawn in Cobalto.
+     */
+    data object Sistema : InkPreference {
+        override val id = "sistema"
+    }
+
     /** The person's own ink: Sello's palette turned to [hue]. */
     data class Tuya(val hue: InkHue) : InkPreference {
         override val id get() = TUYA_ID
@@ -32,12 +40,13 @@ sealed interface InkPreference {
 
         /**
          * The ink written as [id], with Tuya's kept [hue] if there is one, or null when they
-         * don't make one: an id Sello never wrote, or Tuya without a hue. A hand-made ink
+         * don't make one: an id Sello never wrote, or Tuya without a hue. Any other ink
          * ignores the hue, which stays Tuya's.
          */
         fun of(id: String, hue: InkHue?): InkPreference? = when (id) {
             Cobalto.id -> Cobalto
             Violeta.id -> Violeta
+            Sistema.id -> Sistema
             TUYA_ID -> hue?.let(::Tuya)
             else -> null
         }

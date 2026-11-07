@@ -798,6 +798,11 @@
     <string name="settings_ink_caption">El color de los sellos, la franja y los botones</string>
     <string name="settings_ink_cobalto">Cobalto</string>
     <string name="settings_ink_violeta">Violeta</string>
+    <string name="settings_ink_sistema">Sistema</string>
+    <!-- Under the swatches while Sistema is chosen; %1$s is the phone's colour in lower case: "azul". -->
+    <string name="settings_ink_sistema_note">Toma el color de tu fondo de pantalla: %1$s. Cambia cuando lo cambies.</string>
+    <!-- As settings_ink_sistema_note, on a red or green hue, with tuya_meaning_note's line. -->
+    <string name="settings_ink_sistema_note_meaning">Toma el color de tu fondo de pantalla: %1$s. Cambia cuando lo cambies. El rojo y el verde también marcan excesos y metas.</string>
     <string name="settings_ink_tuya">Tuya</string>
     <!-- Tuya with the name of its colour, as restore and Tu tinta name it: "Tuya (Rojo)". -->
     <string name="settings_ink_tuya_named">Tuya (%1$s)</string>

@@ -11,6 +11,25 @@ import org.junit.Test
 /** The palette any hue gives (SELLO-201): Cobalto's, turned, as readable at every hue. */
 class HuePaletteTest {
     @Test
+    fun aColoursHueIsItsNearestWholeOklchDegree() {
+        // OKLCH hues worked out apart from this code: sRGB red 29.23°, green 142.50°, blue
+        // 264.05°, Cobalto's brand 266.64°.
+        assertEquals(29, hueOf(0xFFFF0000.toInt()))
+        assertEquals(142, hueOf(0xFF00FF00.toInt()))
+        assertEquals(264, hueOf(0xFF0000FF.toInt()))
+        assertEquals(COBALTO_HUE, hueOf(0xFF1F3BE0.toInt()))
+        // 359.98° is nearest to 0°, round the circle: never 360.
+        assertEquals(0, hueOf(0xFFC64075.toInt()))
+    }
+
+    @Test
+    fun aGreyHasNoHue() {
+        for (grey in listOf(0xFF808080, 0xFFFFFFFF, 0xFF000000, 0xFF7F7F80)) {
+            assertNull(grey.toString(16), hueOf(grey.toInt()))
+        }
+    }
+
+    @Test
     fun cobaltosHueGivesCobalto() {
         val light = hueColors(COBALTO_HUE, isDark = false)
         val dark = hueColors(COBALTO_HUE, isDark = true)

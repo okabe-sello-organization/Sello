@@ -23,6 +23,7 @@ import com.software.sello.feature.backup.ExportState
 import com.software.sello.feature.backup.TusDatos
 import com.software.sello.navigation.ShellScreen
 import com.software.sello.navigation.ShellState
+import com.software.sello.presentation.appearance.shown
 import com.software.sello.presentation.month.monthNames
 import com.software.sello.revealed
 import com.software.sello.showSello
@@ -68,7 +69,9 @@ class SettingsScreenshotTest {
         orderingLoaded = true,
         investmentsLoaded = true,
         schedules = ScheduleCountLine.Read(payments = 4, incomes = 1),
-        rate = RateLine.Read("4.150,25", LocalDate.of(2026, 10, 20))
+        rate = RateLine.Read("4.150,25", LocalDate.of(2026, 10, 20)),
+        // A phone on Android 12 or later with a blue wallpaper, as the mock's.
+        systemHue = 240
     )
 
     private fun capture(
@@ -100,7 +103,7 @@ class SettingsScreenshotTest {
                         TusDatos(backup, {}, export, {}, true, {}, {}, {})
                     }
                 }
-                state.tuya?.let { TuyaSheet(it, state.appearance.ink) {} }
+                state.tuya?.let { TuyaSheet(it, state.appearance.ink.shown(state.systemHue)) {} }
             }
         }
         if (open != null) rule.onNodeWithTag(open).revealed().performClick()
@@ -280,4 +283,46 @@ class SettingsScreenshotTest {
     @Test fun tuTintaSavingLight() = capture("tu-tinta-saving", Look(), savingSheet)
 
     @Test fun tuTintaSavingDark() = capture("tu-tinta-saving", Look(dark = true), savingSheet)
+
+    // SELLO-203: Sistema.
+
+    private val sistema =
+        loaded.copy(appearance = AppearancePreference(ink = InkPreference.Sistema))
+
+    @Test
+    fun sistemaLight() =
+        capture("sistema", Look(ink = HueInk(240)), sistema, reveal = SETTINGS_INK_NOTE_TAG)
+
+    @Test
+    fun sistemaDark() = capture(
+        "sistema",
+        Look(ink = HueInk(240), dark = true),
+        sistema,
+        reveal = SETTINGS_INK_NOTE_TAG
+    )
+
+    /** A red wallpaper: the hue as it is, and the note. */
+    private val sistemaRed = sistema.copy(systemHue = 24)
+
+    @Test
+    fun sistemaRedLight() =
+        capture("sistema-red", Look(ink = HueInk(24)), sistemaRed, reveal = SETTINGS_INK_NOTE_TAG)
+
+    @Test
+    fun sistemaRedDark() = capture(
+        "sistema-red",
+        Look(ink = HueInk(24), dark = true),
+        sistemaRed,
+        reveal = SETTINGS_INK_NOTE_TAG
+    )
+
+    /** Android 11, after restoring a backup made with Sistema: Cobalto, and no Sistema. */
+    private val android11 = sistema.copy(systemHue = null)
+
+    @Test
+    fun android11Light() = capture("android-11", Look(), android11, reveal = SETTINGS_INK_TAG)
+
+    @Test
+    fun android11Dark() =
+        capture("android-11", Look(dark = true), android11, reveal = SETTINGS_INK_TAG)
 }

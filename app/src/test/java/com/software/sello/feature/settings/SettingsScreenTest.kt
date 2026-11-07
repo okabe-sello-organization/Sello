@@ -21,6 +21,8 @@ import androidx.compose.ui.test.assertRangeInfoEquals
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -235,6 +237,79 @@ class SettingsScreenTest {
         rule.onNodeWithTag(TUYA_SLIDER_TAG).performTouchInput { click(centerLeft) }
         rule.onNodeWithTag(TUYA_USE_TAG).performClick()
 
+        assertEquals(emptyList<SettingsAction>(), actions)
+    }
+
+    // SELLO-203: Sistema.
+
+    private val sistema = AppearancePreference(ink = InkPreference.Sistema)
+
+    /** The ink swatch named [name]: Tema's switch has a Sistema too. */
+    private fun ink(name: String) =
+        rule.onNode(hasText(name) and hasAnyAncestor(hasTestTag(SETTINGS_INK_TAG)))
+
+    @Test
+    fun sistemaSitsBetweenVioletaAndTuyaAndAppliesAtOnce() {
+        val actions = mutableListOf<SettingsAction>()
+        showSettings(SettingsState(loading = false, systemHue = 220), actions)
+
+        val names = listOf("Cobalto", "Violeta", "Sistema", "Tuya").map {
+            ink(it).getUnclippedBoundsInRoot().left
+        }
+        assertEquals(names.sorted(), names)
+        ink("Sistema").assertIsNotSelected().performClick()
+        rule.onNodeWithTag(SETTINGS_INK_NOTE_TAG).assertDoesNotExist()
+
+        assertEquals(
+            listOf<SettingsAction>(SettingsAction.InkChosen(InkPreference.Sistema)),
+            actions
+        )
+    }
+
+    @Test
+    fun chosenSistemaNamesThePhonesColourInLowerCase() {
+        val actions = mutableListOf<SettingsAction>()
+        val state = SettingsState(loading = false, appearance = sistema, systemHue = 220)
+        showSettings(state, actions)
+
+        ink("Sistema").assertIsSelected()
+        ink("Cobalto").assertIsNotSelected()
+        rule.onNodeWithTag(SETTINGS_INK_NOTE_TAG).assertTextEquals(
+            "Toma el color de tu fondo de pantalla: petróleo. Cambia cuando lo cambies."
+        )
+    }
+
+    @Test
+    fun onARedOrGreenPhoneColourSistemasCaptionAddsTheNote() {
+        var phoneHue by mutableIntStateOf(24)
+        rule.showSello {
+            SettingsScreen(
+                state = SettingsState(loading = false, appearance = sistema, systemHue = phoneHue),
+                onAction = {},
+                contentPadding = PaddingValues(),
+                onOpenSchedules = {},
+                onOpenRate = {}
+            ) { Text("Tus datos") }
+        }
+        for ((hue, name) in listOf(24 to "rojo", 140 to "verde")) {
+            phoneHue = hue
+            rule.onNodeWithTag(SETTINGS_INK_NOTE_TAG).assertTextEquals(
+                "Toma el color de tu fondo de pantalla: $name. Cambia cuando lo cambies. " +
+                    "El rojo y el verde también marcan excesos y metas."
+            )
+        }
+    }
+
+    @Test
+    fun onAndroid11SistemaIsNotOfferedAndARestoredOneShowsCobaltoChosen() {
+        val actions = mutableListOf<SettingsAction>()
+        val state = SettingsState(loading = false, appearance = sistema, systemHue = null)
+        showSettings(state, actions)
+
+        ink("Sistema").assertDoesNotExist()
+        ink("Cobalto").assertIsSelected()
+        ink("Tuya").assertIsNotSelected()
+        rule.onNodeWithTag(SETTINGS_INK_NOTE_TAG).assertDoesNotExist()
         assertEquals(emptyList<SettingsAction>(), actions)
     }
 }

@@ -25,8 +25,8 @@
     <section id="entry-points">
       <h2>Entry points</h2>
       <ul>
-        <li>App start, while the data is opening (<code>StartupState.Opening</code>): <code>app/src/main/java/com/software/sello/MainActivity.kt:57</code>. Drawn in the default theme, since the stored appearance is not readable yet.</li>
-        <li>App start, when the data could not be opened (<code>StartupState.Failed</code>): <code>app/src/main/java/com/software/sello/MainActivity.kt:76</code>. Also drawn in the default theme. When the data opens (after <em>Intentar de nuevo</em>), <code>StartupState.Ready</code> replaces this screen with the app; there is no navigation call.</li>
+        <li>App start, while the data is opening (<code>StartupState.Opening</code>): <code>app/src/main/java/com/software/sello/MainActivity.kt:59</code>. Drawn in the default theme, since the stored appearance is not readable yet.</li>
+        <li>App start, when the data could not be opened (<code>StartupState.Failed</code>): <code>app/src/main/java/com/software/sello/MainActivity.kt:84</code>. Also drawn in the default theme. When the data opens (after <em>Intentar de nuevo</em>), <code>StartupState.Ready</code> replaces this screen with the app; there is no navigation call.</li>
         <li>Leaves through <code>onStartedOver</code> once the data was set aside (<code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:73</code>), and through an app restart after a restore (<code>StartupFailureAction.Leave</code>).</li>
       </ul>
     </section>
@@ -175,7 +175,7 @@
       <div class="gaps">
         <ul>
           <li>Not capturable: loading at start is drawn before Sello's theme and screens exist, so a JVM screen test has nothing to show.</li>
-          <li>startup-failure is captured in Cobalto and Violeta, light and dark, but the real screen always uses the default theme (<code>app/src/main/java/com/software/sello/MainActivity.kt:74</code>); only the default light/dark captures match what a person can see.</li>
+          <li>startup-failure is captured in Cobalto and Violeta, light and dark, but the real screen always uses the default theme (<code>app/src/main/java/com/software/sello/MainActivity.kt:82</code>); only the default light/dark captures match what a person can see.</li>
         </ul>
       </div>
     </section>

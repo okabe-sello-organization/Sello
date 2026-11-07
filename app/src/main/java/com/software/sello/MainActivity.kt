@@ -10,7 +10,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -62,7 +64,13 @@ class MainActivity : ComponentActivity() {
                 is StartupState.Ready -> {
                     val appearance: AppearanceViewModel = viewModel(factory = now.viewModels)
                     val preference by appearance.state.collectAsStateWithLifecycle()
-                    val theme = preference.appearance.asSelloTheme(isSystemInDarkTheme())
+                    // Each time Sello is on screen, after a recreation too: the phone's colour
+                    // may have changed meanwhile, and Sistema follows it.
+                    LifecycleEventEffect(Lifecycle.Event.ON_START) { appearance.onShown() }
+                    val theme = preference.appearance.asSelloTheme(
+                        isSystemInDarkTheme(),
+                        preference.systemHue
+                    )
                     SystemBarsFollowTheme(theme.dark) {
                         SelloTheme(ink = theme.ink, darkTheme = theme.dark) {
                             if (!startingOver) SelloAppRoot(now.viewModels)

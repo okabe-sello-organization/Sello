@@ -25,6 +25,7 @@ import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ScheduleBookState
 import com.software.sello.domain.port.ScheduleReads
+import com.software.sello.platform.SystemColor
 import com.software.sello.presentation.appearance.startingHue
 import com.software.sello.presentation.money.MoneyFormatter
 import java.time.LocalDate
@@ -42,7 +43,7 @@ import kotlinx.coroutines.launch
 
 /**
  * Coordinates the appearance, Recibo-order and Inversiones controls, how many payments and
- * incomes repeat and the current USD rate. The backup card reads the backup's own state.
+ * incomes repeat and the current USD rate. [systemColor] is the phone's colour, for Sistema. The backup card reads the backup's own state.
  * The hue chosen in Tu tinta is kept in [handle] while the sheet is open, so it survives
  * rotation and process death; nothing is saved until Usar esta tinta.
  */
@@ -54,7 +55,8 @@ class SettingsViewModel(
     private val investmentPreferences: InvestmentPreferences,
     schedules: ScheduleReads,
     investments: InvestmentReads,
-    money: MoneyFormatter
+    money: MoneyFormatter,
+    systemColor: SystemColor
 ) : ViewModel() {
     private val retry = MutableStateFlow(0)
     private val busy = MutableStateFlow(false)
@@ -163,7 +165,8 @@ class SettingsViewModel(
                     writeFailure = old.writeFailure,
                     schedules = old.schedules,
                     rate = old.rate,
-                    tuya = old.tuya
+                    tuya = old.tuya,
+                    systemHue = old.systemHue
                 )
             }
         },
@@ -171,7 +174,8 @@ class SettingsViewModel(
         rateLine.map { value -> { old: SettingsState -> old.copy(rate = value) } },
         busy.map { value -> { old: SettingsState -> old.copy(busy = value) } },
         writeFailure.map { value -> { old: SettingsState -> old.copy(writeFailure = value) } },
-        tuya.map { value -> { old: SettingsState -> old.copy(tuya = value) } }
+        tuya.map { value -> { old: SettingsState -> old.copy(tuya = value) } },
+        systemColor.hue.map { value -> { old: SettingsState -> old.copy(systemHue = value) } }
     ).runningFold(SettingsState(loading = true)) { old, change -> change(old) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, SettingsState(loading = true))
 
@@ -216,7 +220,7 @@ class SettingsViewModel(
         when (action) {
             SettingsAction.Tuya.Open -> {
                 tuyaFailed.value = false
-                handle[KEY_TUYA_HUE] = state.value.appearance.startingHue
+                handle[KEY_TUYA_HUE] = state.value.run { appearance.startingHue(systemHue) }
             }
 
             is SettingsAction.Tuya.HueChanged -> {
@@ -297,7 +301,9 @@ data class SettingsState(
     val schedules: ScheduleCountLine = ScheduleCountLine.Loading,
     val rate: RateLine = RateLine.Loading,
     /** The Tu tinta sheet while it is open; null when it is closed. */
-    val tuya: TuyaDraft? = null
+    val tuya: TuyaDraft? = null,
+    /** The phone's colour, for Sistema: null when it has none (Android 11). */
+    val systemHue: Int? = null
 ) {
     val failure: PreferenceFailure?
         get() = writeFailure ?: appearanceFailure ?: orderingFailure ?: investmentsFailure

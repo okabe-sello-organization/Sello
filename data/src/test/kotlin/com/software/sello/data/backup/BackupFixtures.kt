@@ -247,6 +247,12 @@ fun version7AsVersion8(version7: String): String {
     return newer.replace(ink) { "${it.groupValues[1]}\n    \"inkHue\": null,\n" }
 }
 
+/** A version 8 file as Sello now writes the same data: version 9, with the same keys. */
+fun version8AsVersion9(version8: String): String {
+    check(version8.contains("\"version\": 8,"))
+    return version8.replace("\"version\": 8,", "\"version\": 9,")
+}
+
 fun resource(name: String): ByteArray =
     requireNotNull(BackupFixtures::class.java.getResourceAsStream("/backup/$name")) {
         "missing test resource backup/$name"

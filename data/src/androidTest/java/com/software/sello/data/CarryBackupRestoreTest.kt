@@ -118,7 +118,7 @@ class CarryBackupRestoreTest {
      * A file as Sello wrote it at version 5: no chains, no financial month, no ink hue and,
      * with no goal starred, no chosen goal.
      */
-    private fun String.asVersion5() = replace("\"version\": 8,", "\"version\": 5,")
+    private fun String.asVersion5() = replace("\"version\": 9,", "\"version\": 5,")
         .also { check(it.contains("\"starredGoals\": [],")) }
         .replace(Regex("\\s+\"inkHue\": null,"), "")
         .replace("\"starredGoals\": [],", "\"featuredGoal\": null,")

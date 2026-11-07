@@ -104,6 +104,23 @@ class RestoreSectionTest {
     }
 
     @Test
+    fun anAppearanceStillToApplyNamesSistema() {
+        show(
+            RestoreStep.Restored(
+                RestoreOutcome.Restored(
+                    BackupSummary(2, 3, 1, 0, 0),
+                    PendingPreferences(
+                        AppearancePreference(ThemePreference.Light, InkPreference.Sistema),
+                        null
+                    )
+                )
+            )
+        )
+
+        rule.onNodeWithText("Apariencia: Claro, Sistema").assertIsDisplayed()
+    }
+
+    @Test
     fun anUnknownOutcomeWithoutASetAsideSaysNothingAboutAChosenFile() {
         show(RestoreStep.Unknown(operation))
 

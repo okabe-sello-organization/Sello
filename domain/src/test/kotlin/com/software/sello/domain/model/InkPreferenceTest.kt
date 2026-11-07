@@ -24,21 +24,30 @@ class InkPreferenceTest {
     fun eachInkReadsBackFromItsIdAndTuyasHue() {
         assertEquals(InkPreference.Cobalto, InkPreference.of("cobalto", null))
         assertEquals(InkPreference.Violeta, InkPreference.of("violeta", null))
+        assertEquals(InkPreference.Sistema, InkPreference.of("sistema", null))
+        assertEquals("sistema", InkPreference.Sistema.id)
         assertEquals(InkPreference.Tuya(hue(22)), InkPreference.of("tuya", hue(22)))
         assertEquals("tuya", InkPreference.Tuya(hue(22)).id)
     }
 
     @Test
-    fun aHandMadeInkLeavesTuyasKeptHueToTuya() {
+    fun anotherInkLeavesTuyasKeptHueToTuya() {
         assertEquals(InkPreference.Cobalto, InkPreference.of("cobalto", hue(22)))
         assertEquals(InkPreference.Violeta, InkPreference.of("violeta", hue(0)))
+        assertEquals(InkPreference.Sistema, InkPreference.of("sistema", hue(140)))
+        assertEquals(
+            hue(140),
+            AppearancePreference(ink = InkPreference.Sistema, tuyaHue = hue(140)).tuyaHue
+        )
     }
 
     @Test
     fun anIdThatMakesNoInkIsRefused() {
         assertNull(InkPreference.of("tuya", null))
-        assertNull(InkPreference.of("sistema", null))
         assertNull(InkPreference.of("Tuya", hue(22)))
+        assertNull(InkPreference.of("Sistema", null))
+        assertNull(InkPreference.of("system", null))
+        assertNull(InkPreference.of("", null))
     }
 
     @Test

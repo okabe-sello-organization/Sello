@@ -5,7 +5,7 @@
 > subject to the user's current instructions.
 
 **Snapshot:** 2026-11-06 · **Product baseline:** `main`; the release candidate is `0.1.0` from `a20ae90f`, and the [candidate checklist](../release/candidate-checklist.md) leaves only the owner's steps (the [MVP checklist](../release/mvp-checklist.md) is the October record).
-Every epic is Done: E01–E10, E12, E13 and E15–E32. The owner dropped E14 and the
+Done: E01–E10, E12, E13, E15–E32 and E37; E33–E36 are in the backlog. The owner dropped E14 and the
 release tickets SELLO-043 and SELLO-113 on 2026-10-29. Each ticket's
 file under [docs/tickets](../tickets/README.md) and the pull request that closed it carry
 the details, and `python3 scripts/quality/tickets.py status` prints the current board.
@@ -72,6 +72,13 @@ This summary is refreshed when an epic closes and adds no verification claims.
   through the picker or shared through a one-file FileProvider) and Borrar todos los
   datos. Then Lo que se repite, Apariencia (theme, ink swatches), Recibo (category order
   and direction) and Inversiones (starting currency, list order, Dólar rate).
+- Tinta propia y del sistema ([E37](../tickets/E37-tinta/README.md)): Apariencia › Tinta
+  offers Cobalto, Violeta, Sistema and Tuya. One generator in `:design-system` turns
+  Cobalto to any hue, keeping every contrast Cobalto's. Tuya is a hue the person picks in
+  the Tu tinta sheet; Sistema takes the phone's accent hue (Android 12 and later, not
+  offered on Android 11, where a restored Sistema shows Cobalto) in Sello's own shades,
+  read again each time Sello is on screen. Red and green hues get a note; gain, loss and
+  warn never follow the ink. Backups carry the ink and Tuya's hue.
 - Signed carryover ([E09](../tickets/E09-signed-carryover/README.md)): per category,
   opt-in and off by default; next carry = (base + carry) − spending, with no cap.
   Verdicts and allowance use base + carry; turning off or archiving with a balance
@@ -81,8 +88,9 @@ This summary is refreshed when an epic closes and adds no verification claims.
 - Room schema 9 for finances (goals since 4, recurring schedules since 5, investments
   since 6, carryover since 7, up to five starred goals since 8, indexes for long
   histories and an accent-blind expense search key since 9); DataStore for
-  nonfinancial preferences; backup format version 7, unchanged by schema 9, which only
-  adds derived data ([format](../data/backup-format.md)).
+  nonfinancial preferences; backup format version 9 (8 added Tuya's hue, 9 the ink
+  Sistema), unchanged by schema 9, which only adds derived data
+  ([format](../data/backup-format.md)).
 - Backups save and restore through the system file picker, also from the start-up
   failure screen; retry and confirmed start-over preserve an unreadable database privately.
   Restaurar also imports a FinanceTracker backup, investments included, showing what it
@@ -159,7 +167,7 @@ What each ticket changed is in its pull request, linked from the ticket file
   the walk on the owner's phone, and the go/no-go. Distributing it is a separate,
   owner-authorized action. No release was published, signed with the owner's key or
   tagged; the only tag, `design-system-v1`, marks E32's design, not a release.
-- No ticket is open. Dropped on 2026-10-29: SELLO-043 (carryover release), SELLO-113
+- E33–E36 (everyday features, #410) are in the backlog. Dropped on 2026-10-29: SELLO-043 (carryover release), SELLO-113
   (the `0.2.0` release) and E14 with SELLO-074 (manual TalkBack, Switch Access and
   keyboard walks). The automated accessibility checks from SELLO-033 stay.
 - Open GitHub issues are not tickets.

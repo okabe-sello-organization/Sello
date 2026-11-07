@@ -43,9 +43,9 @@
         The ink is the user's choice, a <code>ThemeInk</code> (<code>SelloColors.kt:12</code>): one of the
         hand-made <code>SelloInk</code>s, <strong>Cobalto</strong>, the first-run default, and
         <strong>Violeta</strong> (<code>SelloColors.kt:26</code>), or <code>HueInk(hue)</code>, the palette
-        the generator builds for <strong>Tuya</strong> (<code>SelloColors.kt:41</code>); light or dark and reduced motion follow
+        the generator builds for <strong>Tuya</strong> and <strong>Sistema</strong> (<code>SelloColors.kt:41</code>); light or dark and reduced motion follow
         the system unless the caller says otherwise. Wallpaper-derived (dynamic) Material colours are never
-        applied.</p>
+        applied: Sistema takes only the wallpaper's hue, and the generator gives Sello's own shades of it.</p>
       <div class="note dynamic" id="dynamic-colours">
         <h3>Dynamic colours</h3>
         <p>A generator builds a palette from any hue: <code>hueColors(hue, isDark)</code>
@@ -61,8 +61,14 @@
           gain and loss also use. <strong>Tuya</strong> uses it (SELLO-202): the person picks a hue in
           Configuración › Apariencia › Tinta, and <code>SelloTheme(ink = HueInk(hue))</code> draws the whole
           app in it; a picker starts from <code>SelloInk.hue</code>, each hand-made ink's own brand hue
-          (Cobalto 267°, Violeta 286°). Sistema is not built yet.</p>
+          (Cobalto 267°, Violeta 286°). <strong>Sistema</strong> uses it too (SELLO-203), on Android 12
+          and later: <code>hueOf(argb)</code> (<code>HuePalette.kt:96</code>) turns the phone's accent
+          (<code>system_accent1_500</code>) into its whole OKLCH degree, rounded to the nearest, 359.5° and
+          above to 0°, and the app is drawn in <code>HueInk</code> of it, the hue as it is, none moved or
+          blocked. A grey accent has no hue: <code>hueOf</code> gives none, as on Android 11, where Sistema
+          is not offered and is drawn in Cobalto.</p>
         <figure data-shot="settings-tuya" data-module="app" data-files="settings-tuya-tuya22-light-font1.0.png, settings-tuya-tuya22-dark-font1.0.png" data-caption="Configuración drawn in Tuya at 22° (Rojo), light and dark: the generator's palette; the stamp keeps its own green"></figure>
+        <figure data-shot="settings-sistema" data-module="app" data-files="settings-sistema-tuya240-light-font1.0.png, settings-sistema-tuya240-dark-font1.0.png" data-caption="Configuración drawn in Sistema on a phone with a blue wallpaper (240°), light and dark: the generator's shades of the phone's hue, not Material's"></figure>
         <figure data-shot="settings-tu-tinta" data-module="app" data-caption="Tu tinta: two previews in the hue being chosen, inside their own SelloTheme(HueInk(hue)), and the slider's track in the light band of every hue"></figure>
         <p>Every colour a screen or resource draws comes from the theme (SELLO-190): no
           <code>Color(0x…)</code> or <code>Color.White</code> outside the palette files, copied roles set
@@ -79,7 +85,7 @@
             <code>goalBand</code>, <code>investmentBand</code>, deeper than what they stand for),
             <code>onBand</code>, <code>semantic.warn</code>, <code>warnSoft</code> and the investment inks.</li>
           <li><code>semantic.gain</code> and <code>loss</code> (and their soft and on colours) are
-            meanings: they must not follow the wallpaper, at most be harmonised with it.</li>
+            meanings: they never follow the ink, Tuya's or the wallpaper's.</li>
         </ul>
         <p><strong>What stays fixed</strong></p>
         <ul>
@@ -87,7 +93,7 @@
             light or dark as the phone): it is drawn before any Kotlin runs, so it can't know the ink.</li>
           <li>The Settings ink swatches (<code>ThemeInk.swatch</code>, the ink's light band): each previews
             its own ink, not the active one. Tuya's is its hue's band (<code>HueInk.swatch</code>), or before
-            it has a hue, a sweep of every generated band with a +.</li>
+            it has a hue, a sweep of every generated band with a +; Sistema's is the band of the phone's hue.</li>
           <li>The launcher icon; Android 13+ themed icons already follow the wallpaper.</li>
         </ul>
       </div>
@@ -364,7 +370,7 @@
         <code>design-system/src/main/res/drawable/</code> (licence in
         <code>res/raw/license_material_symbols.txt</code>). Icons are filled; an outlined drawing exists only
         where the reference uses it, for unselected tabs (<code>SelloIcon</code>, <code>SelloIcon.kt:13</code>;
-        <code>painter(filled)</code> falls back to the filled one). 74 icons. Each is drawn below
+        <code>painter(filled)</code> falls back to the filled one). 75 icons. Each is drawn below
         from its XML file, so this list is the real drawing; an icon with two drawings shows filled then
         outlined. Every icon is referenced as <code>SelloIcon.Name</code> somewhere in app or component
         code on this commit. <code>Remove</code> (−) marks a retiro, the counterpart of <code>Add</code> (+) on an aporte;
@@ -443,6 +449,7 @@
 <div class="icon-cell" id="icon-SwapVert" data-drawable="ic_sello_swap_vert"><span class="icon-name">SwapVert</span><span class="icon-file">ic_sello_swap_vert.xml</span></div>
 <div class="icon-cell" id="icon-Theaters" data-drawable="ic_sello_theaters"><span class="icon-name">Theaters</span><span class="icon-file">ic_sello_theaters.xml</span></div>
 <div class="icon-cell" id="icon-UploadFile" data-drawable="ic_sello_upload_file"><span class="icon-name">UploadFile</span><span class="icon-file">ic_sello_upload_file.xml</span></div>
+<div class="icon-cell" id="icon-Wallpaper" data-drawable="ic_sello_wallpaper"><span class="icon-name">Wallpaper</span><span class="icon-file">ic_sello_wallpaper.xml</span></div>
 <div class="icon-cell" id="icon-Wifi" data-drawable="ic_sello_wifi"><span class="icon-name">Wifi</span><span class="icon-file">ic_sello_wifi.xml</span></div>
 </div>
     </section>

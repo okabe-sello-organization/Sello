@@ -64,6 +64,15 @@ class DataStoreUserPreferencesTest {
         ): Preferences = throw IOException("not writable")
     }
 
+    /** Reads what it was given; every write fails as a full or broken disk would. */
+    private class UnwritableDataStore(initial: Preferences) : DataStore<Preferences> {
+        override val data: Flow<Preferences> = MutableStateFlow(initial)
+
+        override suspend fun updateData(
+            transform: suspend (t: Preferences) -> Preferences
+        ): Preferences = throw IOException("not writable")
+    }
+
     private class OnceUnavailableDataStore : DataStore<Preferences> {
         private val values = MutableStateFlow<Preferences>(emptyPreferences())
         private var reads = 0
@@ -402,6 +411,7 @@ class DataStoreUserPreferencesTest {
         val preferences = DataStoreUserPreferences(data)
         for ((ink, id) in listOf(
             InkPreference.Violeta to "violeta",
+            InkPreference.Sistema to "sistema",
             InkPreference.Cobalto to "cobalto"
         )) {
             assertEquals(PreferenceWrite.Saved, preferences.setInk(ink))
@@ -425,6 +435,102 @@ class DataStoreUserPreferencesTest {
             preferences.observeAppearance().first()
         )
         assertEquals("purpura", data.data.first()[stringPreferencesKey("appearance_ink_v1")])
+    }
+
+    @Test
+    fun aStoredInkSpelledOtherwiseThanSistemaIsVisibleAndIsNotSilentlyRewritten() = runTest {
+        for (id in listOf("Sistema", "system", "sistema ")) {
+            val raw = mutablePreferencesOf(INK to id, INK_HUE to 22)
+            val data = HandDataStore(raw)
+
+            assertEquals(
+                id,
+                PreferenceRead.Failed<AppearancePreference>(PreferenceFailure.InvalidValue, null),
+                DataStoreUserPreferences(data).observeAppearance().first()
+            )
+            assertEquals(raw, data.data.first())
+        }
+    }
+
+    @Test
+    fun sistemaIsStoredWithoutAHueAndKeepsTuyasAcrossARestart() = runTest {
+        val data = HandDataStore()
+        val preferences = DataStoreUserPreferences(data)
+        val red = InkPreference.Tuya(InkHue.of(22)!!)
+        preferences.setInk(red)
+
+        assertEquals(PreferenceWrite.Saved, preferences.setInk(InkPreference.Sistema))
+        assertEquals("sistema", data.data.first()[INK])
+        assertEquals(22, data.data.first()[INK_HUE])
+        // A new adapter on the same store, as after a restart or process death.
+        assertEquals(
+            PreferenceRead.Ready(
+                AppearancePreference(ink = InkPreference.Sistema, tuyaHue = InkHue.of(22)!!)
+            ),
+            DataStoreUserPreferences(data).observeAppearance().first()
+        )
+
+        // Choosing Sistema twice is the same single value.
+        assertEquals(PreferenceWrite.Saved, preferences.setInk(InkPreference.Sistema))
+        assertEquals(PreferenceWrite.Saved, preferences.setInk(red))
+        assertEquals(
+            PreferenceRead.Ready(AppearancePreference(ink = red)),
+            DataStoreUserPreferences(data).observeAppearance().first()
+        )
+    }
+
+    @Test
+    fun sistemaWithNoTuyaYetStoresNoHue() = runTest {
+        val data = HandDataStore()
+
+        assertEquals(
+            PreferenceWrite.Saved,
+            DataStoreUserPreferences(data).setInk(InkPreference.Sistema)
+        )
+        assertEquals(null, data.data.first()[INK_HUE])
+        assertEquals(
+            PreferenceRead.Ready(AppearancePreference(ink = InkPreference.Sistema)),
+            DataStoreUserPreferences(data).observeAppearance().first()
+        )
+    }
+
+    @Test
+    fun aSistemaThatCannotBeSavedLeavesTheStoredInkAndHue() = runTest {
+        val raw = mutablePreferencesOf(INK to "violeta", INK_HUE to 22)
+        val preferences = DataStoreUserPreferences(UnwritableDataStore(raw))
+
+        assertEquals(
+            PreferenceWrite.Failed(PreferenceFailure.Unavailable),
+            preferences.setInk(InkPreference.Sistema)
+        )
+        assertEquals(
+            PreferenceRead.Ready(
+                AppearancePreference(ink = InkPreference.Violeta, tuyaHue = InkHue.of(22)!!)
+            ),
+            preferences.observeAppearance().first()
+        )
+    }
+
+    @Test
+    fun aRestoredSistemaIsWrittenWithTheBackupsHueOrNone() = runTest {
+        val data = HandDataStore()
+        val preferences = DataStoreUserPreferences(data)
+        preferences.setInk(InkPreference.Tuya(InkHue.of(22)!!))
+
+        assertEquals(
+            PreferenceWrite.Saved,
+            preferences.restoreInk(InkPreference.Sistema, InkHue.of(147)!!)
+        )
+        assertEquals(
+            PreferenceRead.Ready(
+                AppearancePreference(ink = InkPreference.Sistema, tuyaHue = InkHue.of(147)!!)
+            ),
+            DataStoreUserPreferences(data).observeAppearance().first()
+        )
+
+        assertEquals(PreferenceWrite.Saved, preferences.restoreInk(InkPreference.Sistema, null))
+        assertEquals("sistema", data.data.first()[INK])
+        assertEquals(null, data.data.first()[INK_HUE])
     }
 
     @Test
@@ -468,6 +574,22 @@ class DataStoreUserPreferencesTest {
             assertEquals("$damaged", null, data.data.first()[INK_HUE])
             assertEquals(
                 PreferenceRead.Ready(AppearancePreference(ink = InkPreference.Violeta)),
+                preferences.observeAppearance().first()
+            )
+        }
+    }
+
+    @Test
+    fun pickingSistemaOverADamagedHueDropsItSoThePickReadsBack() = runTest {
+        for (damaged in listOf(400, 360, -1)) {
+            val data = HandDataStore(mutablePreferencesOf(INK to "violeta", INK_HUE to damaged))
+            val preferences = DataStoreUserPreferences(data)
+
+            assertEquals(PreferenceWrite.Saved, preferences.setInk(InkPreference.Sistema))
+
+            assertEquals("$damaged", null, data.data.first()[INK_HUE])
+            assertEquals(
+                PreferenceRead.Ready(AppearancePreference(ink = InkPreference.Sistema)),
                 preferences.observeAppearance().first()
             )
         }
@@ -583,6 +705,7 @@ class DataStoreUserPreferencesTest {
             // A kept hue is held to the same circle as Tuya's own.
             mutablePreferencesOf(INK to "cobalto", INK_HUE to 360),
             mutablePreferencesOf(INK to "violeta", INK_HUE to -1),
+            mutablePreferencesOf(INK to "sistema", INK_HUE to 360),
             // No ink stored reads as Cobalto.
             mutablePreferencesOf(INK_HUE to 400)
         )
