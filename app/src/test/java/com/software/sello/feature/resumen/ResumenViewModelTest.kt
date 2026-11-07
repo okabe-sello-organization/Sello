@@ -150,6 +150,29 @@ class ResumenViewModelTest {
     }
 
     @Test
+    fun aLineThatFailsAfreshKeepsTheLastOneReadThroughReintentar() = runTest {
+        smallExpenses.read.value = PreferenceRead.Ready(SmallExpenseLine.of(15_000)!!)
+        val model = model()
+        watch(model)
+        reads.of(october).value = ReadState.Ready(smallSnapshot())
+
+        // A new read that fails has no last good line of its own, as DataStore's.
+        smallExpenses.read.value = PreferenceRead.Failed(PreferenceFailure.Unavailable, null)
+        val older = (model.state.value as ResumenState.Ready).smallExpenses
+            as ResumenSmallExpenses.Shown
+        assertTrue(older.olderLine)
+        assertEquals("15.000", older.line)
+
+        model.onAction(ResumenAction.Retry)
+
+        val again = (model.state.value as ResumenState.Ready).smallExpenses
+            as ResumenSmallExpenses.Shown
+        assertTrue(again.olderLine)
+        assertEquals("15.000", again.line)
+        assertEquals("15.000", again.total.digits)
+    }
+
+    @Test
     fun reintentarReadsTheLineAgainToo() = runTest {
         smallExpenses.read.value =
             PreferenceRead.Failed(PreferenceFailure.Unavailable, null)

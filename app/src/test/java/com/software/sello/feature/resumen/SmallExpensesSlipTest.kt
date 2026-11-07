@@ -2,6 +2,7 @@ package com.software.sello.feature.resumen
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -107,5 +108,13 @@ class SmallExpensesSlipTest {
         rule.onNodeWithText("Reintentar").performClick()
 
         assertEquals(1, retried)
+    }
+
+    @Test
+    fun smallExpensesThatCannotBeAddedUpOfferNoReintentar() {
+        show(ResumenSmallExpenses.Unavailable)
+
+        rule.onNodeWithText("No pudimos sumar tus gastos hormiga").assertIsDisplayed()
+        assertEquals(0, rule.onAllNodes(hasText("Reintentar")).fetchSemanticsNodes().size)
     }
 }

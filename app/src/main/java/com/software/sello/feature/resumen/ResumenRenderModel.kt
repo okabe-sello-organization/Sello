@@ -151,7 +151,7 @@ class ResumenRenderModel(
         }
         val summary = when (val worked = SmallExpensePolicy.summary(snapshot, line)) {
             is Outcome.Success -> worked.value ?: return null
-            is Outcome.Failure -> return ResumenSmallExpenses.Unreadable
+            is Outcome.Failure -> return ResumenSmallExpenses.Unavailable
         }
         val budget = snapshot.budget
         val inProgress = budget.month == YearMonth.from(budget.asOf)

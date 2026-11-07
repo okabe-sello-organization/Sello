@@ -188,9 +188,8 @@ object ResumenPolicy {
     }
 
     /**
-     * The expenses the hero adds, in the categories it lists, and those of the same days of
-     * the month before, which [comparison] compares with; null when that month has nothing
-     * recorded.
+     * The expenses the hero adds, every category's, and those of the same days of the month
+     * before, which [comparison] compares with; null when that month has nothing recorded.
      */
     private fun periods(
         month: YearMonth,
@@ -199,9 +198,8 @@ object ResumenPolicy {
         months: List<ResumenMonthInput>,
         snapshots: List<MonthlySnapshot>
     ): SpendingPeriods {
-        val listed = snapshots.last().categories.mapTo(HashSet()) { it.category.id }
         val current = months.last().expenses.filter {
-            YearMonth.from(it.date) == month && it.date <= today.date && it.categoryId in listed
+            YearMonth.from(it.date) == month && it.date <= today.date
         }
         if (snapshots.size < 2) return SpendingPeriods(current, null)
         val before = snapshots[snapshots.size - 2]
@@ -212,13 +210,10 @@ object ResumenPolicy {
         } else {
             previous.lengthOfMonth()
         }
-        val listedBefore = before.categories.mapTo(HashSet()) { it.category.id }
         return SpendingPeriods(
             current,
             months[months.size - 2].expenses.filter {
-                YearMonth.from(it.date) == previous &&
-                    it.date.dayOfMonth <= previousThroughDay &&
-                    it.categoryId in listedBefore
+                YearMonth.from(it.date) == previous && it.date.dayOfMonth <= previousThroughDay
             }
         )
     }

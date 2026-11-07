@@ -74,6 +74,9 @@ sealed interface ResumenSmallExpenses {
 
     /** The line cannot be read, and nothing was read before: said, never left out. */
     data object Unreadable : ResumenSmallExpenses
+
+    /** The line was read, but the small expenses cannot be added up: said, never zero. */
+    data object Unavailable : ResumenSmallExpenses
 }
 
 /** A category of Donde más se juntan: [count] small expenses adding up to [amount]. */

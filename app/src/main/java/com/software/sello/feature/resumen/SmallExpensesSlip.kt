@@ -48,6 +48,13 @@ internal fun SmallExpensesSlip(
             action = StatusAction(StatusSlipDefaults.retryLabel, onClick = onRetry)
         )
 
+        // Reading again cannot help a sum that does not add up: no Reintentar.
+        ResumenSmallExpenses.Unavailable -> StatusSlip(
+            kind = StatusKind.LoadFailed(stringResource(R.string.resumen_small_unavailable_title)),
+            message = stringResource(R.string.resumen_small_unavailable),
+            modifier = Modifier.testTag(RESUMEN_SMALL_UNAVAILABLE_TAG)
+        )
+
         is ResumenSmallExpenses.Shown -> {
             if (small.olderLine) {
                 StatusSlip(
@@ -166,3 +173,4 @@ const val RESUMEN_SMALL_BARS_TAG = "resumen.small.bars"
 const val RESUMEN_SMALL_CATEGORY_TAG = "resumen.small.category"
 const val RESUMEN_SMALL_UNREADABLE_TAG = "resumen.small.unreadable"
 const val RESUMEN_SMALL_OLDER_TAG = "resumen.small.older"
+const val RESUMEN_SMALL_UNAVAILABLE_TAG = "resumen.small.unavailable"

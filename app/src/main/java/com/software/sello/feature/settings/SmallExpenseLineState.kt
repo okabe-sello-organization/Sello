@@ -19,7 +19,6 @@ data class SmallExpenseLineState(
     val problem: LineProblem?,
     val current: String?,
     val limitPulse: Int = 0,
-    val atLimit: Boolean = false,
     val busy: Boolean = false,
     val notSaved: Boolean = false,
     val closed: Boolean = false

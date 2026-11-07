@@ -66,8 +66,9 @@ object SmallExpensePolicy {
         val names = snapshot.budget.categories.associate { it.category.id to it.category }
         val categories = ArrayList<SmallExpenseCategory>()
         for ((id, of) in small.groupBy { it.categoryId }) {
-            // A category Resumen does not list has no spending it counts; nothing is guessed.
-            val category = names[id] ?: return Outcome.Failure(SnapshotFailure.Unrepresentable)
+            // Counted above like every expense, but a category the month does not list has
+            // no name to show, so it is left out of Donde más se juntan, never named for it.
+            val category = names[id] ?: continue
             val sum = when (val read = total(of)) {
                 is Outcome.Success -> read.value
                 is Outcome.Failure -> return read

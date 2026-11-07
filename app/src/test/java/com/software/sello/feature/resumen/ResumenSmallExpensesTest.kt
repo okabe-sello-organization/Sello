@@ -215,6 +215,17 @@ class ResumenSmallExpensesTest {
     }
 
     @Test
+    fun smallExpensesThatCannotBeAddedUpAreSaidApartFromTheLine() {
+        val read = snapshot(month)
+        // An expense the hero never counted: the slip's sum cannot be a share of it.
+        val broken = read.copy(
+            periods = read.periods.copy(current = read.periods.current + spend("2026-10-09", 1_000))
+        )
+
+        assertEquals(ResumenSmallExpenses.Unavailable, small(broken))
+    }
+
+    @Test
     fun aLineNeverReadIsSaidWhereASlipCouldBeAndNeverGuessed() {
         val unread = PreferenceRead.Failed<SmallExpenseLine>(PreferenceFailure.InvalidValue, null)
 

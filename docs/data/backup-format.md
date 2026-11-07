@@ -331,8 +331,10 @@ out again from the restored records and base history, so they match the history 
 backup was made from (SC43). Since SELLO-041 the app shows carry, so no path refuses a
 file for holding a chain. Inside one transaction a
 receipt for the same operation means it already happened, so asking again after an unknown
-outcome or a crash replays instead of replacing twice. Afterwards the backup's appearance and order are applied; a group
-that fails stays pending, with the file, and is retried at start-up and on request.
+outcome or a crash replays instead of replacing twice. Afterwards the backup's preferences
+are applied in four groups: appearance, order, Inversiones' settings and Gastos hormiga's
+line. A group that fails stays pending alone, with the file, and is retried at start-up and
+on request.
 
 From the start-up failure screen there is no store to stage into, so the file is
 checked whole with `BackupCodec.check` and held in memory for the preview. Confirming

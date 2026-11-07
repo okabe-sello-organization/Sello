@@ -36,8 +36,7 @@ class SmallExpenseLineViewModel(
         val busy: Boolean = false,
         val notSaved: Boolean = false,
         val closed: Boolean = false,
-        val limitPulse: Int = 0,
-        val atLimit: Boolean = false
+        val limitPulse: Int = 0
     )
 
     private val draft = MutableStateFlow(restored())
@@ -90,12 +89,12 @@ class SmallExpenseLineViewModel(
     private fun key(change: AmountDraft.Change) {
         change(change.draft)
         if (change.limitReached) {
-            progress.update { it.copy(limitPulse = it.limitPulse + 1, atLimit = true) }
+            progress.update { it.copy(limitPulse = it.limitPulse + 1) }
         }
     }
 
     private fun change(next: AmountDraft) {
-        if (next != draft.value) progress.update { it.copy(atLimit = false, notSaved = false) }
+        if (next != draft.value) progress.update { it.copy(notSaved = false) }
         saved[DRAFT] = (next as? AmountDraft.Digits)?.digits
         draft.value = next
     }
@@ -125,7 +124,6 @@ class SmallExpenseLineViewModel(
             },
             current = line?.let { money.format(it.money).digits },
             limitPulse = progress.limitPulse,
-            atLimit = progress.atLimit,
             busy = progress.busy,
             notSaved = progress.notSaved,
             closed = progress.closed

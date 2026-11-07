@@ -346,12 +346,18 @@ class SmallExpensePolicyTest {
     }
 
     @Test
-    fun aCategoryResumenDoesNotListIsNotCounted() {
-        // Category 9 is not in the month: the hero does not count it, nor does the slip.
+    fun anExpenseInACategoryTheMonthDoesNotListCountsAsTheHeroCountsIt() {
+        // Category 9 is not in the month's list; the hero still adds its expense.
         val snapshot = read(
             (1..5).map { expense("2026-10-0$it", 3_000) } + expense("2026-10-06", 3_000, 9)
         )
 
-        assertEquals(5, summary(snapshot)!!.count)
+        // 6 × 3.000 = 18.000, all of the 18.000 spent; only Café can be named.
+        assertEquals(Money.cop(18_000), snapshot.budget.spent)
+        val small = summary(snapshot)!!
+        assertEquals(6, small.count)
+        assertEquals(Money.cop(18_000), small.total)
+        assertEquals(100, small.sharePercent)
+        assertEquals(listOf("Café"), small.categories.map { it.category.name.value })
     }
 }
