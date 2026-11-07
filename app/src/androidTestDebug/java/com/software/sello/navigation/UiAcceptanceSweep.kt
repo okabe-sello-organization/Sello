@@ -44,6 +44,9 @@ import com.software.sello.feature.expense.ENTRY_DELETE_TAG
 import com.software.sello.feature.expense.ENTRY_SUBMIT_TAG
 import com.software.sello.feature.recibo.CATEGORY_DETAIL_EDIT_TAG
 import com.software.sello.feature.recibo.CATEGORY_DETAIL_HEADER_TAG
+import com.software.sello.feature.recibo.CATEGORY_DETAIL_LIST_LOADING_TAG
+import com.software.sello.feature.recibo.CATEGORY_DETAIL_LIST_TAG
+import com.software.sello.feature.recibo.CATEGORY_DETAIL_WEEKS_TAG
 import com.software.sello.feature.recibo.RECIBO_ADD_CATEGORY_TAG
 import com.software.sello.feature.recibo.RECIBO_SUMMARY_TAG
 import com.software.sello.feature.recibo.categoryExpenseTag
@@ -147,7 +150,7 @@ abstract class UiAcceptanceSweep(private val window: Window) {
         check("Category detail")
         // The pinned day is what makes this the widest weekly chart, not luck of the calendar.
         rule.onAllNodes(
-            hasAnyAncestor(hasTestTag("detail:weeks")) and
+            hasAnyAncestor(hasTestTag(CATEGORY_DETAIL_WEEKS_TAG)) and
                 hasContentDescription(": gastado", substring = true)
         ).assertCountEquals(5)
 
@@ -226,12 +229,16 @@ abstract class UiAcceptanceSweep(private val window: Window) {
     }
 
     /** Waits for [matcher]; failing that, says what the screen held and what was found. */
-    private fun awaitOrDescribe(matcher: SemanticsMatcher) {
+    private fun awaitOrDescribe(matcher: SemanticsMatcher) =
+        awaitOrDescribe("${matcher.description} shown") { matcher.found() }
+
+    /** Waits for [condition]; failing that, says what the screen held and what was found. */
+    private fun awaitOrDescribe(expected: String, condition: () -> Boolean) {
         try {
-            rule.waitUntil(15_000) { rule.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty() }
+            rule.waitUntil(15_000, condition)
         } catch (timeout: ComposeTimeoutException) {
             throw AssertionError(
-                "${window.name}: no ${matcher.description}\n" +
+                "${window.name}: not $expected\n" +
                     problems.joinToString("\n") + "\n" + rule.onRoot().printToString(),
                 timeout
             )
@@ -239,14 +246,20 @@ abstract class UiAcceptanceSweep(private val window: Window) {
     }
 
     /**
-     * Waits for a category detail with its insights read. They are read after the header,
-     * off the main thread, which waiting for idle does not wait for; until then a
-     * placeholder stands where the weekly chart goes.
+     * Waits for a category detail with its expenses and insights read. Both are read after
+     * the header, off the main thread, which waiting for idle does not wait for; until
+     * then placeholders stand where the expense rows and the weekly chart go.
      */
     private fun awaitCategoryDetail() {
         awaitOrDescribe(hasTestTag(CATEGORY_DETAIL_HEADER_TAG))
-        awaitOrDescribe(hasTestTag("detail:weeks"))
+        awaitOrDescribe("expenses read") {
+            hasTestTag(CATEGORY_DETAIL_LIST_TAG).found() &&
+                !hasTestTag(CATEGORY_DETAIL_LIST_LOADING_TAG).found()
+        }
+        awaitOrDescribe(hasTestTag(CATEGORY_DETAIL_WEEKS_TAG))
     }
+
+    private fun SemanticsMatcher.found() = rule.onAllNodes(this).fetchSemanticsNodes().isNotEmpty()
 
     private fun back() {
         Espresso.pressBack()
@@ -289,7 +302,7 @@ abstract class UiAcceptanceSweep(private val window: Window) {
         // A week label broken in the middle of its word is not "cut off" by line count.
         unmerged.filter { node ->
             generateSequence(node) { it.parent }.any {
-                it.config.getOrNull(SemanticsProperties.TestTag) == "detail:weeks"
+                it.config.getOrNull(SemanticsProperties.TestTag) == CATEGORY_DETAIL_WEEKS_TAG
             }
         }.forEach { node ->
             val results = mutableListOf<TextLayoutResult>()
