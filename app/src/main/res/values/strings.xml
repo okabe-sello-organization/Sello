@@ -249,6 +249,16 @@
     <plurals name="category_detail_days"><item quantity="one">%d día</item><item quantity="other">%d días</item></plurals>
     <string name="category_detail_compared_to">Frente a %1$s</string>
     <string name="category_detail_numbers">En números</string>
+    <string name="category_detail_repeats">Lo que más se repite</string>
+    <string name="category_detail_repeats_note_col">Nota</string>
+    <string name="category_detail_repeats_times_col">Veces</string>
+    <string name="category_detail_repeats_total_col">Total</string>
+    <string name="category_detail_repeats_note">Total: la suma de todos los gastos con esa nota en el mes. Los gastos sin nota no cuentan. Toca una para verlos.</string>
+    <string name="category_detail_repeat_open">Ver estos gastos</string>
+    <plurals name="category_detail_repeat_spoken">
+        <item quantity="one">%1$s, %2$s vez, total %3$s</item>
+        <item quantity="other">%1$s, %2$s veces, total %3$s</item>
+    </plurals>
     <plurals name="category_detail_count_days"><item quantity="one">%1$s en %2$d día</item><item quantity="other">%1$s en %2$d días</item></plurals>
     <string name="category_detail_each_time">En promedio</string>
     <string name="category_detail_largest">El mayor</string>

@@ -106,6 +106,7 @@ internal fun NavGraphBuilder.reciboDestinations(
             },
             // Opened from the month on screen: that is the month whose limit it edits.
             onShowAllExpenses = { id -> navigation.navigate(CategoryExpensesRoute(id)) },
+            onShowRepeated = { id, note -> navigation.navigate(CategoryExpensesRoute(id, note)) },
             onRecordSeveral = { id -> navigation.navigate(BulkEntryRoute(categoryId = id)) },
             onOpenRecorded = { navigation.navigate(CatchUpRoute) { launchSingleTop = true } },
             onOpenReserved = {
@@ -140,13 +141,14 @@ internal fun NavGraphBuilder.reciboDestinations(
     composable<CategoryExpensesRoute> { entry ->
         val state by shellState
         val notice by noticeState
-        val id = entry.toRoute<CategoryExpensesRoute>().categoryId
+        val route = entry.toRoute<CategoryExpensesRoute>()
+        val id = route.categoryId
         val model: CategoryExpensesViewModel = viewModel(factory = viewModels)
         val expenses by model.state.collectAsStateWithLifecycle()
         val query by model.query.collectAsStateWithLifecycle()
         val order by model.order.collectAsStateWithLifecycle()
         val listDock by model.dock.collectAsStateWithLifecycle()
-        LaunchedEffect(id) { model.onAction(CategoryExpensesAction.Show(id)) }
+        LaunchedEffect(id) { model.onAction(CategoryExpensesAction.Show(id, route.search)) }
         ShellScreen(
             state,
             monthNames(),
@@ -299,6 +301,7 @@ private fun ReciboDestination(
     onEditExpense: (String) -> Unit,
     onEditCategory: (String) -> Unit,
     onShowAllExpenses: (String) -> Unit,
+    onShowRepeated: (categoryId: String, note: String) -> Unit,
     onRecordSeveral: (String) -> Unit,
     onOpenRecorded: () -> Unit,
     onOpenReserved: () -> Unit,
@@ -372,6 +375,7 @@ private fun ReciboDestination(
                         onEditExpense = onEditExpense,
                         onEditCategory = { onEditCategory(id) },
                         onShowAllExpenses = { onShowAllExpenses(id) },
+                        onShowRepeated = { note -> onShowRepeated(id, note) },
                         onSetMonthLimit = onSetMonthLimit,
                         onOpenSchedule = onOpenSchedule,
                         onAllSchedules = onAllSchedules,

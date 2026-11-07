@@ -1,4 +1,4 @@
-package com.software.sello.data.local
+package com.software.sello.domain.policy
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

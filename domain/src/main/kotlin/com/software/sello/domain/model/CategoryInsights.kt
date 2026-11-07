@@ -31,6 +31,9 @@ data class CategoryHistoryMonth(
 /** A recorded comparison, absent when there is no known, positive previous baseline. */
 data class CategoryComparison(val previousMonth: YearMonth, val tenthsPercent: BigInteger)
 
+/** A note used 2 or more times in the month: its latest spelling, uses and exact total. */
+data class RepeatedNote(val note: Note, val count: Int, val total: Money)
+
 /** Every financial figure here belongs to the same budget snapshot and cutoff. */
 data class CategoryInsights(
     val budget: MonthlySnapshot,
@@ -44,5 +47,6 @@ data class CategoryInsights(
     val weeklyAverage: Money?,
     val weeks: List<CategoryWeek>,
     val historicalAverage: Money?,
-    val history: List<CategoryHistoryMonth>
+    val history: List<CategoryHistoryMonth>,
+    val repeats: List<RepeatedNote> = emptyList()
 )

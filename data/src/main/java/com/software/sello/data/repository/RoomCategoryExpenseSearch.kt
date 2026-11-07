@@ -1,7 +1,6 @@
 package com.software.sello.data.repository
 
 import androidx.room.withTransaction
-import com.software.sello.data.local.SearchKey
 import com.software.sello.data.local.SelloDatabase
 import com.software.sello.data.mapper.decodeAll
 import com.software.sello.data.mapper.profileFrom
@@ -9,6 +8,7 @@ import com.software.sello.data.mapper.toDomain
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.policy.SearchKey
 import com.software.sello.domain.port.CategoryExpenseSearch
 import com.software.sello.domain.port.ExpenseOrder
 import com.software.sello.domain.port.ExpenseReads
