@@ -1,5 +1,6 @@
 package com.software.sello.data.mapper
 
+import com.software.sello.data.local.dao.DayAmountRow
 import com.software.sello.data.local.entity.ExpenseEntity
 import com.software.sello.data.local.entity.IncomeEntity
 import com.software.sello.domain.model.CategoryId
@@ -18,6 +19,7 @@ import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.policy.EffectiveDates
 import java.time.Instant
+import java.time.LocalDate
 
 private fun RowDecoder.amount(minor: Long, currencyCode: String): TransactionAmount {
     val currency = currency("currency", currencyCode)
@@ -118,4 +120,11 @@ internal fun IncomeEntity.toDomain(): Outcome<Income, StorageFailure.Integrity> 
             updatedAt = Instant.ofEpochMilli(updatedAt),
             origin = origin(originScheduleId, originDate, originSlot)
         )
+    }
+
+/** An expense's day and amount, checked as the whole row's would be. */
+internal fun DayAmountRow.toDomain(): Outcome<Pair<LocalDate, Money>, StorageFailure.Integrity> =
+    decodeRow(ExpenseEntity.TABLE, null) {
+        valid("effective_date", EffectiveDates.parseDate(effectiveDate)) to
+            amount(amountMinor, currency).money
     }

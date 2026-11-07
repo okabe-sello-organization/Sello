@@ -28,6 +28,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.software.sello.designsystem.icon.SelloIcon
@@ -44,29 +45,42 @@ fun SlipStub(
     start: @Composable () -> Unit,
     end: @Composable () -> Unit,
     modifier: Modifier = Modifier
-) {
+) = SlipStub(listOf(start, end), modifier)
+
+/**
+ * A stub of several [parts], as Resumen's Ingresos · Fijos · Día a día: side by side, each
+ * as wide as the others and split from the next by a dashed rule; the tallest sets the
+ * height.
+ */
+@Composable
+fun SlipStub(parts: List<@Composable () -> Unit>, modifier: Modifier = Modifier) {
     val rule = SelloTheme.colors.rule
     Row(
         modifier.fillMaxWidth().height(IntrinsicSize.Min),
         horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.xs)
     ) {
-        Box(Modifier.weight(1f)) { start() }
-        Canvas(Modifier.width(2.dp).fillMaxHeight().padding(vertical = 6.dp)) {
-            drawLine(
-                rule,
-                Offset(size.width / 2, 0f),
-                Offset(size.width / 2, size.height),
-                strokeWidth = 2.dp.toPx(),
-                pathEffect = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 5.dp.toPx()))
-            )
+        parts.forEachIndexed { index, part ->
+            if (index > 0) {
+                Canvas(Modifier.width(2.dp).fillMaxHeight().padding(vertical = 6.dp)) {
+                    drawLine(
+                        rule,
+                        Offset(size.width / 2, 0f),
+                        Offset(size.width / 2, size.height),
+                        strokeWidth = 2.dp.toPx(),
+                        pathEffect = PathEffect.dashPathEffect(
+                            floatArrayOf(6.dp.toPx(), 5.dp.toPx())
+                        )
+                    )
+                }
+            }
+            Box(Modifier.weight(1f)) { part() }
         }
-        Box(Modifier.weight(1f)) { end() }
     }
 }
 
 /**
- * One half of a [SlipStub]: an icon, a short [title] in the brand ink and, when known,
- * one [fact] under it, centred in the half. One button, said as [label] then the fact;
+ * One part of a [SlipStub]: an icon beside a short [title] in the brand ink and, when
+ * known, one [fact] under them, centred in the part. One button, said as [label] then the fact;
  * [label] should contain the [title] so a spoken command finds it. [minHeight] may be
  * lowered for a compact stub, never below a 48dp target.
  */
@@ -94,21 +108,33 @@ fun StubButton(
             }
             .padding(horizontal = SelloTheme.spacing.sm, vertical = 6.dp)
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.testTag(STUB_CONTENT_TAG)
+        // The icon beside the title, the fact centred under both, as the approved E33 mock
+        // draws a stub; narrow enough for three side by side.
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.testTag(STUB_CONTENT_TAG).clearAndSetSemantics {}
         ) {
-            Icon(
-                icon.painter(),
-                contentDescription = null,
-                tint = colors.brand,
-                modifier = Modifier.padding(end = SelloTheme.spacing.sm).size(24.dp)
-            )
-            Column(Modifier.clearAndSetSemantics {}) {
-                Text(title, fontWeight = SelloTheme.type.weight.emphasis, color = colors.brand)
-                if (fact != null) {
-                    Text(fact, style = MaterialTheme.typography.labelSmall, color = colors.inkSoft)
-                }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    icon.painter(),
+                    contentDescription = null,
+                    tint = colors.brand,
+                    modifier = Modifier.padding(end = SelloTheme.spacing.sm).size(24.dp)
+                )
+                Text(
+                    title,
+                    fontWeight = SelloTheme.type.weight.emphasis,
+                    color = colors.brand,
+                    textAlign = TextAlign.Center
+                )
+            }
+            if (fact != null) {
+                Text(
+                    fact,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colors.inkSoft,
+                    textAlign = TextAlign.Center
+                )
             }
         }
     }

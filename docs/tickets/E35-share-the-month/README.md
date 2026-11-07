@@ -20,3 +20,7 @@ sits on Resumen's bar, beside the magnifier and Configuración.
 uses the light paper with the person's ink. Older figures can't be shared. The PNG lives
 in `cache/exports/` like CSV exports. Privacy change: adversarial review, and the owner
 merges.
+
+**Orchestrated run (owner, 2026-11-06):** "Orchestrate the development" of E33–E36. Roles,
+models and merges follow [orchestration](../../development/orchestration.md); the owner
+delegates every merge in this run.

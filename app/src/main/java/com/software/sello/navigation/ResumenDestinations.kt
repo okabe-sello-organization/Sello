@@ -53,20 +53,26 @@ internal fun NavGraphBuilder.resumenDestinations(
             navigation = tabs,
             // Resumen reads the month: no Anotar here (owner, 2026-10-26).
             entryDock = false,
-            // Share the month on screen, then Configuración, as on Recibo's bar.
+            // The magnifier, sharing the month on screen, then Configuración (SELLO-198 mock).
             actions = {
+                DayByDayBarAction { navigation.openDayByDay() }
                 ShareMonthButton { share.onAction(ShareMonthAction.Open) }
                 SettingsAction { navigation.navigate(SettingsRoute) { launchSingleTop = true } }
             },
             notice = notice?.let { { CorrectionNoticeBar(it, onUndo) } }
         ) { padding ->
-            ResumenRoot(viewModels, {
-                navigation.navigate(IncomeHistoryRoute)
-            }, { id -> navigation.navigate(ResumenCategoryRoute(id)) }, {
-                navigation.navigate(ExpenseEntryRoute())
-            }, padding, { navigation.navigate(SchedulesRoute()) }) { id ->
-                navigation.navigate(CategoryEditRoute(id, state.selectedMonth.toString()))
-            }
+            ResumenRoot(
+                viewModels,
+                { navigation.navigate(IncomeHistoryRoute) },
+                { id -> navigation.navigate(ResumenCategoryRoute(id)) },
+                { navigation.navigate(ExpenseEntryRoute()) },
+                padding,
+                { navigation.navigate(SchedulesRoute()) },
+                { id ->
+                    navigation.navigate(CategoryEditRoute(id, state.selectedMonth.toString()))
+                },
+                onDayByDay = { navigation.openDayByDay() }
+            )
         }
         BackHandler(enabled = !state.monthPickerOpen) { tabs.onSelect("recibo") }
         // After the screen's own back, so that back closes the sheet first.

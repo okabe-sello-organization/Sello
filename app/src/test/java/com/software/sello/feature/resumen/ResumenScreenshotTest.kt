@@ -10,6 +10,7 @@ import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.SpendingDirection
 import com.software.sello.feature.recibo.ShareMonthButton
+import com.software.sello.navigation.DayByDayBarAction
 import com.software.sello.navigation.SettingsAction
 import com.software.sello.navigation.ShellScreen
 import com.software.sello.navigation.ShellState
@@ -67,8 +68,8 @@ class ResumenScreenshotTest {
         shell: ShellState = octoberShell
     ) {
         rule.showSello(look) {
-            // As ResumenDestinations.kt frames the tab: the month bar with Compartir and
-            // Configuración, no Anotar.
+            // As ResumenDestinations.kt frames the tab: the month bar with its magnifier,
+            // Compartir and Configuración, no Anotar.
             ShellScreen(
                 shell,
                 monthNames(),
@@ -76,6 +77,7 @@ class ResumenScreenshotTest {
                 navigation = appTabs(ShellTab.Resumen),
                 entryDock = false,
                 actions = {
+                    DayByDayBarAction {}
                     ShareMonthButton {}
                     SettingsAction {}
                 }

@@ -165,6 +165,10 @@ class ResumenRenderModel(
 
     private fun income(snapshot: ResumenSnapshot) = ResumenIncome(
         count = snapshot.incomeCount,
+        // Every expense and income dated in the month, later days too: what Día a día lists.
+        movements = snapshot.budget.categories.sumOf { it.expenseCount } +
+            snapshot.budget.futureDatedExpenses + snapshot.incomeCount +
+            snapshot.futureDatedIncomes,
         spentShare = share(snapshot.budget.spent.minorUnits, snapshot.income.minorUnits),
         overspent = snapshot.netFlow.minorUnits < 0
     )

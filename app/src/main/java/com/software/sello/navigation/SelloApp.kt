@@ -157,6 +157,14 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
         )
         categoryDestinations(navigation, viewModels, shellState, shell::onAction)
         expenseDestinations(navigation, viewModels, announcementsState, announcements)
+        movementDestinations(
+            navigation,
+            viewModels,
+            shellState,
+            shell::onAction,
+            noticeState,
+            corrections::undo
+        )
     }
 
     // An entry cannot be recorded without a category, so the form to create one opens

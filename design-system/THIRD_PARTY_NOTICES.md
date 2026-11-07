@@ -15,6 +15,9 @@ path, treated the same way.
 Category detail's `sell` and `arrow_upward` icons use the same revision, weight,
 filled style and license to match the v1.1 statistics reference.
 
+The `search` magnifier that opens Día a día (SELLO-192) uses the same revision, weight,
+filled style and license.
+
 Resumen's `share` icon (SELLO-198) uses the same revision, weight, filled style and
 license.
 
