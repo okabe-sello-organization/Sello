@@ -1,5 +1,6 @@
 package com.software.sello.feature.movements
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -27,7 +29,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -281,11 +285,17 @@ private fun DayHeading(day: DayGroup, dates: DateLabels, today: LocalDate) {
                 )
             }
         }
-        HorizontalDivider(
-            Modifier.padding(top = SelloTheme.spacing.xs),
-            thickness = 1.5.dp,
-            color = colors.rule
-        )
+        // A dashed rule under the day, as the mock tears its days apart.
+        val rule = colors.rule
+        Canvas(Modifier.fillMaxWidth().padding(top = SelloTheme.spacing.xs).height(2.dp)) {
+            drawLine(
+                rule,
+                Offset(0f, size.height / 2),
+                Offset(size.width, size.height / 2),
+                strokeWidth = 1.5.dp.toPx(),
+                pathEffect = PathEffect.dashPathEffect(floatArrayOf(5.dp.toPx(), 4.dp.toPx()))
+            )
+        }
     }
 }
 
@@ -324,6 +334,7 @@ private fun MovementLine(row: DayRow, onClick: () -> Unit) {
     ).joinToString(", ")
     Column(
         Modifier.fillMaxWidth()
+            .testTag(movementTag(row.id))
             .clickable(role = Role.Button, onClick = onClick)
             .clearAndSetSemantics {
                 contentDescription = spoken
@@ -333,7 +344,6 @@ private fun MovementLine(row: DayRow, onClick: () -> Unit) {
                     true
                 }
             }
-            .testTag(movementTag(row.id))
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
