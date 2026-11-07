@@ -283,7 +283,7 @@ private fun CategoryWeeks(categoryId: String, figures: DetailInsights) {
     var selected by rememberSaveable(categoryId, figures.weeks.firstOrNull()?.from) {
         mutableStateOf<Int?>(null)
     }
-    Slip(Modifier.fillMaxWidth().testTag("detail:weeks")) {
+    Slip(Modifier.fillMaxWidth().testTag(CATEGORY_DETAIL_WEEKS_TAG)) {
         ChartDetail(stringResource(R.string.category_detail_weekly), heading = true)
         figures.weeklyAverage?.let {
             MoneyText(it, textStyle = MaterialTheme.typography.headlineSmall)
