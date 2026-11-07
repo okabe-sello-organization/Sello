@@ -586,7 +586,7 @@ fun MoreMenuDropdown(
 <h3><code>FieldPill</code> <span class="src"><code>component/Chips.kt:190</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>A tappable value on an entry sheet, such as the date, a goal's month or the note.</dd>
-<dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 1</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 3</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 5</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a></dd>
+<dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 1</a> <a class="tag" href="features/expense.html">expense · 2</a> <a class="tag" href="features/goals.html">goals · 3</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 5</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a></dd>
 </dl>
 <pre><code>fun FieldPill(
     text: String,
@@ -1125,7 +1125,7 @@ fun StatusSlip(
 <h3><code>SelloSheet</code> <span class="src"><code>component/Sheet.kt:41</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>Sello's bottom sheet, over the screen it belongs to, such as how a payment repeats, an icon to choose or a category's month limit: a scrim that closes it when tapped, and paper docked at the bottom with <code>title</code> as its heading and <code>content</code> under it, scrolling when it is taller than the screen. It keeps clear of the system bars. Back is the screen's to handle, as is what lies behind.</dd>
-<dt>Used by</dt><dd><a class="tag" href="features/category.html">category · 2</a> <a class="tag" href="features/goals.html">goals · 2</a> <a class="tag" href="features/investments.html">investments · 1</a> <a class="tag" href="features/recibo.html">recibo · 1</a> <span class="muted">Inside the design system: <code>RepeatParts.kt</code>.</span></dd>
+<dt>Used by</dt><dd><a class="tag" href="features/category.html">category · 2</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 2</a> <a class="tag" href="features/investments.html">investments · 1</a> <a class="tag" href="features/recibo.html">recibo · 1</a> <span class="muted">Inside the design system: <code>RepeatParts.kt</code>.</span></dd>
 </dl>
 <p class="muted">Named <code>RepeatSheet</code> until SELLO-191, when it moved from <code>Recurrence.kt</code> to <code>Sheet.kt</code>: five features use it, not only repeats.</p>
 <pre><code>fun SelloSheet(
@@ -1620,7 +1620,7 @@ fun StatusSlip(
 <dl>
 <dt>Purpose</dt><dd>One payment or income that repeats: its <code>icon</code> in a circle, <code>name</code> over <code>caption</code> (the category, the rule, the next date), an optional <code>pausedLabel</code> stamp and the <code>amount</code>, with an optional date <code>pill</code> under it. One still <code>soon</code> to come is in soft ink; an <code>income</code> is in gain ink. <code>recorded</code>, for one whose month already went through, shows a check instead of its icon and softens a payment's amount. <code>dimmed</code>, for one paused or ended, softens it while every text keeps its contrast. The whole row is one button read as <code>spoken</code>. A rule separates it from the next row unless it is the <code>last</code>.</dd>
 <dt>Variants</dt><dd><code>soon</code>, <code>income</code> (gain ink), <code>recorded</code> (a check), <code>dimmed</code> (paused or ended), <code>pausedLabel</code> stamp, date <code>pill</code>, <code>last</code>.</dd>
-<dt>Used by</dt><dd><a class="tag" href="features/recibo.html">recibo · 3</a> <a class="tag" href="features/recurrence.html">recurrence · 4</a></dd>
+<dt>Used by</dt><dd><a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/recibo.html">recibo · 3</a> <a class="tag" href="features/recurrence.html">recurrence · 4</a></dd>
 </dl>
 <pre><code>fun ScheduleRow(
     name: String,

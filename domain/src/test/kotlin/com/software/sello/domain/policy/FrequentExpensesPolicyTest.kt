@@ -123,6 +123,17 @@ class FrequentExpensesPolicyTest {
     }
 
     @Test
+    fun onOneDayTheLastTenAreTheTenAddedLast() {
+        // All on 2026-11-01. Added first: 20.000; then four at 10.000, five at 20.000 and,
+        // added last, 10.000. The ten added last: five at 10.000, five at 20.000, so
+        // (10.000 + 20.000) / 2 = 15.000. The ten added first would give 20.000.
+        val amounts = listOf(20_000L) + List(4) { 10_000L } + List(5) { 20_000L } + 10_000L
+        val expenses = amounts.map { expense("Almuerzo", it, day = "2026-11-01") }
+
+        assertEquals(listOf("Almuerzo 11 15000"), groups(expenses).shown())
+    }
+
+    @Test
     fun day90CountsAndDay91DoesNot() {
         // 2026-08-09 is 90 days before 2026-11-07; 2026-08-08 is 91.
         val expenses = listOf(

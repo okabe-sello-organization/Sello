@@ -385,12 +385,20 @@ class ExpenseEntryScreenshotTest {
         lunch,
         frequent("t", "Bus", "Transporte", "directions_bus", 22, "2.950"),
         frequent("b", "Tinto", "Café", "local_cafe", 9, "3.500"),
-        frequent("a", "Mercado D1", "Alimentación", "shopping_cart", 4, "96.400"),
-        frequent("h", "Recarga", "Hogar", "phone_iphone", 3, "20.000")
+        frequent("a", "Mercado D1", "Alimentación", "restaurant", 4, "96.400"),
+        frequent("h", "Recarga", "Hogar", "home", 3, "20.000")
     )
 
-    /** ⚡ Frecuentes at the end of Agregar nota, the form as it opens. */
+    /**
+     * ⚡ Frecuentes at the end of Agregar nota, the form as it opens. Every frequent
+     * expense is in a category the form offers, with that category's icon, as the view
+     * model gives them.
+     */
     private val offered = ready.copy(
+        categories = ready.categories + listOf(
+            EntryCategory("t", "Transporte", "directions_bus"),
+            EntryCategory("h", "Hogar", "home")
+        ),
         categoryId = null,
         amount = null,
         missing = Missing.Amount,

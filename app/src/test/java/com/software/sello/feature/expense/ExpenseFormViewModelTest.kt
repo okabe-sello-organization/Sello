@@ -120,7 +120,8 @@ class ExpenseFormViewModelTest {
         money,
         corrections,
         schedules,
-        scheduleBook
+        scheduleBook,
+        Dispatchers.Main
     )
 
     /** A form over a month with the given categories, already read. */

@@ -190,6 +190,23 @@ class ExpenseReadsTest {
     }
 
     @Test
+    fun aRangeWithADamagedExpenseIsAFailureNotAShorterList() = runBlocking {
+        twoCategoriesAcrossMonths()
+        ledger.database.openHelper.writableDatabase
+            .execSQL("UPDATE expense SET amount_minor = 0 WHERE sequence = 2")
+
+        val read = ledger.expenseReads
+            .between(LocalDate.parse("2026-10-01"), LocalDate.parse("2026-10-31"), 50)
+
+        assertEquals(
+            Outcome.Failure(StorageFailure.Integrity("expense", uuid(103), "amount_minor")),
+            read
+        )
+        // The damaged row is dated 2026-10-01, outside the first two read.
+        assertEquals(2, between("2026-10-01", "2026-10-31", 2).expenses.size)
+    }
+
+    @Test
     fun aDamagedExpenseIsAFailureNotAMissingOne() = runBlocking {
         ledger.categories.submit(ledger.createCategory("Mercado"))
         ledger.expenses.create(ledger.createExpense(100, "2026-10-03", 5_000))

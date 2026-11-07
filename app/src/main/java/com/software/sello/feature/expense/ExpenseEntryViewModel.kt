@@ -56,6 +56,7 @@ import com.software.sello.presentation.submission.Settled
 import com.software.sello.presentation.submission.Submission
 import java.time.LocalDate
 import java.time.YearMonth
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -64,6 +65,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -106,7 +108,9 @@ class ExpenseEntryViewModel(
     private val money: MoneyFormatter,
     private val corrections: Corrections,
     private val schedules: ScheduleCommands,
-    private val scheduleReads: ScheduleReads
+    private val scheduleReads: ScheduleReads,
+    /** Where the frequent expenses are grouped, off the main thread. */
+    private val computation: CoroutineDispatcher
 ) : ViewModel() {
     private val correctionText = CarryCorrectionText(money)
 
@@ -253,6 +257,7 @@ class ExpenseEntryViewModel(
     /**
      * Every group of the last 90 days in the categories the form offers, most repeated
      * first. Empty until both are read, and when the usual amount could not be worked out.
+     * Up to 5.000 expenses are grouped on [computation], never on the main thread.
      */
     private val groups: StateFlow<List<FrequentExpense>> =
         combine(recent, month) { expenses, month ->
@@ -269,7 +274,7 @@ class ExpenseEntryViewModel(
                     is Outcome.Success -> read.value
                 }
             }
-        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+        }.flowOn(computation).stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val state: StateFlow<ExpenseEntryState> =
         combine(

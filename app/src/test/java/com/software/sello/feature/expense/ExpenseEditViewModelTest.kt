@@ -129,7 +129,7 @@ class ExpenseEditViewModelTest {
     private fun form(saved: SavedStateHandle = editing()) =
         ExpenseEntryViewModel(saved, commands, reads, snapshots, clock, {
             uuid(nextId++)
-        }, money, corrections, schedules, scheduleBook)
+        }, money, corrections, schedules, scheduleBook, Dispatchers.Main)
 
     /** The form opened on [expense], with it in storage and its months read. */
     private fun opened(
