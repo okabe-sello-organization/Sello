@@ -42,7 +42,7 @@ internal fun SmallExpensesSlip(
 ) {
     when (small) {
         ResumenSmallExpenses.Unreadable -> StatusSlip(
-            kind = StatusKind.LoadFailed(),
+            kind = StatusKind.LoadFailed(stringResource(R.string.resumen_small_unreadable_title)),
             message = stringResource(R.string.resumen_small_unreadable),
             modifier = Modifier.testTag(RESUMEN_SMALL_UNREADABLE_TAG),
             action = StatusAction(StatusSlipDefaults.retryLabel, onClick = onRetry)

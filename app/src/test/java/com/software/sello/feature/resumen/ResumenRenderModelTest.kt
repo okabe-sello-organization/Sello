@@ -12,12 +12,14 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.OverallBudget
 import com.software.sello.domain.model.PastVerdict
 import com.software.sello.domain.model.ResumenSnapshot
+import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.SpendingComparison
 import com.software.sello.domain.model.SpendingDirection
 import com.software.sello.domain.model.SpendingMonth
 import com.software.sello.domain.model.WeekdayPattern
 import com.software.sello.domain.model.WeekdaySpending
+import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ResumenSnapshotState
 import com.software.sello.feature.expense.categoryIn
@@ -61,9 +63,12 @@ internal fun resumenSnapshot(spent: Long = 30_000, income: Long = 150_000): Resu
 class ResumenRenderModelTest {
     private val render = ResumenRenderModel(resumenMoney(), testDateLabels(), testMonthNames())
 
-    /** Rendered in October 2026, the fixture's month. */
-    private fun ResumenRenderModel.render(state: ResumenSnapshotState) =
-        render(state, YearMonth.of(2026, 10))
+    /** Rendered in October 2026, the fixture's month, with the default Gastos hormiga line. */
+    private fun ResumenRenderModel.render(
+        state: ResumenSnapshotState,
+        current: YearMonth = YearMonth.of(2026, 10),
+        line: PreferenceRead<SmallExpenseLine> = PreferenceRead.Ready(SmallExpenseLine.DEFAULT)
+    ) = render(state, current, line)
 
     @Test
     fun cashFlowAndPlanningCapacityAreDifferentExactAmounts() {

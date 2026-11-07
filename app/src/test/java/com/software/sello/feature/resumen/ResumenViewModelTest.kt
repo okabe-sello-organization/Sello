@@ -14,6 +14,7 @@ import com.software.sello.domain.model.ResumenSnapshot
 import com.software.sello.domain.model.Schedule
 import com.software.sello.domain.model.SchedulePause
 import com.software.sello.domain.model.ScheduledEntry
+import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.TransactionAmount
@@ -30,6 +31,7 @@ import com.software.sello.domain.port.SuggestionPreferences
 import com.software.sello.feature.expense.categoryId
 import com.software.sello.feature.recurrence.HandScheduleReads
 import com.software.sello.feature.recurrence.scheduleId
+import com.software.sello.feature.settings.HandSmallExpenses
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
@@ -57,6 +59,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -68,6 +71,7 @@ class ResumenViewModelTest {
     private val suggestions = HandSuggestions()
     private val clock = HandFinancialClock("2026-10-22")
     private val schedules = HandScheduleReads()
+    private val smallExpenses = HandSmallExpenses()
 
     @Before
     fun main() = Dispatchers.setMain(UnconfinedTestDispatcher())
@@ -83,6 +87,7 @@ class ResumenViewModelTest {
         testDateLabels(),
         testMonthNames(),
         suggestions,
+        smallExpenses,
         schedules,
         clock
     )
@@ -125,6 +130,45 @@ class ResumenViewModelTest {
         session.select(september)
         assertEquals(ResumenState.Loading, model.state.value)
         assertEquals(1, reads.active)
+    }
+
+    @Test
+    fun aSavedGastosHormigaLineReachesTheSlipWithoutReadingTheMonthAgain() = runTest {
+        val model = model()
+        watch(model)
+        reads.of(october).value = ReadState.Ready(smallSnapshot())
+
+        // 5 × 3.000 = 15.000 at or under 20.000.
+        val shown = (model.state.value as ResumenState.Ready).smallExpenses
+            as ResumenSmallExpenses.Shown
+        assertEquals("15.000", shown.total.digits)
+
+        // A line of 2.000 leaves none of them small: no slip.
+        smallExpenses.read.value = PreferenceRead.Ready(SmallExpenseLine.of(2_000)!!)
+        assertNull((model.state.value as ResumenState.Ready).smallExpenses)
+        assertEquals(1, reads.started)
+    }
+
+    @Test
+    fun reintentarReadsTheLineAgainToo() = runTest {
+        smallExpenses.read.value =
+            PreferenceRead.Failed(PreferenceFailure.Unavailable, null)
+        val model = model()
+        watch(model)
+        reads.of(october).value = ReadState.Ready(smallSnapshot())
+        assertEquals(
+            ResumenSmallExpenses.Unreadable,
+            (model.state.value as ResumenState.Ready).smallExpenses
+        )
+        val asked = smallExpenses.observations
+
+        model.onAction(ResumenAction.Retry)
+        smallExpenses.read.value = PreferenceRead.Ready(SmallExpenseLine.DEFAULT)
+
+        assertEquals(asked + 1, smallExpenses.observations)
+        assertTrue(
+            (model.state.value as ResumenState.Ready).smallExpenses is ResumenSmallExpenses.Shown
+        )
     }
 
     @Test

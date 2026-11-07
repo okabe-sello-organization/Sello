@@ -785,7 +785,8 @@
         <item quantity="one">%1$d gasto</item>
         <item quantity="other">%1$d gastos</item>
     </plurals>
-    <string name="resumen_small_unreadable">No pudimos leer tu línea de gastos hormiga. Tus gastos siguen guardados; intenta de nuevo.</string>
+    <string name="resumen_small_unreadable_title">No pudimos leer tus gastos hormiga</string>
+    <string name="resumen_small_unreadable">Tu línea no se pudo leer. Tus gastos siguen guardados; intenta de nuevo.</string>
     <string name="resumen_small_older">No pudimos leer tu línea de gastos hormiga de nuevo. Usamos la última: hasta %1$s.</string>
     <string name="resumen_weekdays_title">¿Qué días gastas más?</string>
     <string name="resumen_weekdays_answer">Los %1$s</string>

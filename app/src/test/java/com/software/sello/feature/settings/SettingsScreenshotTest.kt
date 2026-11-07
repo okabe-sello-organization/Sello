@@ -69,6 +69,8 @@ class SettingsScreenshotTest {
         appearanceLoaded = true,
         orderingLoaded = true,
         investmentsLoaded = true,
+        smallExpensesLoaded = true,
+        smallExpenseLine = "20.000",
         schedules = ScheduleCountLine.Read(payments = 4, incomes = 1),
         rate = RateLine.Read("4.150,25", LocalDate.of(2026, 10, 20)),
         // A phone on Android 12 or later with a blue wallpaper, as the mock's.
@@ -115,6 +117,14 @@ class SettingsScreenshotTest {
     @Test fun loadedLight() = capture("loaded", Look())
 
     @Test fun loadedDark() = capture("loaded", Look(dark = true))
+
+    /** Resumen's section: Gastos hormiga and its line (SELLO-194). */
+    @Test
+    fun resumenLight() = capture("resumen", Look(), reveal = SETTINGS_SMALL_EXPENSES_TAG)
+
+    @Test
+    fun resumenDark() =
+        capture("resumen", Look(dark = true), reveal = SETTINGS_SMALL_EXPENSES_TAG)
 
     @Test fun loadingLight() = capture("loading", Look(), loaded.copy(loading = true))
 
