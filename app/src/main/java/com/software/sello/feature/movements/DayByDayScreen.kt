@@ -50,8 +50,8 @@ import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.CategoryCircle
 import com.software.sello.designsystem.component.ChipFlow
 import com.software.sello.designsystem.component.MoneyText
-import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SearchField
+import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloChip
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
@@ -242,7 +242,6 @@ private fun MonthNews(
                     onClick = onRecord
                 )
             )
-
         } else {
             // A chip that finds nothing says so as the other news states do, under the chips.
             if (state.days.isEmpty()) {

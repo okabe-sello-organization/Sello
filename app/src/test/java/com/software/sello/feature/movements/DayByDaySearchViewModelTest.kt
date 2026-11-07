@@ -349,9 +349,12 @@ class DayByDaySearchViewModelTest {
 
         // Same query: no pause before reading it under the new chip.
         assertEquals(MovementFilter.Incomes, model.ready.filter)
-        assertEquals(listOf<Movement>(rappi[4]), model.ready.months.flatMap { it.rows }.map { row ->
-            rappi.first { it is Movement.Received && it.income.id.value == row.row.id }
-        })
+        assertEquals(
+            listOf<Movement>(rappi[4]),
+            model.ready.months.flatMap { it.rows }.map { row ->
+                rappi.first { it is Movement.Received && it.income.id.value == row.row.id }
+            }
+        )
         assertEquals("rappi" to MovementFilter.Incomes, search.asked.last())
     }
 

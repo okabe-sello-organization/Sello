@@ -109,8 +109,9 @@ class MovementSearchReadTest {
 
     private fun SearchPage.shown() = movements.map {
         when (it) {
-            is Movement.Spent -> "${it.date} ${it.expense.note?.value} ${it.category.name.value} " +
-                "${it.expense.amount.money.minorUnits}"
+            is Movement.Spent ->
+                "${it.date} ${it.expense.note?.value} ${it.category.name.value} " +
+                    "${it.expense.amount.money.minorUnits}"
 
             is Movement.Received -> "${it.date} + ${it.income.amount.money.minorUnits}"
         }

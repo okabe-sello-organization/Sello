@@ -97,8 +97,7 @@ class DayByDayViewModel(
             .map { month to it }
     }.shareIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), replay = 1)
 
-    private fun monthOf(month: YearMonth) =
-        observed.filter { it.first == month }.map { it.second }
+    private fun monthOf(month: YearMonth) = observed.filter { it.first == month }.map { it.second }
 
     val state: StateFlow<DayByDayState> = combine(session.selectedMonth, chip) { month, chip ->
         Request(month, chip)

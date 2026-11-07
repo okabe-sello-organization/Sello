@@ -114,11 +114,8 @@ sealed interface SearchState {
     data class Loading(val words: String, val filter: MovementFilter) : SearchState
 
     /** Nothing was ever shown for this search and chip; the query stays in the field. */
-    data class Failed(
-        val words: String,
-        val filter: MovementFilter,
-        val problem: DayByDayProblem
-    ) : SearchState
+    data class Failed(val words: String, val filter: MovementFilter, val problem: DayByDayProblem) :
+        SearchState
 
     /**
      * [months] is what is listed so far, newest first. [amount] is the query read as an

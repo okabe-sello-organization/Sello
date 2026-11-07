@@ -1,8 +1,8 @@
 package com.software.sello.data.repository
 
 import com.software.sello.data.local.SearchKey
-import com.software.sello.domain.model.IncomeId
 import com.software.sello.domain.model.Income
+import com.software.sello.domain.model.IncomeId
 import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Note
@@ -91,7 +91,9 @@ class IncomeMatchTest {
 
     @Test
     fun anAmountQueryStillMatchesAsWords() {
-        assertTrue(finds(income("Factura 18.000 de octubre", IncomeSource.Transfer, 5_000), "18.000"))
+        assertTrue(
+            finds(income("Factura 18.000 de octubre", IncomeSource.Transfer, 5_000), "18.000")
+        )
     }
 
     @Test

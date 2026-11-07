@@ -83,6 +83,7 @@ class RoomMovementSearch(private val database: SelloDatabase) : MovementSearch {
         val found = if (incomes) {
             when (val read = dao.allIncomes().decodeAll { it.toDomain() }) {
                 is Outcome.Failure -> return damaged(read.error)
+
                 is Outcome.Success -> read.value.filter {
                     IncomeMatch.finds(it, key, query, sourceNames)
                 }.map(Movement::Received).sortedWith(Movement.listOrder)
@@ -99,7 +100,12 @@ class RoomMovementSearch(private val database: SelloDatabase) : MovementSearch {
             emptyList()
         }
         val totals = when (
-            val sums = SearchTotalsPolicy.of(amounts, found.map { it.date to it.income.amount.money })
+            val sums = SearchTotalsPolicy.of(
+                amounts,
+                found.map {
+                    it.date to it.income.amount.money
+                }
+            )
         ) {
             is Outcome.Failure -> return Outcome.Failure(
                 when (sums.error) {
@@ -151,7 +157,11 @@ class RoomMovementSearch(private val database: SelloDatabase) : MovementSearch {
             hasCursor = after != null,
             date = after?.let { EffectiveDates.storedText(it.date) }.orEmpty(),
             createdAt = after?.createdAtMillis ?: 0L,
-            cursorKind = if (after is Movement.Received) MovementKind.INCOME else MovementKind.EXPENSE,
+            cursorKind = if (after is Movement.Received) {
+                MovementKind.INCOME
+            } else {
+                MovementKind.EXPENSE
+            },
             sequence = after?.sequenceNumber ?: 0L,
             limit = count
         )
