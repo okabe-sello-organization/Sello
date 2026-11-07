@@ -120,7 +120,8 @@ class ExpenseFormViewModelTest {
         money,
         corrections,
         schedules,
-        scheduleBook
+        scheduleBook,
+        Dispatchers.Main
     )
 
     /** A form over a month with the given categories, already read. */
@@ -1159,5 +1160,172 @@ class ExpenseFormViewModelTest {
         assertEquals(RepeatKind.Weeks, restored.now.repeat.sheet?.kind)
         assertEquals(2, restored.now.repeat.sheet?.interval)
         assertNull(restored.now.repeat.choice)
+    }
+
+    // --- Frequent expenses (SELLO-199) ---
+
+    /** Three lunches in Alimentación at 17.500, 21.000 and 18.000: usually 18.000. */
+    private fun lunches() {
+        listOf(
+            storedExpense(200, 1, "2026-10-01", 17_500, "Almuerzo"),
+            storedExpense(201, 1, "2026-10-08", 21_000, "almuerzo"),
+            storedExpense(202, 1, "2026-10-15", 18_000, "Almuerzo"),
+            storedExpense(203, 2, "2026-10-16", 4_000, "Almendras")
+        ).forEach { reads.stored[it.id] = it }
+    }
+
+    private fun ExpenseEntryViewModel.pickFrequent(category: Int, key: String) =
+        onAction(ExpenseEntryAction.FrequentPicked(uuid(category), key))
+
+    @Test
+    fun theLast90DaysAreReadOnceBesideTheFormAndOfferWhatIsFrequent() {
+        lunches()
+        val form = ready(food, coffee)
+
+        assertEquals(
+            listOf(LocalDate.parse("2026-07-24") to LocalDate.parse("2026-10-22")),
+            reads.ranges
+        )
+        val lunch = form.now.frequent.single()
+        assertEquals(
+            listOf("Almuerzo", "Alimentación", "restaurant", "3", "18.000"),
+            listOf(
+                lunch.note,
+                lunch.categoryName,
+                lunch.iconKey,
+                lunch.count.toString(),
+                lunch.usual.digits
+            )
+        )
+        assertFalse(form.now.frequentOpen)
+    }
+
+    @Test
+    fun aTapFillsTheFormClosesTheSheetAndSavesNothingUntilAnotarGasto() {
+        lunches()
+        val form = ready(food, coffee)
+
+        form.onAction(ExpenseEntryAction.OpenFrequent)
+        val open = form.now.frequentOpen
+        form.pickFrequent(1, "almuerzo")
+        val filled = form.now
+
+        assertTrue(open)
+        assertFalse(filled.frequentOpen)
+        assertEquals(shown("18.000"), filled.amount)
+        assertEquals(uuid(1) to "Almuerzo", filled.categoryId to filled.note)
+        assertTrue(filled.canSubmit)
+        assertTrue(commands.created.isEmpty())
+    }
+
+    @Test
+    fun aFillThenAnEditSavesWhatWasEditedOnceEvenIfSentTwice() {
+        lunches()
+        val form = ready(food, coffee)
+        commands.hold = CompletableDeferred()
+
+        form.pickFrequent(1, "almuerzo")
+        form.onAction(ExpenseEntryAction.Backspace)
+        form.type("5")
+        form.pick(2)
+        form.submit()
+        form.submit()
+        commands.hold?.complete(Unit)
+
+        val command = commands.created.single()
+        assertEquals(pesos(18_005), command.amount)
+        assertEquals(categoryId(2), command.categoryId)
+        assertEquals("Almuerzo", command.note?.value)
+    }
+
+    @Test
+    fun whileSavingAPickChangesNothing() {
+        lunches()
+        val form = ready(food, coffee)
+        commands.hold = CompletableDeferred()
+        form.type("5000")
+        form.pick(2)
+        form.submit()
+
+        form.pickFrequent(1, "almuerzo")
+        val during = form.now
+        commands.hold?.complete(Unit)
+
+        assertTrue(during.busy)
+        assertEquals(shown("5.000"), during.amount)
+        assertEquals(uuid(2), during.categoryId)
+        assertEquals(pesos(5_000), commands.created.single().amount)
+    }
+
+    @Test
+    fun aSlowReadNeverHoldsTheFormAndAFailedOneHidesTheButton() {
+        lunches()
+        reads.rangeHold = CompletableDeferred()
+        val slow = ready(food, coffee)
+        val waiting = slow.now
+        reads.rangeHold?.complete(Unit)
+        reads.rangeHold = null
+        reads.rangeFailure = StorageFailure.Unavailable("SQLiteException")
+        val failed = ready(food, coffee)
+
+        assertFalse(waiting.loading || waiting.loadFailed)
+        assertTrue(waiting.frequent.isEmpty())
+        assertEquals(1, slow.now.frequent.size)
+        assertFalse(failed.now.loading || failed.now.loadFailed)
+        assertTrue(failed.now.frequent.isEmpty())
+        failed.onAction(ExpenseEntryAction.OpenFrequent)
+        assertFalse(failed.now.frequentOpen)
+    }
+
+    @Test
+    fun aReadThatLeftSomeOutOffersNothingRatherThanAPartForTheWhole() {
+        lunches()
+        reads.rangeLeftSomeOut = true
+
+        assertTrue(ready(food, coffee).now.frequent.isEmpty())
+    }
+
+    @Test
+    fun anArchivedCategorysExpensesAreNotOffered() {
+        lunches()
+        val oldFood = categoryIn(1, "Alimentación", 900_000, archived = true)
+        val form = ready(oldFood, coffee)
+
+        assertTrue(form.now.frequent.isEmpty())
+        form.pickFrequent(1, "almuerzo")
+        assertNull(form.now.amount)
+        assertNull(form.now.categoryId)
+    }
+
+    @Test
+    fun theComposerSuggestsPastNotesAndPickingOneFillsAllThree() {
+        lunches()
+        val form = ready(food, coffee)
+
+        form.onAction(ExpenseEntryAction.OpenNote)
+        form.onAction(ExpenseEntryAction.NoteDraftChanged("ALM"))
+        val suggested = form.now.noteSuggestions.map { it.note to it.usual.digits }
+        form.pickFrequent(2, "almendras")
+
+        // Most used first: three lunches, then the almonds bought once.
+        assertEquals(listOf("Almuerzo" to "18.000", "Almendras" to "4.000"), suggested)
+        assertNull(form.now.noteDraft)
+        assertEquals("Almendras", form.now.note)
+        assertEquals(uuid(2) to shown("4.000"), form.now.categoryId to form.now.amount)
+        assertTrue(commands.created.isEmpty())
+    }
+
+    @Test
+    fun anOpenSheetComesBackAfterTheProcessIsKilled() {
+        lunches()
+        val saved = SavedStateHandle()
+        val form = ready(food, coffee, saved = saved)
+        form.onAction(ExpenseEntryAction.OpenFrequent)
+
+        val restored = ready(food, coffee, saved = saved.afterProcessDeath())
+
+        assertTrue(restored.now.frequentOpen)
+        restored.onAction(ExpenseEntryAction.CloseFrequent)
+        assertFalse(restored.now.frequentOpen)
     }
 }

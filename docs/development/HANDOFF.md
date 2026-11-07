@@ -4,8 +4,8 @@
 > Project permissions and working rules live in [AGENTS.md](../../AGENTS.md),
 > subject to the user's current instructions.
 
-**Snapshot:** 2026-11-06 · **Product baseline:** `main`; the release candidate is `0.1.0` from `a20ae90f`, and the [candidate checklist](../release/candidate-checklist.md) leaves only the owner's steps (the [MVP checklist](../release/mvp-checklist.md) is the October record).
-Done: E01–E10, E12, E13, E15–E32, E35 and E37; E33, E34 and E36 are open. The owner dropped E14 and the
+**Snapshot:** 2026-11-07 · **Product baseline:** `main`; the release candidate is `0.1.0` from `a20ae90f`, and the [candidate checklist](../release/candidate-checklist.md) leaves only the owner's steps (the [MVP checklist](../release/mvp-checklist.md) is the October record).
+Done: E01–E10, E12, E13, E15–E32 and E35–E37; E33 and E34 are open. The owner dropped E14 and the
 release tickets SELLO-043 and SELLO-113 on 2026-10-29. Each ticket's
 file under [docs/tickets](../tickets/README.md) and the pull request that closed it carry
 the details, and `python3 scripts/quality/tickets.py status` prints the current board.
@@ -72,6 +72,12 @@ This summary is refreshed when an epic closes and adds no verification claims.
   through the picker or shared through a one-file FileProvider) and Borrar todos los
   datos. Then Lo que se repite, Apariencia (theme, ink swatches), Recibo (category order
   and direction) and Inversiones (starting currency, list order, Dólar rate).
+- Gastos frecuentes ([E36](../tickets/E36-frequent-expenses/README.md)): Anotar's note
+  line ends in ⚡ Frecuentes, a sheet of up to 5 category-and-note pairs recorded 3+
+  times in 90 days (notes folded as search folds them), each with its usual amount, the
+  median of its last 10. The note composer suggests up to 3 past notes that start with
+  what is typed. A tap only fills the form; Anotar gasto saves it. Not when correcting,
+  nor for fixed payments or archived categories.
 - Tinta propia y del sistema ([E37](../tickets/E37-tinta/README.md)): Apariencia › Tinta
   offers Cobalto, Violeta, Sistema and Tuya. One generator in `:design-system` turns
   Cobalto to any hue, keeping every contrast Cobalto's. Tuya is a hue the person picks in
@@ -174,7 +180,7 @@ What each ticket changed is in its pull request, linked from the ticket file
   the walk on the owner's phone, and the go/no-go. Distributing it is a separate,
   owner-authorized action. No release was published, signed with the owner's key or
   tagged; the only tag, `design-system-v1`, marks E32's design, not a release.
-- E33, E34 and E36 (everyday features, #410) are open. Dropped on 2026-10-29: SELLO-043 (carryover release), SELLO-113
+- E33 and E34 (everyday features, #410) are open. Dropped on 2026-10-29: SELLO-043 (carryover release), SELLO-113
   (the `0.2.0` release) and E14 with SELLO-074 (manual TalkBack, Switch Access and
   keyboard walks). The automated accessibility checks from SELLO-033 stay.
 - Open GitHub issues are not tickets.

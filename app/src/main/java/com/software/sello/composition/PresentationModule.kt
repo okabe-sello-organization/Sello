@@ -150,7 +150,13 @@ private fun Module.viewModels() {
     factoryOf(::CategoryDetailViewModel)
     factoryOf(::CategoryExpensesViewModel)
     factoryOf(::DayByDayViewModel)
-    factoryOf(::ExpenseEntryViewModel)
+    // Frequent expenses are grouped off the main thread (SELLO-199).
+    factory {
+        ExpenseEntryViewModel(
+            get(), get(), get(), get(), get(), get(), get(), get(), get(), get(),
+            get<DispatcherProvider>().default
+        )
+    }
     factoryOf(::BulkEntryViewModel)
     factoryOf(::CategoryEditorViewModel)
     factoryOf(::UpcomingPaymentsViewModel)

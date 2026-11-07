@@ -34,11 +34,26 @@ interface ExpenseReads {
         limit: Int
     ): Outcome<ExpensePage, StorageFailure>
 
+    /**
+     * Up to [limit] expenses of any category dated from [from] through [through], both
+     * included, newest day first and, within a day, the one added last first. [limit] is 1
+     * to [MAX_RECENT]; [ExpensePage.next] is not null when more were left out, so a caller
+     * never takes a part for the whole.
+     */
+    suspend fun between(
+        from: LocalDate,
+        through: LocalDate,
+        limit: Int
+    ): Outcome<ExpensePage, StorageFailure>
+
     /** The category of the expense added most recently, or null when there are no expenses. */
     suspend fun lastUsedCategory(): Outcome<CategoryId?, StorageFailure>
 
     companion object {
         /** The most expenses one read may ask for. */
         const val MAX_PAGE = 200
+
+        /** The most expenses [between] may read at once. */
+        const val MAX_RECENT = 5_000
     }
 }
