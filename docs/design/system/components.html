@@ -185,12 +185,13 @@
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-FactLine">
-<h3><code>FactLine</code> <span class="src"><code>component/Paper.kt:622</code></span></h3>
+<h3><code>FactLine</code> <span class="src"><code>component/Paper.kt:625</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>A sentence of context above a form or a list, such as what the dollar rate is for or why there are no goals to move money to: body text in soft ink. Parts of <code>text</code> that matter, such as a figure, can carry their own style, as ink in bold. From the code: <code>bodyLarge</code> in <code>inkSoft</code>.</dd>
+<dt>Purpose</dt><dd>A sentence of context above a form or a list, such as what the dollar rate is for or why there are no goals to move money to: body text in soft ink. Parts of <code>text</code> that matter, such as a figure, can carry their own style, as ink in bold; the <code>bold</code> overload sets the first <code>bold</code> in <code>text</code> in ink and bold, as today's rate or Gastos hormiga line. From the code: <code>bodyLarge</code> in <code>inkSoft</code>.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/goals.html">goals · 7</a> <a class="tag" href="features/investments.html">investments · 8</a> <a class="tag" href="features/recibo.html">recibo · 1</a></dd>
 </dl>
-<pre><code>fun FactLine(text: AnnotatedString, modifier: Modifier = Modifier)</code></pre>
+<pre><code>fun FactLine(text: AnnotatedString, modifier: Modifier = Modifier)
+fun FactLine(text: String, bold: String, modifier: Modifier = Modifier)</code></pre>
 
 <p class="muted">Also visible in screen baselines: <code>goal-detail-framed</code>.</p>
 <figure data-shot="goal-detail-framed" data-module="app" data-caption="Seen in Goal detail: the line under Sellos"></figure>
@@ -480,6 +481,28 @@ fun MoreMenuDropdown(
 
 <p class="muted">Also visible in screen baselines: <code>expense-entry</code>.</p>
 <figure data-shot="expense-entry" data-module="app" data-caption="Seen in Anotar: the amount, chips and lines over the keypad"></figure>
+<div class="gaps"><p>No component capture.</p></div>
+</article>
+<article class="component" id="c-PadForm">
+<h3><code>PadForm</code> <span class="src"><code>component/PadForm.kt:29</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A full-screen form for one value typed on the Sello pad: the title with a close button, then by <code>stage</code> a <a href="#c-SlipSkeleton"><code>SlipSkeleton</code></a>, a LoadFailed <a href="#c-StatusSlip"><code>StatusSlip</code></a> with Reintentar, or <a href="#c-EntryLayout"><code>EntryLayout</code></a> with the amount slip, one fact under it, the action and the pad. Shared by Tasa del dólar and Gastos hormiga's line (SELLO-194).</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/investments.html">investments · 1</a> <a class="tag" href="features/settings.html">settings · 1</a></dd>
+</dl>
+<pre><code>fun PadForm(
+    title: String,
+    stage: PadFormStage,
+    navigationIcon: @Composable () -&gt; Unit,
+    amount: @Composable () -&gt; Unit,
+    fact: @Composable () -&gt; Unit,
+    action: @Composable () -&gt; Unit,
+    keypad: @Composable () -&gt; Unit,
+    loadingModifier: Modifier = Modifier,
+    failedModifier: Modifier = Modifier
+)</code></pre>
+
+<p class="muted">Also visible in screen baselines: <code>small-line-typed</code>.</p>
+<figure data-shot="small-line-typed" data-module="app" data-caption="Seen in Gastos hormiga: the line on the pad, today's line under it, Guardar"></figure>
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-EntryAmountSlip">
