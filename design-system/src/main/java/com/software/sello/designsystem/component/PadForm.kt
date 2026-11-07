@@ -23,8 +23,7 @@ sealed interface PadFormStage {
  * hormiga's line: [title] with [navigationIcon] (a close button), then, by [stage], a
  * skeleton slip, a failed read with Reintentar, or [EntryLayout] with the [amount] slip,
  * one [fact] under it, the [action] and the [keypad]. [modifier] is the scaffold's;
- * [loadingModifier] and
- * [failedModifier] are the skeleton's and the failed slip's.
+ * [loadingModifier] and [failedModifier] are the skeleton's and the failed slip's.
  */
 @Composable
 fun PadForm(
