@@ -28,7 +28,8 @@ data class YearSnapshot(
     /** Null when the year before has nothing recorded on the days compared. */
     val comparison: YearComparison?,
     /** Every category with spending in the year, archived ones included, most first. */
-    val categories: List<YearCategory>
+    val categories: List<YearCategory>,
+    val records: YearRecords
 )
 
 /** How one month of the year stands. */
@@ -70,3 +71,32 @@ data class YearComparison(
 
 /** A category's spending in the year and its [percent] of the year's, whole, half up. */
 data class YearCategory(val category: Category, val spent: Money, val percent: Int)
+
+/**
+ * Récords del año, from finished months only: the month in progress never counts. A month
+ * counts when it has at least one expense; with fewer than two such months there are none.
+ */
+sealed interface YearRecords {
+    /** Fewer than two finished months with expenses: "Con un mes más verás tus récords." */
+    data object TooFew : YearRecords
+
+    /**
+     * [dearest] spent the most, [calmest] the least, [biggest] is the largest single expense
+     * and [mostOver] the category with the most Excedido months, from two up. Ties go to the
+     * earlier month, the earlier expense, or name order.
+     */
+    data class Found(
+        val dearest: YearMonthRecord,
+        val calmest: YearMonthRecord,
+        val biggest: YearExpenseRecord,
+        val mostOver: YearOverRecord?
+    ) : YearRecords
+}
+
+data class YearMonthRecord(val month: YearMonth, val spent: Money)
+
+/** The [expense] and its [category] as last seen, for a note it may not have. */
+data class YearExpenseRecord(val expense: Expense, val category: Category)
+
+/** [category] went over its own limit in [months] finished months. */
+data class YearOverRecord(val category: Category, val months: Int)

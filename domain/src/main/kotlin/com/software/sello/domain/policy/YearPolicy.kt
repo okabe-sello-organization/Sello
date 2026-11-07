@@ -11,12 +11,17 @@ import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.MonthlySnapshot
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.OverallBudget
+import com.software.sello.domain.model.PastVerdict
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.SpendingDirection
 import com.software.sello.domain.model.YearCategory
 import com.software.sello.domain.model.YearComparison
+import com.software.sello.domain.model.YearExpenseRecord
 import com.software.sello.domain.model.YearMonthLine
+import com.software.sello.domain.model.YearMonthRecord
 import com.software.sello.domain.model.YearMonthStatus
+import com.software.sello.domain.model.YearOverRecord
+import com.software.sello.domain.model.YearRecords
 import com.software.sello.domain.model.YearSnapshot
 import com.software.sello.domain.port.FinancialDay
 import java.math.BigDecimal
@@ -162,7 +167,8 @@ object YearPolicy {
                     }
                 },
                 comparison = comparison,
-                categories = categories
+                categories = categories,
+                records = records(snapshots, input.months, currentMonth)
             )
         )
     }
@@ -251,6 +257,58 @@ object YearPolicy {
         return Outcome.Success(ranked.sortedByDescending { it.spent.minorUnits })
     }
 
+    /**
+     * Récords del año from the finished months; the month in progress never counts. The
+     * months compared are those with at least one expense. Ties go to the earlier month, the earlier expense (date, then
+     * the order it was recorded in), or the category's name order.
+     */
+    private fun records(
+        snapshots: List<MonthlySnapshot>,
+        inputs: List<ResumenMonthInput>,
+        currentMonth: YearMonth
+    ): YearRecords {
+        val closed = snapshots.filter { it.month < currentMonth }
+        val finished = closed.filter { month -> month.categories.any { it.expenseCount > 0 } }
+        if (finished.size < MIN_RECORD_MONTHS) return YearRecords.TooFew
+        // maxBy and minBy keep the first of equals: the earlier month.
+        val dearest = finished.maxBy { it.spent.minorUnits }
+        val calmest = finished.minBy { it.spent.minorUnits }
+        val seen = LinkedHashMap<CategoryId, Category>()
+        val overMonths = LinkedHashMap<CategoryId, Int>()
+        val counted = mutableListOf<Expense>()
+        // Every finished month: a negative carry can put one with no expense over its limit.
+        closed.forEach { month ->
+            val ids = month.categories.map { it.category.id }.toSet()
+            // The expenses its spending counts: dated in it, in a category it lists.
+            counted += inputs.first { it.month == month.month }.expenses.filter {
+                YearMonth.from(it.date) == month.month && it.categoryId in ids
+            }
+            month.categories.forEach { line ->
+                seen[line.category.id] = line.category
+                if ((line.budget?.standing as? BudgetStanding.Past)?.verdict == PastVerdict.Over) {
+                    overMonths[line.category.id] = (overMonths[line.category.id] ?: 0) + 1
+                }
+            }
+        }
+        val biggest = counted.sortedWith(compareBy<Expense> { it.date }.thenBy { it.sequence })
+            .maxBy { it.amount.money.minorUnits }
+        val mostOver = overMonths.entries
+            .filter { it.value >= MIN_RECORD_MONTHS }
+            .map { YearOverRecord(seen.getValue(it.key), it.value) }
+            .sortedWith(
+                compareByDescending<YearOverRecord> { it.months }
+                    .thenBy { it.category.name.uniquenessKey }
+                    .thenBy { it.category.id.value }
+            )
+            .firstOrNull()
+        return YearRecords.Found(
+            dearest = YearMonthRecord(dearest.month, dearest.spent),
+            calmest = YearMonthRecord(calmest.month, calmest.spent),
+            biggest = YearExpenseRecord(biggest, seen.getValue(biggest.categoryId)),
+            mostOver = mostOver
+        )
+    }
+
     /** A whole per cent of [whole], half up. */
     private fun percent(part: Money, whole: BigInteger): Int = if (whole.signum() <= 0) {
         0
@@ -267,5 +325,6 @@ object YearPolicy {
         }
 
     private const val MONTHS = 12
+    private const val MIN_RECORD_MONTHS = 2
     private val HUNDRED = BigInteger.valueOf(100)
 }

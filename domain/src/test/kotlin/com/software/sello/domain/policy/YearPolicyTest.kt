@@ -13,12 +13,15 @@ import com.software.sello.domain.model.Income
 import com.software.sello.domain.model.IncomeId
 import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.Money
+import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.PastVerdict
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.SpendingDirection
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.model.YearComparison
+import com.software.sello.domain.model.YearMonthRecord
 import com.software.sello.domain.model.YearMonthStatus
+import com.software.sello.domain.model.YearRecords
 import com.software.sello.domain.model.YearSnapshot
 import com.software.sello.domain.policy.Carry.chain
 import com.software.sello.domain.policy.Carry.comidaInput
@@ -401,5 +404,175 @@ class YearPolicyTest {
         ).errorOrFail()
 
         assertEquals(SnapshotFailure.FutureMonth(YearMonth.of(2026, 11)), failure)
+    }
+
+    // --- Récords del año ---
+
+    private fun found(snapshot: YearSnapshot) = snapshot.records as YearRecords.Found
+
+    private fun noted(date: String, pesos: Long, note: String, category: Int = 1) =
+        expense(date, pesos, category).copy(note = Note.of(note).valueOrFail())
+
+    @Test
+    fun recordsComeFromFinishedMonthsOnly() {
+        // To 6 November: January to October are finished, November is in progress.
+        // Each month in two expenses so that none is above February's 1.200.000.
+        val expenses = listOf(
+            expense("2026-01-10", 650_000), expense("2026-01-20", 650_000), // 1.300.000
+            noted("2026-02-03", 1_200_000, "Matrícula"), expense("2026-02-10", 50_000),
+            expense("2026-03-10", 920_000), expense("2026-03-20", 920_000), // 1.840.000
+            expense("2026-04-10", 645_000), expense("2026-04-20", 645_000), // 1.290.000
+            expense("2026-05-10", 700_000), expense("2026-05-20", 700_000), // 1.400.000
+            expense("2026-06-10", 650_000), expense("2026-06-20", 650_000), // 1.300.000
+            expense("2026-07-10", 810_000), expense("2026-07-20", 810_000), // 1.620.000
+            expense("2026-08-10", 510_000), expense("2026-08-20", 510_000), // 1.020.000
+            expense("2026-09-10", 635_000), expense("2026-09-20", 635_000), // 1.270.000
+            expense("2026-10-10", 735_000), expense("2026-10-20", 735_000), // 1.470.000
+            // In progress: dearer and bigger than any, and still not a record.
+            expense("2026-11-02", 2_500_000)
+        )
+
+        val records = found(read(2026, "2026-11-06", expenses))
+
+        assertEquals(YearMonthRecord(YearMonth.of(2026, 3), Money.cop(1_840_000)), records.dearest)
+        assertEquals(YearMonthRecord(YearMonth.of(2026, 8), Money.cop(1_020_000)), records.calmest)
+        assertEquals(Money.cop(1_200_000), records.biggest.expense.amount.money)
+        assertEquals(LocalDate.parse("2026-02-03"), records.biggest.expense.date)
+        assertEquals("Matrícula", records.biggest.expense.note?.value)
+        assertEquals("Hogar", records.biggest.category.name.value)
+        // Hogar has no limit: nothing went over one.
+        assertNull(records.mostOver)
+    }
+
+    @Test
+    fun theCalmestMonthHasAtLeastOneExpense() {
+        // 2025 is finished; January and December have nothing recorded.
+        val records = found(
+            read(
+                2025,
+                "2026-01-15",
+                listOf(expense("2025-02-10", 300_000), expense("2025-03-10", 200_000))
+            )
+        )
+
+        assertEquals(YearMonthRecord(YearMonth.of(2025, 2), Money.cop(300_000)), records.dearest)
+        assertEquals(YearMonthRecord(YearMonth.of(2025, 3), Money.cop(200_000)), records.calmest)
+    }
+
+    @Test
+    fun theCategoryMostOftenOverItsLimitCountsFromTwoMonths() {
+        val categories = listOf(
+            line(1, "Hogar", null),
+            line(2, "Entretenimiento", 100_000),
+            line(3, "Café", 50_000)
+        )
+        val hogar = (1..12).map { expense("2025-%02d-05".format(it), 400_000) }
+        // Entretenimiento over in four months, Café in two and Café's 40.000 within it.
+        val over = listOf("02", "04", "06", "09").map { expense("2025-$it-12", 150_000, 2) } +
+            listOf("03", "05").map { expense("2025-$it-12", 60_000, 3) } +
+            expense("2025-07-12", 40_000, 3)
+
+        val records = found(read(2025, "2026-01-15", hogar + over, categories = { categories }))
+
+        assertEquals("Entretenimiento", records.mostOver?.category?.name?.value)
+        assertEquals(4, records.mostOver?.months)
+    }
+
+    @Test
+    fun carryCountsTowardsTheMonthsOverTheLimit() {
+        // Comida, base 100.000, carrying from January (SC03): 250.000 in January is over;
+        // February holds 100.000 − 150.000 = −50.000, so nothing spent is over by 50.000;
+        // March holds 100.000 − 50.000 = 50.000, so 80.000 is over, though under the base.
+        // Without carry only January is over, one month: no record.
+        val spent = listOf("2027-01-10" to 250_000L, "2027-03-10" to 80_000L)
+        val snapshot = read(
+            2027,
+            "2027-04-05",
+            spent.map { expense(it.first, it.second, category = 1) },
+            carry = { month ->
+                listOf(comidaInput(listOf(chain(ene)), ene, month, "2027-04-05", spent))
+            },
+            categories = { listOf(line(1, "Comida", 100_000)) }
+        )
+
+        val records = found(snapshot)
+
+        assertEquals("Comida", records.mostOver?.category?.name?.value)
+        assertEquals(3, records.mostOver?.months)
+    }
+
+    @Test
+    fun oneMonthOverItsLimitIsNoRecord() {
+        val categories = listOf(line(1, "Hogar", null), line(2, "Café", 50_000))
+        val expenses = listOf(
+            expense("2025-02-05", 400_000),
+            expense("2025-03-05", 400_000),
+            expense("2025-03-12", 60_000, 2)
+        )
+
+        val records = found(read(2025, "2026-01-15", expenses, categories = { categories }))
+
+        assertNull(records.mostOver)
+    }
+
+    @Test
+    fun tiesGoToTheEarlierMonthTheEarlierExpenseAndNameOrder() {
+        // Listed Café first, so only name order puts Bar ahead.
+        val categories = listOf(
+            line(1, "Hogar", null),
+            line(2, "Café", 10_000),
+            line(3, "Bar", 10_000)
+        )
+        val expenses = listOf(
+            // May and June: 500.000 each, the dearest. February and March: 60.000 of Hogar
+            // and 40.000 below, 100.000 each, the calmest. Four expenses of 250.000.
+            expense("2025-02-20", 60_000),
+            expense("2025-03-20", 60_000),
+            noted("2025-05-03", 250_000, "Primero"),
+            noted("2025-05-04", 250_000, "Segundo"),
+            expense("2025-06-03", 250_000),
+            expense("2025-06-20", 250_000),
+            // Café and Bar each over in two months: 20.000 against 10.000.
+            expense("2025-02-21", 20_000, 2),
+            expense("2025-03-21", 20_000, 2),
+            expense("2025-02-22", 20_000, 3),
+            expense("2025-03-22", 20_000, 3)
+        )
+
+        val records = found(read(2025, "2026-01-15", expenses, categories = { categories }))
+
+        assertEquals(YearMonthRecord(YearMonth.of(2025, 5), Money.cop(500_000)), records.dearest)
+        assertEquals(YearMonthRecord(YearMonth.of(2025, 2), Money.cop(100_000)), records.calmest)
+        assertEquals("Primero", records.biggest.expense.note?.value)
+        assertEquals("Bar", records.mostOver?.category?.name?.value)
+        assertEquals(2, records.mostOver?.months)
+    }
+
+    @Test
+    fun onTheSameDayTheExpenseRecordedFirstIsTheBiggest() {
+        val expenses = listOf(
+            noted("2025-04-04", 300_000, "Antes"),
+            noted("2025-04-04", 300_000, "Después"),
+            expense("2025-05-04", 100_000)
+        )
+
+        val records = found(read(2025, "2026-01-15", expenses))
+
+        assertEquals("Antes", records.biggest.expense.note?.value)
+    }
+
+    @Test
+    fun withOneFinishedMonthThereAreNoRecordsYet() {
+        // January finished, February in progress.
+        val inProgress = read(
+            2026,
+            "2026-02-10",
+            listOf(expense("2026-01-10", 300_000), expense("2026-02-05", 100_000))
+        )
+        // A whole year with spending in December only.
+        val lateStart = read(2025, "2026-01-15", listOf(expense("2025-12-10", 300_000)))
+
+        assertEquals(YearRecords.TooFew, inProgress.records)
+        assertEquals(YearRecords.TooFew, lateStart.records)
     }
 }
