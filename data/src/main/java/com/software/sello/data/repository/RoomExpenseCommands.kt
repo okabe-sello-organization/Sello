@@ -1,6 +1,5 @@
 package com.software.sello.data.repository
 
-import com.software.sello.data.local.SearchKey
 import com.software.sello.data.local.SelloDatabase
 import com.software.sello.data.local.entity.DeletedExpenseEntity
 import com.software.sello.data.local.entity.ExpenseEntity
@@ -16,6 +15,7 @@ import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.policy.EffectiveDates
+import com.software.sello.domain.policy.SearchKey
 import com.software.sello.domain.port.AuditClock
 import com.software.sello.domain.port.CommandOutcome.Rejected
 import com.software.sello.domain.port.CommandRejection.Specific

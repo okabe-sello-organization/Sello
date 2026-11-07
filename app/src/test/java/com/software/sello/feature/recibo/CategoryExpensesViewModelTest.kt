@@ -102,7 +102,8 @@ class CategoryExpensesViewModelTest {
     private fun TestScope.started(
         saved: SavedStateHandle = SavedStateHandle(),
         ready: Boolean = true,
-        archived: Boolean = false
+        archived: Boolean = false,
+        note: String = ""
     ): CategoryExpensesViewModel {
         if (ready) {
             snapshots.ready(
@@ -142,7 +143,7 @@ class CategoryExpensesViewModelTest {
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
                 model.state.collect {}
             }
-        model.onAction(CategoryExpensesAction.Show(uuid(1)))
+        model.onAction(CategoryExpensesAction.Show(uuid(1), note))
         runCurrent()
         return model
     }
@@ -249,6 +250,25 @@ class CategoryExpensesViewModelTest {
         hold!!.complete(Unit)
         runCurrent()
         assertEquals(40, model.ready.rows.size)
+    }
+
+    @Test
+    fun openingForANoteSearchesForIt() = runTest {
+        val model = started(note = "Mercado D1")
+
+        assertEquals("Mercado D1", model.query.value)
+        assertEquals("Mercado D1", requests.last().second)
+    }
+
+    @Test
+    fun aRestoredSearchIsNotReplacedByTheNoteItWasOpenedFor() = runTest {
+        val saved = SavedStateHandle(
+            mapOf("expenseCategory" to uuid(1), "expenseSearch" to "mer")
+        )
+        val model = started(saved, note = "Mercado D1")
+
+        assertEquals("mer", model.query.value)
+        assertEquals("mer", requests.last().second)
     }
 
     @Test

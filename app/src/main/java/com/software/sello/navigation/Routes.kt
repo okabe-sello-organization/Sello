@@ -121,7 +121,7 @@ data object ResetRoute
 data class ResumenCategoryRoute(val categoryId: String)
 
 @Serializable
-data class CategoryExpensesRoute(val categoryId: String)
+data class CategoryExpensesRoute(val categoryId: String, val search: String = "")
 
 @Serializable
 data object IncomeHistoryRoute

@@ -1,11 +1,17 @@
 package com.software.sello.feature.recibo
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -13,12 +19,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import com.software.sello.R
 import com.software.sello.designsystem.component.ChartPeriod
 import com.software.sello.designsystem.component.ChartPoint
@@ -39,6 +52,7 @@ import com.software.sello.presentation.carry.carryLabel
 import com.software.sello.presentation.count.countText
 import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.month.MonthNames
+import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
 
@@ -47,7 +61,8 @@ internal fun CategoryInsightSections(
     state: CategoryDetailState.Ready,
     months: MonthNames,
     dates: DateLabels,
-    onAction: (CategoryDetailAction) -> Unit
+    onAction: (CategoryDetailAction) -> Unit,
+    onShowRepeated: (note: String) -> Unit
 ) {
     when (val insights = state.insights) {
         DetailInsightsState.Loading -> SlipSkeleton(Modifier.testTag("detail:insights-loading"))
@@ -63,6 +78,9 @@ internal fun CategoryInsightSections(
 
         is DetailInsightsState.Ready -> {
             val figures = insights.figures
+            if (figures.repeats.isNotEmpty()) {
+                CategoryRepeats(state.month, figures.repeats, months, onShowRepeated)
+            }
             if (state.category.expenseCount > 0) {
                 CategoryNumbers(state, figures, months, dates)
                 CategoryWeeks(state.category.id, figures)
@@ -71,6 +89,92 @@ internal fun CategoryInsightSections(
                 CategoryHistory(state.category.id, figures, dates)
             }
         }
+    }
+}
+
+/** Lo que más se repite (SELLO-195): a small table, each row opening its note's expenses. */
+@Composable
+private fun CategoryRepeats(
+    month: YearMonth,
+    repeats: List<DetailRepeat>,
+    months: MonthNames,
+    onShow: (note: String) -> Unit
+) {
+    Slip(Modifier.fillMaxWidth().testTag(CATEGORY_DETAIL_REPEATS_TAG)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            DetailHeading(stringResource(R.string.category_detail_repeats))
+            SoftDetail(months.inSentence(month))
+        }
+        Spacer(Modifier.height(SelloTheme.spacing.sm))
+        val column = MaterialTheme.typography.labelMedium.copy(
+            fontWeight = SelloTheme.type.weight.strong
+        )
+        Row(Modifier.fillMaxWidth().clearAndSetSemantics {}) {
+            Text(
+                stringResource(R.string.category_detail_repeats_note_col),
+                Modifier.weight(1f),
+                style = column,
+                color = SelloTheme.colors.inkSoft
+            )
+            Text(
+                stringResource(R.string.category_detail_repeats_times_col),
+                Modifier.width(RepeatCountWidth),
+                style = column,
+                color = SelloTheme.colors.inkSoft,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                stringResource(R.string.category_detail_repeats_total_col),
+                Modifier.widthIn(min = RepeatTotalWidth),
+                style = column,
+                color = SelloTheme.colors.inkSoft,
+                textAlign = TextAlign.End
+            )
+        }
+        HorizontalDivider(color = SelloTheme.colors.paperAlt)
+        val open = stringResource(R.string.category_detail_repeat_open)
+        repeats.forEachIndexed { index, repeat ->
+            if (index > 0) HorizontalDivider(color = SelloTheme.colors.paperAlt)
+            val spoken = pluralStringResource(
+                R.plurals.category_detail_repeat_spoken,
+                repeat.count,
+                repeat.note,
+                countText(repeat.count),
+                repeat.total.spoken
+            )
+            Row(
+                Modifier.fillMaxWidth()
+                    .heightIn(min = SelloTheme.spacing.minTouchTarget)
+                    .clickable(role = Role.Button, onClickLabel = open) { onShow(repeat.note) }
+                    .semantics(mergeDescendants = true) { contentDescription = spoken }
+                    .testTag(categoryRepeatTag(index)),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    repeat.note,
+                    Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    countText(repeat.count),
+                    Modifier.width(RepeatCountWidth),
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontWeight = SelloTheme.type.weight.emphasis
+                    ),
+                    textAlign = TextAlign.Center
+                )
+                Box(
+                    Modifier.widthIn(min = RepeatTotalWidth),
+                    contentAlignment = Alignment.CenterEnd
+                ) {
+                    MoneyText(repeat.total, textStyle = MaterialTheme.typography.labelLarge)
+                }
+            }
+        }
+        Spacer(Modifier.height(SelloTheme.spacing.sm))
+        ChartDetail(stringResource(R.string.category_detail_repeats_note))
     }
 }
 
@@ -365,6 +469,12 @@ private fun DetailHeading(text: String) = Text(
     }
 )
 
+private val RepeatCountWidth = 52.dp
+private val RepeatTotalWidth = 96.dp
+
 private val DetailLocale = Locale.forLanguageTag("es-CO")
 
 const val CATEGORY_DETAIL_HISTORY_CARRY_TAG = "detail:history-carry"
+const val CATEGORY_DETAIL_REPEATS_TAG = "detail:repeats"
+
+fun categoryRepeatTag(index: Int) = "detail:repeat:$index"

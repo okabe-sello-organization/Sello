@@ -42,6 +42,9 @@ data class DetailHistoryMonth(
     val carry: CarryFigures? = null
 )
 
+/** A note the month repeats: how many expenses carry it and what they add up to. */
+data class DetailRepeat(val note: String, val count: Int, val total: MoneyTextValue)
+
 enum class DetailComparisonDirection { Higher, Lower, Equal }
 
 data class DetailInsights(
@@ -61,7 +64,8 @@ data class DetailInsights(
      * While nothing can be spent per day because the category is over: by how much, so a
      * zero allowance never hides the deficit (ADR 0020 CP15).
      */
-    val allowanceDeficit: MoneyTextValue? = null
+    val allowanceDeficit: MoneyTextValue? = null,
+    val repeats: List<DetailRepeat> = emptyList()
 )
 
 class CategoryInsightsRenderModel(private val money: MoneyFormatter) {
@@ -100,7 +104,10 @@ class CategoryInsightsRenderModel(private val money: MoneyFormatter) {
         allowanceDeficit = snapshot.budget.categories
             .singleOrNull { it.category.id == snapshot.categoryId }?.budget?.remaining
             ?.takeIf { it.minorUnits < 0 && snapshot.allowance?.amount?.minorUnits == 0L }
-            ?.let(money::magnitude)
+            ?.let(money::magnitude),
+        repeats = snapshot.repeats.map {
+            DetailRepeat(it.note.value, it.count, money.format(it.total))
+        }
     )
 
     private fun history(snapshot: CategoryInsights): List<DetailHistoryMonth> {

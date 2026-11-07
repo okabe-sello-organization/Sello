@@ -9,6 +9,8 @@ import com.software.sello.domain.model.Expense
 import com.software.sello.domain.model.ExpenseId
 import com.software.sello.domain.model.IconKey
 import com.software.sello.domain.model.Money
+import com.software.sello.domain.model.Note
+import com.software.sello.domain.model.RepeatedNote
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.FinancialDay
@@ -44,9 +46,18 @@ class CategoryInsightsPolicyTest {
             false
         )
     )
-    private fun expense(n: Int, day: String, pesos: Long, categoryId: CategoryId = id) = Expense(
+    private fun expense(
+        n: Int,
+        day: String,
+        pesos: Long,
+        categoryId: CategoryId = id,
+        note: String? = null
+    ) = Expense(
         ExpenseId.of(uuid(100 + n)).valueOrFail(), categoryId, LocalDate.parse(day), n.toLong(),
-        TransactionAmount.of(Money.cop(pesos)).valueOrFail(), null, 1, stamp, stamp
+        TransactionAmount.of(
+            Money.cop(pesos)
+        ).valueOrFail(),
+        Note.of(note).valueOrFail(), 1, stamp, stamp
     )
     private fun read(
         expenses: List<Expense> = emptyList(),
@@ -153,6 +164,23 @@ class CategoryInsightsPolicyTest {
         assertEquals(ExpenseId.of(uuid(103)).valueOrFail(), result.largestExpense!!.id)
         assertEquals(DayOfWeek.THURSDAY, result.mostExpensiveWeekday)
         assertEquals(22, result.elapsedDays)
+    }
+
+    @Test
+    fun repeatsCountTheSelectedMonthOnlyAndThisCategoryOnly() {
+        val other = CategoryId.of(uuid(2)).valueOrFail()
+        val snapshot = read(
+            listOf(
+                expense(1, "2026-10-02", 20_000, note = "Rappi"),
+                expense(2, "2026-10-25", 20_000, note = "Rappi"),
+                expense(3, "2026-09-15", 20_000, note = "Rappi"),
+                expense(4, "2026-10-03", 900_000, other, "Rappi")
+            )
+        ).valueOrFail()
+        assertEquals(
+            listOf(RepeatedNote(Note.of("Rappi").valueOrFail()!!, 2, Money.cop(40_000))),
+            snapshot.repeats
+        )
     }
 
     @Test

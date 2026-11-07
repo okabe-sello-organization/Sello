@@ -2,6 +2,7 @@ package com.software.sello.data.local
 
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.software.sello.domain.policy.SearchKey
 
 /**
  * Version 9 (SELLO-165) adds what long histories need, all derived: `expense.search_key`,

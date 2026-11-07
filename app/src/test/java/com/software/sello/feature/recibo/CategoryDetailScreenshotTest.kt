@@ -376,6 +376,24 @@ class CategoryDetailScreenshotTest {
         announcement = true
     )
 
+    /** Lo que más se repite (SELLO-195), the mock's three rows, right after two latest expenses. */
+    private val repeating = ready.copy(
+        expenses = ExpenseListState.Rows(rows.take(2), more = false),
+        insights = DetailInsightsState.Ready(
+            insights.copy(
+                repeats = listOf(
+                    DetailRepeat("Mercado D1", 4, plain("385.600")),
+                    DetailRepeat("Almuerzo", 9, plain("162.000")),
+                    DetailRepeat("Rappi, almuerzo", 6, plain("123.600"))
+                )
+            )
+        )
+    )
+
+    @Test fun repeatsClaro() = shot("repeats", repeating, dark = false)
+
+    @Test fun repeatsOscuro() = shot("repeats", repeating, dark = true)
+
     private val checking = ready.copy(deleteProblem = DeleteProblem.Unknown, checkingDelete = true)
 
     @Test fun deleteCheckingClaro() = shot("delete-checking", checking, dark = false)
