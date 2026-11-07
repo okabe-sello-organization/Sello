@@ -6,12 +6,14 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
 import com.software.sello.captureStill
 import com.software.sello.designsystem.theme.SelloInk
+import com.software.sello.domain.model.YearRecords
 import com.software.sello.domain.port.ReadState
 import com.software.sello.navigation.ShellScreen
 import com.software.sello.navigation.octoberShell
 import com.software.sello.presentation.month.monthNames
 import com.software.sello.revealed
 import com.software.sello.showSello
+import com.software.sello.testing.testDateLabels
 import com.software.sello.testing.testMoney
 import com.software.sello.testing.testMonthNames
 import org.junit.Rule
@@ -26,7 +28,7 @@ class YearScreenshotTest {
     @get:Rule
     val rule = createComposeRule()
 
-    private val render = YearRenderModel(testMoney(), testMonthNames())
+    private val render = YearRenderModel(testMoney(), testMonthNames(), testDateLabels())
     private val ready = render.render(2026, ReadState.Ready(yearSnapshot())) as YearState.Ready
 
     private fun shot(name: String, shown: YearState, look: Look, reveal: String? = null) {
@@ -88,4 +90,22 @@ class YearScreenshotTest {
     @Test fun emptyLight() = shot("empty", empty, Look())
 
     @Test fun emptyDark() = shot("empty", empty, Look(dark = true))
+
+    @Test fun recordsLight() = shot("records", ready, Look(), "year.records")
+
+    @Test fun recordsDark() = shot("records", ready, Look(dark = true), "year.records")
+
+    private val fewMonths = render.render(
+        2026,
+        ReadState.Ready(yearSnapshot(records = YearRecords.TooFew))
+    )
+
+    @Test fun recordsTooFewLight() = shot("records-too-few", fewMonths, Look(), "year.records")
+
+    @Test fun recordsTooFewDark() = shot(
+        "records-too-few",
+        fewMonths,
+        Look(dark = true),
+        "year.records"
+    )
 }

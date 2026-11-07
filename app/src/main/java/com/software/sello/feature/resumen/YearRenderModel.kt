@@ -4,10 +4,13 @@ import com.software.sello.designsystem.component.ChartPeriod
 import com.software.sello.designsystem.component.ChartPoint
 import com.software.sello.domain.model.PastVerdict
 import com.software.sello.domain.model.YearComparison
+import com.software.sello.domain.model.YearMonthRecord
 import com.software.sello.domain.model.YearMonthStatus
+import com.software.sello.domain.model.YearRecords
 import com.software.sello.domain.model.YearSnapshot
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.YearSnapshotState
+import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.month.MonthNames
 import java.time.LocalDate
@@ -16,7 +19,11 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /** Tu año's figures as shown. Every amount is exact; bars and columns are geometry only. */
-class YearRenderModel(private val money: MoneyFormatter, private val months: MonthNames) {
+class YearRenderModel(
+    private val money: MoneyFormatter,
+    private val months: MonthNames,
+    private val dates: DateLabels
+) {
     fun render(year: Int, state: YearSnapshotState): YearState = when (state) {
         ReadState.Loading -> YearState.Loading(year)
 
@@ -88,6 +95,7 @@ class YearRenderModel(private val money: MoneyFormatter, private val months: Mon
                     share(it.spent.minorUnits, largest)
                 )
             },
+            records = records(snapshot.records),
             empty = snapshot.expenseCount == 0 && snapshot.incomeCount == 0,
             stale = stale,
             asOf = snapshot.asOf.format(
@@ -123,6 +131,30 @@ class YearRenderModel(private val money: MoneyFormatter, private val months: Mon
             )
         )
     }
+
+    private fun records(records: YearRecords): YearRecordSlip? = when (records) {
+        YearRecords.TooFew -> null
+
+        is YearRecords.Found -> YearRecordSlip(
+            dearest = monthRecord(records.dearest),
+            calmest = monthRecord(records.calmest),
+            biggest = records.biggest.let { (expense, category) ->
+                val date = expense.date
+                YearExpenseRecordRow(
+                    amount = money.format(expense.amount.money),
+                    label = expense.note?.value ?: category.name.value,
+                    // The year is the slip's own: "mar 3 feb", never with it.
+                    day = "${dates.weekday(date)} ${dates.shortDay(date, date)}"
+                )
+            },
+            mostOver = records.mostOver?.let {
+                YearOverRecordRow(it.category.name.value, it.months)
+            }
+        )
+    }
+
+    private fun monthRecord(record: YearMonthRecord) =
+        YearMonthRecordRow(money.format(record.spent), months.name(record.month))
 
     private fun withYear(date: LocalDate) = date.format(sentenceDateWithYear)
 

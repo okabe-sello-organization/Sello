@@ -2,6 +2,7 @@ package com.software.sello.feature.resumen
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.test.assertContentDescriptionContains
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -13,8 +14,10 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.domain.model.YearRecords
 import com.software.sello.domain.port.ReadState
 import com.software.sello.showSello
+import com.software.sello.testing.testDateLabels
 import com.software.sello.testing.testMoney
 import com.software.sello.testing.testMonthNames
 import org.junit.Assert.assertEquals
@@ -27,7 +30,7 @@ class YearScreenTest {
     @get:Rule
     val rule = createComposeRule()
 
-    private val render = YearRenderModel(testMoney(), testMonthNames())
+    private val render = YearRenderModel(testMoney(), testMonthNames(), testDateLabels())
     private val ready = render.render(2026, ReadState.Ready(yearSnapshot())) as YearState.Ready
     private val state = mutableStateOf<YearState>(ready)
     private val actions = mutableListOf<YearAction>()
@@ -107,5 +110,44 @@ class YearScreenTest {
         rule.onNodeWithTag("year.empty").assertIsDisplayed()
         rule.onNodeWithText("Nada anotado en 2026").assertExists()
         rule.onNodeWithTag("year.hero").assertDoesNotExist()
+    }
+
+    @Test
+    fun theYearsRecordsFromFinishedMonths() {
+        show()
+        rule.onNodeWithTag("year.records").performScrollTo().assertIsDisplayed()
+        rule.onNodeWithText("Récords del año").assertExists()
+        rule.onNodeWithTag("year.records.dearest")
+            .assertTextContains("Mes más caro").assertTextContains("Marzo")
+            .assertContentDescriptionContains("1.840.000 pesos")
+        rule.onNodeWithTag("year.records.calmest")
+            .assertTextContains("Mes más tranquilo").assertTextContains("Agosto")
+        rule.onNodeWithText("Matrícula · mar 3 feb").assertExists()
+        rule.onNodeWithTag("year.records.most_over")
+            .assertTextContains("Entretenimiento").assertTextContains("4 meses")
+    }
+
+    @Test
+    fun aBiggestExpenseWithoutANoteShowsItsCategory() {
+        state.value = render.render(
+            2026,
+            ReadState.Ready(yearSnapshot(records = mockRecords(note = null, mostOver = false)))
+        )
+        show()
+        rule.onNodeWithTag("year.records").performScrollTo()
+        rule.onNodeWithText("Hogar · mar 3 feb").assertExists()
+        rule.onNodeWithTag("year.records.most_over").assertDoesNotExist()
+    }
+
+    @Test
+    fun withFewerThanTwoFinishedMonthsTheRecordsComeLater() {
+        state.value = render.render(
+            2026,
+            ReadState.Ready(yearSnapshot(records = YearRecords.TooFew))
+        )
+        show()
+        rule.onNodeWithTag("year.records.too_few").performScrollTo()
+            .assertTextContains("Con un mes más verás tus récords.")
+        rule.onNodeWithTag("year.records.dearest").assertDoesNotExist()
     }
 }

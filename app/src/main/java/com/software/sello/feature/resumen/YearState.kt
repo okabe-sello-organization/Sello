@@ -32,6 +32,8 @@ sealed interface YearState {
         val overspent: Boolean,
         /** Every category with spending, most first. */
         val categories: List<YearCategoryRow>,
+        /** Récords del año; null with fewer than two finished months with expenses. */
+        val records: YearRecordSlip?,
         /** Nothing recorded in the year, neither expenses nor incomes. */
         val empty: Boolean,
         val stale: Boolean,
@@ -106,6 +108,27 @@ data class YearCategoryRow(
     val percent: Int,
     val bar: Float
 )
+
+/** Récords del año, from finished months only. [mostOver] shows from two months up. */
+@Immutable
+data class YearRecordSlip(
+    val dearest: YearMonthRecordRow,
+    val calmest: YearMonthRecordRow,
+    val biggest: YearExpenseRecordRow,
+    val mostOver: YearOverRecordRow?
+)
+
+/** A month's spending and its name: "Marzo". */
+@Immutable
+data class YearMonthRecordRow(val amount: MoneyTextValue, val month: String)
+
+/** The largest expense: its note, or its category without one, and its day: "mar 3 feb". */
+@Immutable
+data class YearExpenseRecordRow(val amount: MoneyTextValue, val label: String, val day: String)
+
+/** The category that went over its own limit in [months] finished months. */
+@Immutable
+data class YearOverRecordRow(val name: String, val months: Int)
 
 sealed interface YearAction {
     data object Previous : YearAction

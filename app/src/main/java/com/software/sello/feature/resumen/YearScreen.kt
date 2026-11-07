@@ -5,11 +5,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -46,6 +49,7 @@ import com.software.sello.designsystem.component.StatusSlip
 import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.component.TotalLine
 import com.software.sello.designsystem.icon.SelloIcon
+import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.SpendingDirection
 import com.software.sello.presentation.category.CategoryIcons
@@ -110,6 +114,7 @@ private fun YearSlips(state: YearState.Ready, onAction: (YearAction) -> Unit) {
     MonthByMonth(state, onAction)
     IncomeSlip(state)
     if (state.categories.isNotEmpty()) Categories(state, onAction)
+    Records(state.records)
 }
 
 /** ‹ 2026 ›: from the first year with records to the current one. */
@@ -391,5 +396,113 @@ private fun Categories(state: YearState.Ready, onAction: (YearAction) -> Unit) {
                 trailingIcon = SelloIcon.ChevronRight
             )
         }
+    }
+}
+
+/**
+ * Récords del año: two by two, each with its icon, what it is, its figure and what it was.
+ * With fewer than two finished months, a line saying the records come later.
+ */
+@Composable
+private fun Records(records: YearRecordSlip?) {
+    Slip(Modifier.fillMaxWidth().testTag("year.records")) {
+        ResumenHeading(stringResource(R.string.year_records_title))
+        if (records == null) {
+            Text(
+                stringResource(R.string.year_records_too_few),
+                style = MaterialTheme.typography.bodyMedium,
+                color = SelloTheme.colors.inkSoft,
+                modifier = Modifier.testTag("year.records.too_few")
+            )
+            return@Slip
+        }
+        val cells: List<@Composable (Modifier) -> Unit> = listOfNotNull(
+            { modifier ->
+                RecordCell(
+                    SelloIcon.TrendingUp,
+                    stringResource(R.string.year_record_dearest),
+                    { MoneyText(records.dearest.amount, style = MoneyStyle.Title) },
+                    records.dearest.month,
+                    modifier.testTag("year.records.dearest")
+                )
+            },
+            { modifier ->
+                RecordCell(
+                    SelloIcon.TrendingDown,
+                    stringResource(R.string.year_record_calmest),
+                    { MoneyText(records.calmest.amount, style = MoneyStyle.Title) },
+                    records.calmest.month,
+                    modifier.testTag("year.records.calmest")
+                )
+            },
+            { modifier ->
+                RecordCell(
+                    SelloIcon.ArrowUpward,
+                    stringResource(R.string.year_record_biggest),
+                    { MoneyText(records.biggest.amount, style = MoneyStyle.Title) },
+                    stringResource(
+                        R.string.year_record_biggest_detail,
+                        records.biggest.label,
+                        records.biggest.day
+                    ),
+                    modifier.testTag("year.records.biggest")
+                )
+            },
+            records.mostOver?.let { over ->
+                { modifier ->
+                    RecordCell(
+                        SelloIcon.Flag,
+                        stringResource(R.string.year_record_most_over),
+                        {
+                            Text(
+                                over.name,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = SelloTheme.type.weight.emphasis
+                            )
+                        },
+                        pluralStringResource(
+                            R.plurals.year_record_over_months,
+                            over.months,
+                            over.months
+                        ),
+                        modifier.testTag("year.records.most_over")
+                    )
+                }
+            }
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.lg)) {
+            cells.chunked(2).forEach { pair ->
+                Row(horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md)) {
+                    pair.forEach { cell -> cell(Modifier.weight(1f)) }
+                    if (pair.size == 1) Spacer(Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+/** One record: read as a single sentence, label, figure and detail. */
+@Composable
+private fun RecordCell(
+    icon: SelloIcon,
+    label: String,
+    value: @Composable () -> Unit,
+    detail: String,
+    modifier: Modifier
+) {
+    Column(modifier.semantics(mergeDescendants = true) {}) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.xs)
+        ) {
+            Icon(icon.painter(), null, Modifier.size(16.dp), SelloTheme.colors.brand)
+            Text(
+                label,
+                style = MaterialTheme.typography.bodySmall,
+                color = SelloTheme.colors.inkSoft
+            )
+        }
+        value()
+        Text(detail, style = MaterialTheme.typography.bodySmall, color = SelloTheme.colors.inkSoft)
     }
 }
