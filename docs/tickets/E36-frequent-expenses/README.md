@@ -30,3 +30,7 @@ in the [mock](attachments/frequent-mock.html), now approved:
 **Planner's calls (2026-11-06), open to the owner:** frequent means 3 or more times in
 90 days. A tap fills the form and never saves. Suggestions are hidden when correcting an
 expense, in Anotar varios, and for fixed-payment expenses.
+
+**Orchestrated run (owner, 2026-11-06):** "Orchestrate the development" of E33–E36. Roles,
+models and merges follow [orchestration](../../development/orchestration.md); the owner
+delegates every merge in this run.

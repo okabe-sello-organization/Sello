@@ -39,3 +39,8 @@ months. The year invitation shows from 1 to 7 January. It opens a big moment in 
 Tu año. The plate shows counts, never money. The [mock](attachments/patterns-mock.html) shows them and needs the owner's
 approval before building. Build after E32 so the screens use `StatusSlip` and the shared
 parts.
+
+**Orchestrated run (owner, 2026-11-06):** "Orchestrate the development" of E33–E36. Roles,
+models and merges follow [orchestration](../../development/orchestration.md); the owner
+delegates every merge in this run. SELLO-194's backup version was corrected from 8 to
+10 before the run, because E37 shipped versions 8 and 9 after the ticket was written.

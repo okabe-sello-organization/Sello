@@ -28,8 +28,8 @@ the month before, and where they gather.
   comma), today's value under it, and Guardar. Values
   run from 1.000 to 100.000, default 20.000. Any other value is refused with a message
   and nothing is saved. A saved value applies to every month, past ones too.
-- The line is a portable preference. It travels in backup format version 8; older
-  files read as 20.000.
+- The line is a portable preference. It travels in the next backup format version
+  (10, after E37's 8 and 9); older files read as 20.000.
   Restore and Borrar todos los datos reset it like the other preferences. The backup
   format page is updated.
 - The slip follows Resumen's loading, failed and older states.
