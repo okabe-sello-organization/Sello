@@ -96,15 +96,14 @@ fun DayByDayScreen(
 
             is DayByDayState.Failed -> StatusSlip(
                 kind = StatusKind.LoadFailed(),
-                message = stringResource(
-                    when (state.problem) {
-                        DayByDayProblem.Unread -> R.string.day_by_day_failed
-                        DayByDayProblem.TooLarge -> R.string.day_by_day_too_large
-                    }
-                ),
+                message = stringResource(state.problem.text()),
                 modifier = Modifier.testTag("dayByDay.failed"),
-                action = StatusAction(StatusSlipDefaults.retryLabel) {
-                    onAction(DayByDayAction.Retry)
+                // Reading again cannot fix a figure too large or damaged data; a change to
+                // the month reads it again by itself.
+                action = if (state.problem == DayByDayProblem.Unread) {
+                    StatusAction(StatusSlipDefaults.retryLabel) { onAction(DayByDayAction.Retry) }
+                } else {
+                    null
                 }
             )
 
@@ -159,21 +158,6 @@ private fun ColumnScope.Ready(
             }
         }
         Summary(state)
-        if (state.days.isEmpty()) {
-            Text(
-                stringResource(
-                    if (state.filter == MovementFilter.Incomes) {
-                        R.string.day_by_day_no_incomes
-                    } else {
-                        R.string.day_by_day_no_expenses
-                    },
-                    months.inSentence(state.month)
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-                color = SelloTheme.colors.inkSoft,
-                modifier = Modifier.padding(top = SelloTheme.spacing.md).testTag("dayByDay.none")
-            )
-        }
         val dates = dateLabels()
         state.days.forEach { day ->
             DayHeading(day, dates, state.today)
@@ -212,14 +196,48 @@ private fun ColumnScope.Ready(
             )
         }
     }
-    if (state.pageFailed) {
+    // A chip that finds nothing says so as the other news states do, under the chips.
+    if (state.days.isEmpty()) {
         StatusSlip(
-            kind = StatusKind.ActionFailed(stringResource(R.string.day_by_day_page_failed_title)),
-            message = stringResource(R.string.day_by_day_page_failed),
-            modifier = Modifier.testTag("dayByDay.pageFailed"),
-            action = StatusAction(StatusSlipDefaults.retryLabel) { onAction(DayByDayAction.Retry) }
+            kind = StatusKind.Empty(
+                SelloIcon.ReceiptLong,
+                stringResource(
+                    if (state.filter == MovementFilter.Incomes) {
+                        R.string.day_by_day_no_incomes
+                    } else {
+                        R.string.day_by_day_no_expenses
+                    },
+                    months.inSentence(state.month)
+                )
+            ),
+            message = stringResource(R.string.day_by_day_none_body),
+            modifier = Modifier.testTag("dayByDay.none")
         )
     }
+    state.pageFailure?.let { problem ->
+        StatusSlip(
+            kind = StatusKind.ActionFailed(stringResource(R.string.day_by_day_page_failed_title)),
+            message = stringResource(
+                when (problem) {
+                    DayByDayProblem.Unread -> R.string.day_by_day_page_failed
+                    else -> problem.text()
+                }
+            ),
+            modifier = Modifier.testTag("dayByDay.pageFailed"),
+            // Reading again cannot fix a figure too large or damaged data: no Reintentar.
+            action = if (problem == DayByDayProblem.Unread) {
+                StatusAction(StatusSlipDefaults.retryLabel) { onAction(DayByDayAction.Retry) }
+            } else {
+                null
+            }
+        )
+    }
+}
+
+private fun DayByDayProblem.text() = when (this) {
+    DayByDayProblem.Unread -> R.string.day_by_day_failed
+    DayByDayProblem.TooLarge -> R.string.day_by_day_too_large
+    DayByDayProblem.Damaged -> R.string.day_by_day_damaged
 }
 
 private fun MovementFilter.label() = when (this) {

@@ -169,4 +169,51 @@ class MonthMovementsReadTest {
         assertEquals(0L, august.totalCount)
         assertEquals(emptyMap<LocalDate, Money>(), august.days)
     }
+
+    /** One instant for every write, as a fixed-payment catch-up records several rows at once. */
+    private fun sameMoment(write: () -> Unit) {
+        ledger.audit = Instant.parse("2026-11-02T08:00:00Z")
+        write()
+    }
+
+    private fun spendNow(category: Int, date: String, pesos: Long) = runBlocking {
+        ledger.expenses.create(ledger.createExpense(category, date, pesos))
+    }
+
+    private fun receiveNow(date: String, pesos: Long) = runBlocking {
+        ledger.incomes.create(
+            CreateIncome(
+                operationId = ledger.operation(),
+                generation = 1,
+                amount = TransactionAmount.of(Money.cop(pesos)).valueOrFail(),
+                source = IncomeSource.Salary,
+                date = LocalDate.parse(date),
+                note = Note.of(null).valueOrFail()
+            )
+        )
+    }
+
+    @Test
+    fun rowsCreatedAtOneInstantListExpensesFirstThenTheHigherSequenceAndPageAcrossThem() {
+        runBlocking {
+            ledger.goTo("2026-11-30")
+            ledger.categories.submit(ledger.createCategory("Mercado"))
+        }
+        sameMoment {
+            receiveNow("2026-10-20", 900_000)
+            spendNow(100, "2026-10-20", 1_000)
+            spendNow(100, "2026-10-20", 2_000)
+        }
+
+        val pages = listOf(0, 1, 2).map { read(MovementFilter.All, offset = it, limit = 1) }
+
+        // Same day, same created_at: expenses before the income, the later sequence first.
+        assertEquals(
+            listOf("2026-10-20 Mercado 2000", "2026-10-20 Mercado 1000", "2026-10-20 + 900000"),
+            pages.flatMap { it.shown() }
+        )
+        assertEquals(listOf(true, true, false), pages.map { it.more })
+        assertEquals(read(MovementFilter.All).shown(), pages.flatMap { it.shown() })
+        assertEquals(mapOf(LocalDate.parse("2026-10-20") to Money.cop(3_000)), pages[2].days)
+    }
 }

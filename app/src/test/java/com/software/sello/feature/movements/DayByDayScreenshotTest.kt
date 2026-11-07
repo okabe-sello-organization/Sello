@@ -2,6 +2,8 @@ package com.software.sello.feature.movements
 
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
 import com.software.sello.R
@@ -81,7 +83,9 @@ class DayByDayScreenshotTest {
     val rule = createComposeRule()
 
     /** As MovementDestinations.kt frames it: the title over the month, no dock. */
-    private fun capture(name: String, state: DayByDayState, look: Look) {
+
+    /** [atEnd] scrolls to the foot of the list first, where a failed page is said. */
+    private fun capture(name: String, state: DayByDayState, look: Look, atEnd: Boolean = false) {
         rule.showSello(look) {
             ShellScreen(
                 octoberShell,
@@ -95,14 +99,23 @@ class DayByDayScreenshotTest {
                 DayByDayScreen(state, {}, {}, {}, {}, padding)
             }
         }
+        if (atEnd) rule.onNodeWithTag("dayByDay.pageFailed").performScrollTo()
         rule.captureStill("src/test/screenshots/day-by-day-$name-${look.label}.png")
     }
 
     private val empty = dayByDayReady.copy(days = emptyList(), totalCount = 0)
-    private val noIncomes =
-        dayByDayReady.copy(filter = MovementFilter.Incomes, days = emptyList(), totalCount = 0)
+
+    /** A month with expenses and no income: Entró is 0, as the app reads it. */
+    private val noIncomes = dayByDayReady.copy(
+        filter = MovementFilter.Incomes,
+        income = plain("0"),
+        days = emptyList(),
+        totalCount = 0
+    )
     private val more = dayByDayReady.copy(more = true, totalCount = 48)
-    private val pageFailed = more.copy(pageFailed = true)
+    private val pageFailed = more.copy(pageFailure = DayByDayProblem.Unread)
+    private val pageTooLarge =
+        more.copy(pageFailure = DayByDayProblem.TooLarge, more = false)
     private val stale = dayByDayReady.copy(stale = true)
     private val failed = DayByDayState.Failed(DayByDayProblem.Unread)
     private val tooLarge = DayByDayState.Failed(DayByDayProblem.TooLarge)
@@ -140,7 +153,15 @@ class DayByDayScreenshotTest {
 
     @Test fun staleOscuro() = capture("stale", stale, Look(dark = true))
 
-    @Test fun pageFailedClaro() = capture("page-failed", pageFailed, Look())
+    @Test fun pageFailedClaro() = capture("page-failed", pageFailed, Look(), atEnd = true)
 
-    @Test fun pageFailedOscuro() = capture("page-failed", pageFailed, Look(dark = true))
+    @Test
+    fun pageFailedOscuro() = capture("page-failed", pageFailed, Look(dark = true), atEnd = true)
+
+    /** A day too large after rows were listed: said as such, with no Reintentar. */
+    @Test fun pageTooLargeClaro() = capture("page-too-large", pageTooLarge, Look(), atEnd = true)
+
+    @Test
+    fun pageTooLargeOscuro() =
+        capture("page-too-large", pageTooLarge, Look(dark = true), atEnd = true)
 }

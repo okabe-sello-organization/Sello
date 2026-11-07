@@ -44,7 +44,10 @@ enum class DayByDayProblem {
     Unread,
 
     /** A day adds up to more than an exact amount can hold. Never wrapped or clipped. */
-    TooLarge
+    TooLarge,
+
+    /** A stored expense is damaged, such as a day mixing currencies: never added up. */
+    Damaged
 }
 
 sealed interface DayByDayState {
@@ -69,12 +72,17 @@ sealed interface DayByDayState {
         val more: Boolean,
         /** The next page, or a fresh read of these rows, is being read. */
         val busy: Boolean = false,
-        /** A page could not be read: what is listed stays, and Reintentar reads it again. */
-        val pageFailed: Boolean = false,
+        /**
+         * Why a page could not be read: what is listed stays. Unread offers Reintentar; a day
+         * too large to add up exactly is said as such, since reading again cannot fix it.
+         */
+        val pageFailure: DayByDayProblem? = null,
         /** The month could not be read again: these are the rows as last read. */
         val stale: Boolean = false
     ) : DayByDayState {
         val listed: Int get() = days.sumOf { it.rows.size }
+
+        val pageFailed: Boolean get() = pageFailure != null
     }
 }
 

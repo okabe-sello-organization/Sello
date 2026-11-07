@@ -97,7 +97,7 @@ class DayByDayViewModel(
             // Kept, said to be older; no more pages from them: Reintentar is the way on.
             is ReadState.Failed -> {
                 emit(
-                    listed?.copy(busy = false, pageFailed = false, more = false, stale = true)
+                    listed?.copy(busy = false, pageFailure = null, more = false, stale = true)
                         ?: DayByDayState.Failed(DayByDayProblem.Unread)
                 )
                 return@flow
@@ -105,7 +105,7 @@ class DayByDayViewModel(
 
             is ReadState.Ready -> snapshot.value
         }
-        emit(listed?.copy(busy = true, pageFailed = false) ?: DayByDayState.Loading)
+        emit(listed?.copy(busy = true, pageFailure = null) ?: DayByDayState.Loading)
         val rows = mutableListOf<Movement>()
         var more = false
         var totalCount = 0L
@@ -121,10 +121,16 @@ class DayByDayViewModel(
                 is Outcome.Failure -> {
                     val problem = when (read.error) {
                         MovementReadFailure.Unrepresentable -> DayByDayProblem.TooLarge
+                        MovementReadFailure.CurrencyMismatch -> DayByDayProblem.Damaged
                         is MovementReadFailure.Storage -> DayByDayProblem.Unread
                     }
                     emit(
-                        listed?.copy(busy = false, pageFailed = true)
+                        listed?.copy(
+                            busy = false,
+                            pageFailure = problem,
+                            // Reading on cannot help a sum too large or damaged data.
+                            more = listed.more && problem == DayByDayProblem.Unread
+                        )
                             ?: DayByDayState.Failed(problem)
                     )
                     return@flow
@@ -155,7 +161,13 @@ class DayByDayViewModel(
                 filter = request.filter,
                 spent = money.format(month.budget.spent),
                 income = money.format(month.income),
-                days = groups(rows, days),
+                // Under Ingresos a day shows no expense sum: incomes are never netted in.
+                days = groups(
+                    rows,
+                    days.takeIf {
+                        request.filter != MovementFilter.Incomes
+                    }.orEmpty()
+                ),
                 totalCount = totalCount,
                 more = more
             )

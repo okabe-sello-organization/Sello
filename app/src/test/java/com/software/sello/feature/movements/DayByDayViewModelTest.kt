@@ -171,7 +171,7 @@ class DayByDayViewModelTest {
         movements.failure = MovementReadFailure.Storage(StorageFailure.Unavailable("disk"))
 
         model.onAction(DayByDayAction.More)
-        assertTrue(model.ready.pageFailed)
+        assertEquals(DayByDayProblem.Unread, model.ready.pageFailure)
         assertEquals(20, model.ready.listed)
         movements.failure = null
         model.onAction(DayByDayAction.Retry)
@@ -270,5 +270,52 @@ class DayByDayViewModelTest {
             octoberSnapshot().let { it.copy(budget = it.budget.copy(month = september)) }
         )
         assertEquals(september, model.ready.month)
+    }
+
+    @Test
+    fun underIngresosNoDayShowsAnExpenseSum() = runTest {
+        movements.rows = listOf(
+            received(7, "2026-10-01", 650_000, "Proyecto web"),
+            spent(8, food, "2026-10-01", 15_000, "Rappi, café")
+        )
+        movements.days = mapOf(LocalDate.of(2026, 10, 1) to Money.cop(15_000))
+        snapshots.of(october).value = ReadState.Ready(octoberSnapshot())
+        val model = model()
+        watch(model)
+        assertEquals("15.000 pesos", model.ready.days.single().spent?.spoken)
+
+        model.onAction(DayByDayAction.Filter(MovementFilter.Incomes))
+
+        // "Jue 1" holds only the +650.000 income: no 15.000 above it.
+        val day = model.ready.days.single()
+        assertEquals(listOf("Proyecto web"), day.rows.map { it.note })
+        assertNull(day.spent)
+        model.onAction(DayByDayAction.Filter(MovementFilter.Expenses))
+        assertEquals("15.000 pesos", model.ready.days.single().spent?.spoken)
+    }
+
+    @Test
+    fun aDayTooLargeAfterRowsAreListedIsSaidAsTooLargeNotAsARetryablePage() = runTest {
+        movements.rows = (1..25).map { spent(100 + it, food, "2026-10-01", 1_000L * it) }
+        snapshots.of(october).value = ReadState.Ready(octoberSnapshot())
+        val model = model()
+        watch(model)
+        movements.failure = MovementReadFailure.Unrepresentable
+
+        model.onAction(DayByDayAction.More)
+
+        assertEquals(DayByDayProblem.TooLarge, model.ready.pageFailure)
+        assertEquals(20, model.ready.listed)
+        assertFalse(model.ready.more)
+    }
+
+    @Test
+    fun aDayMixingCurrenciesIsDamagedDataNotTooLarge() = runTest {
+        movements.failure = MovementReadFailure.CurrencyMismatch
+        snapshots.of(october).value = ReadState.Ready(octoberSnapshot())
+        val model = model()
+        watch(model)
+
+        assertEquals(DayByDayState.Failed(DayByDayProblem.Damaged), model.state.value)
     }
 }

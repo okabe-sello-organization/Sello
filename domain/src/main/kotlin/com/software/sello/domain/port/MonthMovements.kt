@@ -48,6 +48,9 @@ sealed interface MovementReadFailure {
 
     /** A day's sum does not fit an exact amount. Reported, never clipped or wrapped. */
     data object Unrepresentable : MovementReadFailure
+
+    /** A day mixes currencies, which no stored expense may: damaged data, never added up. */
+    data object CurrencyMismatch : MovementReadFailure
 }
 
 interface MonthMovements {

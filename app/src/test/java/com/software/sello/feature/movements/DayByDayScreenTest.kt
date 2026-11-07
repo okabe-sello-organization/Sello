@@ -110,7 +110,7 @@ class DayByDayScreenTest {
 
     @Test
     fun aFailedPageKeepsTheRowsAndRetries() {
-        show(dayByDayReady.copy(more = true, pageFailed = true, totalCount = 48))
+        show(dayByDayReady.copy(more = true, pageFailure = DayByDayProblem.Unread, totalCount = 48))
 
         rule.onNodeWithTag(movementTag("1")).assertExists()
         rule.onNode(
@@ -118,5 +118,34 @@ class DayByDayScreenTest {
         ).performScrollTo().performClick()
 
         assertEquals(listOf<DayByDayAction>(DayByDayAction.Retry), actions)
+    }
+
+    @Test
+    fun aPageTooLargeIsSaidWithoutAReintentarThatCannotHelp() {
+        show(dayByDayReady.copy(pageFailure = DayByDayProblem.TooLarge))
+
+        rule.onNode(
+            hasText("Un día suma más", substring = true) and
+                hasAnyAncestor(hasTestTag("dayByDay.pageFailed"))
+        ).performScrollTo().assertExists()
+        rule.onNode(hasText("Reintentar") and hasAnyAncestor(hasTestTag("dayByDay.pageFailed")))
+            .assertDoesNotExist()
+    }
+
+    @Test
+    fun aChipThatFindsNothingIsAnEmptyStatusSlipUnderTheChips() {
+        show(
+            dayByDayReady.copy(
+                filter = MovementFilter.Incomes,
+                days = emptyList(),
+                totalCount = 0
+            )
+        )
+
+        rule.onNodeWithTag("dayByDay.chips").assertExists()
+        rule.onNode(
+            hasText("No hay ingresos en octubre") and hasAnyAncestor(hasTestTag("dayByDay.none"))
+        ).assertExists()
+        rule.onNode(hasText("Anotar gasto")).assertDoesNotExist()
     }
 }

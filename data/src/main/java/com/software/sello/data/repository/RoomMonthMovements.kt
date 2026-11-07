@@ -8,6 +8,7 @@ import com.software.sello.data.mapper.profileFrom
 import com.software.sello.data.mapper.toDomain
 import com.software.sello.domain.model.Category
 import com.software.sello.domain.model.CategoryId
+import com.software.sello.domain.model.MoneyError
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.policy.DaySpendingPolicy
@@ -64,7 +65,13 @@ class RoomMonthMovements(private val database: SelloDatabase) : MonthMovements {
             is Outcome.Success -> read.value
         }
         val days = when (val sums = DaySpendingPolicy.byDay(amounts)) {
-            is Outcome.Failure -> return Outcome.Failure(MovementReadFailure.Unrepresentable)
+            is Outcome.Failure -> return Outcome.Failure(
+                when (sums.error) {
+                    MoneyError.Overflow -> MovementReadFailure.Unrepresentable
+                    is MoneyError.CurrencyMismatch -> MovementReadFailure.CurrencyMismatch
+                }
+            )
+
             is Outcome.Success -> sums.value
         }
         val expenseIds = shown.filter { it.kind == MovementKind.EXPENSE }.map { it.id }
