@@ -18,6 +18,7 @@ import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.SpendingComparison
 import com.software.sello.domain.model.SpendingDirection
 import com.software.sello.domain.model.SpendingMonth
+import com.software.sello.domain.model.SpendingPeriods
 import com.software.sello.domain.model.WeekdayPattern
 import com.software.sello.domain.model.WeekdaySpending
 import com.software.sello.domain.port.FinancialDay
@@ -130,7 +131,8 @@ object ResumenPolicy {
                 comparison = comparison(month, currentMonth, today, months, snapshots),
                 normalMonth = normalMonth(currentMonth, snapshots),
                 weekdays = weekdays(month, currentMonth, today, months),
-                suggestion = if (month == currentMonth) suggestion(snapshots) else null
+                suggestion = if (month == currentMonth) suggestion(snapshots) else null,
+                periods = periods(month, currentMonth, today, months, snapshots)
             )
         )
     }
@@ -178,12 +180,50 @@ object ResumenPolicy {
                 -1 -> SpendingDirection.Less
                 else -> SpendingDirection.Same
             },
-            previousSpent.takeIf { it.signum() > 0 }?.let {
-                BigDecimal(difference * THOUSAND).divide(BigDecimal(it), 0, RoundingMode.HALF_UP)
-                    .toBigIntegerExact()
+            percentTenths(difference, previousSpent)
+        )
+    }
+
+    /**
+     * The expenses the hero adds, every category's, and those of the same days of the month
+     * before, which [comparison] compares with; null when that month has nothing recorded.
+     */
+    private fun periods(
+        month: YearMonth,
+        currentMonth: YearMonth,
+        today: FinancialDay,
+        months: List<ResumenMonthInput>,
+        snapshots: List<MonthlySnapshot>
+    ): SpendingPeriods {
+        val current = months.last().expenses.filter {
+            YearMonth.from(it.date) == month && it.date <= today.date
+        }
+        if (snapshots.size < 2) return SpendingPeriods(current, null)
+        val before = snapshots[snapshots.size - 2]
+        if (before.categories.sumOf { it.expenseCount } == 0) return SpendingPeriods(current, null)
+        val previous = month.minusMonths(1)
+        val previousThroughDay = if (month == currentMonth) {
+            minOf(today.date.dayOfMonth, previous.lengthOfMonth())
+        } else {
+            previous.lengthOfMonth()
+        }
+        return SpendingPeriods(
+            current,
+            months[months.size - 2].expenses.filter {
+                YearMonth.from(it.date) == previous && it.date.dayOfMonth <= previousThroughDay
             }
         )
     }
+
+    /**
+     * [difference] over [previous] in tenths of a per cent, half up, or null when [previous]
+     * is zero. Tu año compares years with the same rounding.
+     */
+    internal fun percentTenths(difference: BigInteger, previous: BigInteger): BigInteger? =
+        previous.takeIf { it.signum() > 0 }?.let {
+            BigDecimal(difference * THOUSAND).divide(BigDecimal(it), 0, RoundingMode.HALF_UP)
+                .toBigIntegerExact()
+        }
 
     /**
      * The months shown run from the first with something recorded. Of those, the

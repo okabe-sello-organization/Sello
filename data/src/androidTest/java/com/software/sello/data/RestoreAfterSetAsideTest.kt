@@ -175,6 +175,7 @@ class RestoreAfterSetAsideTest {
             preferences,
             preferences,
             HandInvestmentPreferences(),
+            HandSmallExpensePreferences(),
             NoticeSeen(),
             { uuid(5_000) },
             { recordedAt },

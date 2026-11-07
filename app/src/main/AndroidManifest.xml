@@ -38,7 +38,8 @@
                     android:scheme="sello" />
             </intent-filter>
         </activity>
-        <!-- Exports the person chose to share, one at a time; not exported (SELLO-121). -->
+        <!-- Exports and month images the person chose to share, one at a time; not exported
+             (SELLO-121, SELLO-198). -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.exports"

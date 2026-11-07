@@ -39,7 +39,9 @@ data class ResumenSnapshot(
     /** Null until a week has passed since the first day in its window. */
     val weekdays: WeekdayPattern? = null,
     /** At most one, and only for the month in progress. */
-    val suggestion: LimitAdjustment? = null
+    val suggestion: LimitAdjustment? = null,
+    /** The expenses behind the hero and the same days before, for Gastos hormiga. */
+    val periods: SpendingPeriods = SpendingPeriods.NONE
 )
 
 enum class SpendingDirection { More, Less, Same }

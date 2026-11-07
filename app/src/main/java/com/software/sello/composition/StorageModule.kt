@@ -46,6 +46,7 @@ import com.software.sello.domain.port.ScheduleCatchUpStore
 import com.software.sello.domain.port.ScheduleCommands
 import com.software.sello.domain.port.ScheduleReads
 import com.software.sello.domain.port.ScheduleRecordReads
+import com.software.sello.domain.port.YearSnapshots
 import com.software.sello.platform.deviceZone
 import java.time.ZoneId
 import kotlinx.coroutines.NonCancellable
@@ -130,6 +131,9 @@ fun storageModule(storage: FinancialStorage): Module = module {
     single<ResumenSnapshots> {
         storage.resumenSnapshots(get(), get<DispatcherProvider>().default)
     }
+    single<YearSnapshots> {
+        storage.yearSnapshots(get(), get<DispatcherProvider>().default)
+    }
     single<ExpenseReads> { storage.expenseReads }
     single<IncomeCommands> { storage.incomeCommands(get(), get(), get(), get()) }
     single<IncomeReads> { storage.incomeReads }
@@ -141,9 +145,11 @@ fun storageModule(storage: FinancialStorage): Module = module {
     single<ScheduleReads> { storage.scheduleReads }
     single<ScheduleRecordReads> { storage.scheduleRecordReads }
     single<ScheduleCatchUpStore> { storage.scheduleCatchUp(get(), get(), get()) }
-    single<BackupExports> { storage.backupExports(get(), get(), get(), get(), get(), get()) }
+    single<BackupExports> { storage.backupExports(get(), get(), get(), get(), get(), get(), get()) }
     single<DataExports> { storage.dataExports(get(), get()) }
-    single<Restores> { storage.restores(get(), get(), get(), get(), get(), get(), get(), get()) }
+    single<Restores> {
+        storage.restores(get(), get(), get(), get(), get(), get(), get(), get(), get())
+    }
     // A new history after an erase takes the device's zone, read when the erase commits.
     single<Resets> { storage.resets(get(), ::deviceZone, get(), get()) }
 }

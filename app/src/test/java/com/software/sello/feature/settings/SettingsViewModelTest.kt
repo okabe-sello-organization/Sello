@@ -10,6 +10,7 @@ import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.InvestmentPreference
+import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.port.AppearancePreferences
@@ -60,6 +61,7 @@ class SettingsViewModelTest {
 
     private val investments = HandInvestmentReads(ReadState.Loading)
     private val investmentSettings = HandInvestmentPreferences()
+    private val smallExpenses = HandSmallExpenses()
 
     /** The phone's accent colour: a hue, grey, or none as on Android 11. */
     private var phone: PhoneColor = PhoneColor.Hue(140)
@@ -70,6 +72,7 @@ class SettingsViewModelTest {
         appearance,
         ordering,
         investmentSettings,
+        smallExpenses,
         HandScheduleReads(),
         investments,
         testMoney(),
@@ -97,6 +100,39 @@ class SettingsViewModelTest {
             ReadState.Failed(StorageFailure.Unavailable("hand"), null)
         runCurrent()
         assertEquals(RateLine.Unreadable, model.state.value.rate)
+    }
+
+    @Test
+    fun theGastosHormigaRowSaysTheLineAndNeverADefaultItCouldNotRead() = runTest {
+        smallExpenses.read.value = null
+        val model = settings()
+        runCurrent()
+        // Configuración waits for every setting it shows.
+        assertTrue(model.state.value.loading)
+
+        smallExpenses.read.value = PreferenceRead.Ready(SmallExpenseLine.of(15_000)!!)
+        runCurrent()
+        assertFalse(model.state.value.loading)
+        assertEquals("15.000", model.state.value.smallExpenseLine)
+        assertNull(model.state.value.failure)
+
+        // Not read again: the last line read stays, and the notice says so.
+        smallExpenses.read.value =
+            PreferenceRead.Failed(PreferenceFailure.Unavailable, SmallExpenseLine.of(15_000))
+        runCurrent()
+        assertEquals("15.000", model.state.value.smallExpenseLine)
+        assertEquals(PreferenceFailure.Unavailable, model.state.value.failure)
+    }
+
+    @Test
+    fun aGastosHormigaLineNeverReadShowsNoValue() = runTest {
+        smallExpenses.read.value = PreferenceRead.Failed(PreferenceFailure.InvalidValue, null)
+        val model = settings()
+        runCurrent()
+
+        assertFalse(model.state.value.loading)
+        assertNull(model.state.value.smallExpenseLine)
+        assertEquals(PreferenceFailure.InvalidValue, model.state.value.failure)
     }
 
     @Test

@@ -44,6 +44,9 @@
       <figure data-shot="resumen-first-month" data-module="app" data-caption="The first month: not enough history"></figure>
       <figure data-shot="resumen-no-income" data-module="app" data-caption="No income this month"></figure>
       <figure data-shot="resumen-overspent" data-module="app" data-caption="Spent more than came in"></figure>
+      <figure data-shot="resumen-small" data-module="app" data-caption="Gastos hormiga after the income slip: the small expenses' total, their share, the same days of the month before and Donde más se juntan (SELLO-194)"></figure>
+      <figure data-shot="resumen-small-older" data-module="app" data-caption="The line could not be read again: the last one read, under an Older notice"></figure>
+      <figure data-shot="resumen-small-unreadable" data-module="app" data-caption="The line was never read: a failed notice where the slip could be, with Reintentar"></figure>
       <figure data-shot="resumen-closed" data-module="app" data-caption="September, closed: whole months compared"></figure>
       <figure data-shot="resumen-history-selected" data-module="app" data-caption="A month column selected"></figure>
       <figure data-shot="resumen-weekday-selected" data-module="app" data-caption="A weekday column selected"></figure>
@@ -65,6 +68,7 @@
             <li>Under a TearLine, a <a href="../components.html#c-SlipStub"><code>SlipStub</code></a> with two <a href="../components.html#c-StubButton"><code>StubButton</code></a>s: "Ingresos" with the count of incomes, and "Fijos" (read as "Pagos e ingresos fijos") with the next fixed payment or income (<code>ResumenScreen.kt:192</code>).</li>
           </ul>
         </li>
+        <li><strong>Gastos hormiga slip</strong>, only with 5 or more expenses at or under the line: a Slip headed "Gastos hormiga" with "20.000 o menos", the total in <code>MoneyStyle.Card</code>, "en 38 gastos pequeños, del 1 al 28 · 13 % de lo que gastaste", the two months as the hero's comparison bars when the month before has data, a TearLine and "Donde más se juntan": up to three categories, each a 32 dp <code>CategoryCircle</code>, name, count and amount (<code>SmallExpensesSlip.kt</code>).</li>
         <li><strong>Empty</strong> instead of the chart slips: an Empty <a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> with the Insights icon and "Anotar un gasto" (<code>ResumenScreen.kt:343</code>).</li>
         <li><strong>"Mes a mes" slip</strong>: heading, the "Un mes normal" row and its basis, the selected column's label and amount (with <code>CarryBreakdownSection</code> or "Límite de ese mes" under it), then a <a href="../components.html#c-ColumnsChart"><code>ColumnsChart</code></a> that scrolls sideways when columns would be narrower than 48 dp, with the month's limit as a dashed reference line, the current month striped and starred, short value labels on the highest and current columns, the "* Mes en curso" note and the insufficient-history line (<code>ResumenScreen.kt:355</code>).</li>
         <li><strong>"¿Qué días gastas más?" slip</strong>: the selected weekday's average, or the answer "Los sábados" in <code>headlineSmall</code> W800, the basis, and a 120 dp ColumnsChart Monday first (<code>ResumenScreen.kt:549</code>).</li>
@@ -125,6 +129,20 @@
         <li>"Una sugerencia" (<code>resumen_suggestion_title</code>), "Podrías ajustar su límite para que refleje lo que de verdad gastas." (<code>resumen_suggestion_advice</code>), "Ajustar el presupuesto de %1$s" (<code>resumen_suggestion_action</code>), "Descartar sugerencia" (<code>resumen_suggestion_dismiss</code>), "No pudimos descartar la sugerencia. Tus gastos y límites siguen igual; inténtalo de nuevo." (<code>resumen_suggestion_dismiss_failed</code>)</li>
         <li>"No pudimos leer el resumen. Intenta de nuevo." (<code>resumen_load_failed</code>), "No pudimos actualizar. Estas cifras son de la última lectura, hasta el %1$s." (<code>resumen_stale</code>)</li>
       </ul>
+    </section>
+
+    <section id="screen-tu-ano">
+      <h2>Screen: Tu año (SELLO-196)</h2>
+      <p>Opened from Mes a mes's "Ver tu año ›" on the year of the month on screen (<code>app/src/main/java/com/software/sello/navigation/ResumenDestinations.kt</code>, <code>YearRoute</code>). The shell shows its title alone with Back. One scrolling column (<code>app/src/main/java/com/software/sello/feature/resumen/YearScreen.kt</code>): a slip with ‹ year › (from the first year with records to the current one), the hero (the year's expenses through <code>ComparisonSlip</code> against the same days of the year before, or an <code>AnswerSlip</code> alone), Mes a mes (<code>ColumnsChart</code>, 12 columns: finished months <code>Past</code> with a ✓ or ✗ under them, the month in progress <code>Current</code> in brand, later months <code>Upcoming</code> outlines; then the count line), Lo que entró (<code>LeaderLine</code>s and a <code>TotalLine</code>) and ¿En qué se fue? (<code>SpendingRankRow</code> with its share and no chevron, top 5, then "Ver las N categorías"). Loading, failed, older figures and an empty year use <code>SlipSkeleton</code> and <code>StatusSlip</code>.</p>
+      <figure data-shot="year-ready" data-module="app" data-caption="2026 in progress, compared with the same days of 2025"></figure>
+      <figure data-shot="year-ready" data-module="app" data-variants="violeta-light-font1.0" data-caption="Violeta ink"></figure>
+      <figure data-shot="year-categories" data-module="app" data-caption="Lo que entró and ¿En qué se fue?"></figure>
+      <figure data-shot="year-selected" data-module="app" data-caption="March selected: its exact value"></figure>
+      <figure data-shot="year-closed" data-module="app" data-caption="2025, finished, with nothing to compare"></figure>
+      <figure data-shot="year-loading" data-module="app" data-caption="Loading"></figure>
+      <figure data-shot="year-failed" data-module="app" data-caption="Nothing could be read"></figure>
+      <figure data-shot="year-stale" data-module="app" data-caption="Older figures under the notice"></figure>
+      <figure data-shot="year-empty" data-module="app" data-caption="A year with nothing recorded"></figure>
     </section>
 
     <section id="components">

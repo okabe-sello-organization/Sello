@@ -94,6 +94,7 @@ fun CategoryDetailScreen(
     announcementBusy: Boolean = false,
     announcementFailed: Boolean = false,
     onShowAllExpenses: () -> Unit = {},
+    onShowRepeated: (note: String) -> Unit = {},
     onSetMonthLimit: (categoryId: String, month: YearMonth) -> Unit = { _, _ -> },
     onOpenSchedule: (String) -> Unit = {},
     onAllSchedules: () -> Unit = {},
@@ -220,7 +221,7 @@ fun CategoryDetailScreen(
                     onShowAllExpenses,
                     onRecordSeveral
                 )
-                CategoryInsightSections(state, months, dates, onAction)
+                CategoryInsightSections(state, months, dates, onAction, onShowRepeated)
             }
         }
     }
@@ -601,6 +602,7 @@ const val CATEGORY_DETAIL_HEADER_TAG = "detail:header"
 const val CATEGORY_DETAIL_SPENT_TAG = "detail:spent"
 const val CATEGORY_DETAIL_LIMIT_TAG = "detail:limit"
 const val CATEGORY_DETAIL_LIST_TAG = "detail:list"
+const val CATEGORY_DETAIL_WEEKS_TAG = "detail:weeks"
 const val CATEGORY_DETAIL_LIST_LOADING_TAG = "detail:list-loading"
 const val CATEGORY_DETAIL_LIST_FAILED_TAG = "detail:list-failed"
 const val CATEGORY_DETAIL_EMPTY_TAG = "detail:empty"

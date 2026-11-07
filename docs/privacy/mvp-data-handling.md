@@ -8,20 +8,20 @@ that. It describes the built app as of SELLO-032; the
 
 Sello has no account, no server and no network permission. Everything stays in the
 app's private storage on the phone. The only things that leave are a backup or an
-export the person saves themselves, to a place they choose, or an export they share
-with an app they choose.
+export the person saves themselves, to a place they choose, or an export or an image of
+a month's budget they share with an app they choose.
 
 ## What is stored
 
 All of it is in the app's private storage (`/data/data/com.software.sello`), readable
-only by Sello. Nothing is written to shared storage; the cache holds only an export
-while it is being shared.
+only by Sello. Nothing is written to shared storage; the cache holds only an export or
+a month's image while it is being shared.
 
 | Where | What | Notes |
 | --- | --- | --- |
 | `databases/sello.db` (+ `-wal`, `-shm`) | Categories, budget limits, expenses and incomes with their notes; goals with their names, targets, movements and notes; recurring payments and incomes with their notes and pauses; investments with their names, descriptions, movements and notes, and the USD rates entered; the profile (financial zone, generation, revision); operation receipts; at most one deleted expense, income, goal movement or investment movement kept to undo it | Receipts hold an operation ID, kind, input digest, generation, revision, time and a record ID, never an amount, name or note. The undo copy is removed whenever storage opens. [Storage](../development/storage.md) |
 | `files/datastore/sello-preferences.preferences_pb` | Theme, ink, category order and direction, Inversiones' currency and order, two "seen" flags for correction hints, and the last backup: date, counts, size and file name | The theme, ink and the two orders and currency travel in a backup; the rest does not. |
-| `cache/exports/` | At most one export the person chose to share, CSV or JSON | Plaintext financial data while it exists. Removed by the next share and when Sello next starts. |
+| `cache/exports/` | At most one file the person chose to share: a CSV or JSON export, or the PNG image of a month's budget | Plaintext financial data while it exists. Removed by the next share and when Sello next starts. An image is also removed when its figures turn older while it is written, or when Resumen's screen is discarded before it is written; if the system ends Sello first, the next start removes it. |
 | `files/sello-restore/` | A backup file chosen to restore, until it is confirmed, cancelled or a day old (deleted at the next start; kept while Sello cannot read whether it was restored, or cannot read the note kept with it, until Respaldo settles it); after a restore, the backup's preferences until they are applied | Plaintext financial data while it exists. |
 | `files/sello-reset/pending.properties` | During an erase only: its operation ID and whether preferences were reset | No financial data. |
 | `files/sello-reset/compact.pending` | An empty file, after an erase whose compaction is not done yet | No data; removed once the database is compacted. |
@@ -47,6 +47,18 @@ build contains none of this code (see Checks).
   so before anything is written, that it is not a backup, and that a shared copy is the
   other app's to keep. A shared export is served from `cache/exports/` by Sello's own
   provider, which grants the chosen app read access to that one file and nothing else.
+- **An image of a month's budget**, only when the person taps Compartir on Resumen's
+  bar, sees the exact image in a preview and taps Compartir imagen, then picks an app in
+  the share sheet. It shows the month and the day its figures are from, what is left of
+  the total limit with its stamp (Al día, Al límite, Excedido, Cumplido) and spent
+  against that limit, or, when no category has a limit, Has gastado este mes with the
+  total spent and the Sin límite stamp, then each category's name, spent and limit, the
+  categories Recibo lists. It
+  never holds notes, income, goals, investments, settings or payments still to come: its
+  render model has no field for them, and its headline ignores reserved payments. The
+  preview says so before anything is written; Cancelar writes nothing, and older figures
+  cannot be shared. The PNG goes the same way as a shared export:
+  one file in `cache/exports/`, read access for the chosen app to that file only.
 - **Nothing else.** There is no INTERNET permission. Android's cloud backup and
   device-to-device transfer are off (`allowBackup="false"`) and every storage domain is
   excluded in `data_extraction_rules.xml` and `backup_rules.xml`, so they do not depend
@@ -99,6 +111,7 @@ permission requested is AndroidX's signature-protected one for private dynamic r
 | --- | --- |
 | `:app:verifyReleaseManifestPrivacy`, `:app:verifyDebugManifestPrivacy` (after each assemble) | The merged manifests: backup off, every domain excluded, only allowed permissions, providers and exported components, each with its reason; only the export provider may grant URI access, with its own authority, and its paths file serves only `cache/exports/`. Report: `app/build/reports/privacy/manifest-*.txt` |
 | `ExportJourneyTest` (device) | A share grants read access to one file, the next share removes it, clearing empties the folder, and a path is not accepted as a name |
+| `MonthShareRenderModelTest`, `ShareMonthViewModelTest` (JVM) | The month's image has no field for notes, income, goals, investments or settings, and no expense note reaches it; nothing is written before Compartir imagen, older figures are not shared, also when they turn older while it is written, and the view model cleared while it is written removes it |
 | `:app:verifyReleaseDependencies` | No test, tooling or test-manifest library in the release runtime. Report: `release-dependencies.txt` |
 | `:app:verifyReleaseHasNoDeveloperTools` | The release APK holds no developer tools, sandbox names, debug composition or previews |
 | `FileBoundaryTest` (device) | File paths and other non-provider addresses are refused; private files are untouched |

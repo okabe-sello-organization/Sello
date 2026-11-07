@@ -72,6 +72,7 @@ class ScheduleBackupRestoreTest {
     private val other by lazy { TestLedger(fresh).also { it.start() } }
     private val dispatchers = realDispatchers
     private val investments = HandInvestmentPreferences()
+    private val smallExpenses = HandSmallExpensePreferences()
     private val preferences = object : AppearancePreferences, CategoryOrderingPreferences {
         override fun observeAppearance(): Flow<PreferenceRead<AppearancePreference>> = flowOf(
             PreferenceRead.Ready(
@@ -172,6 +173,7 @@ class ScheduleBackupRestoreTest {
         preferences,
         preferences,
         investments,
+        smallExpenses,
         { ledger.audit },
         ledger.clock,
         dispatchers
@@ -184,6 +186,7 @@ class ScheduleBackupRestoreTest {
         preferences,
         preferences,
         investments,
+        smallExpenses,
         notice,
         { uuid(nextId++) },
         { target.audit },

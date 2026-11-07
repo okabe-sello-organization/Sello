@@ -1,7 +1,6 @@
 package com.software.sello.data.repository
 
 import androidx.room.withTransaction
-import com.software.sello.data.local.SearchKey
 import com.software.sello.data.local.SelloDatabase
 import com.software.sello.data.local.dao.MovementDao
 import com.software.sello.data.local.dao.MovementKind
@@ -18,6 +17,7 @@ import com.software.sello.domain.model.MoneyError
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.policy.EffectiveDates
+import com.software.sello.domain.policy.SearchKey
 import com.software.sello.domain.policy.SearchTotalsPolicy
 import com.software.sello.domain.port.Movement
 import com.software.sello.domain.port.MovementFilter

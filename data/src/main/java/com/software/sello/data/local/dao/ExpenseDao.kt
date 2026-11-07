@@ -7,7 +7,7 @@ import com.software.sello.data.local.entity.ExpenseEntity
 
 @Dao
 interface ExpenseDao {
-    /** [key] is the query as [com.software.sello.data.local.SearchKey] folds it. */
+    /** [key] is the query as [com.software.sello.domain.policy.SearchKey] folds it. */
     @Query(
         "SELECT COUNT(*) FROM expense WHERE category_id = :categoryId " +
             "AND effective_date >= :from AND effective_date <= :through " +
@@ -21,7 +21,7 @@ interface ExpenseDao {
     ): Long
 
     /**
-     * "name" orders by the folded [com.software.sello.data.local.SearchKey], as search
+     * "name" orders by the folded [com.software.sello.domain.policy.SearchKey], as search
      * compares, so accents and case (Ñ as N) never move a note out of place; the note
      * itself breaks ties. SQLite's NOCASE folds only ASCII letters.
      */
@@ -46,6 +46,10 @@ interface ExpenseDao {
 
     @Insert
     suspend fun insert(expense: ExpenseEntity)
+
+    /** The stored date of the earliest expense, or null when there is none. */
+    @Query("SELECT MIN(effective_date) FROM expense")
+    suspend fun earliestDate(): String?
 
     /** The highest sequence in use, or null when there is no expense. */
     @Query("SELECT MAX(sequence) FROM expense")
@@ -123,7 +127,7 @@ interface ExpenseDao {
      * Changes the expense only while it is still at [expectedVersion]. Returns how many
      * rows changed: one, or none when the expense is gone or was changed meanwhile.
      * When it was first added and its sequence are not among what can change.
-     * [searchKey] is [note] as [com.software.sello.data.local.SearchKey] folds it.
+     * [searchKey] is [note] as [com.software.sello.domain.policy.SearchKey] folds it.
      */
     @Query(
         "UPDATE expense SET category_id = :categoryId, effective_date = :effectiveDate, " +

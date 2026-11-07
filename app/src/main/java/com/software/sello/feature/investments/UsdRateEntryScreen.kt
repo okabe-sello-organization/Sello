@@ -3,25 +3,13 @@ package com.software.sello.feature.investments
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.SelectableDates
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withStyle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -29,7 +17,6 @@ import com.software.sello.R
 import com.software.sello.designsystem.component.AmountKeypad
 import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.EntryAmountSlip
-import com.software.sello.designsystem.component.EntryLayout
 import com.software.sello.designsystem.component.FactLine
 import com.software.sello.designsystem.component.FieldMessage
 import com.software.sello.designsystem.component.FieldMessageText
@@ -37,21 +24,14 @@ import com.software.sello.designsystem.component.FieldPill
 import com.software.sello.designsystem.component.FieldTone
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.designsystem.component.PadForm
+import com.software.sello.designsystem.component.PadFormStage
 import com.software.sello.designsystem.component.SelloButton
-import com.software.sello.designsystem.component.SelloScaffold
-import com.software.sello.designsystem.component.SlipSkeleton
-import com.software.sello.designsystem.component.StatusAction
-import com.software.sello.designsystem.component.StatusKind
-import com.software.sello.designsystem.component.StatusSlip
-import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.icon.SelloIcon
-import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.movement.MovementCloseButton
 import com.software.sello.presentation.movement.MovementDatePicker
-import java.time.Instant
-import java.time.ZoneOffset
 
 @Composable
 fun UsdRateEntryRoot(viewModels: ViewModelProvider.Factory, onClosed: () -> Unit) {
@@ -70,56 +50,42 @@ fun UsdRateEntryRoot(viewModels: ViewModelProvider.Factory, onClosed: () -> Unit
  */
 @Composable
 fun UsdRateEntryScreen(state: UsdRateEntryState, onAction: (UsdRateEntryAction) -> Unit) {
-    SelloScaffold(
+    PadForm(
         title = stringResource(R.string.usd_rate_entry_title),
+        stage = when {
+            state.loading -> PadFormStage.Loading
+
+            state.loadFailed -> PadFormStage.Failed(
+                stringResource(R.string.usd_rate_failed_title),
+                stringResource(R.string.usd_rate_failed_body)
+            ) { onAction(UsdRateEntryAction.Retry) }
+
+            else -> PadFormStage.Ready
+        },
         navigationIcon = {
             MovementCloseButton(
                 { onAction(UsdRateEntryAction.Back) },
                 Modifier.testTag(USD_RATE_ENTRY_CLOSE_TAG)
             )
-        }
-    ) { padding ->
-        when {
-            state.loading -> Column(
-                Modifier.fillMaxSize().padding(padding).padding(SelloTheme.spacing.lg)
-            ) {
-                SlipSkeleton(Modifier.testTag("usd.rate.entry.loading"))
-            }
-
-            state.loadFailed -> Column(
-                Modifier.fillMaxSize().padding(padding).padding(SelloTheme.spacing.lg)
-            ) {
-                StatusSlip(
-                    kind = StatusKind.LoadFailed(stringResource(R.string.usd_rate_failed_title)),
-                    message = stringResource(R.string.usd_rate_failed_body),
-                    modifier = Modifier.testTag("usd.rate.entry.failed"),
-                    action = StatusAction(StatusSlipDefaults.retryLabel) {
-                        onAction(UsdRateEntryAction.Retry)
-                    }
-                )
-            }
-
-            else -> EntryLayout(
-                modifier = Modifier.padding(padding),
-                header = {},
-                amount = { Amount(state, onAction) },
-                choices = { Fact(state) },
-                action = { Action(state, onAction) },
-                keypad = {
-                    AmountKeypad(
-                        { onAction(UsdRateEntryAction.Digit(it)) },
-                        {},
-                        { onAction(UsdRateEntryAction.Backspace) },
-                        { onAction(UsdRateEntryAction.Clear) },
-                        enabled = state.editable,
-                        modifier = Modifier.testTag(USD_RATE_ENTRY_KEYPAD_TAG),
-                        compact = true,
-                        onComma = { onAction(UsdRateEntryAction.Comma) }
-                    )
-                }
+        },
+        amount = { Amount(state, onAction) },
+        fact = { Fact(state) },
+        action = { Action(state, onAction) },
+        keypad = {
+            AmountKeypad(
+                { onAction(UsdRateEntryAction.Digit(it)) },
+                {},
+                { onAction(UsdRateEntryAction.Backspace) },
+                { onAction(UsdRateEntryAction.Clear) },
+                enabled = state.editable,
+                modifier = Modifier.testTag(USD_RATE_ENTRY_KEYPAD_TAG),
+                compact = true,
+                onComma = { onAction(UsdRateEntryAction.Comma) }
             )
-        }
-    }
+        },
+        loadingModifier = Modifier.testTag("usd.rate.entry.loading"),
+        failedModifier = Modifier.testTag("usd.rate.entry.failed")
+    )
     if (state.datePickerOpen) RateDatePicker(state, onAction)
 }
 
@@ -162,23 +128,17 @@ private fun Amount(state: UsdRateEntryState, onAction: (UsdRateEntryAction) -> U
 @Composable
 private fun Fact(state: UsdRateEntryState) {
     val current = state.current
-    val bold =
-        SpanStyle(color = SelloTheme.colors.ink, fontWeight = SelloTheme.type.weight.emphasis)
-    FactLine(
-        if (current == null) {
-            buildAnnotatedString { append(stringResource(R.string.usd_rate_entry_first)) }
-        } else {
-            val day = dateLabels().shortDay(current.date, state.today)
-            val text = stringResource(R.string.usd_rate_entry_fact, current.rate, day)
-            buildAnnotatedString {
-                val at = text.indexOf(current.rate)
-                append(text.substring(0, at))
-                withStyle(bold) { append(current.rate) }
-                append(text.substring(at + current.rate.length))
-            }
-        },
-        Modifier.testTag("usd.rate.entry.fact")
-    )
+    val modifier = Modifier.testTag("usd.rate.entry.fact")
+    if (current == null) {
+        FactLine(stringResource(R.string.usd_rate_entry_first), "", modifier)
+    } else {
+        val day = dateLabels().shortDay(current.date, state.today)
+        FactLine(
+            stringResource(R.string.usd_rate_entry_fact, current.rate, day),
+            current.rate,
+            modifier
+        )
+    }
 }
 
 @Composable

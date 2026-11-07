@@ -1,6 +1,5 @@
 package com.software.sello.data.repository
 
-import com.software.sello.data.local.SearchKey
 import com.software.sello.domain.model.Income
 import com.software.sello.domain.model.IncomeId
 import com.software.sello.domain.model.IncomeSource
@@ -9,6 +8,7 @@ import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.SourceName
 import com.software.sello.domain.model.TransactionAmount
+import com.software.sello.domain.policy.SearchKey
 import com.software.sello.domain.port.MovementQuery
 import java.time.Instant
 import java.time.LocalDate

@@ -272,6 +272,7 @@ class RecoveryRetentionTest {
             chosen,
             chosen,
             HandInvestmentPreferences(),
+            HandSmallExpensePreferences(),
             {
                 at
             },
@@ -301,9 +302,17 @@ class RecoveryRetentionTest {
         val other = open(new)
         other.profiles.establish(ZoneId.of("America/Bogota")).valueOrFail()
         val applied = Preferences(AppearancePreference(), CategoryOrderingPreference())
-        val restores = other.restores(applied, applied, HandInvestmentPreferences(), NoticeSeen(), {
-            uuid(nextOperation++)
-        }, { at }, dispatchers, PreferenceReset { PreferenceWrite.Saved })
+        val restores = other.restores(
+            applied,
+            applied,
+            HandInvestmentPreferences(),
+            HandSmallExpensePreferences(),
+            NoticeSeen(),
+            { uuid(nextOperation++) },
+            { at },
+            dispatchers,
+            PreferenceReset { PreferenceWrite.Saved }
+        )
         val restored = restores.replace(restores.stage(prepared.bytes).valueOrFail())
         assertEquals(
             RestoreOutcome.Restored(BackupSummary(3, 5, 2, 0, 0), PendingPreferences(null, null)),
