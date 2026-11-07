@@ -113,6 +113,18 @@ object YearPolicy {
             is Outcome.Failure -> return ranked
             is Outcome.Success -> ranked.value
         }
+        val comparison = when (
+            val compared = comparison(
+                year,
+                today,
+                spent,
+                input.previousExpenses,
+                input.firstRecorded
+            )
+        ) {
+            is Outcome.Failure -> return compared
+            is Outcome.Success -> compared.value
+        }
         val firstYear = minOf(input.firstRecorded?.year ?: today.date.year, today.date.year)
         return Outcome.Success(
             YearSnapshot(
@@ -149,40 +161,57 @@ object YearPolicy {
                         )
                     }
                 },
-                comparison = comparison(year, today, spent, input.previousExpenses),
+                comparison = comparison,
                 categories = categories
             )
         )
     }
 
     /**
-     * Against the year before on the same days, only when it has something recorded on
-     * them: an earlier year with nothing then has no data, it is not a zero.
+     * Against the year before on the same days, only when that year has data for them: the
+     * first record (expense or income) is on or before its 1 January, and it has an expense
+     * on those days. A year begun part way, or with nothing then, is not a zero to compare
+     * with (orchestrator ruling on PR 439). A total that does not fit is a typed failure.
      */
     private fun comparison(
         year: Int,
         today: FinancialDay,
         spent: Money,
-        previousExpenses: List<Expense>
-    ): YearComparison? {
+        previousExpenses: List<Expense>,
+        firstRecorded: LocalDate?
+    ): Outcome<YearComparison?, SnapshotFailure> {
+        val previousStart = LocalDate.of(year - 1, Month.JANUARY, 1)
+        if (firstRecorded == null || firstRecorded > previousStart) return Outcome.Success(null)
         val previousThrough = previousThrough(year, today)
         val compared = previousExpenses.filter {
             it.date.year == year - 1 && it.date <= previousThrough
         }
-        if (compared.isEmpty()) return null
+        if (compared.isEmpty()) return Outcome.Success(null)
         val current = spent.minorUnits.toBigInteger()
         val previous = compared.fold(BigInteger.ZERO) { total, it ->
             total + it.amount.money.minorUnits.toBigInteger()
         }
-        if (previous.bitLength() >= Long.SIZE_BITS) return null
         val difference = (current - previous).abs()
-        if (difference.bitLength() >= Long.SIZE_BITS) return null
+        if (previous.bitLength() >= Long.SIZE_BITS || difference.bitLength() >= Long.SIZE_BITS) {
+            return Outcome.Failure(SnapshotFailure.Unrepresentable)
+        }
+        return Outcome.Success(comparisonOf(year, today, spent, previous, difference))
+    }
+
+    private fun comparisonOf(
+        year: Int,
+        today: FinancialDay,
+        spent: Money,
+        previous: BigInteger,
+        difference: BigInteger
+    ): YearComparison {
+        val current = spent.minorUnits.toBigInteger()
         return YearComparison(
             previousYear = year - 1,
             spent = spent,
             previousSpent = Money.cop(previous.toLong()),
             through = through(year, today),
-            previousThrough = previousThrough,
+            previousThrough = previousThrough(year, today),
             wholeYears = year != today.date.year,
             difference = Money.cop(difference.toLong()),
             direction = when (current.compareTo(previous)) {

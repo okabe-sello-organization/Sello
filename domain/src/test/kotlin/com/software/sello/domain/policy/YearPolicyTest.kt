@@ -135,7 +135,8 @@ class YearPolicyTest {
                 expense("2025-11-06", 350_000),
                 // After 6 November: not the same days.
                 expense("2025-11-07", 500_000)
-            )
+            ),
+            firstRecorded = "2025-01-01"
         )
 
         // 2026: 14.000.000 + 230.000 = 14.230.000. 2025 to 6 November: 15.000.000 + 350.000
@@ -163,7 +164,8 @@ class YearPolicyTest {
             2028,
             "2028-02-29",
             listOf(expense("2028-02-29", 30_000)),
-            previous = listOf(expense("2027-02-28", 20_000), expense("2027-03-01", 99_000))
+            previous = listOf(expense("2027-02-28", 20_000), expense("2027-03-01", 99_000)),
+            firstRecorded = "2026-12-31"
         )
 
         // 2028 to 29 February: 30.000. 2027 to 28 February: 20.000. 10.000 more; 50,0 %.
@@ -181,10 +183,28 @@ class YearPolicyTest {
             2026,
             "2026-11-06",
             listOf(expense("2026-03-02", 40_000)),
-            previous = listOf(expense("2025-12-01", 70_000))
+            previous = listOf(expense("2025-12-01", 70_000)),
+            firstRecorded = "2024-05-01"
         )
 
         assertNull(snapshot.comparison)
+    }
+
+    @Test
+    fun theYearBeforeIsComparedOnlyWhenRecordsBeganByItsFirstDay() {
+        val expenses = listOf(expense("2026-03-02", 40_000))
+        val previous = listOf(expense("2025-03-02", 50_000))
+
+        val fromFirstDay =
+            read(2026, "2026-11-06", expenses, previous, firstRecorded = "2025-01-01")
+        val fromSecondDay =
+            read(2026, "2026-11-06", expenses, previous, firstRecorded = "2025-01-02")
+
+        // From 1 January 2025: 40.000 against 50.000, 10.000 less; 10.000 / 50.000 = 20,0 %.
+        assertEquals(Money.cop(10_000), fromFirstDay.comparison!!.difference)
+        assertEquals(BigInteger.valueOf(200), fromFirstDay.comparison!!.percentTenths)
+        // From 2 January 2025, 2025 is a partial year: the year is shown alone.
+        assertNull(fromSecondDay.comparison)
     }
 
     @Test
@@ -193,7 +213,8 @@ class YearPolicyTest {
             2025,
             "2026-11-06",
             listOf(expense("2025-02-10", 100_000), expense("2025-12-31", 50_000)),
-            previous = listOf(expense("2024-06-01", 100_000), expense("2024-12-31", 20_000))
+            previous = listOf(expense("2024-06-01", 100_000), expense("2024-12-31", 20_000)),
+            firstRecorded = "2023-08-15"
         )
 
         // 2025: 150.000. 2024: 120.000. 30.000 more; 30.000 / 120.000 = 25,0 %.

@@ -21,6 +21,7 @@ import com.software.sello.data.repository.RoomMonthlySnapshots
 import com.software.sello.data.repository.RoomResumenSnapshots
 import com.software.sello.data.repository.RoomScheduleCommands
 import com.software.sello.data.repository.RoomScheduleReads
+import com.software.sello.data.repository.RoomYearSnapshots
 import com.software.sello.data.repository.UndoWindow
 import com.software.sello.domain.model.BudgetLimit
 import com.software.sello.domain.model.CategoryId
@@ -58,6 +59,7 @@ import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.ResumenSnapshots
 import com.software.sello.domain.port.ScheduleCommands
 import com.software.sello.domain.port.ScheduleReads
+import com.software.sello.domain.port.YearSnapshots
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
@@ -113,6 +115,7 @@ class TestLedger(
     lateinit var reads: CategoryReads
     lateinit var snapshots: MonthlySnapshots
     lateinit var resumen: ResumenSnapshots
+    lateinit var years: YearSnapshots
     lateinit var expenseReads: ExpenseReads
     lateinit var categoryInsights: CategoryInsightsSnapshots
     lateinit var categoryExpenseSearch: CategoryExpenseSearch
@@ -146,6 +149,7 @@ class TestLedger(
         reads = RoomCategoryReads(database)
         snapshots = RoomMonthlySnapshots(database, clock, computation)
         resumen = RoomResumenSnapshots(database, clock, computation)
+        years = RoomYearSnapshots(database, clock, computation)
         expenseReads = RoomExpenseReads(database)
         categoryInsights = RoomCategoryInsightsSnapshots(database, clock, computation)
         categoryExpenseSearch = RoomCategoryExpenseSearch(database)
