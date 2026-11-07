@@ -177,7 +177,8 @@ private fun flag(element: JsonElement, path: String): Boolean {
 }
 
 /**
- * Checks a decoded file completely, older versions read as version 8 included; the
+ * Checks a decoded file completely, older versions read as version 8 included (version 9
+ * has version 8's shape); the
  * first problem rejects all of it.
  */
 internal fun validate(file: BackupFileV8): Outcome<BackupContents, BackupRejection> = try {
@@ -238,7 +239,7 @@ private fun contentsOf(file: BackupFileV8): BackupContents {
                 financialMonth
             )
         ),
-        preferences = file.preferences?.let(::preferences)
+        preferences = file.preferences?.let { preferences(it, version) }
     )
 }
 
@@ -247,6 +248,9 @@ private const val FINANCIAL_MONTH_VERSION = 6L
 
 /** The first version with `starredGoals` in place of `featuredGoal`. */
 private const val STARS_VERSION = 7L
+
+/** The first version whose ink may be `sistema`. */
+private const val SISTEMA_VERSION = 9L
 
 /**
  * Up to [GoalPolicy.MAX_STARRED] goals of the file, each active and named once. A file of
@@ -997,8 +1001,12 @@ private fun carryChains(
 private fun <T> Map<T, String>.decode(text: String, path: String): T =
     entries.firstOrNull { it.value == text }?.key ?: invalid(path)
 
-private fun preferences(wire: PreferencesV8) = PortablePreferences(
-    appearance = appearance(wire, WireNames.themes.decode(wire.theme, "preferences.theme")),
+private fun preferences(wire: PreferencesV8, version: Long) = PortablePreferences(
+    appearance = appearance(
+        wire,
+        WireNames.themes.decode(wire.theme, "preferences.theme"),
+        version
+    ),
     ordering = CategoryOrderingPreference(
         order = WireNames.orders.decode(wire.categoryOrder, "preferences.categoryOrder"),
         direction = WireNames.directions.decode(
@@ -1021,9 +1029,13 @@ private fun preferences(wire: PreferencesV8) = PortablePreferences(
 /**
  * The ink and Tuya's hue: a bare whole degree from 0 to 359, required with Tuya and kept,
  * if the file has one, beside another ink. A hue outside it is refused, never wrapped or
- * clipped.
+ * clipped. Sistema came with version 9: an older file that says it is refused.
  */
-private fun appearance(wire: PreferencesV8, theme: ThemePreference): AppearancePreference {
+private fun appearance(
+    wire: PreferencesV8,
+    theme: ThemePreference,
+    version: Long
+): AppearancePreference {
     val hue = optionalWhole(wire.inkHue, "preferences.inkHue")?.let {
         InkHue.of(it) ?: invalid("preferences.inkHue")
     }
@@ -1033,5 +1045,6 @@ private fun appearance(wire: PreferencesV8, theme: ThemePreference): AppearanceP
 
         else -> invalid("preferences.ink")
     }
+    if (ink == InkPreference.Sistema && version < SISTEMA_VERSION) invalid("preferences.ink")
     return AppearancePreference(theme, ink, hue)
 }

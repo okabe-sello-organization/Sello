@@ -18,15 +18,17 @@ import com.software.sello.composition.SelloApplication
 import com.software.sello.composition.StartupState
 import com.software.sello.composition.startupFailureViewModels
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.feature.settings.AppearanceFrame
 import com.software.sello.feature.settings.AppearanceViewModel
-import com.software.sello.feature.settings.asSelloTheme
 import com.software.sello.feature.startup.StartupFailureRoot
 import com.software.sello.feature.startup.StartupLoading
 import com.software.sello.navigation.SelloAppRoot
 import com.software.sello.navigation.ShellAction
 import com.software.sello.navigation.ShellViewModel
+import com.software.sello.platform.AndroidSystemAccent
 import com.software.sello.platform.ProcessAppRestart
 import com.software.sello.platform.SystemBarsFollowTheme
+import com.software.sello.platform.SystemColor
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -61,12 +63,8 @@ class MainActivity : ComponentActivity() {
                 // tokens without replacing any saved route, draft or financial view model.
                 is StartupState.Ready -> {
                     val appearance: AppearanceViewModel = viewModel(factory = now.viewModels)
-                    val preference by appearance.state.collectAsStateWithLifecycle()
-                    val theme = preference.appearance.asSelloTheme(isSystemInDarkTheme())
-                    SystemBarsFollowTheme(theme.dark) {
-                        SelloTheme(ink = theme.ink, darkTheme = theme.dark) {
-                            if (!startingOver) SelloAppRoot(now.viewModels)
-                        }
+                    AppearanceFrame(appearance) {
+                        if (!startingOver) SelloAppRoot(now.viewModels)
                     }
                 }
 
@@ -77,7 +75,10 @@ class MainActivity : ComponentActivity() {
                             viewModels = remember {
                                 startupFailureViewModels(
                                     startup,
-                                    ProcessAppRestart(applicationContext)
+                                    ProcessAppRestart(applicationContext),
+                                    // No graph here: the phone's colour, for a restore's
+                                    // pending ink, is read on its own.
+                                    SystemColor(AndroidSystemAccent(applicationContext))
                                 )
                             },
                             onStartedOver = ::startOver

@@ -87,6 +87,7 @@ enum class SelloIcon(@DrawableRes val filled: Int, @DrawableRes val outlined: In
     SwapVert(R.drawable.ic_sello_swap_vert),
     Theaters(R.drawable.ic_sello_theaters),
     UploadFile(R.drawable.ic_sello_upload_file),
+    Wallpaper(R.drawable.ic_sello_wallpaper),
     Wifi(R.drawable.ic_sello_wifi)
 }
 

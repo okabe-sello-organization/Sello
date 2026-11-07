@@ -16,6 +16,7 @@ import com.software.sello.platform.AndroidDocumentReader
 import com.software.sello.platform.AndroidDocumentWriter
 import com.software.sello.platform.AndroidExportShares
 import com.software.sello.platform.AndroidScreenReader
+import com.software.sello.platform.AndroidSystemAccent
 import com.software.sello.platform.AndroidTimeSignals
 import com.software.sello.platform.ApplicationScope
 import com.software.sello.platform.ProcessAppRestart
@@ -23,6 +24,7 @@ import com.software.sello.platform.ProcessFinancialZone
 import com.software.sello.platform.RandomRecordIds
 import com.software.sello.platform.ScreenReader
 import com.software.sello.platform.SystemAuditClock
+import com.software.sello.platform.SystemColor
 import com.software.sello.platform.SystemDispatcherProvider
 import com.software.sello.platform.SystemFinancialClock
 import com.software.sello.platform.SystemMonotonicClock
@@ -69,6 +71,8 @@ fun androidModule(context: Context): Module = module {
     single<ExportShares> { AndroidExportShares(context, get()) }
     single<AppRestart> { ProcessAppRestart(context) }
     single<ScreenReader> { AndroidScreenReader(context) }
+    // One reading of the phone's colour for the whole app, so every screen shows the same.
+    single { SystemColor(AndroidSystemAccent(context)) }
 }
 
 /** [generation] is the history's as [storage] opened, when [financialZone] was read. */

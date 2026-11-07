@@ -57,6 +57,7 @@ import com.software.sello.feature.startup.StartupFailureViewModel
 import com.software.sello.feature.startup.StartupRecovery
 import com.software.sello.navigation.MonthSession
 import com.software.sello.navigation.ShellViewModel
+import com.software.sello.platform.SystemColor
 import com.software.sello.presentation.corrections.CorrectionAnnouncementsViewModel
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.CorrectionsViewModel
@@ -178,7 +179,10 @@ fun viewModels(koin: Koin): ViewModelProvider.Factory = object : ViewModelProvid
  */
 fun startupFailureViewModels(
     recovery: StartupRecovery,
-    restart: AppRestart
+    restart: AppRestart,
+    systemColor: SystemColor
 ): ViewModelProvider.Factory = viewModelFactory {
-    initializer { StartupFailureViewModel(createSavedStateHandle(), recovery, restart) }
+    initializer {
+        StartupFailureViewModel(createSavedStateHandle(), recovery, restart, systemColor)
+    }
 }

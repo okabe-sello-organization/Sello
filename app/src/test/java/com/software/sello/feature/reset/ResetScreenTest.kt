@@ -213,7 +213,7 @@ class ResetScreenTest {
         show(ResetState(ResetStep.Erased(preferencesPending = true)))
 
         rule.onNodeWithText("Tus datos se borraron").assertIsDisplayed()
-        rule.onNodeWithText("Apariencia: Sistema, Cobalto").assertIsDisplayed()
+        rule.onNodeWithText("Apariencia: tema Sistema, tinta Cobalto").assertIsDisplayed()
         rule.onNodeWithText("Orden de categorías: Más usadas, de mayor a menor").assertIsDisplayed()
         rule.onNodeWithText("Inversiones: Pesos (COP), Mayor valor").assertIsDisplayed()
         rule.onNodeWithText("Restablecer preferencias").assertExists()

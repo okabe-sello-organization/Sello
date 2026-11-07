@@ -24,6 +24,8 @@ import com.software.sello.feature.investments.HandInvestmentReads
 import com.software.sello.feature.investments.rateEntry
 import com.software.sello.feature.investments.ratesBoard
 import com.software.sello.feature.recurrence.HandScheduleReads
+import com.software.sello.platform.PhoneColor
+import com.software.sello.platform.SystemColor
 import com.software.sello.testing.testMoney
 import java.time.LocalDate
 import kotlinx.coroutines.CancellationException
@@ -59,6 +61,10 @@ class SettingsViewModelTest {
     private val investments = HandInvestmentReads(ReadState.Loading)
     private val investmentSettings = HandInvestmentPreferences()
 
+    /** The phone's accent colour: a hue, grey, or none as on Android 11. */
+    private var phone: PhoneColor = PhoneColor.Hue(140)
+    private val systemColor = SystemColor { phone }
+
     private fun settings(handle: SavedStateHandle = SavedStateHandle()) = SettingsViewModel(
         handle,
         appearance,
@@ -66,7 +72,8 @@ class SettingsViewModelTest {
         investmentSettings,
         HandScheduleReads(),
         investments,
-        testMoney()
+        testMoney(),
+        systemColor
     )
 
     @Test
@@ -416,6 +423,149 @@ class SettingsViewModelTest {
 
         assertNull(model.tuya())
         assertEquals(emptyList<InkPreference>(), appearance.inkWrites)
+    }
+
+    // SELLO-203: Sistema.
+
+    @Test
+    fun sistemaAppliesAtOnceWithNoSheetAndKeepsTuyasHue() = runTest {
+        val model = settings()
+        appearance.values.value = PreferenceRead.Ready(AppearancePreference(ink = red))
+        runCurrent()
+
+        model.onAction(SettingsAction.InkChosen(InkPreference.Sistema))
+        runCurrent()
+
+        assertEquals(listOf<InkPreference>(InkPreference.Sistema), appearance.inkWrites)
+        assertEquals(
+            AppearancePreference(ink = InkPreference.Sistema, tuyaHue = InkHue.of(22)!!),
+            model.state.value.appearance
+        )
+        assertNull(model.tuya())
+        assertFalse(model.state.value.busy)
+        assertNull(model.state.value.failure)
+    }
+
+    @Test
+    fun aSecondTapOnSistemaWhileItSavesWritesNothingMore() = runTest {
+        val model = settings()
+        runCurrent()
+        val gate = CompletableDeferred<Unit>()
+        appearance.inkGate = gate
+
+        model.onAction(SettingsAction.InkChosen(InkPreference.Sistema))
+        runCurrent()
+        model.onAction(SettingsAction.InkChosen(InkPreference.Sistema))
+        model.onAction(SettingsAction.InkChosen(InkPreference.Violeta))
+        runCurrent()
+        assertTrue(model.state.value.busy)
+
+        gate.complete(Unit)
+        runCurrent()
+        assertEquals(listOf<InkPreference>(InkPreference.Sistema), appearance.inkWrites)
+        assertEquals(InkPreference.Sistema, model.state.value.appearance.ink)
+        assertFalse(model.state.value.busy)
+    }
+
+    @Test
+    fun aSistemaThatCannotBeSavedSaysSoAndKeepsTheInkInUse() = runTest {
+        val model = settings()
+        appearance.values.value =
+            PreferenceRead.Ready(AppearancePreference(ink = InkPreference.Violeta))
+        runCurrent()
+        appearance.nextInkWrite = PreferenceWrite.Failed(PreferenceFailure.Unavailable)
+
+        model.onAction(SettingsAction.InkChosen(InkPreference.Sistema))
+        runCurrent()
+
+        assertEquals(PreferenceFailure.Unavailable, model.state.value.failure)
+        assertEquals(InkPreference.Violeta, model.state.value.appearance.ink)
+        assertFalse(model.state.value.busy)
+    }
+
+    @Test
+    fun thePhonesColourIsShownAndFollowedWhenReadAgain() = runTest {
+        val model = settings()
+        runCurrent()
+        assertEquals(PhoneColor.Hue(140), model.state.value.phone)
+
+        phone = PhoneColor.Hue(24)
+        // Not read again until Sello is back on screen.
+        runCurrent()
+        assertEquals(PhoneColor.Hue(140), model.state.value.phone)
+        systemColor.refresh()
+        runCurrent()
+        assertEquals(PhoneColor.Hue(24), model.state.value.phone)
+
+        // A monochrome style: grey, which is still an accent.
+        phone = PhoneColor.Grey
+        systemColor.refresh()
+        runCurrent()
+        assertEquals(PhoneColor.Grey, model.state.value.phone)
+    }
+
+    @Test
+    fun withAGreyAccentSistemaCanStillBeChosenAndTuTintaStartsOnCobalto() = runTest {
+        phone = PhoneColor.Grey
+        systemColor.refresh()
+        val model = settings()
+        runCurrent()
+
+        model.onAction(SettingsAction.InkChosen(InkPreference.Sistema))
+        runCurrent()
+        assertEquals(listOf<InkPreference>(InkPreference.Sistema), appearance.inkWrites)
+        assertEquals(InkPreference.Sistema, model.state.value.appearance.ink)
+
+        model.onAction(SettingsAction.Tuya.Open)
+        runCurrent()
+        assertEquals(TuyaDraft(hue = 267), model.tuya())
+    }
+
+    @Test
+    fun onAndroid11ThereIsNoPhoneColourAndARestoredSistemaStaysStored() = runTest {
+        phone = PhoneColor.None
+        systemColor.refresh()
+        val model = settings()
+        appearance.values.value =
+            PreferenceRead.Ready(AppearancePreference(ink = InkPreference.Sistema))
+        runCurrent()
+
+        assertEquals(PhoneColor.None, model.state.value.phone)
+        // The choice is kept as stored; the screen shows it as Cobalto.
+        assertEquals(InkPreference.Sistema, model.state.value.appearance.ink)
+        assertEquals(emptyList<InkPreference>(), appearance.inkWrites)
+
+        model.onAction(SettingsAction.Tuya.Open)
+        runCurrent()
+        assertEquals(TuyaDraft(hue = 267), model.tuya())
+    }
+
+    @Test
+    fun tuTintaOpenedFromSistemaStartsOnThePhonesHue() = runTest {
+        val model = settings()
+        appearance.values.value =
+            PreferenceRead.Ready(AppearancePreference(ink = InkPreference.Sistema))
+        runCurrent()
+
+        model.onAction(SettingsAction.Tuya.Open)
+        runCurrent()
+
+        assertEquals(TuyaDraft(hue = 140), model.tuya())
+    }
+
+    @Test
+    fun sistemaSurvivesARestartWithTheHueTheTuyaSheetKept() = runTest {
+        appearance.values.value = PreferenceRead.Ready(
+            AppearancePreference(ink = InkPreference.Sistema, tuyaHue = InkHue.of(22)!!)
+        )
+        // A new view model on the same storage, as after process death.
+        val model = settings()
+        runCurrent()
+
+        assertEquals(InkPreference.Sistema, model.state.value.appearance.ink)
+        model.onAction(SettingsAction.Tuya.Open)
+        runCurrent()
+        assertEquals(TuyaDraft(hue = 22), model.tuya())
     }
 }
 

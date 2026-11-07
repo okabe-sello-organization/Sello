@@ -34,13 +34,13 @@ object BackupFormat {
     const val FORMAT = "sello-backup"
 
     /** What this app writes. */
-    const val VERSION = 8L
+    const val VERSION = 9L
 
     /**
      * What it reads: version 1 (no goals), version 2 (no schedules), version 3 (no
      * investments), version 4 (no investment settings), version 5 (no carry chains),
-     * version 6 (one chosen goal, not up to five starred), version 7 (no ink of one's own)
-     * and its own.
+     * version 6 (one chosen goal, not up to five starred), version 7 (no ink of one's own),
+     * version 8 (no Sistema) and its own.
      */
     val READABLE = 1L..VERSION
     const val MIME_TYPE = "application/json"
@@ -53,7 +53,7 @@ object BackupFormat {
 }
 
 /**
- * Writes version 8 backups and reads versions 1 to 8. Reading never touches storage:
+ * Writes version 9 backups and reads versions 1 to 9. Reading never touches storage:
  * a file either becomes a [BackupPlan] or is rejected whole with the first problem found.
  */
 class BackupCodec(private val bounds: BackupBounds = BackupBounds()) {
@@ -118,6 +118,7 @@ class BackupCodec(private val bounds: BackupBounds = BackupBounds()) {
 
                 7L -> reader.decodeFromString(BackupFileV7.serializer(), text).asVersion8()
 
+                // Version 9 has version 8's shape: it only adds the ink `sistema`.
                 else -> reader.decodeFromString(BackupFileV8.serializer(), text)
             }
         } catch (failure: SerializationException) {

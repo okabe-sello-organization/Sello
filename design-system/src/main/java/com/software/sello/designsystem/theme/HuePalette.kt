@@ -88,6 +88,19 @@ fun hueColors(hue: Int, isDark: Boolean): SelloColors {
  */
 internal fun hueSwatch(hue: Int): Color = CobaltoLight.band.turned(checkHue(hue) - COBALTO_HUE)
 
+/**
+ * The OKLCH hue of [argb] (Sistema reads the phone's accent colour with it) as a whole degree
+ * from 0 to 359, rounded to the nearest: 359.5° and above is 0°, the same hue round the
+ * circle. Null for a colour with no hue to turn to, a grey such as a monochrome phone gives.
+ */
+fun hueOf(argb: Int): Int? {
+    val lab = linearToOklab(Color(argb).linear())
+    if (hypot(lab[1], lab[2]) < NEUTRAL_CHROMA) return null
+    return Math.toDegrees(atan2(lab[2], lab[1])).roundToInt().mod(FULL_TURN)
+}
+
+private const val FULL_TURN = 360
+
 /** A hue that also carries one of the fixed meanings: red marks overspending, green goals. */
 enum class HueMeaning { Red, Green }
 

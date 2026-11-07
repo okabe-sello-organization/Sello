@@ -18,6 +18,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.height
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.HueInk
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.inEveryScheme
@@ -79,7 +80,7 @@ class InkSwatchesTest {
         rule.inEveryScheme(reset = { taps = 0 }, content = {
             InkSwatches(
                 listOf(
-                    InkSwatch("Tuya", HueInk(22).swatch, chosen = true, editBadge = true) {
+                    InkSwatch("Tuya", HueInk(22).swatch, chosen = true, badge = SelloIcon.Edit) {
                         taps++
                     }
                 ),

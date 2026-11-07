@@ -112,7 +112,12 @@
       "violeta-dark-font1.0": "Violeta dark",
       "cobalto-light": "Cobalto light",
       "tuya22-light-font1.0": "Tuya 22° light",
-      "tuya22-dark-font1.0": "Tuya 22° dark"
+      "tuya22-dark-font1.0": "Tuya 22° dark",
+      // A hue's palette is named by its hue in the file; these two are Sistema's.
+      "tuya240-light-font1.0": "Sistema 240° light",
+      "tuya240-dark-font1.0": "Sistema 240° dark",
+      "tuya24-light-font1.0": "Sistema 24° light",
+      "tuya24-dark-font1.0": "Sistema 24° dark"
     };
     return known[variant] || variant;
   }

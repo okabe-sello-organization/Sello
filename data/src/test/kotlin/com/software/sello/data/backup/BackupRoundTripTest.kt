@@ -68,9 +68,9 @@ class BackupRoundTripTest {
     }
 
     @Test
-    fun `G01 is written byte for byte as the documented version 8 file`() {
+    fun `G01 is written byte for byte as the documented version 9 file`() {
         assertEquals(
-            String(resource("valid-g01-v8.json")),
+            String(resource("valid-g01-v9.json")),
             String(codec.encode(g01InDollars()).value())
         )
     }
@@ -96,6 +96,11 @@ class BackupRoundTripTest {
     @Test
     fun `the version 8 file reads back as the same G01 history`() {
         assertEquals(g01InDollars(), codec.read(resource("valid-g01-v8.json")).value().contents)
+    }
+
+    @Test
+    fun `the version 9 file reads back as the same G01 history`() {
+        assertEquals(g01InDollars(), codec.read(resource("valid-g01-v9.json")).value().contents)
     }
 
     @Test
@@ -129,10 +134,11 @@ class BackupRoundTripTest {
 
     @Test
     fun `every ink is written as the id it has always had, and reads back`() {
-        val file = String(resource("valid-g01-v8.json"))
+        val file = String(resource("valid-g01-v9.json"))
         for ((ink, id) in listOf(
             InkPreference.Cobalto to "cobalto",
-            InkPreference.Violeta to "violeta"
+            InkPreference.Violeta to "violeta",
+            InkPreference.Sistema to "sistema"
         )) {
             val contents = g01InDollars().let {
                 it.copy(
@@ -161,7 +167,7 @@ class BackupRoundTripTest {
 
     @Test
     fun `Tuya is written with its hue and reads back the same, at every edge`() {
-        val file = String(resource("valid-g01-v8.json"))
+        val file = String(resource("valid-g01-v9.json"))
         for (hue in listOf(0L, 22L, 359L)) {
             val contents = g01In(InkPreference.Tuya(InkHue.of(hue)!!))
             val written = String(codec.encode(contents).value())
@@ -178,7 +184,7 @@ class BackupRoundTripTest {
 
     @Test
     fun `a hue outside the circle or as text, beside any ink, rejects the whole file`() {
-        val file = String(resource("valid-g01-v8.json"))
+        val file = String(resource("valid-g01-v9.json"))
         val tuya = "\"ink\": \"tuya\",\n    \"inkHue\": "
         for ((from, to) in listOf(
             "\"inkHue\": null" to "\"inkHue\": 360",
@@ -206,7 +212,7 @@ class BackupRoundTripTest {
 
     @Test
     fun `Tuya's hue kept beside another ink is written and reads back`() {
-        val file = String(resource("valid-g01-v8.json"))
+        val file = String(resource("valid-g01-v9.json"))
         for (hue in listOf(0L, 147L, 359L)) {
             val contents = g01InDollars().let {
                 it.copy(
@@ -231,6 +237,74 @@ class BackupRoundTripTest {
             (codec.read(missing.toByteArray()) as Outcome.Failure).error
                 is BackupRejection.Malformed
         )
+    }
+
+    @Test
+    fun `Sistema is written with Tuya's kept hue or none, and reads back the same`() {
+        val file = String(resource("valid-g01-v9.json"))
+        for (hue in listOf(null, 0L, 147L, 359L)) {
+            val contents = g01InDollars().let {
+                it.copy(
+                    preferences = it.preferences!!.copy(
+                        appearance = it.preferences.appearance.copy(
+                            ink = InkPreference.Sistema,
+                            tuyaHue = hue?.let(InkHue::of)
+                        )
+                    )
+                )
+            }
+            val written = String(codec.encode(contents).value())
+            assertEquals(
+                file.replace(
+                    "\"ink\": \"violeta\",\n    \"inkHue\": null",
+                    "\"ink\": \"sistema\",\n    \"inkHue\": $hue"
+                ),
+                written
+            )
+            assertEquals(contents, codec.read(written.toByteArray()).value().contents)
+        }
+    }
+
+    @Test
+    fun `a file before version 9 that says Sistema is refused, never read as another ink`() {
+        for (name in listOf(
+            "valid-g01-v5.json",
+            "valid-g01-v6.json",
+            "valid-g01-v7.json",
+            "valid-g01-v8.json"
+        )) {
+            val file = String(resource(name))
+            val sistema = file.replace("\"ink\": \"violeta\"", "\"ink\": \"sistema\"")
+            check(sistema != file)
+            assertEquals(
+                name,
+                BackupRejection.InvalidValue("preferences.ink"),
+                (codec.read(sistema.toByteArray()) as Outcome.Failure).error
+            )
+        }
+        // A version 8 file with Tuya's hue beside it is refused just the same.
+        val v8 = String(resource("valid-g01-v8.json")).replace(
+            "\"ink\": \"violeta\",\n    \"inkHue\": null",
+            "\"ink\": \"sistema\",\n    \"inkHue\": 22"
+        )
+        assertEquals(
+            BackupRejection.InvalidValue("preferences.ink"),
+            (codec.read(v8.toByteArray()) as Outcome.Failure).error
+        )
+    }
+
+    @Test
+    fun `Sistema spelled any other way rejects the whole file`() {
+        val file = String(resource("valid-g01-v9.json"))
+        for (to in listOf("\"Sistema\"", "\"system\"", "\"sistema \"", "\"SISTEMA\"")) {
+            val changed = file.replace("\"ink\": \"violeta\"", "\"ink\": $to")
+            check(changed != file)
+            assertEquals(
+                to,
+                BackupRejection.InvalidValue("preferences.ink"),
+                (codec.read(changed.toByteArray()) as Outcome.Failure).error
+            )
+        }
     }
 
     @Test

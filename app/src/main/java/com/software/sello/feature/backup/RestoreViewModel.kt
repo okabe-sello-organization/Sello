@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.software.sello.domain.port.AppRestart
 import com.software.sello.domain.port.DocumentSource
 import com.software.sello.domain.port.FinancialClock
+import com.software.sello.platform.PhoneColor
+import com.software.sello.platform.SystemColor
 import java.time.ZoneId
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -25,13 +27,15 @@ import kotlinx.coroutines.launch
  * the staging alone stands for the file, whichever screen confirms or cancels it, so
  * a file cancelled, confirmed or no longer staged is never read again. The file itself
  * is not kept: the system keeps the read grant the picker gave; if that is gone the
- * file is named unreadable.
+ * file is named unreadable. [systemColor] is the phone's colour: a restored Sistema is named
+ * as this phone shows it.
  */
 class RestoreViewModel(
     private val handle: SavedStateHandle,
     private val session: RestoreSession,
     private val restart: AppRestart,
-    clock: FinancialClock
+    clock: FinancialClock,
+    systemColor: SystemColor
 ) : ViewModel() {
     private val pickerRequest = MutableStateFlow(false)
 
@@ -47,9 +51,10 @@ class RestoreViewModel(
     val state: StateFlow<RestoreState> = combine(
         session.step,
         pickerRequest,
-        clock.today
-    ) { step, request, today ->
-        RestoreState(step = step, pickerRequest = request, zone = today.zone)
+        clock.today,
+        systemColor.color
+    ) { step, request, today, phone ->
+        RestoreState(step = step, pickerRequest = request, zone = today.zone, phone = phone)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_MILLIS), RestoreState())
 
     fun onAction(action: RestoreAction) {
@@ -114,7 +119,9 @@ sealed interface RestoreAction {
 data class RestoreState(
     val step: RestoreStep = RestoreStep.Idle,
     val pickerRequest: Boolean = false,
-    val zone: ZoneId? = null
+    val zone: ZoneId? = null,
+    /** The phone's accent colour, for naming a restored Sistema. */
+    val phone: PhoneColor = PhoneColor.None
 ) {
     val busy: Boolean
         get() = pickerRequest || step == RestoreStep.Checking || step is RestoreStep.Replacing ||

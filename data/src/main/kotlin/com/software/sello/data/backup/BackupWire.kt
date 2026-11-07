@@ -9,13 +9,13 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 
 /*
- * The wire shapes of versions 1 to 8, documented in docs/data/backup-format.md.
+ * The wire shapes of versions 1 to 9, documented in docs/data/backup-format.md.
  * Version 2 is version 1 plus `financial.goals` and `financial.featuredGoal`; version 3
  * is version 2 plus `financial.schedules` and each expense's and income's `origin`;
  * version 4 is version 3 plus `financial.investments` and `financial.usdRates`; version 5 adds
  * two investment settings to `preferences`; version 6 adds `financial.carryChains`; version 7
  * replaces `financial.featuredGoal` with `financial.starredGoals`; version 8 adds Tuya's hue
- * to `preferences`. These classes
+ * to `preferences`; version 9 has version 8's shape and adds the ink `sistema`. These classes
  * are the file and nothing else: they never become Room entities or domain values
  * without going through BackupValidation. Every property is required, including the
  * nullable ones, and the JSON configuration refuses unknown keys. Numbers and flags
@@ -576,7 +576,10 @@ internal fun BackupFileV6.asVersion7() = BackupFileV7(
     preferences = preferences
 )
 
-/** Version 8: version 7 with the hue of a Tuya ink in `preferences.inkHue` (SELLO-202). */
+/**
+ * Version 8: version 7 with the hue of a Tuya ink in `preferences.inkHue` (SELLO-202). Also
+ * the shape of version 9, whose `ink` may be `sistema` too (SELLO-203).
+ */
 @Serializable
 internal data class BackupFileV8(
     val format: String,

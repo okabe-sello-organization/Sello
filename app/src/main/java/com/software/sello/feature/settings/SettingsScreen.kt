@@ -42,6 +42,7 @@ import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.HueInk
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.designsystem.theme.hueMeaning
 import com.software.sello.designsystem.theme.hueName
 import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
@@ -49,10 +50,15 @@ import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.ThemePreference
+import com.software.sello.platform.PhoneColor
+import com.software.sello.platform.hue
 import com.software.sello.presentation.appearance.InkChoices
+import com.software.sello.presentation.appearance.shown
+import com.software.sello.presentation.appearance.themeInk
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.investments.label
 import com.software.sello.presentation.investments.newInvestmentLabel
+import java.util.Locale
 
 /**
  * [tusDatos] is the backup section, given by navigation: it belongs to Respaldo's
@@ -86,7 +92,7 @@ fun SettingsRoot(
 fun TuyaSheetRoot(viewModels: ViewModelProvider.Factory) {
     val model: SettingsViewModel = viewModel(factory = viewModels)
     val state by model.state.collectAsStateWithLifecycle()
-    state.tuya?.let { TuyaSheet(it, state.appearance.ink, model::onAction) }
+    state.tuya?.let { TuyaSheet(it, state.appearance.ink.shown(state.phone), model::onAction) }
 }
 
 /** Which choice is open over Configuración, kept across recreation. */
@@ -260,10 +266,24 @@ private fun AppearanceControls(state: SettingsState, onAction: (SettingsAction) 
             divider = false,
             modifier = Modifier.padding(top = SelloTheme.spacing.sm)
         )
-        val ink = state.appearance.ink
+        // Sistema is not offered on a phone with no accent (Android 11): it shows as Cobalto.
+        val phone = state.phone
+        val ink = state.appearance.ink.shown(phone)
         val tuya = ink as? InkPreference.Tuya
         // Tuya keeps its hue while another ink is in use: its colour and badge, not chosen.
         val tuyaHue = state.appearance.tuyaHue
+        val sistema = if (phone == PhoneColor.None) {
+            null
+        } else {
+            InkSwatch(
+                label = stringResource(R.string.settings_ink_sistema),
+                // A grey accent has no hue to take: Sistema is drawn in Cobalto meanwhile.
+                fill = InkPreference.Sistema.themeInk(phone).swatch,
+                chosen = ink == InkPreference.Sistema,
+                badge = SelloIcon.Wallpaper,
+                onClick = { onAction(SettingsAction.InkChosen(InkPreference.Sistema)) }
+            )
+        }
         InkSwatches(
             swatches = InkChoices.map { choice ->
                 InkSwatch(
@@ -272,22 +292,29 @@ private fun AppearanceControls(state: SettingsState, onAction: (SettingsAction) 
                     chosen = ink == choice.preference,
                     onClick = { onAction(SettingsAction.InkChosen(choice.preference)) }
                 )
-            } + InkSwatch(
+            } + listOfNotNull(sistema) + InkSwatch(
                 label = stringResource(R.string.settings_ink_tuya),
                 fill = tuyaHue?.let { HueInk(it.degrees).swatch },
                 chosen = tuya != null,
-                editBadge = tuyaHue != null,
+                badge = SelloIcon.Edit.takeIf { tuyaHue != null },
                 onClick = { onAction(SettingsAction.Tuya.Open) }
             ),
             enabled = !state.busy,
             modifier = Modifier.padding(start = 26.dp).testTag(SETTINGS_INK_TAG)
         )
-        if (tuya != null) {
+        val note = when {
+            tuya != null -> stringResource(
+                R.string.settings_ink_tuya_note,
+                stringResource(hueName(tuya.hue.degrees))
+            )
+
+            ink == InkPreference.Sistema -> sistemaNote(phone)
+
+            else -> null
+        }
+        if (note != null) {
             Text(
-                stringResource(
-                    R.string.settings_ink_tuya_note,
-                    stringResource(hueName(tuya.hue.degrees))
-                ),
+                note,
                 style = MaterialTheme.typography.bodySmall,
                 color = SelloTheme.colors.inkSoft,
                 modifier = Modifier
@@ -296,6 +323,23 @@ private fun AppearanceControls(state: SettingsState, onAction: (SettingsAction) 
             )
         }
     }
+}
+
+/**
+ * Sistema's caption: the phone's colour by name, in lower case inside the sentence, and on a
+ * red or green hue that those colours also mark overspending and goals; with a grey accent,
+ * that Sello uses Cobalto meanwhile.
+ */
+@Composable
+private fun sistemaNote(phone: PhoneColor): String {
+    val hue = phone.hue ?: return stringResource(R.string.settings_ink_sistema_grey)
+    val name = stringResource(hueName(hue)).lowercase(Locale.forLanguageTag("es-CO"))
+    val text = if (hueMeaning(hue) == null) {
+        R.string.settings_ink_sistema_note
+    } else {
+        R.string.settings_ink_sistema_note_meaning
+    }
+    return stringResource(text, name)
 }
 
 @Composable

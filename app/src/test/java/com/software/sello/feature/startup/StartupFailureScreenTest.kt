@@ -34,6 +34,8 @@ import com.software.sello.domain.port.DocumentSource
 import com.software.sello.domain.port.PendingPreferences
 import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.RestoreRejection
+import com.software.sello.platform.PhoneColor
+import com.software.sello.platform.SystemColor
 import com.software.sello.presentation.restore.RESTORE_DONE_TAG
 import com.software.sello.showSello
 import java.time.Instant
@@ -437,7 +439,8 @@ class StartupFailureScreenTest {
     }
 
     private fun showWorking(recovery: StartupRecovery) {
-        val viewModel = StartupFailureViewModel(SavedStateHandle(), recovery) {}
+        val phone = SystemColor { PhoneColor.None }
+        val viewModel = StartupFailureViewModel(SavedStateHandle(), recovery, {}, phone)
         rule.showSello(Look()) {
             val state by viewModel.state.collectAsState()
             StartupFailureScreen(state, viewModel::onAction)

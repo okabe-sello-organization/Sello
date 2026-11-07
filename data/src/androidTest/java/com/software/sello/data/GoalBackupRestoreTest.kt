@@ -250,8 +250,8 @@ class GoalBackupRestoreTest {
     private fun asVersion6(bytes: ByteArray, chosen: GoalId): ByteArray {
         val text = String(bytes)
         val stars = Regex("\"starredGoals\": \\[[^]]*]")
-        check(stars.findAll(text).count() == 1 && text.contains("\"version\": 8,"))
-        return text.replace("\"version\": 8,", "\"version\": 6,")
+        check(stars.findAll(text).count() == 1 && text.contains("\"version\": 9,"))
+        return text.replace("\"version\": 9,", "\"version\": 6,")
             .replace(Regex("\\s+\"inkHue\": null,"), "")
             .replace(stars, "\"featuredGoal\": \"${chosen.value}\"")
             .toByteArray()

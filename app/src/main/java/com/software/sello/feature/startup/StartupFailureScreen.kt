@@ -55,6 +55,7 @@ import com.software.sello.designsystem.component.StatusKind
 import com.software.sello.designsystem.component.StatusSlip
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.port.CheckedBackup
+import com.software.sello.platform.PhoneColor
 import com.software.sello.presentation.count.countText
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.restore.RestoredSlip
@@ -121,7 +122,7 @@ fun StartupFailureScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             Explanation(state, onAction)
-            RestoreFromBackup(state.restore, state.busy, onAction)
+            RestoreFromBackup(state.restore, state.busy, state.phone, onAction)
             if (state.notSetAside) {
                 FieldMessageText(
                     FieldMessage(stringResource(R.string.startup_failure_not_set_aside)),
@@ -185,6 +186,7 @@ private fun Explanation(state: StartupFailureState, onAction: (StartupFailureAct
 private fun RestoreFromBackup(
     step: StartupRestoreStep,
     busy: Boolean,
+    phone: PhoneColor,
     onAction: (StartupFailureAction) -> Unit
 ) {
     if (step == StartupRestoreStep.Idle || step == StartupRestoreStep.Checking) return
@@ -223,6 +225,7 @@ private fun RestoreFromBackup(
             RestoredSlip(
                 step.outcome,
                 step.applying,
+                phone,
                 onApply = { onAction(StartupFailureAction.ApplyPreferences) },
                 onLeave = { onAction(StartupFailureAction.Leave) }
             )

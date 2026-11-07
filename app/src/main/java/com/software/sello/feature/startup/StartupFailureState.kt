@@ -5,6 +5,7 @@ import com.software.sello.domain.port.CheckedBackup
 import com.software.sello.domain.port.DocumentSource
 import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.RestoreRejection
+import com.software.sello.platform.PhoneColor
 
 /**
  * What the person can do when their data could not be opened at start. Implemented
@@ -94,7 +95,9 @@ data class StartupFailureState(
     /** Restoring a backup instead of starting from nothing. */
     val restore: StartupRestoreStep = StartupRestoreStep.Idle,
     /** The system's open dialog should be shown. */
-    val pickerRequest: Boolean = false
+    val pickerRequest: Boolean = false,
+    /** The phone's accent colour: a restored Sistema is named as this phone shows it. */
+    val phone: PhoneColor = PhoneColor.None
 ) {
     val canConfirm: Boolean get() = typed.trim() == CONFIRM_WORD
 

@@ -16,6 +16,8 @@ import com.software.sello.domain.port.StageFailure
 import com.software.sello.domain.port.StagedLookup
 import com.software.sello.domain.port.StagedRestore
 import com.software.sello.navigation.HandFinancialClock
+import com.software.sello.platform.PhoneColor
+import com.software.sello.platform.SystemColor
 import java.time.Instant
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -83,7 +85,8 @@ class RestoreViewModelTest {
             handle,
             session,
             { restarts++ },
-            HandFinancialClock("2026-10-22")
+            HandFinancialClock("2026-10-22"),
+            SystemColor { PhoneColor.Hue(240) }
         )
         backgroundScope.launch { model.state.collect {} }
         runCurrent()

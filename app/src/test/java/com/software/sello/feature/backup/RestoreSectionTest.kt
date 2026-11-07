@@ -23,6 +23,7 @@ import com.software.sello.domain.port.BackupSummary
 import com.software.sello.domain.port.PendingPreferences
 import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.StagedRestore
+import com.software.sello.platform.PhoneColor
 import com.software.sello.showSello
 import java.time.Instant
 import org.junit.Assert.assertEquals
@@ -45,8 +46,10 @@ class RestoreSectionTest {
             "No revisamos el archivo que elegiste: primero había que resolver esta restauración."
     }
 
-    private fun show(step: RestoreStep) {
-        rule.showSello(Look()) { RestoreSection(RestoreState(step = step), { actions += it }) }
+    private fun show(step: RestoreStep, phone: PhoneColor = PhoneColor.Hue(240)) {
+        rule.showSello(Look()) {
+            RestoreSection(RestoreState(step = step, phone = phone), { actions += it })
+        }
     }
 
     @Test
@@ -100,7 +103,38 @@ class RestoreSectionTest {
             )
         )
 
-        rule.onNodeWithText("Apariencia: Oscuro, Tuya (Rojo)").assertIsDisplayed()
+        rule.onNodeWithText("Apariencia: tema Oscuro, tinta Tuya (Rojo)").assertIsDisplayed()
+    }
+
+    private val sistemaPending = RestoreStep.Restored(
+        RestoreOutcome.Restored(
+            BackupSummary(2, 3, 1, 0, 0),
+            PendingPreferences(
+                AppearancePreference(ThemePreference.Light, InkPreference.Sistema),
+                null
+            )
+        )
+    )
+
+    @Test
+    fun anAppearanceStillToApplyNamesSistemaWhereThePhoneHasAnAccent() {
+        show(sistemaPending, PhoneColor.Hue(240))
+
+        rule.onNodeWithText("Apariencia: tema Claro, tinta Sistema").assertIsDisplayed()
+    }
+
+    @Test
+    fun aGreyAccentStillNamesSistema() {
+        show(sistemaPending, PhoneColor.Grey)
+
+        rule.onNodeWithText("Apariencia: tema Claro, tinta Sistema").assertIsDisplayed()
+    }
+
+    @Test
+    fun onAndroid11ASistemaStillToApplyIsNamedCobaltoAsItWillShow() {
+        show(sistemaPending, PhoneColor.None)
+
+        rule.onNodeWithText("Apariencia: tema Claro, tinta Cobalto").assertIsDisplayed()
     }
 
     @Test

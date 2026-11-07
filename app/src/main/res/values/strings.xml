@@ -798,6 +798,13 @@
     <string name="settings_ink_caption">El color de los sellos, la franja y los botones</string>
     <string name="settings_ink_cobalto">Cobalto</string>
     <string name="settings_ink_violeta">Violeta</string>
+    <string name="settings_ink_sistema">Sistema</string>
+    <!-- Under the swatches while Sistema is chosen; %1$s is the phone's colour in lower case: "azul". -->
+    <string name="settings_ink_sistema_note">Toma el color de tu fondo de pantalla: %1$s. Cambia cuando lo cambies.</string>
+    <!-- As settings_ink_sistema_note, on a red or green hue, with tuya_meaning_note's line. -->
+    <string name="settings_ink_sistema_note_meaning">Toma el color de tu fondo de pantalla: %1$s. Cambia cuando lo cambies. El rojo y el verde también marcan excesos y metas.</string>
+    <!-- Under the swatches while Sistema is chosen and the phone's accent is grey (a monochrome style). -->
+    <string name="settings_ink_sistema_grey">Tu teléfono no tiene un color de acento: Sello usa Cobalto mientras tanto.</string>
     <string name="settings_ink_tuya">Tuya</string>
     <!-- Tuya with the name of its colour, as restore and Tu tinta name it: "Tuya (Rojo)". -->
     <string name="settings_ink_tuya_named">Tuya (%1$s)</string>
@@ -923,7 +930,7 @@
     <string name="reset_start_again">Empezar de nuevo</string>
     <string name="reset_pending_title">Tus datos se borraron</string>
     <string name="reset_pending_body">No pudimos devolver estas preferencias a su valor de inicio:</string>
-    <string name="reset_pending_appearance">Apariencia: Sistema, Cobalto</string>
+    <string name="reset_pending_appearance">Apariencia: tema Sistema, tinta Cobalto</string>
     <string name="reset_pending_ordering">Orden de categorías: Más usadas, de mayor a menor</string>
     <string name="reset_pending_investments">Inversiones: Pesos (COP), Mayor valor</string>
     <string name="reset_pending_action">Restablecer preferencias</string>
@@ -1032,7 +1039,7 @@
     <string name="restore_go_to_recibo">Ir al recibo</string>
     <string name="restore_pending_title">Historial financiero restaurado</string>
     <string name="restore_pending_body">Tus gastos, ingresos, categorías y presupuestos ya se restauraron. No pudimos aplicar estas preferencias del respaldo:</string>
-    <string name="restore_pending_appearance">Apariencia: %1$s, %2$s</string>
+    <string name="restore_pending_appearance">Apariencia: tema %1$s, tinta %2$s</string>
     <string name="restore_pending_ordering">Orden de categorías: %1$s, %2$s</string>
     <string name="restore_pending_investments">Inversiones: %1$s, %2$s</string>
     <string name="restore_pending_descending">de mayor a menor</string>

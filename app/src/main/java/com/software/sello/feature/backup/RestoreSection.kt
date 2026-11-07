@@ -129,6 +129,7 @@ fun RestoreSection(state: RestoreState, onAction: (RestoreAction) -> Unit) {
         is RestoreStep.Restored -> RestoredSlip(
             step.outcome,
             step.applying,
+            state.phone,
             note = chosenSetAside(step.chosenSetAside),
             onApply = { onAction(RestoreAction.ApplyPreferences) },
             onLeave = { onAction(RestoreAction.Leave) }

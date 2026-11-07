@@ -32,14 +32,14 @@ import com.software.sello.designsystem.theme.SelloTheme
 
 /**
  * One ink in the choice: its [label], the colour it previews ([fill]; null for Tuya before it
- * has a hue, drawn as a rainbow with a +), whether it is [chosen] and whether it carries the
- * edit badge, for an ink that opens Tu tinta again.
+ * has a hue, drawn as a rainbow with a +), whether it is [chosen] and its [badge], if any: the
+ * wallpaper for Sistema, the pencil for Tuya once it opens Tu tinta again.
  */
 internal class InkSwatch(
     val label: String,
     val fill: Color?,
     val chosen: Boolean,
-    val editBadge: Boolean = false,
+    val badge: SelloIcon? = null,
     val onClick: () -> Unit
 )
 
@@ -89,7 +89,7 @@ internal fun InkSwatches(
                     } else {
                         Rainbow()
                     }
-                    if (swatch.editBadge) EditBadge(Modifier.align(Alignment.BottomEnd))
+                    swatch.badge?.let { SwatchBadge(it, Modifier.align(Alignment.BottomEnd)) }
                 }
                 Text(
                     swatch.label,
@@ -118,9 +118,9 @@ private fun Rainbow() {
     }
 }
 
-/** A small paper disc with a pencil at the swatch's lower edge: tapping opens Tu tinta. */
+/** A small paper disc with [icon] at the swatch's lower edge, saying what the ink is. */
 @Composable
-private fun EditBadge(modifier: Modifier) {
+private fun SwatchBadge(icon: SelloIcon, modifier: Modifier) {
     val colors = SelloTheme.colors
     Box(
         contentAlignment = Alignment.Center,
@@ -130,7 +130,7 @@ private fun EditBadge(modifier: Modifier) {
             .background(colors.paper, CircleShape)
             .border(1.5.dp, colors.rule, CircleShape)
     ) {
-        Icon(SelloIcon.Edit.painter(), null, Modifier.size(14.dp), colors.inkSoft)
+        Icon(icon.painter(), null, Modifier.size(14.dp), colors.inkSoft)
     }
 }
 
