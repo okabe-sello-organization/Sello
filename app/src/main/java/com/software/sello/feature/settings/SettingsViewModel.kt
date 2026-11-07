@@ -216,7 +216,7 @@ class SettingsViewModel(
         when (action) {
             SettingsAction.Tuya.Open -> {
                 tuyaFailed.value = false
-                handle[KEY_TUYA_HUE] = state.value.appearance.ink.startingHue
+                handle[KEY_TUYA_HUE] = state.value.appearance.startingHue
             }
 
             is SettingsAction.Tuya.HueChanged -> {

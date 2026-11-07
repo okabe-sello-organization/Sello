@@ -9,7 +9,6 @@ import com.software.sello.domain.model.GoalMovement
 import com.software.sello.domain.model.GoalMovementKind
 import com.software.sello.domain.model.GoalTargetChange
 import com.software.sello.domain.model.IncomeSource
-import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.InvestmentHistory
 import com.software.sello.domain.model.InvestmentMovementKind
 import com.software.sello.domain.model.Outcome
@@ -312,11 +311,10 @@ internal fun BackupContents.toWire(): BackupFileV8 = BackupFileV8(
             }
     ),
     preferences = preferences?.let {
-        val ink = it.appearance.ink
         PreferencesV8(
             theme = WireNames.themes.getValue(it.appearance.theme),
-            ink = ink.id,
-            inkHue = JsonPrimitive((ink as? InkPreference.Tuya)?.hue?.degrees),
+            ink = it.appearance.ink.id,
+            inkHue = JsonPrimitive(it.appearance.tuyaHue?.degrees),
             categoryOrder = WireNames.orders.getValue(it.ordering.order),
             categoryDirection = WireNames.directions.getValue(it.ordering.direction),
             investmentCurrency = WireNames.newCurrencies.getValue(it.investments.newCurrency),

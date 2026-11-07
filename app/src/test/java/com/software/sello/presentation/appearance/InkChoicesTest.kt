@@ -3,6 +3,7 @@ package com.software.sello.presentation.appearance
 import com.software.sello.R
 import com.software.sello.designsystem.theme.HueInk
 import com.software.sello.designsystem.theme.SelloInk
+import com.software.sello.domain.model.AppearancePreference
 import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import org.junit.Assert.assertEquals
@@ -32,9 +33,15 @@ class InkChoicesTest {
     }
 
     @Test
-    fun tuTintaStartsOnTheHueOfTheInkInUse() {
-        assertEquals(267, InkPreference.Cobalto.startingHue)
-        assertEquals(286, InkPreference.Violeta.startingHue)
-        assertEquals(147, InkPreference.Tuya(InkHue.of(147)!!).startingHue)
+    fun tuTintaStartsOnTuyasHueOrElseTheHueOfTheInkInUse() {
+        assertEquals(267, AppearancePreference(ink = InkPreference.Cobalto).startingHue)
+        assertEquals(286, AppearancePreference(ink = InkPreference.Violeta).startingHue)
+        val green = InkHue.of(147)!!
+        assertEquals(147, AppearancePreference(ink = InkPreference.Tuya(green)).startingHue)
+        // Kept while another ink is in use.
+        assertEquals(
+            147,
+            AppearancePreference(ink = InkPreference.Violeta, tuyaHue = green).startingHue
+        )
     }
 }

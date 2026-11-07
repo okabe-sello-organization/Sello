@@ -19,6 +19,7 @@ import com.software.sello.domain.model.CategoryOrderingPreference
 import com.software.sello.domain.model.CorrectionAnnouncementPreference
 import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.DismissedSuggestion
+import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.InvestmentPreference
@@ -92,12 +93,22 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
     override suspend fun setTheme(theme: ThemePreference): PreferenceWrite =
         write { this[THEME] = theme.stored }
 
-    /** The ink and its hue go in one edit: Tuya is never stored without its hue. */
+    /**
+     * Tuya and its hue go in one edit, so Tuya is never stored without one; a hand-made ink
+     * leaves Tuya's hue where it is.
+     */
     override suspend fun setInk(ink: InkPreference): PreferenceWrite = write {
         this[INK] = ink.id
-        when (ink) {
-            is InkPreference.Tuya -> this[INK_HUE] = ink.hue.degrees
-            InkPreference.Cobalto, InkPreference.Violeta -> remove(INK_HUE)
+        if (ink is InkPreference.Tuya) this[INK_HUE] = ink.hue.degrees
+    }
+
+    override suspend fun restoreInk(ink: InkPreference, tuyaHue: InkHue?): PreferenceWrite {
+        if (ink is InkPreference.Tuya && ink.hue != tuyaHue) {
+            return PreferenceWrite.Failed(PreferenceFailure.InvalidValue)
+        }
+        return write {
+            this[INK] = ink.id
+            if (tuyaHue == null) remove(INK_HUE) else this[INK_HUE] = tuyaHue.degrees
         }
     }
 
@@ -239,13 +250,12 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
             "dark" -> ThemePreference.Dark
             else -> return Decoded.Invalid
         }
-        // A hue outside 0 to 359, or one beside an ink that has none, is damage: refused,
+        // A hue outside 0 to 359, beside any ink, or Tuya without one is damage: refused,
         // never clipped or dropped.
-        val ink = InkPreference.of(
-            stored[INK] ?: InkPreference.Cobalto.id,
-            stored[INK_HUE]?.toLong()
-        ) ?: return Decoded.Invalid
-        return Decoded.Value(AppearancePreference(theme, ink))
+        val hue = stored[INK_HUE]?.let { InkHue.of(it.toLong()) ?: return Decoded.Invalid }
+        val ink = InkPreference.of(stored[INK] ?: InkPreference.Cobalto.id, hue)
+            ?: return Decoded.Invalid
+        return Decoded.Value(AppearancePreference(theme, ink, hue))
     }
 
     private fun categoryOrdering(stored: Preferences): Decoded<CategoryOrderingPreference> {
@@ -357,7 +367,7 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
         val THEME = stringPreferencesKey("appearance_theme_v1")
         val INK = stringPreferencesKey("appearance_ink_v1")
 
-        /** Tuya's hue, a whole degree; present exactly when [INK] is Tuya. */
+        /** Tuya's hue, a whole degree: always there with Tuya, and kept when another ink is. */
         val INK_HUE = intPreferencesKey("appearance_ink_hue_v1")
         val CATEGORY_ORDER = stringPreferencesKey("recibo_category_order_v1")
         val CATEGORY_DIRECTION = stringPreferencesKey("recibo_category_direction_v1")

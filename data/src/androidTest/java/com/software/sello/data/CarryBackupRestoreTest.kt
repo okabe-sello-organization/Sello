@@ -10,6 +10,7 @@ import com.software.sello.domain.model.AppearancePreference
 import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
 import com.software.sello.domain.model.CategoryOrderingPreference
+import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Outcome
@@ -91,6 +92,8 @@ class CarryBackupRestoreTest {
         override suspend fun setTheme(theme: ThemePreference) = write()
 
         override suspend fun setInk(ink: InkPreference) = write()
+
+        override suspend fun restoreInk(ink: InkPreference, tuyaHue: InkHue?) = setInk(ink)
 
         override fun observeCategoryOrdering(): Flow<PreferenceRead<CategoryOrderingPreference>> =
             flowOf(

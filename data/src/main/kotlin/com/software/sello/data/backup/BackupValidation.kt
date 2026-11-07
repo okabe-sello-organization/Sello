@@ -998,10 +998,7 @@ private fun <T> Map<T, String>.decode(text: String, path: String): T =
     entries.firstOrNull { it.value == text }?.key ?: invalid(path)
 
 private fun preferences(wire: PreferencesV8) = PortablePreferences(
-    appearance = AppearancePreference(
-        theme = WireNames.themes.decode(wire.theme, "preferences.theme"),
-        ink = ink(wire)
-    ),
+    appearance = appearance(wire, WireNames.themes.decode(wire.theme, "preferences.theme")),
     ordering = CategoryOrderingPreference(
         order = WireNames.orders.decode(wire.categoryOrder, "preferences.categoryOrder"),
         direction = WireNames.directions.decode(
@@ -1022,15 +1019,19 @@ private fun preferences(wire: PreferencesV8) = PortablePreferences(
 )
 
 /**
- * The ink and, for Tuya only, its hue: a bare whole degree from 0 to 359. A hue outside it
- * is refused, never wrapped or clipped, and so is a hue beside an ink that has none.
+ * The ink and Tuya's hue: a bare whole degree from 0 to 359, required with Tuya and kept,
+ * if the file has one, beside another ink. A hue outside it is refused, never wrapped or
+ * clipped.
  */
-private fun ink(wire: PreferencesV8): InkPreference {
-    val hue = optionalWhole(wire.inkHue, "preferences.inkHue")
-    return InkPreference.of(wire.ink, hue) ?: when {
-        InkPreference.of(wire.ink, InkHue.RANGE.first.toLong()) != null ||
-            InkPreference.of(wire.ink, null) != null -> invalid("preferences.inkHue")
+private fun appearance(wire: PreferencesV8, theme: ThemePreference): AppearancePreference {
+    val hue = optionalWhole(wire.inkHue, "preferences.inkHue")?.let {
+        InkHue.of(it) ?: invalid("preferences.inkHue")
+    }
+    val ink = InkPreference.of(wire.ink, hue) ?: when {
+        // Tuya without its hue.
+        InkPreference.of(wire.ink, InkHue.of(0)) != null -> invalid("preferences.inkHue")
 
         else -> invalid("preferences.ink")
     }
+    return AppearancePreference(theme, ink, hue)
 }

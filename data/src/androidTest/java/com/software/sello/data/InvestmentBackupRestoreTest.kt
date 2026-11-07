@@ -12,6 +12,7 @@ import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
 import com.software.sello.domain.model.CategoryOrderingPreference
 import com.software.sello.domain.model.Currency
+import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.InvestmentAmount
 import com.software.sello.domain.model.InvestmentId
@@ -75,6 +76,8 @@ class InvestmentBackupRestoreTest {
         override suspend fun setTheme(theme: ThemePreference) = PreferenceWrite.Saved
 
         override suspend fun setInk(ink: InkPreference) = PreferenceWrite.Saved
+
+        override suspend fun restoreInk(ink: InkPreference, tuyaHue: InkHue?) = setInk(ink)
 
         override fun observeCategoryOrdering(): Flow<PreferenceRead<CategoryOrderingPreference>> =
             flowOf(

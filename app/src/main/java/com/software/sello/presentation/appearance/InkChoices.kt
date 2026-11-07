@@ -8,6 +8,7 @@ import com.software.sello.designsystem.theme.HueInk
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.ThemeInk
 import com.software.sello.designsystem.theme.hueName
+import com.software.sello.domain.model.AppearancePreference
 import com.software.sello.domain.model.InkPreference
 
 /** One hand-made ink a person can pick: its stored preference, its palettes and its name. */
@@ -30,11 +31,14 @@ val InkPreference.themeInk: ThemeInk
         is InkPreference.Tuya -> HueInk(hue.degrees)
     }
 
-/** Where Tu tinta's slider starts: Tuya's own hue, or the hue of the hand-made ink in use. */
-val InkPreference.startingHue: Int
-    get() = when (val ink = themeInk) {
-        is SelloInk -> ink.hue
-        is HueInk -> ink.hue
+/**
+ * Where Tu tinta's slider starts: Tuya's hue, in use or kept, or else the hue of the
+ * hand-made ink in use.
+ */
+val AppearancePreference.startingHue: Int
+    get() = tuyaHue?.degrees ?: when (val drawn = ink.themeInk) {
+        is SelloInk -> drawn.hue
+        is HueInk -> drawn.hue
     }
 
 /** The ink's name as a person reads it: "Cobalto", or Tuya with its colour, "Tuya (Rojo)". */

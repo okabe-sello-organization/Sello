@@ -115,6 +115,18 @@ class SettingsScreenTest {
     }
 
     @Test
+    fun aKeptTuyaHueStaysOnItsSwatchUnchosenWhileAnotherInkIsInUse() {
+        val actions = mutableListOf<SettingsAction>()
+        val kept = AppearancePreference(ink = InkPreference.Cobalto, tuyaHue = InkHue.of(22)!!)
+        showSettings(SettingsState(loading = false, appearance = kept), actions)
+
+        rule.onNodeWithText("Cobalto").assertIsSelected()
+        rule.onNodeWithText("Tuya").assertIsNotSelected().performClick()
+        rule.onNodeWithTag(SETTINGS_INK_NOTE_TAG).assertDoesNotExist()
+        assertEquals(listOf<SettingsAction>(SettingsAction.Tuya.Open), actions)
+    }
+
+    @Test
     fun theSliderIsReadAsTheColoursNameAndTalkBackCanMoveIt() {
         val actions = mutableListOf<SettingsAction>()
         showSettings(SettingsState(loading = false, tuya = TuyaDraft(hue = 200)), actions)

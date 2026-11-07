@@ -31,14 +31,14 @@ sealed interface InkPreference {
         private const val TUYA_ID = "tuya"
 
         /**
-         * The ink written as [id] with [hue], or null when they don't make one: an id Sello
-         * never wrote, Tuya without a hue or with one outside [InkHue.RANGE], or a hand-made
-         * ink with a hue. A bad hue is refused, never wrapped or clipped.
+         * The ink written as [id], with Tuya's kept [hue] if there is one, or null when they
+         * don't make one: an id Sello never wrote, or Tuya without a hue. A hand-made ink
+         * ignores the hue, which stays Tuya's.
          */
-        fun of(id: String, hue: Long?): InkPreference? = when (id) {
-            Cobalto.id -> Cobalto.takeIf { hue == null }
-            Violeta.id -> Violeta.takeIf { hue == null }
-            TUYA_ID -> hue?.let(InkHue::of)?.let(::Tuya)
+        fun of(id: String, hue: InkHue?): InkPreference? = when (id) {
+            Cobalto.id -> Cobalto
+            Violeta.id -> Violeta
+            TUYA_ID -> hue?.let(::Tuya)
             else -> null
         }
     }
@@ -85,10 +85,21 @@ data class InvestmentPreference(
     val order: InvestmentOrder = InvestmentOrder.LargestValue
 )
 
+/**
+ * The theme, the ink in use and [tuyaHue], Tuya's hue: kept while another ink is in use, so
+ * Tuya keeps its colour, and null until Tuya is first set. With Tuya in use it is Tuya's own.
+ */
 data class AppearancePreference(
     val theme: ThemePreference = ThemePreference.System,
-    val ink: InkPreference = InkPreference.Cobalto
-)
+    val ink: InkPreference = InkPreference.Cobalto,
+    val tuyaHue: InkHue? = (ink as? InkPreference.Tuya)?.hue
+) {
+    init {
+        require(ink !is InkPreference.Tuya || ink.hue == tuyaHue) {
+            "Tuya in use keeps its own hue"
+        }
+    }
+}
 
 data class CategoryOrderingPreference(
     val order: CategoryOrder = CategoryOrder.MostUsed,

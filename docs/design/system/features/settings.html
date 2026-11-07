@@ -39,6 +39,7 @@
       <figure data-shot="settings-failed" data-module="app" data-caption="A preference could not be read: an Older StatusSlip over the last good values"></figure>
       <figure data-shot="settings-busy" data-module="app" data-caption="A write under way; counts and the rate unreadable"></figure>
       <figure data-shot="settings-order-slip" data-module="app" data-caption="The OptionSlip for Orden de las categorías, open"></figure>
+      <figure data-shot="settings-tuya-kept" data-module="app" data-caption="Cobalto in use with Tuya's hue kept from before: Tuya keeps its colour and badge, unselected"></figure>
       <figure data-shot="settings-tuya" data-module="app" data-files="settings-tuya-tuya22-light-font1.0.png, settings-tuya-tuya22-dark-font1.0.png" data-caption="Tuya chosen at 22° (Rojo): the whole app in that ink, Tuya selected with its edit badge and the note naming its colour"></figure>
 
       <h3>Layout</h3>
@@ -47,9 +48,9 @@
         <li>A <a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> only when a preference read failed (Older, over the last good values) or a write failed (ActionFailed) (<code>SettingsScreen.kt:125</code>).</li>
         <li><strong>Tus datos</strong>, a slot filled by navigation with Respaldo's <code>TusDatosRoot</code> (<code>SettingsScreen.kt:140</code>; described on the <a href="backup.html#screen-tus-datos">Backup page</a>): backup card, Exportar row and "Borrar todos los datos".</li>
         <li><strong>Lo que se repite</strong>: a <a href="../components.html#c-Slip"><code>Slip</code></a> with a section title and one <a href="../components.html#c-SettingRow"><code>SettingRow</code></a> "Pagos e ingresos fijos" showing the count (<code>SettingsScreen.kt:209</code>).</li>
-        <li><strong>Apariencia</strong>: a Slip with the "Tema" row and a <a href="../components.html#c-SegmentedSwitch"><code>SegmentedSwitch</code></a> Sistema / Claro / Oscuro, then the "Tinta" row and the feature-local <code>InkSwatches</code>: Cobalto, Violeta, then Tuya (<code>SettingsScreen.kt:235</code>). Tuya is a rainbow with a + until it is chosen; chosen, it is its ink's colour with an edit badge, and a <code>bodySmall</code> note in <code>inkSoft</code> names the colour: "Rojo. Toca Tuya para cambiarla." (<code>SettingsScreen.kt:284</code>). Choosing another ink forgets Tuya's hue, so Tuya is a rainbow again.</li>
-        <li><strong>Recibo</strong>: a Slip with "Orden de las categorías" and "Dirección" rows, each opening an <a href="../components.html#c-OptionSlip"><code>OptionSlip</code></a> (<code>SettingsScreen.kt:300</code>).</li>
-        <li><strong>Inversiones</strong>: a Slip with "Moneda al crear" and "Orden de la lista" (each opening an OptionSlip) and "Dólar", which leads to the rate screen (<code>SettingsScreen.kt:325</code>).</li>
+        <li><strong>Apariencia</strong>: a Slip with the "Tema" row and a <a href="../components.html#c-SegmentedSwitch"><code>SegmentedSwitch</code></a> Sistema / Claro / Oscuro, then the "Tinta" row and the feature-local <code>InkSwatches</code>: Cobalto, Violeta, then Tuya (<code>SettingsScreen.kt:235</code>). Tuya is a rainbow with a + until it is chosen; chosen, it is its ink's colour with an edit badge, and a <code>bodySmall</code> note in <code>inkSoft</code> names the colour: "Rojo. Toca Tuya para cambiarla." (<code>SettingsScreen.kt:285</code>). Choosing another ink keeps Tuya's hue: Tuya keeps its colour and badge, unselected, with no note, and Tu tinta reopens on it.</li>
+        <li><strong>Recibo</strong>: a Slip with "Orden de las categorías" and "Dirección" rows, each opening an <a href="../components.html#c-OptionSlip"><code>OptionSlip</code></a> (<code>SettingsScreen.kt:302</code>).</li>
+        <li><strong>Inversiones</strong>: a Slip with "Moneda al crear" and "Orden de la lista" (each opening an OptionSlip) and "Dólar", which leads to the rate screen (<code>SettingsScreen.kt:327</code>).</li>
         <li>A centred <code>bodySmall</code> footer in <code>inkSoft</code>: "Sello · tus datos no salen de este teléfono" (<code>SettingsScreen.kt:146</code>).</li>
       </ol>
       <p>Section titles, Tus datos' among them, are the design system's <a href="../components.html#c-SectionTitle"><code>SectionTitle</code></a>: <code>titleMedium</code>, bottom padding <code>spacing.sm</code>, heading semantics. The first <code>SettingRow</code> under each title passes <code>divider = false</code>.</p>
@@ -68,7 +69,7 @@
             <tr><td>Unknown outcome</td><td>Does not exist: preference writes report done or failed.</td><td><code>SettingsViewModel.kt:189</code></td><td>—</td></tr>
             <tr><td>Restored draft</td><td>Which OptionSlip is open survives recreation (<code>rememberSaveable</code>). The hue being chosen in Tu tinta survives rotation and process death in the view model's <code>SavedStateHandle</code>, so the sheet comes back open on it. Every other choice saves at once.</td><td><code>SettingsScreen.kt:112</code>, <code>SettingsViewModel.kt:66</code></td><td>Drawn as the open slip: <code>settings-order-slip</code>, <code>settings-tu-tinta</code></td></tr>
             <tr><td>Schedule count loading / unreadable</td><td>The "Pagos e ingresos fijos" row shows no value while loading, "No se pudieron leer" when the read failed, else "N pagos, N ingresos".</td><td><code>SettingsScreen.kt:211</code>, <code>SettingsViewModel.kt:130</code></td><td><code>settings-busy</code></td></tr>
-            <tr><td>Rate loading / none / unreadable</td><td>The "Dólar" row has no caption while loading, "Sin tasa todavía" with no rate, "No pudimos leer la tasa" on failure, or "Tasa del {day}" with the rate as the value.</td><td><code>SettingsScreen.kt:330</code>, <code>SettingsViewModel.kt:146</code></td><td><code>settings-busy</code></td></tr>
+            <tr><td>Rate loading / none / unreadable</td><td>The "Dólar" row has no caption while loading, "Sin tasa todavía" with no rate, "No pudimos leer la tasa" on failure, or "Tasa del {day}" with the rate as the value.</td><td><code>SettingsScreen.kt:332</code>, <code>SettingsViewModel.kt:146</code></td><td><code>settings-busy</code></td></tr>
           </tbody>
         </table>
       </div>
@@ -77,10 +78,10 @@
       <ul>
         <li><strong>Pagos e ingresos fijos</strong> row: opens the schedules list (<code>onOpenSchedules</code>, <code>SettingsScreen.kt:227</code>).</li>
         <li><strong>Tema</strong> switch: sends <code>SettingsAction.ThemeChosen</code>; the app's theme follows the stored preference through <code>AppearanceViewModel</code> (<code>app/src/main/java/com/software/sello/feature/settings/AppearanceViewModel.kt:15</code>, <code>app/src/main/java/com/software/sello/feature/settings/AppearanceTheme.kt:11</code>).</li>
-        <li><strong>Tinta</strong> swatches (radio group): Cobalto and Violeta send <code>SettingsAction.InkChosen</code> (<code>SettingsScreen.kt:271</code>); Tuya, set or not, opens <a href="#sheet-tu-tinta">Tu tinta</a> with <code>SettingsAction.Tuya.Open</code> (<code>SettingsScreen.kt:278</code>).</li>
+        <li><strong>Tinta</strong> swatches (radio group): Cobalto and Violeta send <code>SettingsAction.InkChosen</code> (<code>SettingsScreen.kt:273</code>); Tuya, set or not, opens <a href="#sheet-tu-tinta">Tu tinta</a> with <code>SettingsAction.Tuya.Open</code> (<code>SettingsScreen.kt:280</code>).</li>
         <li><strong>Orden de las categorías</strong> and <strong>Dirección</strong> rows: open an OptionSlip; a choice sends <code>OrderChosen</code> / <code>DirectionChosen</code> and closes it; Cancelar, Back or a tap outside closes it (<code>SettingsScreen.kt:154</code>, <code>SettingsScreen.kt:166</code>).</li>
         <li><strong>Moneda al crear</strong> and <strong>Orden de la lista</strong> rows: the same, with <code>NewInvestmentCurrencyChosen</code> / <code>InvestmentOrderChosen</code> (<code>SettingsScreen.kt:180</code>, <code>SettingsScreen.kt:192</code>).</li>
-        <li><strong>Dólar</strong> row: opens the rate screen (<code>onOpenRate</code>, <code>SettingsScreen.kt:366</code>).</li>
+        <li><strong>Dólar</strong> row: opens the rate screen (<code>onOpenRate</code>, <code>SettingsScreen.kt:368</code>).</li>
         <li><strong>Reintentar</strong> on the StatusSlip: <code>SettingsAction.Retry</code> clears the write failure and re-reads (<code>SettingsViewModel.kt:179</code>).</li>
       </ul>
 
@@ -115,7 +116,7 @@
         <li>The hue slider: a 28 dp track drawn in the light band of 61 evenly spaced hues and a 34 dp thumb in the chosen one, ringed in <code>paper</code> and <code>outline</code>; 48 dp tall (<code>TuyaSheet.kt:250</code>).</li>
         <li>The note "El rojo y el verde también marcan excesos y metas." in <code>bodySmall</code> <code>ink</code> on red (0–49°) and green (122–195°) hues. Its line is always laid out, so the buttons never move.</li>
         <li>After a failed save, a <a href="../components.html#c-FieldMessageText"><code>FieldMessageText</code></a> error.</li>
-        <li>A <a href="../components.html#c-ButtonPair"><code>ButtonPair</code></a>: Cancelar (outlined) and Usar esta tinta (filled), or Reintentar after a failure.</li>
+        <li>A <a href="../components.html#c-ButtonPair"><code>ButtonPair</code></a> sharing 1:2, so the action keeps one line beside its spinner: Cancelar (outlined) and Usar esta tinta (filled), or Reintentar after a failure.</li>
       </ol>
 
       <h3>States</h3>
@@ -123,7 +124,7 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Open</td><td>The sheet starts on the hue of the ink in use: Cobalto 267°, Violeta 286° or Tuya's own. The app keeps its ink until Usar esta tinta.</td><td><code>SettingsViewModel.kt:214</code>, <code>InkChoices.kt:34</code></td><td><code>settings-tu-tinta</code></td></tr>
+            <tr><td>Open</td><td>The sheet starts on Tuya's hue, in use or kept from before; with none yet, on the hue of the ink in use: Cobalto 267°, Violeta 286°. The app keeps its ink until Usar esta tinta.</td><td><code>SettingsViewModel.kt:214</code>, <code>InkChoices.kt:38</code></td><td><code>settings-tu-tinta</code></td></tr>
             <tr><td>Red or green hue</td><td>The note line shows; every hue can be used.</td><td><code>TuyaSheet.kt:116</code></td><td><code>settings-tu-tinta-red</code></td></tr>
             <tr><td>Busy (saving)</td><td>Usar esta tinta shows its spinner; Cancelar, the slider, the scrim and back take nothing; a second tap does nothing. The swatches behind are disabled too.</td><td><code>SettingsViewModel.kt:215</code>, <code>TuyaSheet.kt:155</code></td><td><code>settings-tu-tinta-saving</code></td></tr>
             <tr><td>Saved</td><td>The sheet closes and every screen takes the ink at once, through <code>AppearanceViewModel</code>.</td><td><code>SettingsViewModel.kt:230</code></td><td><code>settings-tuya</code></td></tr>
@@ -196,7 +197,7 @@
             <tr>
               <td><code>InkSwatches</code> (feature-local)</td>
               <td><code>app/src/main/java/com/software/sello/feature/settings/SettingsComponents.kt:51</code></td>
-              <td>One 44 dp round swatch per ink in its light band colour, in a 56 dp ring that is <code>ink</code> when chosen; a radio group; indented <code>start = 26.dp</code> under the Tinta row (<code>SettingsScreen.kt:281</code>). Tuya without a hue is a sweep of every generated hue with a <code>paper</code> + (<code>SettingsComponents.kt:111</code>); chosen, a 22 dp <code>paper</code> badge with a pencil in <code>inkSoft</code>, ringed in <code>rule</code>, sits at its lower edge (<code>SettingsComponents.kt:123</code>)</td>
+              <td>One 44 dp round swatch per ink in its light band colour, in a 56 dp ring that is <code>ink</code> when chosen; a radio group; indented <code>start = 26.dp</code> under the Tinta row (<code>SettingsScreen.kt:283</code>). Tuya without a hue is a sweep of every generated hue with a <code>paper</code> + (<code>SettingsComponents.kt:111</code>); chosen, a 22 dp <code>paper</code> badge with a pencil in <code>inkSoft</code>, ringed in <code>rule</code>, sits at its lower edge (<code>SettingsComponents.kt:123</code>)</td>
               <td>"The ink's own swatch, not the active scheme: it previews an ink" (<code>ThemeInk.swatch</code>, its light band)</td>
             </tr>
             <tr>

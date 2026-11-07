@@ -247,6 +247,16 @@ class SettingsScreenshotTest {
         reveal = SETTINGS_INK_NOTE_TAG
     )
 
+    private val tuyaKept =
+        loaded.copy(appearance = AppearancePreference(tuyaHue = InkHue.of(22)!!))
+
+    @Test
+    fun tuyaKeptLight() = capture("tuya-kept", Look(), tuyaKept, reveal = SETTINGS_INK_TAG)
+
+    @Test
+    fun tuyaKeptDark() =
+        capture("tuya-kept", Look(dark = true), tuyaKept, reveal = SETTINGS_INK_TAG)
+
     private val sheet = loaded.copy(tuya = TuyaDraft(hue = 200))
 
     @Test fun tuTintaLight() = capture("tu-tinta", Look(), sheet)

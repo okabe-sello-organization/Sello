@@ -119,10 +119,13 @@ from version 8, `tuya`), from version 8 `inkHue`, `categoryOrder` (`most_used`, 
 version 5, `investmentCurrency` (`COP`, `USD`) and `investmentOrder` (`largest_value`,
 `return`, `alphabetical`, `newest`, `latest_update`).
 
-`inkHue` is the person's own hue when `ink` is `tuya`: a bare whole OKLCH degree from `0`
-to `359`. It is `null` for any other ink and required for `tuya`; a hue outside `0` to
-`359`, written as text or with a fraction, missing for `tuya` or given for another ink is
-refused, never wrapped or clipped. A file before version 8 that says `tuya` is refused.
+`inkHue` is Tuya's hue: a bare whole OKLCH degree from `0` to `359`. It is required when
+`ink` is `tuya`, and may also be given beside `cobalto` or `violeta`: the hue the person
+set for Tuya, kept while another ink is in use, so Tuya keeps its colour after a restore.
+`null` means Tuya has no hue yet. A hue outside `0` to `359`, written as text or with a
+fraction, or missing for `tuya`, is refused, never wrapped or clipped; a restore writes the
+ink and the hue exactly as the file has them, and a reset forgets the hue.
+A file before version 8 that says `tuya` is refused.
 
 Every key is required, even when its value is `null`, and no other key is allowed.
 

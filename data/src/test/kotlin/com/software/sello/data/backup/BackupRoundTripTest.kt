@@ -151,7 +151,10 @@ class BackupRoundTripTest {
     private fun g01In(ink: InkPreference) = g01InDollars().let {
         it.copy(
             preferences = it.preferences!!.copy(
-                appearance = it.preferences.appearance.copy(ink = ink)
+                appearance = it.preferences.appearance.copy(
+                    ink = ink,
+                    tuyaHue = (ink as? InkPreference.Tuya)?.hue
+                )
             )
         )
     }
@@ -174,11 +177,13 @@ class BackupRoundTripTest {
     }
 
     @Test
-    fun `a hue outside the circle, as text or beside another ink rejects the whole file`() {
+    fun `a hue outside the circle or as text, beside any ink, rejects the whole file`() {
         val file = String(resource("valid-g01-v8.json"))
         val tuya = "\"ink\": \"tuya\",\n    \"inkHue\": "
         for ((from, to) in listOf(
-            "\"inkHue\": null" to "\"inkHue\": 22",
+            "\"inkHue\": null" to "\"inkHue\": 360",
+            "\"inkHue\": null" to "\"inkHue\": -1",
+            "\"inkHue\": null" to "\"inkHue\": \"22\"",
             "\"ink\": \"violeta\",\n    \"inkHue\": null" to "${tuya}360",
             "\"ink\": \"violeta\",\n    \"inkHue\": null" to "$tuya-1",
             "\"ink\": \"violeta\",\n    \"inkHue\": null" to "${tuya}22.5",
@@ -196,6 +201,23 @@ class BackupRoundTripTest {
                 BackupRejection.InvalidValue("preferences.inkHue"),
                 (codec.read(changed.toByteArray()) as Outcome.Failure).error
             )
+        }
+    }
+
+    @Test
+    fun `Tuya's hue kept beside another ink is written and reads back`() {
+        val file = String(resource("valid-g01-v8.json"))
+        for (hue in listOf(0L, 147L, 359L)) {
+            val contents = g01InDollars().let {
+                it.copy(
+                    preferences = it.preferences!!.copy(
+                        appearance = it.preferences.appearance.copy(tuyaHue = InkHue.of(hue)!!)
+                    )
+                )
+            }
+            val written = String(codec.encode(contents).value())
+            assertEquals(file.replace("\"inkHue\": null", "\"inkHue\": $hue"), written)
+            assertEquals(contents, codec.read(written.toByteArray()).value().contents)
         }
     }
 

@@ -26,6 +26,7 @@ import com.software.sello.feature.investments.ratesBoard
 import com.software.sello.feature.recurrence.HandScheduleReads
 import com.software.sello.testing.testMoney
 import java.time.LocalDate
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -233,6 +234,54 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun choosingAnotherInkKeepsTuyasHueAndTuTintaReopensOnIt() = runTest {
+        val model = settings()
+        appearance.values.value = PreferenceRead.Ready(AppearancePreference(ink = red))
+        runCurrent()
+
+        model.onAction(SettingsAction.InkChosen(InkPreference.Violeta))
+        runCurrent()
+        assertEquals(
+            AppearancePreference(ink = InkPreference.Violeta, tuyaHue = InkHue.of(22)!!),
+            model.state.value.appearance
+        )
+
+        model.onAction(SettingsAction.Tuya.Open)
+        runCurrent()
+        assertEquals(TuyaDraft(hue = 22), model.tuya())
+    }
+
+    @Test
+    fun aCancelledSaveIsNeitherSavedNorFailedAndFreesTheSheet() = runTest {
+        val model = settings()
+        runCurrent()
+        model.onAction(SettingsAction.Tuya.Open)
+        model.onAction(SettingsAction.Tuya.HueChanged(22))
+        val gate = CompletableDeferred<Unit>()
+        appearance.inkGate = gate
+
+        model.onAction(SettingsAction.Tuya.Use)
+        runCurrent()
+        assertEquals(TuyaDraft(hue = 22, saving = true), model.tuya())
+
+        // The write is cancelled under the save: the cancellation goes on up, never caught
+        // as a failure or taken for a save.
+        gate.completeExceptionally(CancellationException("left the screen"))
+        runCurrent()
+
+        assertEquals(TuyaDraft(hue = 22), model.tuya())
+        assertFalse(model.state.value.busy)
+        assertEquals(InkPreference.Cobalto, model.state.value.appearance.ink)
+        assertNull(model.state.value.failure)
+
+        appearance.inkGate = null
+        model.onAction(SettingsAction.Tuya.Use)
+        runCurrent()
+        assertEquals(red, model.state.value.appearance.ink)
+        assertNull(model.tuya())
+    }
+
+    @Test
     fun cancelingForgetsTheHueAndKeepsTheInk() = runTest {
         val model = settings()
         runCurrent()
@@ -395,11 +444,16 @@ private class HandAppearancePreferences : AppearancePreferences {
         inkGate?.await()
         val result = nextInkWrite.also { nextInkWrite = PreferenceWrite.Saved }
         if (result is PreferenceWrite.Saved) {
+            // As storage does: Tuya brings its hue, another ink keeps Tuya's.
             val current = (values.value as PreferenceRead.Ready).value
-            values.value = PreferenceRead.Ready(current.copy(ink = ink))
+            val hue = (ink as? InkPreference.Tuya)?.hue ?: current.tuyaHue
+            values.value = PreferenceRead.Ready(current.copy(ink = ink, tuyaHue = hue))
         }
         return result
     }
+
+    override suspend fun restoreInk(ink: InkPreference, tuyaHue: InkHue?): PreferenceWrite =
+        error("Configuración never restores")
 }
 
 private class HandOrderingPreferences : CategoryOrderingPreferences {

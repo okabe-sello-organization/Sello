@@ -40,6 +40,7 @@ import com.software.sello.designsystem.component.StatusKind
 import com.software.sello.designsystem.component.StatusSlip
 import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.icon.SelloIcon
+import com.software.sello.designsystem.theme.HueInk
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.designsystem.theme.hueName
 import com.software.sello.domain.model.CategoryOrder
@@ -49,7 +50,6 @@ import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.presentation.appearance.InkChoices
-import com.software.sello.presentation.appearance.themeInk
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.investments.label
 import com.software.sello.presentation.investments.newInvestmentLabel
@@ -262,6 +262,8 @@ private fun AppearanceControls(state: SettingsState, onAction: (SettingsAction) 
         )
         val ink = state.appearance.ink
         val tuya = ink as? InkPreference.Tuya
+        // Tuya keeps its hue while another ink is in use: its colour and badge, not chosen.
+        val tuyaHue = state.appearance.tuyaHue
         InkSwatches(
             swatches = InkChoices.map { choice ->
                 InkSwatch(
@@ -272,9 +274,9 @@ private fun AppearanceControls(state: SettingsState, onAction: (SettingsAction) 
                 )
             } + InkSwatch(
                 label = stringResource(R.string.settings_ink_tuya),
-                fill = tuya?.themeInk?.swatch,
+                fill = tuyaHue?.let { HueInk(it.degrees).swatch },
                 chosen = tuya != null,
-                editBadge = tuya != null,
+                editBadge = tuyaHue != null,
                 onClick = { onAction(SettingsAction.Tuya.Open) }
             ),
             enabled = !state.busy,
