@@ -6,6 +6,7 @@ import com.software.sello.domain.model.Income
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
+import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 
@@ -24,7 +25,31 @@ sealed interface Movement {
     data class Received(val income: Income) : Movement {
         override val date: LocalDate get() = income.date
     }
+
+    companion object {
+        /**
+         * Día a día's order: newest day first; within a day the one created last first,
+         * an expense before an income created at the same moment, then the higher
+         * sequence first. Storage lists in this same order.
+         */
+        val listOrder: Comparator<Movement> = compareByDescending<Movement> { it.date }
+            .thenByDescending { it.createdAt }
+            .thenBy { if (it is Spent) 0 else 1 }
+            .thenByDescending { it.sequence }
+    }
 }
+
+private val Movement.createdAt: Instant
+    get() = when (this) {
+        is Movement.Spent -> expense.createdAt
+        is Movement.Received -> income.createdAt
+    }
+
+private val Movement.sequence: Long
+    get() = when (this) {
+        is Movement.Spent -> expense.sequence
+        is Movement.Received -> income.sequence
+    }
 
 /**
  * Some of a month's movements, newest day first and, within a day, the one added last

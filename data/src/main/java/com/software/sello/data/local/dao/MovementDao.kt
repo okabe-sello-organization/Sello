@@ -25,6 +25,13 @@ data class DayAmountRow(
     @ColumnInfo(name = "currency") val currency: String
 )
 
+/** What makes an expense one Día a día's search finds; see [MovementDao.searchExpenses]. */
+private const val SEARCH_MATCH =
+    "(:byWords AND instr(search_key, :key) > 0) " +
+        "OR (:byName AND category_id IN " +
+        "(SELECT id FROM category WHERE instr(name_key, :nameKey) > 0)) " +
+        "OR (:byAmount AND amount_minor = :amount AND currency = :currency)"
+
 /** Expenses and incomes read together, for the month's day-by-day list (SELLO-192). */
 @Dao
 interface MovementDao {
@@ -68,6 +75,55 @@ interface MovementDao {
             "WHERE effective_date >= :from AND effective_date <= :through"
     )
     suspend fun expenseAmounts(from: String, through: String): List<DayAmountRow>
+
+    /**
+     * The expenses Día a día's search finds (SELLO-193), in list order, after the cursor
+     * when [hasCursor] and at most [limit]. One matches when [byWords] and its folded note
+     * holds [key], when [byName] and its category's name key holds [nameKey], or when
+     * [byAmount] and it is exactly [amount] of [currency]. The cursor is a movement's day,
+     * creation time, [MovementKind] and sequence: an expense created at the same moment
+     * comes after an expense cursor only with a lower sequence, never after an income's.
+     */
+    @Query(
+        "SELECT 0 AS kind, id FROM expense WHERE (" + SEARCH_MATCH + ") " +
+            "AND (NOT :hasCursor OR effective_date < :date " +
+            "OR (effective_date = :date AND (created_at < :createdAt " +
+            "OR (created_at = :createdAt AND :cursorKind = 0 AND sequence < :sequence)))) " +
+            "ORDER BY effective_date DESC, created_at DESC, sequence DESC LIMIT :limit"
+    )
+    suspend fun searchExpenses(
+        byWords: Boolean,
+        key: String,
+        byName: Boolean,
+        nameKey: String,
+        byAmount: Boolean,
+        amount: Long,
+        currency: String,
+        hasCursor: Boolean,
+        date: String,
+        createdAt: Long,
+        cursorKind: Int,
+        sequence: Long,
+        limit: Int
+    ): List<MovementKey>
+
+    /** The day and amount of every expense [searchExpenses] finds, for its totals. */
+    @Query(
+        "SELECT effective_date, amount_minor, currency FROM expense WHERE " + SEARCH_MATCH
+    )
+    suspend fun searchedAmounts(
+        byWords: Boolean,
+        key: String,
+        byName: Boolean,
+        nameKey: String,
+        byAmount: Boolean,
+        amount: Long,
+        currency: String
+    ): List<DayAmountRow>
+
+    /** Every income: incomes have no stored search key, so search folds them as read. */
+    @Query("SELECT * FROM income")
+    suspend fun allIncomes(): List<IncomeEntity>
 
     @Query("SELECT * FROM expense WHERE id IN (:ids)")
     suspend fun expenses(ids: List<String>): List<ExpenseEntity>

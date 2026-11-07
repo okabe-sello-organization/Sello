@@ -89,6 +89,12 @@ data class CategoryName private constructor(val value: String) {
     companion object {
         const val MAX_CODE_POINTS = 24
 
+        /**
+         * [text] folded as [uniquenessKey] folds a name, so a search finds a category by
+         * any part of its name whatever its case, accents or repeated spaces (SELLO-193).
+         */
+        fun keyOf(text: String): String = foldedKey(text)
+
         fun of(raw: String): Outcome<CategoryName, TextError> =
             when (val text = boundedText(raw, MAX_CODE_POINTS)) {
                 is Outcome.Success -> Outcome.Success(CategoryName(text.value))
