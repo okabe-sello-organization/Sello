@@ -61,8 +61,11 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -625,6 +628,29 @@ fun FactLine(text: AnnotatedString, modifier: Modifier = Modifier) {
         modifier,
         style = MaterialTheme.typography.bodyLarge,
         color = SelloTheme.colors.inkSoft
+    )
+}
+
+/**
+ * [FactLine] with the first [bold] in [text], such as today's figure, in ink and bold. When
+ * [text] does not hold [bold], it is all plain.
+ */
+@Composable
+fun FactLine(text: String, bold: String, modifier: Modifier = Modifier) {
+    val style =
+        SpanStyle(color = SelloTheme.colors.ink, fontWeight = SelloTheme.type.weight.emphasis)
+    val at = if (bold.isEmpty()) -1 else text.indexOf(bold)
+    FactLine(
+        buildAnnotatedString {
+            if (at < 0) {
+                append(text)
+            } else {
+                append(text.substring(0, at))
+                withStyle(style) { append(bold) }
+                append(text.substring(at + bold.length))
+            }
+        },
+        modifier
     )
 }
 

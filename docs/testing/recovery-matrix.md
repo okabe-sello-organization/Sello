@@ -27,9 +27,10 @@ and [ADR 0008](../decisions/0008-unreadable-storage-start-over.md) define the ru
 | Backup format 6 | schema 9 | Read with its carry chains and financial month; the chosen goal is its one star | `BackupRoundTripTest`, `CarryBackupTest`, `StarredGoalBackupTest` (JVM); `GoalBackupRestoreTest.everyStarComesBackAndReplacesTheStarsThereNeverMerges` (device) |
 | Backup format 7 | schema 9 | Read with its stars; no hue, so its ink is Cobalto or Violeta; `tuya` refused | `BackupRoundTripTest`, `StarredGoalBackupTest` (JVM) |
 | Backup format 8 | schema 9 | Read with Tuya's hue; `sistema` refused | `BackupRoundTripTest` (JVM) |
-| Backup format 9 (current) | schema 9 | Written and read byte for byte, Sistema and Tuya's hue included; restored with the same figures and ink on a fresh installation | `BackupRoundTripTest` (JVM); `RecoveryRetentionTest`, `GoalBackupRestoreTest`, `InvestmentBackupRestoreTest`, `CarryBackupRestoreTest`, `RestoreCommandContractTest.aTuyaBackupRestoresTuyaWithItsHue` (device) |
+| Backup format 9 | schema 9 | Read with Sistema and Tuya's hue; its Gastos hormiga line is 20.000; `smallExpenseLine` refused | `BackupRoundTripTest` (JVM) |
+| Backup format 10 (current) | schema 9 | Written and read byte for byte, Sistema, Tuya's hue and the Gastos hormiga line included; restored with the same figures, ink and line on a fresh installation; a line that cannot be saved stays pending alone | `BackupRoundTripTest` (JVM); `RecoveryRetentionTest`, `GoalBackupRestoreTest`, `InvestmentBackupRestoreTest`, `CarryBackupRestoreTest`, `RestoreCommandContractTest.aTuyaBackupRestoresTuyaWithItsHue`, `RestoreCommandContractTest.gastosHormigasLineIsAppliedAndOneThatFailsStaysPendingAlone`, `EraseThenRestoreTest` (device) |
 | Erase all with goals | schema 9 | Every goal, its history, the undo copy and the stars removed | `GoalBackupRestoreTest.erasingEverythingRemovesEveryGoalItsHistoryAndTheStars` |
-| A newer backup format | — | Refused as "Lo hizo una versión más nueva de Sello"; nothing changes | `RestoreCommandContractTest.aFileThatCannotBeRestoredChangesNothingAndIsNotKept` (version 10) |
+| A newer backup format | — | Refused as "Lo hizo una versión más nueva de Sello"; nothing changes | `RestoreCommandContractTest.aFileThatCannotBeRestoredChangesNothingAndIsNotKept` (version 11) |
 
 Every format is read into the same plan before anything is written, so one restore path
 serves them all ([backup format](../data/backup-format.md#reading-a-file)).

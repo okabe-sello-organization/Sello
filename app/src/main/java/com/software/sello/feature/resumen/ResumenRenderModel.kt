@@ -2,9 +2,13 @@ package com.software.sello.feature.resumen
 
 import com.software.sello.designsystem.component.ChartPeriod
 import com.software.sello.designsystem.component.ChartPoint
+import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.OverallBudget
 import com.software.sello.domain.model.ResumenSnapshot
+import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.WeekdayPattern
+import com.software.sello.domain.policy.SmallExpensePolicy
+import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ResumenSnapshotState
 import com.software.sello.presentation.carry.carryFigures
@@ -25,20 +29,28 @@ class ResumenRenderModel(
     private val labels: DateLabels,
     private val months: MonthNames
 ) {
-    /** [current] is the financial month in progress; a date from another year shows its year. */
-    fun render(state: ResumenSnapshotState, current: YearMonth): ResumenState = when (state) {
+    /**
+     * [current] is the financial month in progress; a date from another year shows its year.
+     * [line] is Gastos hormiga's line as last read.
+     */
+    fun render(
+        state: ResumenSnapshotState,
+        current: YearMonth,
+        line: PreferenceRead<SmallExpenseLine>
+    ): ResumenState = when (state) {
         ReadState.Loading -> ResumenState.Loading
 
-        is ReadState.Ready -> month(state.value, false, current)
+        is ReadState.Ready -> month(state.value, false, current, line)
 
-        is ReadState.Failed -> state.lastGood?.let { month(it, true, current) }
+        is ReadState.Failed -> state.lastGood?.let { month(it, true, current, line) }
             ?: ResumenState.Failed
     }
 
     private fun month(
         snapshot: ResumenSnapshot,
         stale: Boolean,
-        current: YearMonth
+        current: YearMonth,
+        line: PreferenceRead<SmallExpenseLine>
     ): ResumenState.Ready {
         val budget = snapshot.budget
         val firstRecordedMonth = snapshot.history.indexOfFirst { it.expenseCount > 0 }
@@ -119,8 +131,79 @@ class ResumenRenderModel(
             stale = stale,
             asOf = budget.asOf.format(
                 if (budget.asOf.year == current.year) sentenceDate else sentenceDateWithYear
-            )
+            ),
+            smallExpenses = smallExpenses(snapshot, line)
         )
+    }
+
+    /**
+     * Gastos hormiga with the line read, or the last one read when it cannot be read again.
+     * With no line ever read, a notice where a slip could be: 5 or more expenses at or
+     * under the widest line.
+     */
+    private fun smallExpenses(
+        snapshot: ResumenSnapshot,
+        read: PreferenceRead<SmallExpenseLine>
+    ): ResumenSmallExpenses? {
+        val (line, older) = when (read) {
+            is PreferenceRead.Ready -> read.value to false
+            is PreferenceRead.Failed -> (read.lastGood ?: return unreadableLine(snapshot)) to true
+        }
+        val summary = when (val worked = SmallExpensePolicy.summary(snapshot, line)) {
+            is Outcome.Success -> worked.value ?: return null
+            is Outcome.Failure -> return ResumenSmallExpenses.Unavailable
+        }
+        val budget = snapshot.budget
+        val inProgress = budget.month == YearMonth.from(budget.asOf)
+        val previous = budget.month.minusMonths(1)
+        val throughDay = budget.asOf.dayOfMonth.takeIf { inProgress }
+        return ResumenSmallExpenses.Shown(
+            line = money.format(line.money).digits,
+            total = money.format(summary.total),
+            count = summary.count,
+            sharePercent = summary.sharePercent,
+            previousName = monthName(previous),
+            bars = summary.previousTotal?.let { before ->
+                // Both on one scale: the larger fills the bar.
+                val largest = maxOf(summary.total.minorUnits, before.minorUnits)
+                listOf(
+                    ComparisonBar(
+                        monthTitle(budget.month),
+                        money.format(summary.total),
+                        share(summary.total.minorUnits, largest),
+                        current = true
+                    ),
+                    ComparisonBar(
+                        monthTitle(previous),
+                        money.format(before),
+                        share(before.minorUnits, largest),
+                        current = false
+                    )
+                )
+            },
+            throughDay = throughDay,
+            previousThroughDay = throughDay?.let { minOf(it, previous.lengthOfMonth()) },
+            categories = summary.categories.map {
+                ResumenSmallCategory(
+                    it.category.id.value,
+                    it.category.name.value,
+                    it.category.icon.value,
+                    it.count,
+                    money.format(it.total)
+                )
+            },
+            olderLine = older
+        )
+    }
+
+    private fun unreadableLine(snapshot: ResumenSnapshot): ResumenSmallExpenses? = when (
+        val widest = SmallExpensePolicy.tally(snapshot.periods.current, SmallExpenseLine.WIDEST)
+    ) {
+        is Outcome.Failure -> ResumenSmallExpenses.Unreadable
+
+        is Outcome.Success ->
+            ResumenSmallExpenses.Unreadable
+                .takeIf { widest.value.count >= SmallExpensePolicy.MIN_COUNT }
     }
 
     private fun hero(snapshot: ResumenSnapshot): ResumenHero {

@@ -71,6 +71,10 @@ data object UsdRateRoute
 @Serializable
 data object UsdRateEntryRoute
 
+/** Gastos hormiga: the line under which an expense counts as small, from Configuración. */
+@Serializable
+data object SmallExpenseLineRoute
+
 /** One goal's detail. The screen reads the goal itself. */
 @Serializable
 data class GoalRoute(val goalId: String)

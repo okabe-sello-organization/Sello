@@ -4,6 +4,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.mutablePreferencesOf
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.software.sello.domain.model.AppearancePreference
@@ -19,6 +20,7 @@ import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.InvestmentPreference
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.port.BackupRecord
 import com.software.sello.domain.port.BackupSummary
@@ -771,6 +773,93 @@ class DataStoreUserPreferencesTest {
         )
     }
 
+    // --- Gastos hormiga's line (SELLO-194) ---
+
+    @Test
+    fun theLineStartsAtTwentyThousandAndIsStoredAsWholePesosAcrossARestart() = runTest {
+        val data = HandDataStore()
+        val preferences = DataStoreUserPreferences(data)
+
+        assertEquals(
+            PreferenceRead.Ready(SmallExpenseLine.DEFAULT),
+            preferences.observeSmallExpenseLine().first()
+        )
+        for (pesos in listOf(1_000L, 15_000L, 100_000L)) {
+            val line = SmallExpenseLine.of(pesos)!!
+            assertEquals(PreferenceWrite.Saved, preferences.setSmallExpenseLine(line))
+            assertEquals(pesos, data.data.first()[SMALL_LINE])
+            // A new adapter on the same store, as after a restart or process death.
+            assertEquals(
+                PreferenceRead.Ready(line),
+                DataStoreUserPreferences(data).observeSmallExpenseLine().first()
+            )
+        }
+        // Saving the same line twice is the same single value.
+        val line = SmallExpenseLine.of(15_000)!!
+        assertEquals(PreferenceWrite.Saved, preferences.setSmallExpenseLine(line))
+        assertEquals(PreferenceWrite.Saved, preferences.setSmallExpenseLine(line))
+        assertEquals(15_000L, data.data.first()[SMALL_LINE])
+    }
+
+    @Test
+    fun aStoredLineOutsideTheRangeIsInvalidNotClippedOrRewritten() = runTest {
+        for (pesos in listOf(999L, 100_001L, 0L, -20_000L, Long.MAX_VALUE)) {
+            val raw = mutablePreferencesOf(SMALL_LINE to pesos)
+            val data = HandDataStore(raw)
+
+            assertEquals(
+                "$pesos",
+                PreferenceRead.Failed<SmallExpenseLine>(PreferenceFailure.InvalidValue, null),
+                DataStoreUserPreferences(data).observeSmallExpenseLine().first()
+            )
+            assertEquals(raw, data.data.first())
+        }
+    }
+
+    @Test
+    fun aLineStoredAsAnotherTypeIsInvalid() = runTest {
+        val raw = mutablePreferencesOf(
+            stringPreferencesKey("resumen_small_expense_line_v1") to "20000"
+        )
+
+        assertEquals(
+            PreferenceRead.Failed<SmallExpenseLine>(PreferenceFailure.InvalidValue, null),
+            DataStoreUserPreferences(HandDataStore(raw)).observeSmallExpenseLine().first()
+        )
+    }
+
+    @Test
+    fun aLineThatCannotBeReadOrSavedFailsVisiblyAndLeavesTheStoredOne() = runTest {
+        assertEquals(
+            PreferenceRead.Failed<SmallExpenseLine>(PreferenceFailure.Unavailable, null),
+            DataStoreUserPreferences(UnavailableDataStore()).observeSmallExpenseLine().first()
+        )
+        val raw = mutablePreferencesOf(SMALL_LINE to 15_000L)
+        val data = UnwritableDataStore(raw)
+        val preferences = DataStoreUserPreferences(data)
+
+        assertEquals(
+            PreferenceWrite.Failed(PreferenceFailure.Unavailable),
+            preferences.setSmallExpenseLine(SmallExpenseLine.of(50_000)!!)
+        )
+        assertEquals(15_000L, data.data.first()[SMALL_LINE])
+    }
+
+    @Test
+    fun resetReturnsTheLineToTwentyThousand() = runTest {
+        val data = HandDataStore()
+        val preferences = DataStoreUserPreferences(data)
+        preferences.setSmallExpenseLine(SmallExpenseLine.of(5_000)!!)
+
+        assertEquals(PreferenceWrite.Saved, preferences.resetAll())
+
+        assertEquals(null, data.data.first()[SMALL_LINE])
+        assertEquals(
+            PreferenceRead.Ready(SmallExpenseLine.DEFAULT),
+            preferences.observeSmallExpenseLine().first()
+        )
+    }
+
     @Test
     fun readAndWriteFailuresStayNonfinancialAndObservable() = runTest {
         val preferences = DataStoreUserPreferences(UnavailableDataStore())
@@ -926,3 +1015,4 @@ class DataStoreUserPreferencesTest {
 
 private val INK = stringPreferencesKey("appearance_ink_v1")
 private val INK_HUE = intPreferencesKey("appearance_ink_hue_v1")
+private val SMALL_LINE = longPreferencesKey("resumen_small_expense_line_v1")

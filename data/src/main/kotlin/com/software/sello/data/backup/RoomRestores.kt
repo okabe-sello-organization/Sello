@@ -41,6 +41,7 @@ import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.RestoreRejection
 import com.software.sello.domain.port.Restores
+import com.software.sello.domain.port.SmallExpensePreferences
 import com.software.sello.domain.port.StageFailure
 import com.software.sello.domain.port.StagedLookup
 import com.software.sello.domain.port.StagedRestore
@@ -97,6 +98,7 @@ class RoomRestores(
     private val appearance: AppearancePreferences,
     private val ordering: CategoryOrderingPreferences,
     private val investments: InvestmentPreferences,
+    private val smallExpenses: SmallExpensePreferences,
     private val notice: CatchUpNoticePreferences,
     private val ids: RecordIdSource,
     private val audit: AuditClock,
@@ -586,7 +588,9 @@ class RoomRestores(
             PendingPreferences(
                 appearance = preferences?.appearance?.takeUnless { applied(APPEARANCE) },
                 ordering = preferences?.ordering?.takeUnless { applied(ORDERING) },
-                investments = preferences?.investments?.takeUnless { applied(INVESTMENTS) }
+                investments = preferences?.investments?.takeUnless { applied(INVESTMENTS) },
+                smallExpenseLine = preferences?.smallExpenseLine
+                    ?.takeUnless { applied(SMALL_EXPENSES) }
             )
         )
     }
@@ -619,6 +623,7 @@ class RoomRestores(
         var appearanceLeft = pending.preferences.appearance
         var orderingLeft = pending.preferences.ordering
         var investmentsLeft = pending.preferences.investments
+        var lineLeft = pending.preferences.smallExpenseLine
         appearanceLeft?.let { wanted ->
             val saved = appearance.setTheme(wanted.theme).saved() &&
                 appearance.restoreInk(wanted.ink, wanted.tuyaHue).saved()
@@ -634,8 +639,12 @@ class RoomRestores(
                 investments.setInvestmentOrder(wanted.order).saved()
             if (saved && markApplied(INVESTMENTS)) investmentsLeft = null
         }
+        lineLeft?.let { wanted ->
+            val saved = smallExpenses.setSmallExpenseLine(wanted).saved()
+            if (saved && markApplied(SMALL_EXPENSES)) lineLeft = null
+        }
         reviewRestoredEntries()
-        val left = PendingPreferences(appearanceLeft, orderingLeft, investmentsLeft)
+        val left = PendingPreferences(appearanceLeft, orderingLeft, investmentsLeft, lineLeft)
         if (left.done) {
             // The manifest first and `applied` last: a death between them leaves either this
             // replacement with every group applied, finished again quietly, or a list with no
@@ -1020,6 +1029,7 @@ class RoomRestores(
         const val APPEARANCE = "appearance"
         const val ORDERING = "ordering"
         const val INVESTMENTS = "investments"
+        const val SMALL_EXPENSES = "small_expenses"
         const val NOTICE = "notice"
 
         /** An investment starts with its first aporte and value at positions 0 and 1. */

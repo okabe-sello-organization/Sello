@@ -58,6 +58,7 @@ import com.software.sello.domain.model.Schedule
 import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.model.SchedulePause
 import com.software.sello.domain.model.ScheduledEntry
+import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.model.TransactionAmountError
@@ -177,17 +178,16 @@ private fun flag(element: JsonElement, path: String): Boolean {
 }
 
 /**
- * Checks a decoded file completely, older versions read as version 8 included (version 9
- * has version 8's shape); the
+ * Checks a decoded file completely, older versions read as version 10 included; the
  * first problem rejects all of it.
  */
-internal fun validate(file: BackupFileV8): Outcome<BackupContents, BackupRejection> = try {
+internal fun validate(file: BackupFileV10): Outcome<BackupContents, BackupRejection> = try {
     Outcome.Success(contentsOf(file))
 } catch (rejected: Rejected) {
     Outcome.Failure(rejected.rejection)
 }
 
-private fun contentsOf(file: BackupFileV8): BackupContents {
+private fun contentsOf(file: BackupFileV10): BackupContents {
     val financial = file.financial
     val version = whole(file.version, "version")
     val revision = whole(financial.sourceRevision, "financial.sourceRevision")
@@ -1001,7 +1001,7 @@ private fun carryChains(
 private fun <T> Map<T, String>.decode(text: String, path: String): T =
     entries.firstOrNull { it.value == text }?.key ?: invalid(path)
 
-private fun preferences(wire: PreferencesV8, version: Long) = PortablePreferences(
+private fun preferences(wire: PreferencesV10, version: Long) = PortablePreferences(
     appearance = appearance(
         wire,
         WireNames.themes.decode(wire.theme, "preferences.theme"),
@@ -1023,7 +1023,11 @@ private fun preferences(wire: PreferencesV8, version: Long) = PortablePreference
             wire.investmentOrder,
             "preferences.investmentOrder"
         )
-    )
+    ),
+    // Pesos from 1000 to 100000; anything else is refused, never clipped.
+    smallExpenseLine = SmallExpenseLine.of(
+        whole(wire.smallExpenseLine, "preferences.smallExpenseLine")
+    ) ?: invalid("preferences.smallExpenseLine")
 )
 
 /**
@@ -1032,7 +1036,7 @@ private fun preferences(wire: PreferencesV8, version: Long) = PortablePreference
  * clipped. Sistema came with version 9: an older file that says it is refused.
  */
 private fun appearance(
-    wire: PreferencesV8,
+    wire: PreferencesV10,
     theme: ThemePreference,
     version: Long
 ): AppearancePreference {

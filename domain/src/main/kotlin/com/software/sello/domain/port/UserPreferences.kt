@@ -11,6 +11,7 @@ import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.InvestmentPreference
+import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.ThemePreference
 import java.time.Instant
 import java.time.YearMonth
@@ -62,6 +63,16 @@ interface InvestmentPreferences {
     /** Refuses with [PreferenceFailure.InvalidValue] a currency no investment may hold. */
     suspend fun setNewInvestmentCurrency(currency: Currency): PreferenceWrite
     suspend fun setInvestmentOrder(order: InvestmentOrder): PreferenceWrite
+}
+
+/**
+ * Gastos hormiga's line, a portable preference (backup version 10): [SmallExpenseLine.DEFAULT]
+ * until the person sets one. A stored value outside the line's range is damage, read as
+ * [PreferenceFailure.InvalidValue], never clipped.
+ */
+interface SmallExpensePreferences {
+    fun observeSmallExpenseLine(): Flow<PreferenceRead<SmallExpenseLine>>
+    suspend fun setSmallExpenseLine(line: SmallExpenseLine): PreferenceWrite
 }
 
 /** Remembers only the two one-time correction announcements handed off to this ticket. */

@@ -6,9 +6,11 @@ import com.software.sello.domain.model.Income
 import com.software.sello.domain.model.IncomeId
 import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.policy.ResumenMonthInput
 import com.software.sello.domain.policy.ResumenPolicy
 import com.software.sello.domain.port.FinancialDay
+import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ResumenSnapshotState
 import com.software.sello.feature.expense.categoryIn
@@ -93,7 +95,11 @@ class ResumenCarryRenderTest {
             months,
             listOf(income)
         ) as Outcome.Success
-        return render.render(ReadState.Ready(snapshot.value), feb) as ResumenState.Ready
+        return render.render(
+            ReadState.Ready(snapshot.value),
+            feb,
+            PreferenceRead.Ready(SmallExpenseLine.DEFAULT)
+        ) as ResumenState.Ready
     }
 
     @Test

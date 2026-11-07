@@ -6,12 +6,14 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import com.software.sello.R
 import com.software.sello.feature.backup.TusDatosRoot
 import com.software.sello.feature.settings.SettingsRoot
+import com.software.sello.feature.settings.SmallExpenseLineRoot
 import com.software.sello.feature.settings.TuyaSheetRoot
 import com.software.sello.presentation.month.monthNames
 
@@ -40,7 +42,10 @@ internal fun NavGraphBuilder.settingsDestinations(
                 onOpenSchedules = {
                     navigation.navigate(SchedulesRoute()) { launchSingleTop = true }
                 },
-                onOpenRate = { navigation.navigate(UsdRateRoute) { launchSingleTop = true } }
+                onOpenRate = { navigation.navigate(UsdRateRoute) { launchSingleTop = true } },
+                onOpenSmallExpenses = {
+                    navigation.navigate(SmallExpenseLineRoute) { launchSingleTop = true }
+                }
             ) {
                 TusDatosRoot(
                     viewModels,
@@ -54,5 +59,12 @@ internal fun NavGraphBuilder.settingsDestinations(
         BackHandler(enabled = !state.monthPickerOpen) { navigation.popBackStack() }
         // After the screen's own back, so that back closes the sheet first.
         TuyaSheetRoot(viewModels)
+    }
+    composable<SmallExpenseLineRoute> {
+        SmallExpenseLineRoot(viewModels) {
+            val onForm =
+                navigation.currentBackStackEntry?.destination?.hasRoute<SmallExpenseLineRoute>()
+            if (onForm == true) navigation.popBackStack()
+        }
     }
 }

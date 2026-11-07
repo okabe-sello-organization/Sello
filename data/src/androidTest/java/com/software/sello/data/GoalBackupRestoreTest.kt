@@ -64,6 +64,7 @@ class GoalBackupRestoreTest {
     private val today = LocalDate.of(2026, 10, 9)
     private val dispatchers = realDispatchers
     private val investments = HandInvestmentPreferences()
+    private val smallExpenses = HandSmallExpensePreferences()
     private val preferences = object : AppearancePreferences, CategoryOrderingPreferences {
         override fun observeAppearance(): Flow<PreferenceRead<AppearancePreference>> = flowOf(
             PreferenceRead.Ready(
@@ -149,6 +150,7 @@ class GoalBackupRestoreTest {
         preferences,
         preferences,
         investments,
+        smallExpenses,
         { ledger.audit },
         ledger.clock,
         dispatchers
@@ -161,6 +163,7 @@ class GoalBackupRestoreTest {
         preferences,
         preferences,
         investments,
+        smallExpenses,
         NoticeSeen(),
         { uuid(nextId++) },
         { target.audit },
@@ -246,13 +249,17 @@ class GoalBackupRestoreTest {
         assertEquals(2, other.rows("starred_goal", "goal_id").size)
     }
 
-    /** [bytes] as version 6 wrote them: no ink hue, and [chosen] as the one chosen goal. */
+    /**
+     * [bytes] as version 6 wrote them: no ink hue, no Gastos hormiga line, and [chosen] as the
+     * one chosen goal.
+     */
     private fun asVersion6(bytes: ByteArray, chosen: GoalId): ByteArray {
         val text = String(bytes)
         val stars = Regex("\"starredGoals\": \\[[^]]*]")
-        check(stars.findAll(text).count() == 1 && text.contains("\"version\": 9,"))
-        return text.replace("\"version\": 9,", "\"version\": 6,")
+        check(stars.findAll(text).count() == 1 && text.contains("\"version\": 10,"))
+        return text.replace("\"version\": 10,", "\"version\": 6,")
             .replace(Regex("\\s+\"inkHue\": null,"), "")
+            .replace(Regex(",\\s+\"smallExpenseLine\": [0-9]+"), "")
             .replace(stars, "\"featuredGoal\": \"${chosen.value}\"")
             .toByteArray()
     }

@@ -24,6 +24,7 @@ import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.InvestmentPreference
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.BackupSummary
@@ -133,6 +134,7 @@ class RestoreCommandContractTest {
     }
 
     private val investments = HandInvestmentPreferences()
+    private val smallExpenses = HandSmallExpensePreferences()
 
     private val preferences = Preferences()
     private val notice = NoticeSeen()
@@ -146,6 +148,7 @@ class RestoreCommandContractTest {
         preferences,
         preferences,
         investments,
+        smallExpenses,
         notice,
         { uuid(nextId++) },
         {
@@ -432,8 +435,10 @@ class RestoreCommandContractTest {
         val bytes = g01()
 
         val truncated = restores().stage(bytes.copyOf(bytes.size / 2))
+        val text = String(bytes)
+        check(text.contains("\"version\": 10,"))
         val newer = restores().stage(
-            String(bytes).replaceFirst("\"version\": 9", "\"version\": 10").toByteArray()
+            text.replaceFirst("\"version\": 10,", "\"version\": 11,").toByteArray()
         )
 
         assertEquals(Outcome.Failure(StageFailure.Rejected(RestoreRejection.Damaged)), truncated)
@@ -806,6 +811,32 @@ class RestoreCommandContractTest {
     }
 
     @Test
+    fun gastosHormigasLineIsAppliedAndOneThatFailsStaysPendingAlone() = runBlocking {
+        currentHistory()
+        val line = SmallExpenseLine.of(8_000)!!
+        smallExpenses.fail = true
+
+        val outcome = restores().replace(stage(g01(wanted.copy(smallExpenseLine = line))))
+
+        // Appearance, order and Inversiones were applied; only the line waits.
+        assertEquals(
+            PendingPreferences(null, null, null, line),
+            (outcome as RestoreOutcome.Restored).preferences
+        )
+        assertEquals(SmallExpenseLine.DEFAULT, smallExpenses.value)
+
+        // After a restart it is still pending, then applied once it can be saved.
+        ledger.reopen()
+        assertEquals(PendingPreferences(null, null, null, line), restores().pending()?.preferences)
+        smallExpenses.fail = false
+        val done = restores().applyPending()
+
+        assertEquals(PendingPreferences(null, null), done?.preferences)
+        assertEquals(line, smallExpenses.value)
+        assertNull(restores().pending())
+    }
+
+    @Test
     fun aBackupWithoutPreferencesLeavesTheDevicesAlone() = runBlocking {
         currentHistory()
 
@@ -817,6 +848,7 @@ class RestoreCommandContractTest {
         )
         assertTrue(preferences.written.isEmpty())
         assertEquals(InvestmentPreference(), investments.value)
+        assertEquals(SmallExpenseLine.DEFAULT, smallExpenses.value)
         assertEquals(emptyList<String>(), stagingFiles())
     }
 
@@ -868,7 +900,12 @@ class RestoreCommandContractTest {
     /** Every preference G01 brings, none applied. */
     private val everyPreference = RestoreOutcome.Restored(
         BackupSummary(2, 3, 1, 0, 0),
-        PendingPreferences(wanted.appearance, wanted.ordering, InvestmentPreference())
+        PendingPreferences(
+            wanted.appearance,
+            wanted.ordering,
+            InvestmentPreference(),
+            SmallExpenseLine.DEFAULT
+        )
     )
 
     @Test

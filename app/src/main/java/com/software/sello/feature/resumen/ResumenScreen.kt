@@ -141,7 +141,7 @@ private fun ResumenPane(modifier: Modifier, content: @Composable ColumnScope.() 
 }
 
 /**
- * How the month compares, then where the income went. Nothing is projected.
+ * How the month compares, where the income went, then Gastos hormiga. Nothing is projected.
  */
 @Composable
 private fun SummarySlips(
@@ -162,6 +162,9 @@ private fun SummarySlips(
     }
     Hero(state.hero, state.insufficientHistory)
     IncomeSlip(state, onIncome, onSchedules, onDayByDay, onCategory)
+    state.smallExpenses?.let { small ->
+        SmallExpensesSlip(small, state.hero) { onAction(ResumenAction.Retry) }
+    }
 }
 
 /**
@@ -664,8 +667,13 @@ private fun Weekdays(
 }
 
 @Composable
-internal fun ResumenNote(text: String) {
-    Text(text, style = MaterialTheme.typography.bodySmall, color = SelloTheme.colors.inkSoft)
+internal fun ResumenNote(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text,
+        modifier,
+        style = MaterialTheme.typography.bodySmall,
+        color = SelloTheme.colors.inkSoft
+    )
 }
 
 @Composable

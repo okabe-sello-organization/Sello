@@ -782,6 +782,25 @@
     </plurals>
     <string name="resumen_where_basis_in_progress">Lo gastado en %1$s, hasta el %2$d</string>
     <string name="resumen_where_basis">Lo gastado en %1$s</string>
+    <!-- Gastos hormiga in Resumen (SELLO-194) -->
+    <string name="resumen_small_line">%1$s o menos</string>
+    <string name="resumen_small_line_spoken">%1$s pesos o menos</string>
+    <plurals name="resumen_small_count">
+        <item quantity="one">en %1$d gasto pequeño</item>
+        <item quantity="other">en %1$d gastos pequeños</item>
+    </plurals>
+    <string name="resumen_small_basis_in_progress">%1$s, del 1 al %2$d · %3$d %% de lo que gastaste</string>
+    <string name="resumen_small_basis">%1$s en %2$s · %3$d %% de lo que gastaste</string>
+    <string name="resumen_small_where">Donde más se juntan</string>
+    <plurals name="resumen_small_category_count">
+        <item quantity="one">%1$d gasto</item>
+        <item quantity="other">%1$d gastos</item>
+    </plurals>
+    <string name="resumen_small_unreadable_title">No pudimos leer tus gastos hormiga</string>
+    <string name="resumen_small_unreadable">Tu línea no se pudo leer. Tus gastos siguen guardados; intenta de nuevo.</string>
+    <string name="resumen_small_unavailable_title">No pudimos sumar tus gastos hormiga</string>
+    <string name="resumen_small_unavailable">Las cifras de este mes no se pudieron sumar. Tus gastos siguen guardados.</string>
+    <string name="resumen_small_older">No pudimos leer tu línea de gastos hormiga de nuevo. Usamos la última: hasta %1$s.</string>
     <string name="resumen_weekdays_title">¿Qué días gastas más?</string>
     <string name="resumen_weekdays_answer">Los %1$s</string>
     <string name="resumen_weekdays_basis">En promedio por día · %1$s</string>
@@ -942,6 +961,20 @@
     <string name="export_kind_investment_value">Valor de inversión</string>
     <string name="settings_recurring">Lo que se repite</string>
     <string name="settings_investments">Inversiones</string>
+    <string name="settings_resumen">Resumen</string>
+    <!-- Gastos hormiga (SELLO-194; E34 patterns-mock.html, section 1) -->
+    <string name="small_expense_title">Gastos hormiga</string>
+    <string name="small_expense_caption">Los que suma como pequeños</string>
+    <string name="small_expense_value">Hasta %1$s</string>
+    <string name="small_expense_label">Hasta, en pesos</string>
+    <string name="small_expense_spoken">Hasta %1$s pesos</string>
+    <string name="small_expense_fact">Hoy es %1$s. El nuevo vale para todos los meses, también los pasados. Entre 1.000 y 100.000.</string>
+    <string name="small_expense_below">La línea es de 1.000 en adelante</string>
+    <string name="small_expense_above">La línea llega hasta 100.000</string>
+    <string name="small_expense_save">Guardar</string>
+    <string name="small_expense_not_saved">No se guardó. Tu línea sigue igual; puedes intentarlo de nuevo.</string>
+    <string name="small_expense_failed">No pudimos leer tu línea</string>
+    <string name="small_expense_failed_body">Tus gastos siguen guardados. Vuelve a intentarlo.</string>
     <string name="settings_rate_date">Tasa del %1$s</string>
     <string name="settings_investment_currency">Moneda al crear</string>
     <string name="settings_investment_order">Orden de la lista</string>
@@ -1092,12 +1125,14 @@
     <string name="restore_pending_appearance">Apariencia: tema %1$s, tinta %2$s</string>
     <string name="restore_pending_ordering">Orden de categorías: %1$s, %2$s</string>
     <string name="restore_pending_investments">Inversiones: %1$s, %2$s</string>
+    <string name="restore_pending_small_expenses">Gastos hormiga: hasta %1$s</string>
     <string name="restore_pending_descending">de mayor a menor</string>
     <string name="restore_pending_ascending">de menor a mayor</string>
     <string name="restore_apply_both">Aplicar apariencia y orden</string>
     <string name="restore_apply_appearance">Aplicar apariencia</string>
     <string name="restore_apply_ordering">Aplicar orden</string>
     <string name="restore_apply_investments">Aplicar inversiones</string>
+    <string name="restore_apply_small_expenses">Aplicar gastos hormiga</string>
     <string name="restore_apply_all">Aplicar preferencias</string>
     <string name="restore_preferences_unreadable">Tus gastos, ingresos, categorías y presupuestos ya se restauraron. No pudimos leer las preferencias del respaldo; puedes elegirlas en Configuración.</string>
     <string name="restore_pending_note">Solo se aplicarán las preferencias indicadas. Tu historial no se reemplazará otra vez.</string>

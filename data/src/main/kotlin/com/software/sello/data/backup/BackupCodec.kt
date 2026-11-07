@@ -34,13 +34,13 @@ object BackupFormat {
     const val FORMAT = "sello-backup"
 
     /** What this app writes. */
-    const val VERSION = 9L
+    const val VERSION = 10L
 
     /**
      * What it reads: version 1 (no goals), version 2 (no schedules), version 3 (no
      * investments), version 4 (no investment settings), version 5 (no carry chains),
      * version 6 (one chosen goal, not up to five starred), version 7 (no ink of one's own),
-     * version 8 (no Sistema) and its own.
+     * version 8 (no Sistema), version 9 (no Gastos hormiga line) and its own.
      */
     val READABLE = 1L..VERSION
     const val MIME_TYPE = "application/json"
@@ -53,7 +53,7 @@ object BackupFormat {
 }
 
 /**
- * Writes version 9 backups and reads versions 1 to 9. Reading never touches storage:
+ * Writes version 10 backups and reads versions 1 to 10. Reading never touches storage:
  * a file either becomes a [BackupPlan] or is rejected whole with the first problem found.
  */
 class BackupCodec(private val bounds: BackupBounds = BackupBounds()) {
@@ -62,7 +62,7 @@ class BackupCodec(private val bounds: BackupBounds = BackupBounds()) {
      * out a backup it would itself refuse to restore.
      */
     fun encode(contents: BackupContents): Outcome<ByteArray, BackupRejection> {
-        val text = writer.encodeToString(BackupFileV8.serializer(), contents.toWire())
+        val text = writer.encodeToString(BackupFileV10.serializer(), contents.toWire())
         val bytes = "$text\n".toByteArray(Charsets.UTF_8)
         return when (val check = read(bytes)) {
             is Outcome.Success -> Outcome.Success(bytes)
@@ -99,27 +99,31 @@ class BackupCodec(private val bounds: BackupBounds = BackupBounds()) {
             when (version) {
                 1L -> reader.decodeFromString(BackupFileV1.serializer(), text)
                     .asVersion2().asVersion3().asVersion4().asVersion5().asVersion6().asVersion7()
-                    .asVersion8()
+                    .asVersion8().asVersion10()
 
                 2L -> reader.decodeFromString(BackupFileV2.serializer(), text)
                     .asVersion3().asVersion4().asVersion5().asVersion6().asVersion7().asVersion8()
+                    .asVersion10()
 
                 3L -> reader.decodeFromString(BackupFileV3.serializer(), text)
-                    .asVersion4().asVersion5().asVersion6().asVersion7().asVersion8()
+                    .asVersion4().asVersion5().asVersion6().asVersion7().asVersion8().asVersion10()
 
                 4L -> reader.decodeFromString(BackupFileV4.serializer(), text)
-                    .asVersion5().asVersion6().asVersion7().asVersion8()
+                    .asVersion5().asVersion6().asVersion7().asVersion8().asVersion10()
 
                 5L -> reader.decodeFromString(BackupFileV5.serializer(), text)
-                    .asVersion6().asVersion7().asVersion8()
+                    .asVersion6().asVersion7().asVersion8().asVersion10()
 
                 6L -> reader.decodeFromString(BackupFileV6.serializer(), text)
-                    .asVersion7().asVersion8()
+                    .asVersion7().asVersion8().asVersion10()
 
-                7L -> reader.decodeFromString(BackupFileV7.serializer(), text).asVersion8()
+                7L -> reader.decodeFromString(BackupFileV7.serializer(), text)
+                    .asVersion8().asVersion10()
 
                 // Version 9 has version 8's shape: it only adds the ink `sistema`.
-                else -> reader.decodeFromString(BackupFileV8.serializer(), text)
+                8L, 9L -> reader.decodeFromString(BackupFileV8.serializer(), text).asVersion10()
+
+                else -> reader.decodeFromString(BackupFileV10.serializer(), text)
             }
         } catch (failure: SerializationException) {
             return Outcome.Failure(BackupRejection.Malformed(pathOf(failure)))
@@ -199,7 +203,7 @@ private fun BudgetLimit.kind() = when (this) {
  * rates by the order they were entered, carry chains by category then start month, and
  * starred goals by identifier.
  */
-internal fun BackupContents.toWire(): BackupFileV8 = BackupFileV8(
+internal fun BackupContents.toWire(): BackupFileV10 = BackupFileV10(
     format = BackupFormat.FORMAT,
     version = JsonPrimitive(BackupFormat.VERSION),
     exportedAt = exportedAt.toString(),
@@ -312,14 +316,15 @@ internal fun BackupContents.toWire(): BackupFileV8 = BackupFileV8(
             }
     ),
     preferences = preferences?.let {
-        PreferencesV8(
+        PreferencesV10(
             theme = WireNames.themes.getValue(it.appearance.theme),
             ink = it.appearance.ink.id,
             inkHue = JsonPrimitive(it.appearance.tuyaHue?.degrees),
             categoryOrder = WireNames.orders.getValue(it.ordering.order),
             categoryDirection = WireNames.directions.getValue(it.ordering.direction),
             investmentCurrency = WireNames.newCurrencies.getValue(it.investments.newCurrency),
-            investmentOrder = WireNames.investmentOrders.getValue(it.investments.order)
+            investmentOrder = WireNames.investmentOrders.getValue(it.investments.order),
+            smallExpenseLine = JsonPrimitive(it.smallExpenseLine.pesos)
         )
     }
 )

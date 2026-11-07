@@ -81,6 +81,7 @@ import com.software.sello.domain.port.ScheduleCatchUpStore
 import com.software.sello.domain.port.ScheduleCommands
 import com.software.sello.domain.port.ScheduleReads
 import com.software.sello.domain.port.ScheduleRecordReads
+import com.software.sello.domain.port.SmallExpensePreferences
 import com.software.sello.domain.port.YearSnapshots
 import java.io.File
 import java.time.ZoneId
@@ -232,6 +233,7 @@ class FinancialStorage internal constructor(
         appearance: AppearancePreferences,
         ordering: CategoryOrderingPreferences,
         investments: InvestmentPreferences,
+        smallExpenses: SmallExpensePreferences,
         notice: CatchUpNoticePreferences,
         ids: RecordIdSource,
         audit: AuditClock,
@@ -244,6 +246,7 @@ class FinancialStorage internal constructor(
         appearance,
         ordering,
         investments,
+        smallExpenses,
         notice,
         ids,
         audit,
@@ -283,6 +286,7 @@ class FinancialStorage internal constructor(
         appearance: AppearancePreferences,
         ordering: CategoryOrderingPreferences,
         investments: InvestmentPreferences,
+        smallExpenses: SmallExpensePreferences,
         audit: AuditClock,
         clock: FinancialClock,
         dispatchers: DispatcherProvider,
@@ -292,6 +296,7 @@ class FinancialStorage internal constructor(
         appearance,
         ordering,
         investments,
+        smallExpenses,
         audit,
         clock,
         dispatchers,

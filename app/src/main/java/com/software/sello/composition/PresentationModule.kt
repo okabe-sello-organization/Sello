@@ -55,6 +55,7 @@ import com.software.sello.feature.resumen.ResumenViewModel
 import com.software.sello.feature.resumen.YearViewModel
 import com.software.sello.feature.settings.AppearanceViewModel
 import com.software.sello.feature.settings.SettingsViewModel
+import com.software.sello.feature.settings.SmallExpenseLineViewModel
 import com.software.sello.feature.startup.StartupFailureViewModel
 import com.software.sello.feature.startup.StartupRecovery
 import com.software.sello.navigation.MonthSession
@@ -117,6 +118,7 @@ fun presentationModule(generation: Long): Module = module {
 private fun Module.viewModels() {
     factoryOf(::AppearanceViewModel)
     factoryOf(::SettingsViewModel)
+    factoryOf(::SmallExpenseLineViewModel)
     factoryOf(::ExportViewModel)
     factoryOf(::BackupViewModel)
     factoryOf(::RestoreViewModel)

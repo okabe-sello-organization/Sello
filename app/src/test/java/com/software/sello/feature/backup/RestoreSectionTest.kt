@@ -18,6 +18,7 @@ import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.port.BackupSummary
 import com.software.sello.domain.port.PendingPreferences
@@ -104,6 +105,41 @@ class RestoreSectionTest {
         )
 
         rule.onNodeWithText("Apariencia: tema Oscuro, tinta Tuya (Rojo)").assertIsDisplayed()
+    }
+
+    @Test
+    fun aGastosHormigaLineStillToApplyIsNamedAndAppliedByItsOwnName() {
+        show(
+            RestoreStep.Restored(
+                RestoreOutcome.Restored(
+                    BackupSummary(2, 3, 1, 0, 0),
+                    PendingPreferences(null, null, null, SmallExpenseLine.of(15_000))
+                )
+            )
+        )
+
+        rule.onNodeWithText("Gastos hormiga: hasta 15.000").assertIsDisplayed()
+        rule.onNodeWithText("Aplicar gastos hormiga").assertIsDisplayed()
+    }
+
+    @Test
+    fun aGastosHormigaLineWithAnotherGroupIsAppliedAsPreferences() {
+        show(
+            RestoreStep.Restored(
+                RestoreOutcome.Restored(
+                    BackupSummary(2, 3, 1, 0, 0),
+                    PendingPreferences(
+                        AppearancePreference(ThemePreference.Light, InkPreference.Cobalto),
+                        null,
+                        null,
+                        SmallExpenseLine.DEFAULT
+                    )
+                )
+            )
+        )
+
+        rule.onNodeWithText("Gastos hormiga: hasta 20.000").assertIsDisplayed()
+        rule.onNodeWithText("Aplicar preferencias").assertIsDisplayed()
     }
 
     private val sistemaPending = RestoreStep.Restored(

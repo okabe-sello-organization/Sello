@@ -253,6 +253,19 @@ fun version8AsVersion9(version8: String): String {
     return version8.replace("\"version\": 8,", "\"version\": 9,")
 }
 
+/**
+ * A version 9 file as Sello now writes the same data: version 10, with Gastos hormiga's
+ * default line, 20000, after the investment order when it has preferences at all.
+ */
+fun version9AsVersion10(version9: String): String {
+    check(version9.contains("\"version\": 9,"))
+    val newer = version9.replace("\"version\": 9,", "\"version\": 10,")
+    if (newer.endsWith("\"preferences\": null\n}\n")) return newer
+    val order = Regex("(\n    \"investmentOrder\": \"[a-z_]+\")\n")
+    check(order.findAll(newer).count() == 1)
+    return newer.replace(order) { "${it.groupValues[1]},\n    \"smallExpenseLine\": 20000\n" }
+}
+
 fun resource(name: String): ByteArray =
     requireNotNull(BackupFixtures::class.java.getResourceAsStream("/backup/$name")) {
         "missing test resource backup/$name"
