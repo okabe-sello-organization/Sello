@@ -116,12 +116,13 @@ class CarryBackupRestoreTest {
     private var nextId = 5_000
 
     /**
-     * A file as Sello wrote it at version 5: no chains, no financial month, no ink hue and,
-     * with no goal starred, no chosen goal.
+     * A file as Sello wrote it at version 5: no chains, no financial month, no ink hue, no
+     * Gastos hormiga line and, with no goal starred, no chosen goal.
      */
-    private fun String.asVersion5() = replace("\"version\": 9,", "\"version\": 5,")
+    private fun String.asVersion5() = replace("\"version\": 10,", "\"version\": 5,")
         .also { check(it.contains("\"starredGoals\": [],")) }
         .replace(Regex("\\s+\"inkHue\": null,"), "")
+        .replace(Regex(",\\s+\"smallExpenseLine\": [0-9]+"), "")
         .replace("\"starredGoals\": [],", "\"featuredGoal\": null,")
         .replace(Regex(",\\s+\"carryChains\": \\[[^]]*]"), "")
         .replace(Regex("\\s+\"financialMonth\": \"[0-9-]+\","), "")

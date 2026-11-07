@@ -1,4 +1,4 @@
-# Backup file format, version 9
+# Backup file format, version 10
 
 Rules: [architecture](../../ARCHITECTURE.md) §7, [D05, D08 and D09](../decisions/0001-mvp-contract.md#d08--privacy-and-portable-files),
 [ADR 0003](../decisions/0003-mvp-transaction-amount-range.md). Code: `data/.../backup`.
@@ -14,7 +14,7 @@ its financial zone (`BackupFormat.fileName`). MIME type: `application/json`.
 
 ## Shape
 
-Sello writes version 9 (SELLO-203) and reads versions 1 to 9. Version 2 is version 1
+Sello writes version 10 (SELLO-194) and reads versions 1 to 10. Version 2 is version 1
 plus `financial.goals` and `financial.featuredGoal` (SELLO-088); version 3 is version 2
 plus `financial.schedules` and each expense's and income's `origin` (SELLO-099);
 version 4 is version 3 plus `financial.investments` and `financial.usdRates` (SELLO-108);
@@ -23,19 +23,21 @@ version 5 is version 4 plus `preferences.investmentCurrency` and
 (SELLO-040, [ADR 0020](../decisions/0020-signed-carryover-policy.md) CP26) and `financial.financialMonth`;
 version 7 is version 6 with `financial.starredGoals` in place of `financial.featuredGoal`
 (SELLO-143); version 8 is version 7 plus `preferences.inkHue` (SELLO-202); version 9 has version 8's keys
-and adds the ink `sistema` (SELLO-203). A version 1 file
+and adds the ink `sistema` (SELLO-203); version 10 is version 9 plus
+`preferences.smallExpenseLine` (SELLO-194). A version 1 file
 reads as having no goals, versions 1 and 2 as having no schedules and no origins, versions
 1 to 3 as having no investments and no rates, versions 1 to 4 as starting investments in
 `COP`, largest value first, and versions 1 to 5 as having no carry chains: **every category
 is off and no starting deficit or surplus is guessed**; versions 2 to 6 read with their
 `featuredGoal` as the one starred goal, or none when that goal is completed, and versions
-1 to 7 as having no hue: their ink is Cobalto or Violeta. A backup with none of them is
-still version 9, so an app that reads only version 8 cannot read it.
+1 to 7 as having no hue: their ink is Cobalto or Violeta, and versions 1 to 9 with the
+Gastos hormiga line at `20000`. A backup with none of them is still version 10, so an app
+that reads only version 9 cannot read it.
 
 ```json
 {
   "format": "sello-backup",
-  "version": 9,
+  "version": 10,
   "exportedAt": "2026-10-22T14:30:00Z",
   "financial": {
     "sourceRevision": 9,
@@ -67,9 +69,10 @@ same data in versions 2 to 4, and
 [`valid-g01-v6.json`](../../data/src/test/resources/backup/valid-g01-v6.json) are the
 same data in versions 5 and 6, and
 [`valid-g01-v7.json`](../../data/src/test/resources/backup/valid-g01-v7.json),
-[`valid-g01-v8.json`](../../data/src/test/resources/backup/valid-g01-v8.json) and
-[`valid-g01-v9.json`](../../data/src/test/resources/backup/valid-g01-v9.json) the same data
-in versions 7 to 9, the last as Sello writes it now, with its investments starting in
+[`valid-g01-v8.json`](../../data/src/test/resources/backup/valid-g01-v8.json),
+[`valid-g01-v9.json`](../../data/src/test/resources/backup/valid-g01-v9.json) and
+[`valid-g01-v10.json`](../../data/src/test/resources/backup/valid-g01-v10.json) the same data
+in versions 7 to 10, the last as Sello writes it now, with its investments starting in
 dollars, no carry chains and no starred goal;
 [`valid-goals-v2.json`](../../data/src/test/resources/backup/valid-goals-v2.json) adds one
 goal (approved example MT07), and
@@ -120,7 +123,7 @@ SC43 and SC22). The `invalid-*.json` files beside them each break one rule.
 version 8 `tuya` and from version 9 `sistema`), from version 8 `inkHue`, `categoryOrder` (`most_used`, `alphabetical`, `amount_spent`, `limit`,
 `latest_expense_added`), `categoryDirection` (`descending`, `ascending`) and, from
 version 5, `investmentCurrency` (`COP`, `USD`) and `investmentOrder` (`largest_value`,
-`return`, `alphabetical`, `newest`, `latest_update`).
+`return`, `alphabetical`, `newest`, `latest_update`) and, from version 10, `smallExpenseLine`.
 
 `inkHue` is Tuya's hue: a bare whole OKLCH degree from `0` to `359`. It is required when
 `ink` is `tuya`, and may also be given beside `cobalto`, `violeta` or `sistema`: the hue the person
@@ -134,6 +137,12 @@ A file before version 8 that says `tuya` is refused, and one before version 9 th
 `sistema` is the phone's accent colour, read on the phone Sello runs on whenever it is
 shown; the file holds no colour or hue for it. A phone without one (Android 11) draws
 Sello in Cobalto and keeps `sistema` as the choice.
+
+`smallExpenseLine` is Gastos hormiga's line: a bare whole number of pesos from `1000` to
+`100000`. An expense at or under it counts as small in Resumen, in every month. Outside that
+range, as text, with a fraction or as `null`, it is refused, never clipped. A restore writes
+it as the file has it (`20000` for a file before version 10), and a reset returns it to
+`20000`. A file before version 10 that has the key is refused.
 
 Every key is required, even when its value is `null`, and no other key is allowed.
 
@@ -332,6 +341,6 @@ there as above.
 
 ## Changing the format
 
-Any change to keys, meanings or rules is a new `version`. Versions 1 to 9 stay
+Any change to keys, meanings or rules is a new `version`. Versions 1 to 10 stay
 readable for as long as the app supports restoring them; nothing translates older Sello
 databases or other apps' files.

@@ -435,8 +435,10 @@ class RestoreCommandContractTest {
         val bytes = g01()
 
         val truncated = restores().stage(bytes.copyOf(bytes.size / 2))
+        val text = String(bytes)
+        check(text.contains("\"version\": 10,"))
         val newer = restores().stage(
-            String(bytes).replaceFirst("\"version\": 9", "\"version\": 10").toByteArray()
+            text.replaceFirst("\"version\": 10,", "\"version\": 11,").toByteArray()
         )
 
         assertEquals(Outcome.Failure(StageFailure.Rejected(RestoreRejection.Damaged)), truncated)
