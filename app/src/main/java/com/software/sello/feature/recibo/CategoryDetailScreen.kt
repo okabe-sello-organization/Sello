@@ -94,6 +94,7 @@ fun CategoryDetailScreen(
     announcementBusy: Boolean = false,
     announcementFailed: Boolean = false,
     onShowAllExpenses: () -> Unit = {},
+    onShowRepeated: (note: String) -> Unit = {},
     onSetMonthLimit: (categoryId: String, month: YearMonth) -> Unit = { _, _ -> },
     onOpenSchedule: (String) -> Unit = {},
     onAllSchedules: () -> Unit = {},
@@ -220,7 +221,7 @@ fun CategoryDetailScreen(
                     onShowAllExpenses,
                     onRecordSeveral
                 )
-                CategoryInsightSections(state, months, dates, onAction)
+                CategoryInsightSections(state, months, dates, onAction, onShowRepeated)
             }
         }
     }

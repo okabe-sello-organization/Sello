@@ -5,7 +5,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.software.sello.data.local.SearchKey
+import com.software.sello.domain.policy.SearchKey
 
 /**
  * Dates are ISO `yyyy-MM-dd` text, so text order is date order. A category with

@@ -120,8 +120,12 @@ data object ResetRoute
 @Serializable
 data class ResumenCategoryRoute(val categoryId: String)
 
+/** Tu año, opened on [year] from Resumen's Mes a mes. */
 @Serializable
-data class CategoryExpensesRoute(val categoryId: String)
+data class YearRoute(val year: Int)
+
+@Serializable
+data class CategoryExpensesRoute(val categoryId: String, val search: String = "")
 
 @Serializable
 data object IncomeHistoryRoute

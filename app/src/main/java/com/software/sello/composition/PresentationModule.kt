@@ -53,6 +53,7 @@ import com.software.sello.feature.recurrence.SchedulesViewModel
 import com.software.sello.feature.reset.ResetSession
 import com.software.sello.feature.reset.ResetViewModel
 import com.software.sello.feature.resumen.ResumenViewModel
+import com.software.sello.feature.resumen.YearViewModel
 import com.software.sello.feature.settings.AppearanceViewModel
 import com.software.sello.feature.settings.SettingsViewModel
 import com.software.sello.feature.startup.StartupFailureViewModel
@@ -122,6 +123,7 @@ private fun Module.viewModels() {
     factoryOf(::RestoreViewModel)
     factoryOf(::ResetViewModel)
     factoryOf(::ResumenViewModel)
+    factoryOf(::YearViewModel)
     factoryOf(::IncomeHistoryViewModel)
     factoryOf(::IncomeFormViewModel)
     factoryOf(::ShellViewModel)

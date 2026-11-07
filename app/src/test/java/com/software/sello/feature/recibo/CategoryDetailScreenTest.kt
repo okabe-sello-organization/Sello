@@ -55,6 +55,7 @@ class CategoryDetailScreenTest {
     private val edited = mutableListOf<String>()
     private var editCategory = 0
     private var openedAll = 0
+    private val repeated = mutableListOf<String>()
     private var pastLimitAnnouncementDismissed = 0
 
     private fun show(
@@ -76,6 +77,7 @@ class CategoryDetailScreenTest {
                 onEditExpense = { edited += it },
                 onEditCategory = { editCategory++ },
                 onShowAllExpenses = { openedAll++ },
+                onShowRepeated = { repeated += it },
                 showPastLimitAnnouncement = showPastLimitAnnouncement,
                 onDismissPastLimitAnnouncement = { pastLimitAnnouncementDismissed++ }
             )
@@ -297,6 +299,52 @@ class CategoryDetailScreenTest {
             "sep 2026: 0 pesos. L\u00edmite: 200.000 pesos."
         ).assertExists().performClick()
         rule.onNodeWithText("sep 2026").assertExists()
+    }
+
+    private val repeats = listOf(
+        DetailRepeat("Mercado D1", 4, plain("385.600")),
+        DetailRepeat("Almuerzo", 9, plain("162.000")),
+        DetailRepeat("Rappi, almuerzo", 6, plain("123.600"))
+    )
+
+    @Test
+    fun repeatsShowAfterTheLatestExpensesAndOpenTheirNote() {
+        show(
+            ready(ExpenseListState.Rows(rows, more = false))
+                .copy(
+                    insights = DetailInsightsState.Ready(insightFigures().copy(repeats = repeats))
+                )
+        )
+
+        val positions = listOf(
+            CATEGORY_DETAIL_LIST_TAG,
+            CATEGORY_DETAIL_REPEATS_TAG,
+            "detail:numbers"
+        )
+            .map { rule.onNodeWithTag(it).fetchSemanticsNode().positionInRoot.y }
+        assertTrue(positions.toString(), positions.zipWithNext().all { (a, b) -> a < b })
+        rule.onNodeWithTag(CATEGORY_DETAIL_REPEATS_TAG).performScrollTo()
+        listOf("Nota", "Veces", "Total").forEach {
+            rule.onNode(
+                hasText(it) and hasAnyAncestor(hasTestTag(CATEGORY_DETAIL_REPEATS_TAG)),
+                useUnmergedTree = true
+            ).assertExists()
+        }
+        rule.onNodeWithContentDescription(
+            "Rappi, almuerzo, 6 veces, total 123.600 pesos"
+        ).assertExists()
+        rule.onNodeWithTag(categoryRepeatTag(0)).performScrollTo().performClick()
+        assertEquals(listOf("Mercado D1"), repeated)
+    }
+
+    @Test
+    fun noRepeatsMeansNoSection() {
+        show(
+            ready(ExpenseListState.Rows(rows, more = false))
+                .copy(insights = DetailInsightsState.Ready(insightFigures()))
+        )
+
+        rule.onNodeWithTag(CATEGORY_DETAIL_REPEATS_TAG).assertDoesNotExist()
     }
 
     private fun insightFigures() = DetailInsights(

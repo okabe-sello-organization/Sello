@@ -6,6 +6,9 @@ import com.software.sello.domain.model.CategoryComparison
 import com.software.sello.domain.model.CategoryHistoryMonth
 import com.software.sello.domain.model.CategoryInsights
 import com.software.sello.domain.model.Money
+import com.software.sello.domain.model.Note
+import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.RepeatedNote
 import com.software.sello.feature.expense.categoryIn
 import com.software.sello.feature.expense.monthOf
 import com.software.sello.feature.expense.storedExpense
@@ -49,6 +52,25 @@ class CategoryInsightsRenderModelTest {
         val unknown = shown(null)
         assertNull(unknown.comparison)
         assertNull(unknown.comparisonMonth)
+    }
+
+    @Test
+    fun aRepeatedNoteShowsItsSpellingCountAndTotal() {
+        val note = (Note.of("Mercado D1") as Outcome.Success).value!!
+        val figures = render.render(
+            CategoryInsights(
+                monthOf("2026-10-23", listOf(food), emptyList()),
+                food.category.id,
+                null,
+                null,
+                23, null, null, null, null, emptyList(), null, emptyList(),
+                repeats = listOf(RepeatedNote(note, 4, Money.cop(385_600)))
+            )
+        )
+        assertEquals(
+            listOf(DetailRepeat("Mercado D1", 4, testMoney().format(Money.cop(385_600)))),
+            figures.repeats
+        )
     }
 
     private fun withHistory(limit: Long? = 200_000): CategoryInsights = CategoryInsights(

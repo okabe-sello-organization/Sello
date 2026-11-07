@@ -141,7 +141,7 @@ class ResumenRenderModel(
                     previousName = monthName(comparison.previousMonth),
                     difference = money.format(comparison.difference),
                     direction = comparison.direction,
-                    percent = comparison.percentTenths?.let(::percent),
+                    percent = comparison.percentTenths?.let(::percentText),
                     throughDay = comparison.throughDay,
                     previousThroughDay = comparison.previousThroughDay,
                     bars = listOf(
@@ -202,17 +202,6 @@ class ResumenRenderModel(
 
     private fun monthTitle(month: YearMonth) = months.name(month)
 
-    /** Tenths of a per cent as written: "11,1". */
-    private fun percent(tenths: BigInteger): String =
-        BigDecimal(tenths.abs(), 1).setScale(1).toPlainString().replace('.', ',')
-
-    /** How much of a bar to fill: geometry only, never shown or turned back into money. */
-    private fun share(part: Long, whole: Long): Float = when {
-        whole <= 0 || part <= 0 -> 0f
-        part >= whole -> 1f
-        else -> (part.toDouble() / whole.toDouble()).toFloat()
-    }
-
     private companion object {
         val locale: Locale = Locale.forLanguageTag("es-CO")
         val sentenceDate: DateTimeFormatter = DateTimeFormatter.ofPattern("d 'de' MMMM", locale)
@@ -237,6 +226,17 @@ class ResumenRenderModel(
             DayOfWeek.SUNDAY to "domingos"
         )
     }
+}
+
+/** Tenths of a per cent as written: "11,1". Resumen and Tu año write rates alike. */
+internal fun percentText(tenths: BigInteger): String =
+    BigDecimal(tenths.abs(), 1).setScale(1).toPlainString().replace('.', ',')
+
+/** How much of a bar to fill: geometry only, never shown or turned back into money. */
+internal fun share(part: Long, whole: Long): Float = when {
+    whole <= 0 || part <= 0 -> 0f
+    part >= whole -> 1f
+    else -> (part.toDouble() / whole.toDouble()).toFloat()
 }
 
 /**

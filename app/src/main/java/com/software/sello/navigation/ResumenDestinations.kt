@@ -24,6 +24,7 @@ import com.software.sello.feature.recibo.ShareMonthButton
 import com.software.sello.feature.recibo.ShareMonthRoot
 import com.software.sello.feature.recibo.ShareMonthViewModel
 import com.software.sello.feature.resumen.ResumenRoot
+import com.software.sello.feature.resumen.YearRoot
 import com.software.sello.presentation.corrections.CorrectionAnnouncementState
 import com.software.sello.presentation.corrections.CorrectionAnnouncementsViewModel
 import com.software.sello.presentation.corrections.CorrectionNotice
@@ -71,12 +72,29 @@ internal fun NavGraphBuilder.resumenDestinations(
                 { id ->
                     navigation.navigate(CategoryEditRoute(id, state.selectedMonth.toString()))
                 },
-                onDayByDay = { navigation.openDayByDay() }
+                onDayByDay = { navigation.openDayByDay() },
+                onYear = { year -> navigation.navigate(YearRoute(year)) { launchSingleTop = true } }
             )
         }
         BackHandler(enabled = !state.monthPickerOpen) { tabs.onSelect("recibo") }
         // After the screen's own back, so that back closes the sheet first.
         ShareMonthRoot(viewModels)
+    }
+    composable<YearRoute> {
+        val state by shellState
+        val onBack: () -> Unit = { navigation.popBackStack() }
+        ShellScreen(
+            state,
+            monthNames(),
+            onShell,
+            navigation = null,
+            onBack = onBack,
+            // A year is not one month: its title alone, as the dollar rate's.
+            titleOnly = stringResource(R.string.year_title),
+            pastMonthRibbon = false,
+            entryDock = false
+        ) { padding -> YearRoot(viewModels, padding) }
+        BackHandler(enabled = !state.monthPickerOpen) { onBack() }
     }
     composable<ResumenCategoryRoute> { entry ->
         val state by shellState
@@ -109,6 +127,7 @@ internal fun NavGraphBuilder.resumenDestinations(
                 showName = false, onAction = detail::onAction,
                 onRecordHere = { navigation.navigate(ExpenseEntryRoute(id)) },
                 onShowAllExpenses = { navigation.navigate(CategoryExpensesRoute(id)) },
+                onShowRepeated = { note -> navigation.navigate(CategoryExpensesRoute(id, note)) },
                 onRecordSeveral = { navigation.navigate(BulkEntryRoute(categoryId = id)) },
                 onSetMonthLimit = { categoryId, month ->
                     navigation.navigate(CategoryEditRoute(categoryId, month.toString()))

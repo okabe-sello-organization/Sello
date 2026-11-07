@@ -157,30 +157,49 @@ private val RowGap = 10.dp
 /** A comparison bar lies flat, so all four corners round (the bar token rounds a column's top). */
 private val BarShape = RoundedCornerShape(4.dp)
 
+/**
+ * A category ranked by what it spent, with its bar. With [percent] its share is written
+ * beside its name (Tu año); without [onClick] it opens nothing and has no chevron.
+ */
 @Composable
 internal fun SpendingRankRow(
     name: String,
     icon: SelloIcon,
     amount: MoneyTextValue,
     share: Float,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    onClick: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+    percent: String? = null
 ) {
+    val open = if (onClick == null) {
+        Modifier
+    } else {
+        Modifier.clickable(role = Role.Button, onClick = onClick)
+    }
     Row(
-        modifier.fillMaxWidth().heightIn(
-            min = 52.dp
-        ).clickable(role = Role.Button, onClick = onClick),
+        modifier.fillMaxWidth().heightIn(min = 52.dp).then(open),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
     ) {
         CategoryCircle(icon, 1f, size = 36.dp, animate = false)
         // The name and its bar are one block, so the amount beside them is centred on both.
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            Text(
-                name,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = SelloTheme.type.weight.strong
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = SelloTheme.type.weight.strong,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                if (percent != null) {
+                    Text(
+                        percent,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = SelloTheme.colors.inkSoft,
+                        modifier = Modifier.padding(start = SelloTheme.spacing.xs)
+                    )
+                }
+            }
             Box(
                 Modifier.fillMaxWidth().height(
                     6.dp
@@ -194,11 +213,13 @@ internal fun SpendingRankRow(
             }
         }
         MoneyText(amount)
-        Icon(
-            SelloIcon.ChevronRight.painter(),
-            null,
-            Modifier.size(18.dp),
-            SelloTheme.colors.outline
-        )
+        if (onClick != null) {
+            Icon(
+                SelloIcon.ChevronRight.painter(),
+                null,
+                Modifier.size(18.dp),
+                SelloTheme.colors.outline
+            )
+        }
     }
 }

@@ -35,6 +35,7 @@ import com.software.sello.data.repository.RoomScheduleCatchUp
 import com.software.sello.data.repository.RoomScheduleCommands
 import com.software.sello.data.repository.RoomScheduleReads
 import com.software.sello.data.repository.RoomScheduleRecordReads
+import com.software.sello.data.repository.RoomYearSnapshots
 import com.software.sello.data.repository.UndoWindow
 import com.software.sello.data.repository.discardKeptCopies
 import com.software.sello.data.repository.reading
@@ -80,6 +81,7 @@ import com.software.sello.domain.port.ScheduleCatchUpStore
 import com.software.sello.domain.port.ScheduleCommands
 import com.software.sello.domain.port.ScheduleReads
 import com.software.sello.domain.port.ScheduleRecordReads
+import com.software.sello.domain.port.YearSnapshots
 import java.io.File
 import java.time.ZoneId
 import kotlin.coroutines.CoroutineContext
@@ -309,6 +311,9 @@ class FinancialStorage internal constructor(
 
     fun resumenSnapshots(clock: FinancialClock, computation: CoroutineContext): ResumenSnapshots =
         RoomResumenSnapshots(database, clock, computation)
+
+    fun yearSnapshots(clock: FinancialClock, computation: CoroutineContext): YearSnapshots =
+        RoomYearSnapshots(database, clock, computation)
 
     /**
      * Makes every deletion final by removing what was kept to undo it. The time to undo
