@@ -157,6 +157,60 @@ class ReciboScreenshotTest {
         rule.captureStill("src/test/screenshots/recibo-invitation-${look.label}.png")
     }
 
+    /**
+     * 3 January 2027, the mock's: 2.310.000 left of the month, 79.650 a day for the 29 days
+     * from today to the 31st, and the year card in the invitation's place (SELLO-200).
+     */
+    private val january = ReciboState.Month(
+        ReciboSummary(
+            ReciboAnswerLabel.Remaining,
+            plain("2.310.000"),
+            ReciboStamp.OnTrack,
+            perDay = ReciboPerDay(plain("79.650"), 29)
+        ),
+        listOf(
+            category(
+                id = "a",
+                name = "Alimentación",
+                headline = ReciboHeadline.Remaining,
+                amount = plain("850.000"),
+                stamp = ReciboStamp.OnTrack,
+                limit = "900.000",
+                fraction = 0.06f
+            ),
+            category(
+                id = "b",
+                name = "Hogar",
+                headline = ReciboHeadline.Remaining,
+                amount = plain("1.100.000"),
+                stamp = ReciboStamp.OnTrack,
+                limit = "1.500.000",
+                fraction = 0.27f
+            )
+        ),
+        stale = false,
+        invitation = ReciboInvitation(YearMonth.of(2026, 12), closesYear = true)
+    )
+
+    private fun captureYearCard(look: Look) {
+        val invited = january
+        rule.showSello(look) {
+            Box(Modifier.fillMaxSize().background(SelloTheme.colors.desk)) {
+                ReciboScreen(invited, {}, PaddingValues(12.dp))
+            }
+        }
+        rule.captureStill("src/test/screenshots/recibo-year-card-${look.label}.png")
+    }
+
+    @Test
+    fun yearCardCobaltoLight() = captureYearCard(Look())
+
+    @Test
+    fun yearCardCobaltoDark() = captureYearCard(Look(dark = true))
+
+    @Test
+    fun yearCardVioletaLight() = captureYearCard(Look(ink = SelloInk.Violeta))
+
     @Test
     fun invitationCobaltoLight() = captureInvited(Look())
 

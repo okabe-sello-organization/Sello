@@ -37,8 +37,13 @@ sealed interface ReciboState {
     data class CarryFailed(val problem: CarryProblem) : ReciboState
 }
 
-/** "Ver cómo cerraste [month] ›": the month just closed, which had expenses. */
-data class ReciboInvitation(val month: YearMonth)
+/**
+ * "Ver cómo cerraste [month] ›": the month just closed, which had expenses. With
+ * [closesYear], from 1 to 7 January, it is the year card in its place, "¡Cerraste el
+ * año!" for [month]'s year, which had expenses (SELLO-200). Handling the card handles
+ * [month], December, so December's line never follows it.
+ */
+data class ReciboInvitation(val month: YearMonth, val closesYear: Boolean = false)
 
 /** Which sentence an amount completes. */
 enum class ReciboHeadline {
@@ -236,7 +241,13 @@ sealed interface ReciboAction {
     /** Open [month] in Resumen. The invitation is remembered as handled; navigation is the root's. */
     data class OpenInvitation(val month: YearMonth) : ReciboAction
 
-    /** The × on the invitation: not wanted for [month]. */
+    /**
+     * Open the big moment of the year that closed, [year]. The card is remembered as
+     * handled; the moment is the root's.
+     */
+    data class OpenYear(val year: Int) : ReciboAction
+
+    /** The × on the invitation or the year card: not wanted for [month]. */
     data class DismissInvitation(val month: YearMonth) : ReciboAction
 
     /** Open the category's form on [month], to give that month a limit. Navigation is the root's. */

@@ -27,6 +27,7 @@ import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
 import com.software.sello.testing.HandSnapshots
+import com.software.sello.testing.HandYearSnapshots
 import com.software.sello.testing.NewObservationSnapshots
 import com.software.sello.testing.testMoney
 import java.time.Instant
@@ -85,7 +86,8 @@ class ReciboViewModelTest {
             testMoney(),
             HandInvitations(),
             clock,
-            categoryReads
+            categoryReads,
+            HandYearSnapshots()
         )
         // Something has to be watching for the state to be kept up to date.
         val watching =

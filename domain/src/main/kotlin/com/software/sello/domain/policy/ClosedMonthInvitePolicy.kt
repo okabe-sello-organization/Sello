@@ -1,6 +1,7 @@
 package com.software.sello.domain.policy
 
 import java.time.LocalDate
+import java.time.Month
 import java.time.YearMonth
 
 /** ADR 0017 (E16): Recibo invites a look at the month just closed during the first week. */
@@ -17,4 +18,11 @@ object ClosedMonthInvitePolicy {
             shown == current && today.dayOfMonth <= LAST_DAY
         }
     }
+
+    /**
+     * The year that just closed, or null (SELLO-200): in January's first week its card takes
+     * December's place, so it shows exactly when December's invitation would have.
+     */
+    fun yearToCelebrate(today: LocalDate, shown: YearMonth): Int? =
+        monthToReview(today, shown)?.takeIf { it.month == Month.DECEMBER }?.year
 }

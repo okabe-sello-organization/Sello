@@ -17,11 +17,13 @@ import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.ReadState
+import com.software.sello.feature.resumen.yearSnapshot
 import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
 import com.software.sello.testing.HandSnapshots
+import com.software.sello.testing.HandYearSnapshots
 import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.LocalDate
@@ -54,6 +56,7 @@ class ReciboInvitationViewModelTest {
     private val session = MonthSession(clock, HandMonotonicClock())
     private val snapshots = HandSnapshots()
     private val invitations = HandInvitations()
+    private val years = HandYearSnapshots()
 
     @Before
     fun mainDispatcher() = Dispatchers.setMain(UnconfinedTestDispatcher())
@@ -70,7 +73,8 @@ class ReciboInvitationViewModelTest {
             testMoney(),
             invitations,
             clock,
-            HandCategoryReads()
+            HandCategoryReads(),
+            years
         )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.state.collect {}
@@ -279,7 +283,8 @@ class ReciboInvitationViewModelTest {
             testMoney(),
             NeverRead(),
             clock,
-            HandCategoryReads()
+            HandCategoryReads(),
+            years
         )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             silent.state.collect {}
@@ -301,6 +306,138 @@ class ReciboInvitationViewModelTest {
             PreferenceRead.Failed(PreferenceFailure.Unavailable, lastGood = september)
 
         assertNull(invitationOf(started()))
+    }
+
+    // ---------- The year that closed (SELLO-200) ----------
+
+    private val december = YearMonth.of(2026, 12)
+    private val january = YearMonth.of(2027, 1)
+    private val yearCard = ReciboInvitation(december, closesYear = true)
+
+    /** 2026 closed with expenses; January 2027 is on screen. */
+    private fun closedYear(expenses: Int = 180, today: String = "2027-01-01") {
+        clock.goTo(today)
+        publish(january, 100)
+        publish(december, 270_000)
+        years.of(2026).value = ReadState.Ready(
+            yearSnapshot(asOf = today, empty = expenses == 0).copy(expenseCount = expenses)
+        )
+    }
+
+    @Test
+    fun onTheFirstOfJanuaryTheYearCardTakesDecembersPlace() = runTest {
+        closedYear(today = "2027-01-01")
+
+        assertEquals(yearCard, invitationOf(started()))
+        // December's own line is never asked about: the year is.
+        assertEquals(listOf(january), snapshots.observed)
+        assertEquals(listOf(2026), years.observed)
+    }
+
+    @Test
+    fun onTheSeventhOfJanuaryItIsStillShown() = runTest {
+        closedYear(today = "2027-01-07")
+
+        assertEquals(yearCard, invitationOf(started()))
+    }
+
+    @Test
+    fun onTheEighthOfJanuaryItIsGoneAndTheYearIsNotRead() = runTest {
+        closedYear(today = "2027-01-08")
+
+        assertNull(invitationOf(started()))
+        assertEquals(emptyList<Int>(), years.observed)
+    }
+
+    @Test
+    fun onTheThirtyFirstOfDecemberThereIsNoYearCard() = runTest {
+        // The year has not closed; nor is it the first week of a month for December's line.
+        clock.goTo("2026-12-31")
+        publish(december, 270_000)
+        publish(november, 900_000)
+
+        assertNull(invitationOf(started()))
+        assertEquals(emptyList<Int>(), years.observed)
+    }
+
+    @Test
+    fun onTheFirstOfDecemberNovembersLineIsOfferedAsAMonth() = runTest {
+        clock.goTo("2026-12-01")
+        publish(december, 100)
+        publish(november, 900_000)
+
+        assertEquals(ReciboInvitation(november), invitationOf(started()))
+        assertEquals(emptyList<Int>(), years.observed)
+    }
+
+    @Test
+    fun aYearWithNoExpensesHasNoCardAndNoDecemberLine() = runTest {
+        closedYear(expenses = 0)
+
+        assertNull(invitationOf(started()))
+    }
+
+    @Test
+    fun aFailedYearReadHidesTheCard() = runTest {
+        closedYear()
+        years.of(2026).value = ReadState.Failed(
+            SnapshotFailure.Storage(StorageFailure.Unavailable("SQLiteException")),
+            lastGood = yearSnapshot(asOf = "2027-01-01")
+        )
+
+        val viewModel = started()
+
+        assertNull(invitationOf(viewModel))
+        assertEquals(true, viewModel.state.value is ReciboState.Month)
+    }
+
+    @Test
+    fun aPastMonthOnScreenHasNoYearCard() = runTest {
+        closedYear(today = "2027-01-03")
+        val viewModel = started()
+
+        session.select(december)
+
+        assertNull(invitationOf(viewModel))
+    }
+
+    @Test
+    fun openingTheYearRemembersDecemberAndNoDecemberLineFollows() = runTest {
+        closedYear(today = "2027-01-02")
+        val viewModel = started()
+
+        viewModel.onAction(ReciboAction.OpenYear(2026))
+
+        assertNull(invitationOf(viewModel))
+        assertEquals(listOf(december), invitations.written)
+        // Restarted the same day, and again later that week: neither the card nor December.
+        assertNull(invitationOf(started()))
+        clock.goTo("2027-01-06")
+        assertNull(invitationOf(started()))
+    }
+
+    @Test
+    fun dismissingTheYearCardHoldsAfterARestart() = runTest {
+        closedYear(today = "2027-01-02")
+        val viewModel = started()
+
+        viewModel.onAction(ReciboAction.DismissInvitation(december))
+
+        assertNull(invitationOf(viewModel))
+        assertEquals(listOf(december), invitations.written)
+        assertNull(invitationOf(started()))
+    }
+
+    @Test
+    fun februarysFirstWeekInvitesToJanuaryAgain() = runTest {
+        closedYear(today = "2027-01-02")
+        val viewModel = started()
+        viewModel.onAction(ReciboAction.DismissInvitation(december))
+        publish(YearMonth.of(2027, 2), 100)
+
+        clock.goTo("2027-02-03")
+
+        assertEquals(ReciboInvitation(january), invitationOf(viewModel))
     }
 }
 

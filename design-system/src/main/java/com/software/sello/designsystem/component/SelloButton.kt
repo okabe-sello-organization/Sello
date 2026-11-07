@@ -34,8 +34,9 @@ enum class ButtonKind { Filled, Outlined, Text }
 
 /**
  * Optional action ink; the default preserves existing consumers. OnBand is for a
- * [ButtonKind.Text] action on a coloured band, such as an entry form's Borrar; it is not
- * for a filled button, which would take the tabs' band as its text whatever the band.
+ * [ButtonKind.Text] action on a coloured band, such as an entry form's Borrar; filled, it
+ * takes the tabs' band as its text whatever the band, so it is only for the tabs' band
+ * itself, as the year's big moment's Ver tu año.
  * OnGain is for a button on the gain colour itself, such as the celebration's Listo:
  * filled, it is the on-gain ink with gain text.
  */

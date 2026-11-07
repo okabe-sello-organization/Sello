@@ -10,7 +10,8 @@ import java.time.YearMonth
  *
  * [spent] and [income] count what is dated up to [asOf] only: a year in progress is never
  * projected. [netFlow] is Ingresos menos gastos, signed. [firstYear] is the first year with
- * anything recorded, or the current year when nothing is.
+ * anything recorded, or the current year when nothing is. [recordedDays] counts the days of
+ * the year up to [asOf] with at least one expense or income.
  */
 data class YearSnapshot(
     val year: Int,
@@ -23,6 +24,7 @@ data class YearSnapshot(
     val netFlow: Money,
     val incomeCount: Int,
     val expenseCount: Int,
+    val recordedDays: Int,
     /** Always twelve, January first. */
     val months: List<YearMonthLine>,
     /** Null when the year before has nothing recorded on the days compared. */

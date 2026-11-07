@@ -100,7 +100,8 @@ interface IncomeSuggestionPreferences {
 
 /**
  * The latest closed month whose Recibo invitation was opened or dismissed; null before the
- * first time. A later month's invitation is a new one, so only the latest is kept.
+ * first time. A later month's invitation is a new one, so only the latest is kept. The year
+ * card of January's first week stands in December's place, so handling it keeps December.
  */
 interface ClosedMonthInvitePreferences {
     fun observeHandled(): Flow<PreferenceRead<YearMonth?>>

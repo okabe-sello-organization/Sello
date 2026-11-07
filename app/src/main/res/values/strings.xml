@@ -165,6 +165,34 @@
     <string name="recibo_invitation">Ver cómo cerraste %1$s</string>
     <string name="recibo_invitation_description">Ver cómo cerraste %1$s, abre el resumen de ese mes</string>
     <string name="recibo_invitation_dismiss">Descartar invitación</string>
+    <string name="recibo_year_card_title">¡Cerraste el año!</string>
+    <string name="recibo_year_card_body">Mira cómo te fue en %1$s</string>
+    <string name="recibo_year_card_description">¡Cerraste el año! Mira cómo te fue en %1$s</string>
+    <string name="year_close_title">¡Un año\ncon Sello!</string>
+    <string name="year_close_plate">Año cerrado</string>
+    <string name="year_close_view">Ver tu año</string>
+    <string name="year_close_done">Listo</string>
+    <string name="year_close_failed">No pudimos leer las cifras de %1$s. Míralas en Tu año.</string>
+    <string name="year_close_months_count">%1$s de %2$s</string>
+    <string name="year_close_month_within">%1$s: cumplido</string>
+    <string name="year_close_month_over">%1$s: excedido</string>
+    <string name="year_close_month_no_limit">%1$s: sin límite</string>
+    <plurals name="year_close_expenses">
+        <item quantity="one">gasto anotado</item>
+        <item quantity="other">gastos anotados</item>
+    </plurals>
+    <plurals name="year_close_days">
+        <item quantity="one">día con algo anotado</item>
+        <item quantity="other">días con algo anotado</item>
+    </plurals>
+    <plurals name="year_close_months">
+        <item quantity="one">mes cumplido</item>
+        <item quantity="other">meses cumplidos</item>
+    </plurals>
+    <plurals name="year_close_goals">
+        <item quantity="one">meta lograda</item>
+        <item quantity="other">metas logradas</item>
+    </plurals>
     <string name="recibo_categories_title">Tus categorías</string>
     <string name="recibo_adjust_budget">Ajustar presupuesto</string>
     <string name="recibo_adjust_budget_description">Ajustar presupuesto, abre tus categorías y sus límites</string>

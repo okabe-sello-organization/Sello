@@ -14,9 +14,11 @@ import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.ReadState
+import com.software.sello.domain.port.YearSnapshots
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.read.LastGoodRead
+import java.time.Month
 import java.time.YearMonth
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,7 +47,8 @@ class ReciboViewModel(
     money: MoneyFormatter,
     private val invitations: ClosedMonthInvitePreferences,
     clock: FinancialClock,
-    private val categories: CategoryReads
+    private val categories: CategoryReads,
+    private val years: YearSnapshots
 ) : ViewModel() {
     private val render = ReciboRenderModel(money)
     private val attempt = MutableStateFlow(0)
@@ -85,26 +88,37 @@ class ReciboViewModel(
 
     /**
      * The month just closed, on the financial day, while it had expenses and was not yet
-     * handled. Its read is only made when the invitation could show, and a failed read
-     * hides the line: it is advice, never a figure.
+     * handled. In January's first week it is the year that closed instead, while the year
+     * had expenses: never December alone. Its read is only made when the invitation could
+     * show, and a failed read hides the line: it is advice, never a figure.
      */
     private val invitation = combine(
         session.selectedMonth,
         clock.today,
         handled
     ) { shown, today, done ->
-        ClosedMonthInvitePolicy.monthToReview(today.date, shown)?.takeIf {
-            done == null || it > done
-        }
+        ClosedMonthInvitePolicy.monthToReview(today.date, shown)
+            ?.takeIf { done == null || it > done }
+            ?.let { month ->
+                val year = ClosedMonthInvitePolicy.yearToCelebrate(today.date, shown)
+                ReciboInvitation(month, closesYear = year != null)
+            }
     }
         .distinctUntilChanged()
-        .flatMapLatest { month ->
-            if (month == null) {
-                flowOf(null)
-            } else {
-                snapshots.observe(month).map { read ->
-                    val hadExpenses = read is ReadState.Ready && read.value.spent.minorUnits > 0
-                    ReciboInvitation(month).takeIf { hadExpenses }
+        .flatMapLatest { candidate ->
+            when {
+                candidate == null -> flowOf(null)
+
+                candidate.closesYear -> years.observe(candidate.month.year).map { read ->
+                    candidate.takeIf {
+                        read is ReadState.Ready && read.value.expenseCount > 0
+                    }
+                }
+
+                else -> snapshots.observe(candidate.month).map { read ->
+                    candidate.takeIf {
+                        read is ReadState.Ready && read.value.spent.minorUnits > 0
+                    }
                 }
             }
         }
@@ -153,6 +167,9 @@ class ReciboViewModel(
             is ReciboAction.OpenInvitation -> handle(action.month)
 
             is ReciboAction.DismissInvitation -> handle(action.month)
+
+            // The year card stands in December's place: handling it handles December.
+            is ReciboAction.OpenYear -> handle(YearMonth.of(action.year, Month.DECEMBER))
 
             // Handled by the root, which owns navigation and the selection.
             ReciboAction.CreateCategory,

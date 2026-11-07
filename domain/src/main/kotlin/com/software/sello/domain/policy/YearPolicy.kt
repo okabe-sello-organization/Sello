@@ -145,6 +145,12 @@ object YearPolicy {
                 expenseCount = snapshots.sumOf { month ->
                     month.categories.sumOf { it.expenseCount }
                 },
+                recordedDays = input.months
+                    .flatMap { month -> month.expenses.map { it.date } }
+                    .filter { it.year == year && it <= through }
+                    .plus(incomes.map { it.date })
+                    .toSet()
+                    .size,
                 months = (1..MONTHS).map { number ->
                     val month = YearMonth.of(year, number)
                     val snapshot = snapshots.getOrNull(number - 1)

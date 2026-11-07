@@ -160,11 +160,20 @@ fun ReciboScreen(
                     onReserved = { onAction(ReciboAction.OpenReserved) }
                 )
                 state.invitation?.let { invitation ->
-                    ClosedMonthInvitation(
-                        invitation,
-                        onOpen = { onAction(ReciboAction.OpenInvitation(invitation.month)) },
-                        onDismiss = { onAction(ReciboAction.DismissInvitation(invitation.month)) }
-                    )
+                    val onDismiss = { onAction(ReciboAction.DismissInvitation(invitation.month)) }
+                    if (invitation.closesYear) {
+                        YearCard(
+                            invitation,
+                            onOpen = { onAction(ReciboAction.OpenYear(invitation.month.year)) },
+                            onDismiss = onDismiss
+                        )
+                    } else {
+                        ClosedMonthInvitation(
+                            invitation,
+                            onOpen = { onAction(ReciboAction.OpenInvitation(invitation.month)) },
+                            onDismiss = onDismiss
+                        )
+                    }
                 }
                 goal()
                 CategoriesSlip(

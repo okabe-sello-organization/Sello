@@ -49,4 +49,43 @@ class ClosedMonthInvitePolicyTest {
             )
         )
     }
+
+    @Test
+    fun theYearIsCelebratedFromTheFirstToTheSeventhOfJanuary() {
+        val january = YearMonth.of(2027, 1)
+        listOf(1, 7).forEach { day ->
+            assertEquals(
+                2026,
+                ClosedMonthInvitePolicy.yearToCelebrate(LocalDate.of(2027, 1, day), january)
+            )
+        }
+        assertNull(ClosedMonthInvitePolicy.yearToCelebrate(LocalDate.of(2027, 1, 8), january))
+    }
+
+    @Test
+    fun noOtherMonthCelebratesAYear() {
+        // 31 December: the year has not closed; 1 December invites to November only.
+        assertNull(
+            ClosedMonthInvitePolicy.yearToCelebrate(
+                LocalDate.of(2026, 12, 31),
+                YearMonth.of(2026, 12)
+            )
+        )
+        assertNull(
+            ClosedMonthInvitePolicy.yearToCelebrate(
+                LocalDate.of(2026, 12, 1),
+                YearMonth.of(2026, 12)
+            )
+        )
+    }
+
+    @Test
+    fun aPastMonthOnScreenCelebratesNoYear() {
+        assertNull(
+            ClosedMonthInvitePolicy.yearToCelebrate(
+                LocalDate.of(2027, 1, 3),
+                YearMonth.of(2026, 12)
+            )
+        )
+    }
 }
