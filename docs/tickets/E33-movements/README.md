@@ -1,6 +1,6 @@
 # SELLO-E33 — Every expense and income in one place
 
-- **Status:** Backlog
+- **Status:** Done
 - **Increment:** Post-MVP
 - **Goal:** The person sees the month's expenses and incomes day by day in one list, and finds any expense or income from any month by a word or an exact amount.
 - **Exit:** The day-by-day screen opens from Recibo and Resumen, lists the shared month by day, and its search covers every month, as in the approved mock.

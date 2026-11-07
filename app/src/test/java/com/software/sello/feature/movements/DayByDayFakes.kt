@@ -10,23 +10,30 @@ import com.software.sello.domain.model.Occurrence
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ResumenSnapshot
 import com.software.sello.domain.model.SnapshotFailure
+import com.software.sello.domain.policy.SearchTotals
 import com.software.sello.domain.port.MonthMovements
 import com.software.sello.domain.port.Movement
 import com.software.sello.domain.port.MovementFilter
 import com.software.sello.domain.port.MovementPage
+import com.software.sello.domain.port.MovementQuery
 import com.software.sello.domain.port.MovementReadFailure
+import com.software.sello.domain.port.MovementSearch
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ResumenSnapshotState
 import com.software.sello.domain.port.ResumenSnapshots
+import com.software.sello.domain.port.SearchPage
 import com.software.sello.feature.expense.categoryId
 import com.software.sello.feature.expense.storedExpense
 import com.software.sello.feature.income.storedIncome
 import com.software.sello.feature.recurrence.scheduleId
 import com.software.sello.feature.resumen.resumenSnapshot
+import com.software.sello.presentation.income.IncomeSourceNames
 import com.software.sello.testing.asNewObservation
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
+import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.onStart
@@ -127,3 +134,63 @@ class HandDayByDaySnapshots : ResumenSnapshots {
     override fun observe(month: YearMonth): Flow<ResumenSnapshotState> =
         of(month).asNewObservation().onStart { started++ }
 }
+
+/** What a test says each search finds; each read pages it as storage would. */
+class HandMovementSearch : MovementSearch {
+    /** By the words searched: the movements found in list order and their totals. */
+    val found = mutableMapOf<String, Pair<List<Movement>, SearchTotals>>()
+    var generation = 1L
+    var revision = 7L
+    var failure: MovementReadFailure? = null
+
+    /** Replies held back by the words searched, until the test lets them go. */
+    val held = mutableMapOf<String, CompletableDeferred<Unit>>()
+    val asked = mutableListOf<Pair<String, MovementFilter>>()
+
+    /** The words of each read cancelled while it waited. */
+    val cancelled = mutableListOf<String>()
+    var names: Map<String, String>? = null
+
+    override suspend fun read(
+        query: MovementQuery,
+        filter: MovementFilter,
+        sourceNames: Map<String, String>,
+        after: Movement?,
+        limit: Int
+    ): Outcome<SearchPage, MovementReadFailure> {
+        asked += query.words to filter
+        names = sourceNames
+        try {
+            held[query.words]?.await()
+        } catch (cancelled: CancellationException) {
+            this.cancelled += query.words
+            throw cancelled
+        }
+        failure?.let { return Outcome.Failure(it) }
+        val (rows, totals) = found[query.words] ?: (emptyList<Movement>() to nothingFound)
+        val listed = rows.filter {
+            when (filter) {
+                MovementFilter.All -> true
+                MovementFilter.Expenses -> it is Movement.Spent
+                MovementFilter.Incomes -> it is Movement.Received
+            }
+        }
+        val start = after?.let { listed.indexOf(it) + 1 } ?: 0
+        return Outcome.Success(
+            SearchPage(
+                listed.drop(start).take(limit),
+                start + limit < listed.size,
+                totals,
+                generation,
+                revision
+            )
+        )
+    }
+
+    companion object {
+        val nothingFound = SearchTotals(emptyList(), null, null)
+    }
+}
+
+/** The screen's names for the fixed income sources. */
+val handSourceNames = IncomeSourceNames { mapOf("salary" to "Salario", "freelance" to "Freelance") }

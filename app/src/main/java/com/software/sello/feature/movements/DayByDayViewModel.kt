@@ -8,25 +8,37 @@ import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ResumenSnapshot
 import com.software.sello.domain.model.SnapshotFailure
+import com.software.sello.domain.policy.MonthMatches
+import com.software.sello.domain.policy.SearchTotals
 import com.software.sello.domain.port.MonthMovements
 import com.software.sello.domain.port.Movement
 import com.software.sello.domain.port.MovementFilter
+import com.software.sello.domain.port.MovementQuery
 import com.software.sello.domain.port.MovementReadFailure
+import com.software.sello.domain.port.MovementSearch
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ResumenSnapshotState
 import com.software.sello.domain.port.ResumenSnapshots
 import com.software.sello.navigation.MonthSession
+import com.software.sello.presentation.income.IncomeSourceNames
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.read.LastGoodRead
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 
@@ -35,6 +47,11 @@ import kotlinx.coroutines.flow.update
  * month is observed through Resumen's snapshot, so the summary is Recibo's and Resumen's
  * own figures and any change, an edit or its undo, reads the list again. The chip
  * survives process death; the month is the session's.
+ *
+ * Its search (SELLO-193) looks through every month. It is read again on the same
+ * observation of the month, so a change anywhere, such as a result corrected in its
+ * editor, reads the results again. The query survives process death; only the query typed
+ * last is read, after a short pause in typing.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class DayByDayViewModel(
@@ -42,11 +59,17 @@ class DayByDayViewModel(
     session: MonthSession,
     private val snapshots: ResumenSnapshots,
     private val movements: MonthMovements,
+    private val search: MovementSearch,
+    private val sourceNames: IncomeSourceNames,
     private val money: MoneyFormatter
 ) : ViewModel() {
     private val filter = saved.getStateFlow(KEY_FILTER, MovementFilter.All.name)
     private val wanted = MutableStateFlow(PAGE_SIZE)
+    private val wantedFound = MutableStateFlow(PAGE_SIZE)
     private val retry = MutableStateFlow(0)
+
+    /** What is typed in the search field, as typed. */
+    val query: StateFlow<String> = saved.getStateFlow(KEY_QUERY, "")
 
     /** The month as last read, so a Retry or a return never blanks rows already listed. */
     private val lastGood = LastGoodRead<ResumenSnapshot, SnapshotFailure>()
@@ -54,19 +77,72 @@ class DayByDayViewModel(
     /** The month and chip whose rows [state] holds, to tell its own rows from another's. */
     private var listedFor: Request? = null
 
+    /** The search and chip whose results [found] holds. */
+    private var foundFor: Found? = null
+
+    /**
+     * The search and chip [wantedFound] counts pages for. Coming back from a result's editor
+     * after sharing stopped observes the same search again: its pages are kept, so the
+     * result opened is still listed (R1). Only another search or chip starts at one page.
+     */
+    private var pagedFor: Found? = null
+
     private data class Request(val month: YearMonth, val filter: MovementFilter)
 
-    val state: StateFlow<DayByDayState> = combine(session.selectedMonth, filter) { month, chip ->
-        Request(month, MovementFilter.entries.firstOrNull { it.name == chip } ?: MovementFilter.All)
+    private data class Found(val query: MovementQuery, val filter: MovementFilter)
+
+    private val chip = filter.map { chip ->
+        MovementFilter.entries.firstOrNull { it.name == chip } ?: MovementFilter.All
+    }
+
+    /**
+     * The shared month, observed once for the day list and the search alike. Reintentar
+     * observes it again, which reads both again.
+     */
+    private val observed = session.selectedMonth.flatMapLatest { month ->
+        retry.flatMapLatest { lastGood.keep(month, snapshots.observe(month)) }
+            .map { month to it }
+    }.shareIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), replay = 1)
+
+    private fun monthOf(month: YearMonth) = observed.filter { it.first == month }.map { it.second }
+
+    val state: StateFlow<DayByDayState> = combine(session.selectedMonth, chip) { month, chip ->
+        Request(month, chip)
     }.flatMapLatest { request ->
         wanted.value = PAGE_SIZE
-        // Reintentar observes the month again, as well as reading the rows again.
-        combine(
-            retry.flatMapLatest { lastGood.keep(request.month, snapshots.observe(request.month)) },
-            wanted
-        ) { snapshot, count -> snapshot to count }
+        combine(monthOf(request.month), wanted) { snapshot, count -> snapshot to count }
             .flatMapLatest { (snapshot, count) -> load(request, snapshot, count) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DayByDayState.Loading)
+
+    val found: StateFlow<SearchState> = combine(
+        query.map(MovementQuery::of).distinctUntilChanged(),
+        chip
+    ) { query, chip -> query?.let { Found(it, chip) } }
+        .flatMapLatest { request ->
+            if (request == null) {
+                foundFor = null
+                pagedFor = null
+                return@flatMapLatest flowOf<SearchState>(SearchState.Off)
+            }
+            if (request != pagedFor) {
+                pagedFor = request
+                wantedFound.value = PAGE_SIZE
+            }
+            flow<SearchState> {
+                // A new query waits for typing to pause; a reply to an older one is never
+                // read, as flatMapLatest drops it. Another chip reads at once.
+                if (foundFor?.query != request.query) {
+                    emit(SearchState.Loading(request.query.words, request.filter))
+                    delay(TYPING_PAUSE_MS)
+                }
+                // Any month's observation tells a change: the revision is the whole history's.
+                val month = observed.map { it.second }
+                emitAll(
+                    combine(month, wantedFound) { snapshot, count -> snapshot to count }
+                        .flatMapLatest { (snapshot, count) -> loadFound(request, snapshot, count) }
+                )
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SearchState.Off)
 
     fun onAction(action: DayByDayAction) {
         when (action) {
@@ -80,6 +156,17 @@ class DayByDayViewModel(
                     wanted.value <= Int.MAX_VALUE - PAGE_SIZE
                 ) {
                     wanted.update { it + PAGE_SIZE }
+                }
+            }
+
+            is DayByDayAction.Search -> saved[KEY_QUERY] = action.text.cutToSearchLimit()
+
+            DayByDayAction.MoreFound -> {
+                val ready = found.value as? SearchState.Ready
+                if (ready != null && ready.more && !ready.busy && !ready.stale &&
+                    wantedFound.value <= Int.MAX_VALUE - PAGE_SIZE
+                ) {
+                    wantedFound.update { it + PAGE_SIZE }
                 }
             }
         }
@@ -119,11 +206,7 @@ class DayByDayViewModel(
             )
             when (read) {
                 is Outcome.Failure -> {
-                    val problem = when (read.error) {
-                        MovementReadFailure.Unrepresentable -> DayByDayProblem.TooLarge
-                        MovementReadFailure.CurrencyMismatch -> DayByDayProblem.Damaged
-                        is MovementReadFailure.Storage -> DayByDayProblem.Unread
-                    }
+                    val problem = read.error.problem()
                     emit(
                         listed?.copy(
                             busy = false,
@@ -201,8 +284,139 @@ class DayByDayViewModel(
         )
     }
 
+    private fun loadFound(request: Found, snapshot: ResumenSnapshotState, count: Int) = flow {
+        val words = request.query.words
+        // Results already shown for this search and chip are kept through every failure.
+        val listed = (found.value as? SearchState.Ready)?.takeIf { foundFor == request }
+        val month = when (snapshot) {
+            ReadState.Loading -> {
+                emit(listed?.copy(busy = true) ?: SearchState.Loading(words, request.filter))
+                return@flow
+            }
+
+            // Kept, said to be older; no more pages from them: Reintentar is the way on.
+            is ReadState.Failed -> {
+                emit(
+                    listed?.copy(busy = false, pageFailure = null, more = false, stale = true)
+                        ?: SearchState.Failed(words, request.filter, DayByDayProblem.Unread)
+                )
+                return@flow
+            }
+
+            is ReadState.Ready -> snapshot.value
+        }
+        val waiting = SearchState.Loading(words, request.filter)
+        emit(listed?.copy(busy = true, pageFailure = null) ?: waiting)
+        val names = sourceNames.fixed()
+        val rows = mutableListOf<Movement>()
+        var more = false
+        var totals: SearchTotals? = null
+        while (rows.size < count) {
+            val read = search.read(
+                request.query,
+                request.filter,
+                names,
+                rows.lastOrNull(),
+                minOf(count - rows.size, MovementSearch.MAX_PAGE)
+            )
+            when (read) {
+                is Outcome.Failure -> {
+                    val problem = read.error.problem()
+                    emit(
+                        listed?.copy(
+                            busy = false,
+                            pageFailure = problem,
+                            // Reading on cannot help a sum too large or damaged data.
+                            more = listed.more && problem == DayByDayProblem.Unread
+                        ) ?: SearchState.Failed(words, request.filter, problem)
+                    )
+                    return@flow
+                }
+
+                is Outcome.Success -> {
+                    val page = read.value
+                    // Read between two changes: the next snapshot reads it again.
+                    if (page.generation != month.budget.generation ||
+                        page.revision != month.budget.revision
+                    ) {
+                        emit(listed?.copy(busy = true) ?: waiting)
+                        return@flow
+                    }
+                    rows += page.movements
+                    more = page.more
+                    totals = page.totals
+                    if (!more) break
+                }
+            }
+        }
+        val all = totals ?: return@flow
+        // Pages are read one transaction each, at the same revision; the totals are the last
+        // page's. A listed month they leave out cannot happen in one history: it is damage,
+        // said as such, never a crash or a month without its figures.
+        val months = foundMonths(rows, all.months.associateBy { it.month })
+        if (months == null) {
+            emit(
+                listed?.copy(busy = false, pageFailure = DayByDayProblem.Damaged, more = false)
+                    ?: SearchState.Failed(words, request.filter, DayByDayProblem.Damaged)
+            )
+            return@flow
+        }
+        foundFor = request
+        emit(
+            SearchState.Ready(
+                words = words,
+                amount = request.query.amount?.let { money.format(it.money) },
+                today = month.budget.asOf,
+                filter = request.filter,
+                expenses = all.expenses?.let { FoundTotal(it.count, money.format(it.total)) },
+                incomes = all.incomes?.let {
+                    FoundTotal(it.count, money.format(it.total, signed = true))
+                },
+                months = months,
+                more = more
+            )
+        )
+    }
+
+    /**
+     * Consecutive results of one month under its heading, with the month's whole totals;
+     * null when a listed month has none.
+     */
+    private fun foundMonths(
+        rows: List<Movement>,
+        totals: Map<YearMonth, MonthMatches>
+    ): List<FoundMonth>? = rows.groupBy { YearMonth.from(it.date) }.map { (month, found) ->
+        val matches = totals[month] ?: return null
+        FoundMonth(
+            month,
+            matches.count,
+            matches.spent?.let(money::format),
+            found.map { FoundRow(it.date, row(it)) }
+        )
+    }
+
+    private fun MovementReadFailure.problem() = when (this) {
+        MovementReadFailure.Unrepresentable -> DayByDayProblem.TooLarge
+        MovementReadFailure.CurrencyMismatch -> DayByDayProblem.Damaged
+        is MovementReadFailure.Storage -> DayByDayProblem.Unread
+    }
+
     private companion object {
         const val PAGE_SIZE = 20
         const val KEY_FILTER = "dayByDay.filter"
+        const val KEY_QUERY = "dayByDay.query"
+
+        /** How long typing pauses before the query typed last is searched. */
+        const val TYPING_PAUSE_MS = 250L
+
+        /** The first [MovementQuery.MAX_LENGTH] units, never half of a two-unit character. */
+        fun String.cutToSearchLimit(): String {
+            if (length <= MovementQuery.MAX_LENGTH) return this
+            val endsOnAHalf = Character.isHighSurrogate(this[MovementQuery.MAX_LENGTH - 1])
+            return substring(
+                0,
+                if (endsOnAHalf) MovementQuery.MAX_LENGTH - 1 else MovementQuery.MAX_LENGTH
+            )
+        }
     }
 }

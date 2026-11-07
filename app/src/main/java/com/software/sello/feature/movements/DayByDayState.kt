@@ -86,6 +86,61 @@ sealed interface DayByDayState {
     }
 }
 
+/** How many movements a search found and what they add up to. */
+@Immutable
+data class FoundTotal(val count: Long, val total: MoneyTextValue)
+
+/** One movement a search found, with its day, which its caption says. */
+@Immutable
+data class FoundRow(val date: LocalDate, val row: DayRow)
+
+/**
+ * A month of a search's results: its rows listed so far, how many the search found in that
+ * month in all and what its matching expenses add up to ([spent], null without one).
+ */
+@Immutable
+data class FoundMonth(
+    val month: YearMonth,
+    val count: Long,
+    val spent: MoneyTextValue?,
+    val rows: List<FoundRow>
+)
+
+/** Día a día's search over every month (SELLO-193). [words] is what was searched. */
+sealed interface SearchState {
+    /** Nothing is searched: the month's day list shows. */
+    data object Off : SearchState
+
+    data class Loading(val words: String, val filter: MovementFilter) : SearchState
+
+    /** Nothing was ever shown for this search and chip; the query stays in the field. */
+    data class Failed(val words: String, val filter: MovementFilter, val problem: DayByDayProblem) :
+        SearchState
+
+    /**
+     * [months] is what is listed so far, newest first. [amount] is the query read as an
+     * amount, when it is one. [expenses] and [incomes] are every match's count and sum,
+     * each null when none matched or the chip leaves them out.
+     */
+    @Immutable
+    data class Ready(
+        val words: String,
+        val amount: MoneyTextValue?,
+        val today: LocalDate,
+        val filter: MovementFilter,
+        val expenses: FoundTotal?,
+        val incomes: FoundTotal?,
+        val months: List<FoundMonth>,
+        val more: Boolean,
+        val busy: Boolean = false,
+        val pageFailure: DayByDayProblem? = null,
+        /** The month could not be read again: these are the results as last read. */
+        val stale: Boolean = false
+    ) : SearchState {
+        val listed: Int get() = months.sumOf { it.rows.size }
+    }
+}
+
 sealed interface DayByDayAction {
     data class Filter(val filter: MovementFilter) : DayByDayAction
 
@@ -93,4 +148,10 @@ sealed interface DayByDayAction {
     data object More : DayByDayAction
 
     data object Retry : DayByDayAction
+
+    /** What is typed in the search field; empty goes back to the month's days. */
+    data class Search(val text: String) : DayByDayAction
+
+    /** List the next older results of the search. */
+    data object MoreFound : DayByDayAction
 }
