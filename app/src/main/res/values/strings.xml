@@ -1874,4 +1874,31 @@
     <string name="limit_sheet_carry">De meses anteriores %1$s · gastaste %2$s en %3$s</string>
     <string name="limit_sheet_amount_base">Límite base en pesos</string>
     <string name="limit_sheet_fact_capacity">Tu límite de %1$s, con lo de meses anteriores, pasaría a %2$s.</string>
+    <!-- Día a día (SELLO-192) -->
+    <string name="day_by_day_title">Día a día</string>
+    <string name="day_by_day_open">Día a día: todos los movimientos del mes</string>
+    <string name="day_by_day_all">Todo</string>
+    <string name="day_by_day_expenses">Gastos</string>
+    <string name="day_by_day_incomes">Ingresos</string>
+    <string name="day_by_day_spent">Gastaste</string>
+    <string name="day_by_day_came_in">Entró</string>
+    <string name="day_by_day_income_of">Ingreso · %1$s</string>
+    <string name="day_by_day_fixed">Fijo</string>
+    <plurals name="day_by_day_count">
+        <item quantity="one">%1$s movimiento en %2$s</item>
+        <item quantity="other">%1$s movimientos en %2$s</item>
+    </plurals>
+    <string name="day_by_day_empty_title">Aún no hay movimientos</string>
+    <string name="day_by_day_empty_body">Anota el primero y aquí verás %1$s, día por día.</string>
+    <string name="day_by_day_no_expenses">No hay gastos en %1$s.</string>
+    <string name="day_by_day_no_incomes">No hay ingresos en %1$s.</string>
+    <string name="day_by_day_failed">No pudimos leer los movimientos del mes. Tus datos no cambiaron.</string>
+    <string name="day_by_day_too_large">Un día suma más de lo que Sello puede mostrar con exactitud. Tus datos no cambiaron.</string>
+    <string name="day_by_day_page_failed_title">No cargaron más movimientos</string>
+    <string name="day_by_day_page_failed">Lo que ya ves sigue aquí. Inténtalo de nuevo.</string>
+    <string name="resumen_stub_days_none">Nada en %1$s</string>
+    <plurals name="resumen_stub_days_count">
+        <item quantity="one">%1$s en %2$s</item>
+        <item quantity="other">%1$s en %2$s</item>
+    </plurals>
 </resources>

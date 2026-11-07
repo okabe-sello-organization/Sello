@@ -100,6 +100,7 @@ internal fun NavGraphBuilder.reciboDestinations(
             announcementFailed = announcementState.failure != null,
             tabs = tabs,
             onOpenSettings = { navigation.navigate(SettingsRoute) { launchSingleTop = true } },
+            onOpenDayByDay = { navigation.openDayByDay() },
             onEditExpense = { id ->
                 navigation.navigate(ExpenseEditRoute(id)) { launchSingleTop = true }
             },
@@ -294,6 +295,7 @@ private fun ReciboDestination(
     announcementFailed: Boolean,
     tabs: SelloNavigation,
     onOpenSettings: () -> Unit,
+    onOpenDayByDay: () -> Unit,
     onEditExpense: (String) -> Unit,
     onEditCategory: (String) -> Unit,
     onShowAllExpenses: (String) -> Unit,
@@ -342,6 +344,7 @@ private fun ReciboDestination(
                 },
             navigation = tabs,
             actions = {
+                DayByDayBarAction(onOpenDayByDay)
                 IconButton(
                     onClick = onOpenSettings,
                     modifier = Modifier.testTag(SETTINGS_ACTION_TAG)

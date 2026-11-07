@@ -62,6 +62,7 @@ import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.SpendingDirection
 import com.software.sello.presentation.carry.CarryBreakdownSection
 import com.software.sello.presentation.category.CategoryIcons
+import com.software.sello.presentation.count.countText
 import com.software.sello.presentation.date.dateLabels
 
 @Composable
@@ -73,7 +74,8 @@ fun ResumenScreen(
     onExpense: () -> Unit,
     padding: PaddingValues,
     onAdjustLimit: (String) -> Unit = {},
-    onSchedules: () -> Unit = {}
+    onSchedules: () -> Unit = {},
+    onDayByDay: () -> Unit = {}
 ) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val layout = selloWindowLayout(maxWidth, maxHeight)
@@ -103,7 +105,7 @@ fun ResumenScreen(
                         horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.lg)
                     ) {
                         ResumenPane(Modifier.weight(1f)) {
-                            SummarySlips(state, onIncome, onSchedules, onAction, onCategory)
+                            SummarySlips(state, onIncome, onSchedules, onDayByDay, onAction, onCategory)
                         }
                         ResumenPane(Modifier.weight(1f)) {
                             ChartSlips(state, onAction, onExpense, onAdjustLimit)
@@ -111,7 +113,7 @@ fun ResumenScreen(
                     }
                 } else {
                     ResumenPane(content) {
-                        SummarySlips(state, onIncome, onSchedules, onAction, onCategory)
+                        SummarySlips(state, onIncome, onSchedules, onDayByDay, onAction, onCategory)
                         ChartSlips(state, onAction, onExpense, onAdjustLimit)
                     }
                 }
@@ -137,6 +139,7 @@ private fun SummarySlips(
     state: ResumenState.Ready,
     onIncome: () -> Unit,
     onSchedules: () -> Unit,
+    onDayByDay: () -> Unit,
     onAction: (ResumenAction) -> Unit,
     onCategory: (String) -> Unit
 ) {
@@ -149,7 +152,7 @@ private fun SummarySlips(
         )
     }
     Hero(state.hero, state.insufficientHistory)
-    IncomeSlip(state, onIncome, onSchedules, onCategory)
+    IncomeSlip(state, onIncome, onSchedules, onDayByDay, onCategory)
 }
 
 /**
@@ -157,13 +160,14 @@ private fun SummarySlips(
  * against the rest, every category ranked by what it took, what was spent and Ingresos
  * menos gastos. With no income, the ranking and its total alone. Spending only: goals and
  * investments are not destinations (ADR 0012 BG4). Under the tear line, a stub to the
- * income list and Pagos e ingresos fijos.
+ * income list, Pagos e ingresos fijos and Día a día.
  */
 @Composable
 private fun IncomeSlip(
     state: ResumenState.Ready,
     onIncome: () -> Unit,
     onSchedules: () -> Unit,
+    onDayByDay: () -> Unit,
     onCategory: (String) -> Unit
 ) {
     val slip = state.incomeSlip
@@ -190,34 +194,54 @@ private fun IncomeSlip(
         }
         TearLine()
         SlipStub(
-            start = {
-                StubButton(
-                    SelloIcon.ReceiptLong,
-                    stringResource(R.string.resumen_stub_incomes),
-                    onIncome,
-                    Modifier.testTag("resumen.openIncome"),
-                    fact = if (slip.count == 0) {
-                        stringResource(R.string.resumen_stub_incomes_none, month)
-                    } else {
-                        pluralStringResource(
-                            R.plurals.resumen_stub_incomes_count,
-                            slip.count,
-                            slip.count,
-                            month
-                        )
-                    }
-                )
-            },
-            end = {
-                StubButton(
-                    SelloIcon.Autorenew,
-                    stringResource(R.string.resumen_stub_fixed),
-                    onSchedules,
-                    Modifier.testTag("resumen.openSchedules"),
-                    fact = nextFixed(state.nextFixed),
-                    label = stringResource(R.string.schedules_title)
-                )
-            }
+            listOf(
+                {
+                    StubButton(
+                        SelloIcon.ReceiptLong,
+                        stringResource(R.string.resumen_stub_incomes),
+                        onIncome,
+                        Modifier.testTag("resumen.openIncome"),
+                        fact = if (slip.count == 0) {
+                            stringResource(R.string.resumen_stub_incomes_none, month)
+                        } else {
+                            pluralStringResource(
+                                R.plurals.resumen_stub_incomes_count,
+                                slip.count,
+                                slip.count,
+                                month
+                            )
+                        }
+                    )
+                },
+                {
+                    StubButton(
+                        SelloIcon.Autorenew,
+                        stringResource(R.string.resumen_stub_fixed),
+                        onSchedules,
+                        Modifier.testTag("resumen.openSchedules"),
+                        fact = nextFixed(state.nextFixed),
+                        label = stringResource(R.string.schedules_title)
+                    )
+                },
+                {
+                    StubButton(
+                        SelloIcon.Event,
+                        stringResource(R.string.day_by_day_title),
+                        onDayByDay,
+                        Modifier.testTag("resumen.openDayByDay"),
+                        fact = if (slip.movements == 0) {
+                            stringResource(R.string.resumen_stub_days_none, month)
+                        } else {
+                            pluralStringResource(
+                                R.plurals.resumen_stub_days_count,
+                                slip.movements,
+                                countText(slip.movements),
+                                month
+                            )
+                        }
+                    )
+                }
+            )
         )
     }
 }

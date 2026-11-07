@@ -15,7 +15,8 @@ fun ResumenRoot(
     onExpense: () -> Unit,
     padding: PaddingValues,
     onSchedules: () -> Unit,
-    onAdjustLimit: (String) -> Unit
+    onAdjustLimit: (String) -> Unit,
+    onDayByDay: () -> Unit
 ) {
     val model: ResumenViewModel = viewModel(factory = factory)
     val state by model.state.collectAsStateWithLifecycle()
@@ -27,6 +28,7 @@ fun ResumenRoot(
         onExpense,
         padding,
         onAdjustLimit,
-        onSchedules
+        onSchedules,
+        onDayByDay
     )
 }

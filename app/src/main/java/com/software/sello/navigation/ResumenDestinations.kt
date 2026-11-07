@@ -48,15 +48,19 @@ internal fun NavGraphBuilder.resumenDestinations(
             navigation = tabs,
             // Resumen reads the month: no Anotar here (owner, 2026-10-26).
             entryDock = false,
+            actions = { DayByDayBarAction { navigation.openDayByDay() } },
             notice = notice?.let { { CorrectionNoticeBar(it, onUndo) } }
         ) { padding ->
-            ResumenRoot(viewModels, {
-                navigation.navigate(IncomeHistoryRoute)
-            }, { id -> navigation.navigate(ResumenCategoryRoute(id)) }, {
-                navigation.navigate(ExpenseEntryRoute())
-            }, padding, { navigation.navigate(SchedulesRoute()) }) { id ->
-                navigation.navigate(CategoryEditRoute(id, state.selectedMonth.toString()))
-            }
+            ResumenRoot(
+                viewModels,
+                { navigation.navigate(IncomeHistoryRoute) },
+                { id -> navigation.navigate(ResumenCategoryRoute(id)) },
+                { navigation.navigate(ExpenseEntryRoute()) },
+                padding,
+                { navigation.navigate(SchedulesRoute()) },
+                { id -> navigation.navigate(CategoryEditRoute(id, state.selectedMonth.toString())) },
+                onDayByDay = { navigation.openDayByDay() }
+            )
         }
         BackHandler(enabled = !state.monthPickerOpen) { tabs.onSelect("recibo") }
     }
