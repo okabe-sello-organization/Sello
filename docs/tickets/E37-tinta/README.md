@@ -24,6 +24,8 @@ hue, theme and wallpaper controls at the top drive every frame).
   Gain, loss and warn never follow the ink.
 - **Sistema is part of this epic.** Android 11 has no system colour, so Sistema is not
   offered there.
+- **No catalog criterion (2026-11-06):** SELLO-202's catalog criterion is dropped; the
+  catalog app was removed in #245.
 - **Backups change format:** a backup made with Tuya or Sistema needs a new backup
   version, so older Sello versions refuse to restore it.
 - Orchestrated run ([orchestration](../../development/orchestration.md)): subagents and
