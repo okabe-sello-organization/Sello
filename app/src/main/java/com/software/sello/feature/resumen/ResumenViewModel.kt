@@ -56,6 +56,7 @@ class ResumenViewModel(
 
     /** The month as last read, so a Retry or a return never blanks figures already shown. */
     private val lastGood = LastGoodRead<ResumenSnapshot, SnapshotFailure>()
+
     /** Gastos hormiga's line; Reintentar reads it again too. */
     private val line = attempts.flatMapLatest { smallExpenses.observeSmallExpenseLine() }
 

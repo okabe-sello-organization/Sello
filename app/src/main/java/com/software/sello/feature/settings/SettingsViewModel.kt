@@ -334,8 +334,8 @@ data class SettingsState(
     val phone: PhoneColor = PhoneColor.None
 ) {
     val failure: PreferenceFailure?
-        get() = writeFailure ?: appearanceFailure ?: orderingFailure ?: investmentsFailure ?:
-            smallExpensesFailure
+        get() = writeFailure ?: appearanceFailure ?: orderingFailure ?: investmentsFailure
+            ?: smallExpensesFailure
 }
 
 /**

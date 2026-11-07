@@ -54,8 +54,10 @@ class SmallExpensePolicyTest {
         recorded
     )
 
-    private fun unlimited(number: Int, name: String) =
-        CategoryInMonth(category(number, name), MonthBudgetState.Limited(BudgetLimit.Unlimited, false))
+    private fun unlimited(number: Int, name: String) = CategoryInMonth(
+        category(number, name),
+        MonthBudgetState.Limited(BudgetLimit.Unlimited, false)
+    )
 
     private val categories = listOf(
         unlimited(1, "Café"),
@@ -64,23 +66,19 @@ class SmallExpensePolicyTest {
         unlimited(4, "Hogar")
     )
 
-    private fun expense(
-        date: String,
-        pesos: Long,
-        category: Int = 1,
-        origin: EntryOrigin? = null
-    ) = Expense(
-        ExpenseId.of(uuid(nextExpense)).valueOrFail(),
-        id(category),
-        LocalDate.parse(date),
-        (nextExpense++).toLong(),
-        TransactionAmount.of(Money.cop(pesos)).valueOrFail(),
-        null,
-        1,
-        recorded,
-        recorded,
-        origin
-    )
+    private fun expense(date: String, pesos: Long, category: Int = 1, origin: EntryOrigin? = null) =
+        Expense(
+            ExpenseId.of(uuid(nextExpense)).valueOrFail(),
+            id(category),
+            LocalDate.parse(date),
+            (nextExpense++).toLong(),
+            TransactionAmount.of(Money.cop(pesos)).valueOrFail(),
+            null,
+            1,
+            recorded,
+            recorded,
+            origin
+        )
 
     private fun read(
         expenses: List<Expense>,

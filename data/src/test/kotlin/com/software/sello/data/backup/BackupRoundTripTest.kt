@@ -384,7 +384,13 @@ class BackupRoundTripTest {
         val file = String(resource("valid-g01-v10.json"))
         val missing = file.replace(",\n    \"smallExpenseLine\": 20000", "")
         check(missing != file)
-        assertTrue((codec.read(missing.toByteArray()) as Outcome.Failure).error is BackupRejection.Malformed)
+        assertTrue(
+            (
+                codec.read(
+                    missing.toByteArray()
+                ) as Outcome.Failure
+                ).error is BackupRejection.Malformed
+        )
     }
 
     @Test
@@ -395,7 +401,9 @@ class BackupRoundTripTest {
             "\"investmentOrder\": \"latest_update\",\n    \"smallExpenseLine\": 15000"
         )
         check(line != v9)
-        assertTrue((codec.read(line.toByteArray()) as Outcome.Failure).error is BackupRejection.Malformed)
+        assertTrue(
+            (codec.read(line.toByteArray()) as Outcome.Failure).error is BackupRejection.Malformed
+        )
     }
 
     @Test

@@ -28,7 +28,10 @@ object SmallExpensePolicy {
     const val TOP_CATEGORIES = 3
 
     /** How many of [expenses] are at or under [line], and their checked sum. */
-    fun tally(expenses: List<Expense>, line: SmallExpenseLine): Outcome<SmallTally, SnapshotFailure> {
+    fun tally(
+        expenses: List<Expense>,
+        line: SmallExpenseLine
+    ): Outcome<SmallTally, SnapshotFailure> {
         val small = expenses.filter { it.amount.money.minorUnits <= line.pesos }
         return when (val total = total(small)) {
             is Outcome.Success -> Outcome.Success(SmallTally(small.size, total.value))

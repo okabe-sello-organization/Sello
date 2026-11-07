@@ -3,9 +3,9 @@ package com.software.sello.domain.port
 import com.software.sello.domain.model.AppearancePreference
 import com.software.sello.domain.model.CategoryOrderingPreference
 import com.software.sello.domain.model.InvestmentPreference
-import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.SmallExpenseLine
 import java.time.Instant
 import java.time.ZoneId
 

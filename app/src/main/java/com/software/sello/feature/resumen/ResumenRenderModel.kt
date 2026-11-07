@@ -147,7 +147,6 @@ class ResumenRenderModel(
     ): ResumenSmallExpenses? {
         val (line, older) = when (read) {
             is PreferenceRead.Ready -> read.value to false
-
             is PreferenceRead.Failed -> (read.lastGood ?: return unreadableLine(snapshot)) to true
         }
         val summary = when (val worked = SmallExpensePolicy.summary(snapshot, line)) {
@@ -197,15 +196,15 @@ class ResumenRenderModel(
         )
     }
 
-    private fun unreadableLine(snapshot: ResumenSnapshot): ResumenSmallExpenses? =
-        when (
-            val widest = SmallExpensePolicy.tally(snapshot.periods.current, SmallExpenseLine.WIDEST)
-        ) {
-            is Outcome.Failure -> ResumenSmallExpenses.Unreadable
+    private fun unreadableLine(snapshot: ResumenSnapshot): ResumenSmallExpenses? = when (
+        val widest = SmallExpensePolicy.tally(snapshot.periods.current, SmallExpenseLine.WIDEST)
+    ) {
+        is Outcome.Failure -> ResumenSmallExpenses.Unreadable
 
-            is Outcome.Success -> ResumenSmallExpenses.Unreadable
+        is Outcome.Success ->
+            ResumenSmallExpenses.Unreadable
                 .takeIf { widest.value.count >= SmallExpensePolicy.MIN_COUNT }
-        }
+    }
 
     private fun hero(snapshot: ResumenSnapshot): ResumenHero {
         val budget = snapshot.budget

@@ -123,8 +123,7 @@ class SettingsScreenshotTest {
     fun resumenLight() = capture("resumen", Look(), reveal = SETTINGS_SMALL_EXPENSES_TAG)
 
     @Test
-    fun resumenDark() =
-        capture("resumen", Look(dark = true), reveal = SETTINGS_SMALL_EXPENSES_TAG)
+    fun resumenDark() = capture("resumen", Look(dark = true), reveal = SETTINGS_SMALL_EXPENSES_TAG)
 
     @Test fun loadingLight() = capture("loading", Look(), loaded.copy(loading = true))
 

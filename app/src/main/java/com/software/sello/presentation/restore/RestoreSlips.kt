@@ -140,11 +140,16 @@ private fun applyLabel(preferences: PendingPreferences): Int {
     val line = preferences.smallExpenseLine != null
     return when {
         appearance && ordering && !investments && !line -> R.string.restore_apply_both
+
         listOf(appearance, ordering, investments, line).count { it } > 1 ->
             R.string.restore_apply_all
+
         appearance -> R.string.restore_apply_appearance
+
         ordering -> R.string.restore_apply_ordering
+
         investments -> R.string.restore_apply_investments
+
         else -> R.string.restore_apply_small_expenses
     }
 }

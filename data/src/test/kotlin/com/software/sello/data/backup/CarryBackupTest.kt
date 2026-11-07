@@ -103,7 +103,12 @@ class CarryBackupTest {
             val written = String(defaultCodec.encode(sc01(chains)).value())
 
             // Written now as version 10, with no star where version 6 chose no goal.
-            assertEquals(version9AsVersion10(version8AsVersion9(version7AsVersion8(version6AsVersion7(file)))), written)
+            assertEquals(
+                version9AsVersion10(
+                    version8AsVersion9(version7AsVersion8(version6AsVersion7(file)))
+                ),
+                written
+            )
             assertFalse(written.contains("carryIn"))
             assertFalse(written.contains("capacity"))
             assertFalse(written.contains("remaining"))

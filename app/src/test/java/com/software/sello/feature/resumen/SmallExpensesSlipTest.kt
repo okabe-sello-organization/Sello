@@ -79,7 +79,10 @@ class SmallExpensesSlipTest {
     fun withoutTheMonthBeforeThereAreNoBars() {
         show(shown.copy(bars = null))
 
-        assertEquals(0, rule.onAllNodes(hasTestTag(RESUMEN_SMALL_BARS_TAG)).fetchSemanticsNodes().size)
+        assertEquals(
+            0,
+            rule.onAllNodes(hasTestTag(RESUMEN_SMALL_BARS_TAG)).fetchSemanticsNodes().size
+        )
     }
 
     @Test
