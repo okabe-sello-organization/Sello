@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compartir el mes: the month's budget as an image · mock</title><style>
+@font-face{font-family:Schibsted;src:url('../../../../design-system/src/main/res/font/schibsted_grotesk.ttf') format('truetype');font-weight:400 900}
+@font-face{font-family:Stencil;src:url('../../../../design-system/src/main/res/font/saira_stencil_one.ttf') format('truetype')}
+*{box-sizing:border-box}
+body{margin:0;font-family:Schibsted,system-ui,sans-serif;background:#f4f5f9;color:#0e1630;padding:28px 28px 60px}
+svg.icon{width:24px;height:24px;fill:currentColor;flex:none;vertical-align:middle}
+.page-head{max-width:1500px;margin:0 auto 10px}
+.page-head small{font-size:13px;font-weight:600;color:#566287}
+.page-head h1{font-size:32px;font-weight:900;letter-spacing:-.03em;margin:2px 0 8px}
+.lede{color:#434e72;max-width:860px;margin:0 0 18px;font-size:14px;line-height:1.5}
+h2.sec{font-size:20px;font-weight:800;margin:34px auto 6px;max-width:1500px}
+.frames{display:flex;flex-wrap:wrap;gap:28px 26px;align-items:flex-start;max-width:1500px;margin:0 auto}
+.card{width:412px}
+.card>h3{font-size:14px;font-weight:800;margin:0 0 3px}
+.card>p{font-size:12.5px;color:#434e72;margin:0 0 10px;line-height:1.45;min-height:3em}
+.new{display:inline-block;font-size:11px;font-weight:800;padding:2px 7px;border-radius:99px;background:#ffe9c7;color:#6b3a00;margin-left:6px;vertical-align:2px}
+.notes{max-width:900px;margin:0 auto;font-size:14px;line-height:1.55;color:#262f52}
+.notes li{margin-bottom:6px}
+.wrap{max-width:1500px;margin:0 auto}
+
+.phone{width:412px;min-height:300px;border-radius:26px;overflow:hidden;box-shadow:0 0 0 7px #11152a,0 18px 40px rgba(14,22,48,.25);margin:8px 0}
+.app{--brand:#1f3be0;--onbrand:#fff;--brandsoft:#dce2ff;--onbrandsoft:#0b1c7a;--desk:#d9e1f7;--paper:#fff;--alt:#eef2fc;--dim:#d3dcf3;--ink:#0e1630;--soft:#434e72;--outline:#6975a0;--rule:#b9c5e6;--band:#1f3be0;--gain:#0a6b4a;--gainsoft:#cdefe0;--loss:#b81e2a;--warn:#8a4a00;--warnsoft:#ffe2b8;--past:#566287;
+  font-size:14px;line-height:1.35;color:var(--ink);background:var(--desk);display:flex;flex-direction:column;min-height:inherit}
+.top{background:var(--band);color:#fff}
+.bar{height:56px;display:flex;align-items:center;gap:4px;padding:0 6px 0 16px}
+.bar .title{font-size:22px;font-weight:800;letter-spacing:-.02em;display:flex;align-items:center;gap:6px}
+.bar .title small{font-size:14px;font-weight:700;opacity:.8}
+.bar .sp{flex:1}
+.ibtn{width:48px;height:48px;display:grid;place-items:center;border-radius:50%;color:#fff;position:relative}
+.ibtn.hl::after{content:"";position:absolute;inset:4px;border:2.5px dashed #ffd27a;border-radius:50%}
+.content{flex:1;position:relative;padding:0 12px 16px}
+.content::before{content:"";position:absolute;inset:0 0 auto 0;height:64px;background:var(--band)}
+.content>*{position:relative}
+.slip{background:var(--paper);border-radius:11px;padding:16px;margin-bottom:14px}
+.slip.hl{box-shadow:0 0 0 3px #ffd27a}
+.tear{border-top:2px dashed var(--rule);margin:14px -16px;position:relative}
+.tear::before,.tear::after{content:"";position:absolute;top:-8px;width:14px;height:14px;border-radius:50%;background:var(--desk)}
+.tear::before{left:-7px}.tear::after{right:-7px}
+.label{color:var(--soft)}
+.cap{color:var(--soft);font-size:12px}
+.h{font-size:16px;font-weight:800;margin:0}
+.hrow{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px}
+.link{color:var(--brand);font-weight:800;display:inline-flex;align-items:center;gap:2px;min-height:40px}
+.link svg.icon{width:18px;height:18px}
+.hero{font-size:56px;font-weight:900;letter-spacing:-.045em;line-height:1;margin:8px 0 4px}
+.mid{font-size:30px;font-weight:900;letter-spacing:-.03em;line-height:1.05;margin:6px 0 2px}
+.money{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:800}
+.gain{color:var(--gain)}.loss{color:var(--loss)}
+.stamp{font-family:Stencil,sans-serif;text-transform:uppercase;letter-spacing:.05em;border:2.5px solid currentColor;border-radius:8px;padding:3px 8px 1px;transform:rotate(-5deg);font-size:14px;color:var(--gain);display:inline-block}
+.stamp.loss{color:var(--loss)}
+.answer-head{display:flex;justify-content:space-between;align-items:center}
+.circle{width:40px;height:40px;min-width:40px;border-radius:50%;border:2.5px solid var(--brand);color:var(--brand);display:grid;place-items:center;background:var(--paper)}
+.circle.fill{background:var(--brand);color:#fff}
+.circle.sm{width:32px;height:32px;min-width:32px;border-width:2px}
+.circle.sm svg.icon{width:18px;height:18px}
+.circle.gain{border-color:var(--gain);color:var(--gain)}
+.circle.loss{border-color:var(--loss);background:var(--loss);color:#fff}
+.circle.dash{border-style:dashed}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px}
+.cell{display:flex;gap:10px;align-items:center;min-height:56px}
+.cell span{display:block;font-size:13px}
+.cell b{font-size:15px}
+.field{display:flex;align-items:center;gap:10px;border-bottom:1.5px solid var(--outline);padding:10px 2px;color:var(--soft);margin:2px 0 12px}
+.field.on{border-bottom:2px solid var(--brand);color:var(--ink)}
+.field .x{margin-left:auto;color:var(--soft)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+.chip{white-space:nowrap;border:1.5px solid var(--rule);border-radius:9px;padding:8px 12px;font-weight:700;font-size:13.5px;background:var(--paper);display:inline-flex;gap:6px;align-items:center}
+.chip.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+.chip svg.icon{width:18px;height:18px}
+.sum{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--soft);margin-bottom:6px}
+.sum b{color:var(--ink)}
+.day{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;font-weight:800;color:var(--soft);text-transform:uppercase;letter-spacing:.03em;margin:14px 0 2px;padding-bottom:4px;border-bottom:1.5px dashed var(--rule)}
+.day b{color:var(--ink);text-transform:none;letter-spacing:0}
+.row{display:flex;align-items:center;gap:12px;min-height:54px;border-bottom:1px solid var(--alt)}
+.row .t{flex:1;min-width:0}
+.row .t div{font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .t small{display:block;font-size:12px;color:var(--soft)}
+.row .money{font-size:15px}
+.italic{font-style:italic;color:var(--soft)}
+.tag{display:inline-block;font-size:11px;font-weight:800;padding:1px 7px;border-radius:6px;background:var(--brandsoft);color:var(--onbrandsoft);margin-left:6px}
+.tag.warn{background:var(--warnsoft);color:#6b3a00}
+.mgroup{display:flex;justify-content:space-between;font-weight:800;margin:16px 0 2px;font-size:14px}
+.mgroup span{color:var(--soft);font-weight:700}
+.empty{text-align:center;padding:26px 8px 18px}
+.empty .circle{margin:0 auto 10px;width:56px;height:56px;border-color:var(--outline);color:var(--outline)}
+.empty b{display:block;font-size:16px;margin-bottom:4px}
+.btn{display:flex;justify-content:center;align-items:center;gap:8px;min-height:52px;border-radius:14px;background:var(--brand);color:#fff;font-weight:800;font-size:16px}
+.btn.out{background:var(--paper);color:var(--brand);border:1.5px solid var(--brand)}
+.btn.loss{background:var(--loss)}
+.btn.sm{min-height:44px;font-size:14.5px;padding:0 16px;display:inline-flex}
+.stubs{display:grid;grid-template-columns:repeat(3,1fr);text-align:center}
+.stubs.two{grid-template-columns:1fr 1fr;row-gap:12px}
+.stub{padding:6px 4px;border-left:2px dashed var(--rule);display:flex;flex-direction:column;align-items:center;gap:2px}
+.stubs .stub:first-child,.stubs.two .stub:nth-child(3){border-left:0}
+.stub b{color:var(--brand);font-size:15px;display:flex;gap:6px;align-items:center}
+.stub small{font-size:12px;color:var(--soft)}
+.bars{display:grid;grid-template-columns:auto 1fr auto;gap:8px 10px;align-items:center;font-size:13.5px}
+.track{height:12px;border-radius:6px;background:var(--alt);overflow:hidden}
+.track i{display:block;height:100%;background:var(--brand);border-radius:6px}
+.track i.past{background:var(--past)}
+.bottom{background:var(--paper);border-top:1px solid var(--rule);margin-top:auto}
+.dock{padding:10px 12px 4px}
+.nav{display:flex;min-height:62px}
+.nav div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12px;font-weight:700;color:var(--soft)}
+.nav div.on svg{background:var(--brandsoft);border-radius:14px;padding:3px 14px;width:52px;height:30px;color:var(--brand)}
+.entry-amount{display:flex;align-items:center;gap:16px;margin-top:8px}
+.entry-amount .num{font-size:50px;font-weight:900;letter-spacing:-.04em}
+.datepill{border:1.5px solid var(--rule);border-radius:10px;padding:8px 10px;font-weight:700;font-size:13.5px;display:inline-flex;gap:6px;align-items:center;color:var(--ink)}
+.datepill svg.icon{color:var(--brand);width:20px;height:20px}
+.line-row{background:var(--paper);border-radius:11px;min-height:48px;display:flex;align-items:center;gap:12px;padding:0 14px;margin-bottom:8px;color:var(--soft);font-size:14.5px}
+.line-row svg.icon{color:var(--brand);width:22px;height:22px}
+.line-row.set{color:var(--ink);font-weight:700}
+.line-row .x{margin-left:auto;color:var(--soft)}
+.line-row.hl{box-shadow:0 0 0 3px #ffd27a}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:6px 2px 8px}
+.pad div{background:var(--paper);border-radius:8px;height:44px;display:grid;place-items:center;font-size:20px;font-weight:800}
+.sheet{background:var(--paper);border-radius:22px 22px 0 0;padding:10px 16px 18px;margin-top:auto;box-shadow:0 -6px 20px rgba(14,22,48,.18)}
+.sheet .grab{width:36px;height:4px;border-radius:2px;background:var(--rule);margin:0 auto 12px}
+.scrim{background:rgba(14,22,48,.45);flex:1;min-height:180px}
+.dialog{background:var(--paper);border-radius:22px;padding:22px 20px 16px;margin:auto 22px}
+.dialog h4{font-size:19px;margin:0 0 8px}
+.dialog p{margin:0 0 16px;color:var(--soft)}
+.cols{display:flex;align-items:flex-end;gap:5px;height:92px;margin:12px 0 4px}
+.cols div{flex:1;background:var(--past);border-radius:4px 4px 0 0}
+.cols div.cur{background:var(--brand)}
+.cols div.none{background:transparent;border:1.5px dashed var(--rule);border-bottom:0}
+.colx{display:flex;gap:5px;font-size:10.5px;color:var(--soft);text-align:center}
+.colx span{flex:1}
+.marks{display:flex;gap:5px;margin-top:4px}
+.marks span{flex:1;text-align:center;font-size:12px;font-weight:900}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:14px 12px}
+.facts small{display:flex;gap:4px;align-items:center;color:var(--soft);font-size:12.5px}
+.facts small svg.icon{width:16px;height:16px;color:var(--brand)}
+.facts b{display:block;font-size:17px}
+.facts div>span{font-size:12px;color:var(--soft)}
+.share-img{background:#fff;border-radius:14px;overflow:hidden;border:1px solid var(--rule)}
+.share-img .band{background:var(--band);color:#fff;padding:14px 16px 12px;display:flex;justify-content:space-between;align-items:baseline}
+.share-img .band b{font-size:20px}
+.share-img .band small{font-size:12px;opacity:.85}
+.share-img .body{padding:14px 16px}
+.share-img .foot{border-top:2px dashed var(--rule);padding:10px 16px;font-size:11.5px;color:var(--soft);display:flex;justify-content:space-between}
+.catline{display:grid;grid-template-columns:32px 1fr auto;gap:4px 10px;align-items:center;padding:7px 0}
+.catline .track{grid-column:2/4;height:7px}
+.catline .track i.over{background:var(--loss)}
+
+.status{background:var(--paper);border-radius:11px 11px 0 0;padding:20px 16px 24px;text-align:center;margin-bottom:14px;
+  -webkit-mask:linear-gradient(#000 0 0) top/100% calc(100% - 5px) no-repeat,conic-gradient(from -45deg at 50% 100%,#000 90deg,transparent 0) bottom/10px 5px repeat-x;
+  mask:linear-gradient(#000 0 0) top/100% calc(100% - 5px) no-repeat,conic-gradient(from -45deg at 50% 100%,#000 90deg,transparent 0) bottom/10px 5px repeat-x}
+.status>svg.icon{width:40px;height:40px;color:var(--brand)}
+.status b{display:block;font-size:20px;margin:8px 0 4px}
+.status span{display:block;color:var(--soft);font-size:14px;margin-bottom:14px}
+.status .btn{display:inline-flex;padding:0 22px;min-height:48px;font-size:16px}
+.invite{display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 14px;border:1.5px dashed var(--rule);border-radius:14px;margin-bottom:14px;font-weight:700}
+.invite>svg.icon:first-child{color:var(--brand)}
+.invite .chev{margin-left:auto;color:var(--soft)}
+.slip.pinked{border-radius:11px 11px 0 0;padding-bottom:22px;
+  -webkit-mask:linear-gradient(#000 0 0) top/100% calc(100% - 5px) no-repeat,conic-gradient(from -45deg at 50% 100%,#000 90deg,transparent 0) bottom/10px 5px repeat-x;
+  mask:linear-gradient(#000 0 0) top/100% calc(100% - 5px) no-repeat,conic-gradient(from -45deg at 50% 100%,#000 90deg,transparent 0) bottom/10px 5px repeat-x}
+.tabs2{display:flex;background:rgba(255,255,255,.18);border-radius:10px;padding:3px;margin:0 0 10px}
+.tabs2 div{flex:1;text-align:center;padding:9px;font-weight:800;font-size:14px;color:#fff;border-radius:8px}
+.tabs2 div.on{background:var(--paper);color:var(--brand)}
+.optlabel{display:inline-block;font-size:12px;font-weight:900;background:#11152a;color:#fff;border-radius:6px;padding:2px 8px;margin-right:6px}
+
+.setrow{display:flex;align-items:center;gap:12px;min-height:52px;border-top:1.5px dashed var(--rule)}
+.setrow:first-of-type{border-top:0}
+.setrow>svg.icon:first-child{color:var(--brand);width:22px;height:22px}
+.setrow .t{flex:1}.setrow .t div{font-size:15px}.setrow .t small{display:block;font-size:12px;color:var(--soft)}
+.setrow .v{color:var(--soft);font-size:14px}
+.setrow .chev{color:var(--soft);width:20px;height:20px}
+.slip.pinked2{border-radius:11px 11px 0 0;padding-bottom:20px;-webkit-mask:linear-gradient(#000 0 0) top/100% calc(100% - 5px) no-repeat,conic-gradient(from -45deg at 50% 100%,#000 90deg,transparent 0) bottom/10px 5px repeat-x;mask:linear-gradient(#000 0 0) top/100% calc(100% - 5px) no-repeat,conic-gradient(from -45deg at 50% 100%,#000 90deg,transparent 0) bottom/10px 5px repeat-x}
+.party{background:var(--band);color:#fff;display:flex;flex-direction:column;align-items:center;padding:40px 18px 22px;position:relative;overflow:hidden;min-height:inherit}
+.party .ring{width:46px;height:46px;border-radius:50%;border:2.5px solid #fff;box-shadow:inset 0 0 0 3px var(--band),inset 0 0 0 4.5px #fff;display:grid;place-items:center;font-size:12px;font-weight:900}
+.party .ring.off{opacity:.45}
+.party h2{font-size:44px;font-weight:900;letter-spacing:-.04em;margin:26px 0 18px;text-align:center;line-height:1}
+.plate{background:var(--band);border:3px solid #fff;outline:1.5px solid #fff;outline-offset:4px;border-radius:8px;transform:rotate(-3deg);padding:14px 18px;text-align:center;width:330px}
+.plate .k{font-family:Stencil,sans-serif;letter-spacing:.08em;font-size:15px}
+.plate .big{font-size:40px;font-weight:900;letter-spacing:-.03em}
+.plate .dl{border-top:2px dashed rgba(255,255,255,.7);margin:8px 0}
+.plate .facts2{display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:left;font-size:13px}
+.plate .facts2 b{display:block;font-size:20px}
+.party>*:not(.chad){position:relative;z-index:1}
+.chad{position:absolute;z-index:0;width:9px;height:9px;border-radius:50%;background:#fff;opacity:.85}
+.chad.sq{border-radius:2px;width:7px;height:12px;background:#ffd27a}
+.thumb{position:absolute;right:-120px;bottom:-60px;width:560px;height:560px;border-radius:50%;background:radial-gradient(closest-side,rgba(10,107,74,.16),rgba(10,107,74,.10) 70%,transparent 72%);pointer-events:none}
+.yearcard{background:var(--band);color:#fff;border-radius:14px;padding:14px 14px 14px 16px;display:flex;align-items:center;gap:12px;margin-bottom:14px;position:relative;overflow:hidden}
+.yearcard .stamp{color:#fff;border-color:#fff;font-size:18px}
+.yearcard b{display:block;font-size:17px}.yearcard small{opacity:.85}
+
+.hint{font-size:12px;color:var(--soft);background:var(--alt);border-radius:9px;padding:10px 12px;margin-top:10px;line-height:1.4}
+</style></head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-add" viewBox="0 0 960 960"><path d="M434.5,525.5L237.37,525.5Q218.22,525.5 205.04,512.33Q191.87,499.15 191.87,480Q191.87,460.85 205.04,447.67Q218.22,434.5 237.37,434.5L434.5,434.5L434.5,237.37Q434.5,218.22 447.67,205.04Q460.85,191.87 480,191.87Q499.15,191.87 512.33,205.04Q525.5,218.22 525.5,237.37L525.5,434.5L722.63,434.5Q741.78,434.5 754.96,447.67Q768.13,460.85 768.13,480Q768.13,499.15 754.96,512.33Q741.78,525.5 722.63,525.5L525.5,525.5L525.5,722.63Q525.5,741.78 512.33,754.96Q499.15,768.13 480,768.13Q460.85,768.13 447.67,754.96Q434.5,741.78 434.5,722.63L434.5,525.5Z"/></symbol><symbol id="i-directions_bus" viewBox="0 0 960 960"><path d="M320.72,773.15L320.72,788.85Q320.72,815.64 301.96,834.4Q283.21,853.15 256.41,853.15Q229.74,853.15 210.8,834.22Q191.87,815.28 191.87,788.61L191.87,726.13Q173.87,705.37 162.87,679.93Q151.87,654.5 151.87,625.02L151.87,242.15Q151.87,155.09 230.9,114.55Q309.93,74.02 480.1,74.02Q656.42,74.02 732.27,112.9Q808.13,151.78 808.13,242.15L808.13,625.02Q808.13,654.5 797.13,679.93Q786.13,705.37 768.13,726.13L768.13,788.85Q768.13,815.64 749.38,834.4Q730.62,853.15 703.83,853.15Q677.15,853.15 658.22,834.22Q639.28,815.28 639.28,788.61L639.28,773.15L320.72,773.15ZM242.87,405.02L717.13,405.02L717.13,285.02L242.87,285.02L242.87,405.02ZM341.43,643.59Q366.43,643.59 383.93,626.09Q401.43,608.59 401.43,583.59Q401.43,558.59 383.93,541.09Q366.43,523.59 341.43,523.59Q316.43,523.59 298.93,541.09Q281.43,558.59 281.43,583.59Q281.43,608.59 298.93,626.09Q316.43,643.59 341.43,643.59ZM618.57,643.59Q643.57,643.59 661.07,626.09Q678.57,608.59 678.57,583.59Q678.57,558.59 661.07,541.09Q643.57,523.59 618.57,523.59Q593.57,523.59 576.07,541.09Q558.57,558.59 558.57,583.59Q558.57,608.59 576.07,626.09Q593.57,643.59 618.57,643.59Z"/></symbol><symbol id="i-flag" viewBox="0 0 960 960"><g transform="translate(0 960.0)"><path d="M280-400v240q0 17-11.5 28.5T240-120q-17 0-28.5-11.5T200-160v-600q0-17 11.5-28.5T240-800h287q14 0 25 9t14 23l10 48h184q17 0 28.5 11.5T800-680v320q0 17-11.5 28.5T760-320H553q-14 0-25-9t-14-23l-10-48H280Z"/></g></symbol><symbol id="i-home" viewBox="0 0 960 960"><path d="M151.87,757.13L151.87,401.43Q151.87,379.8 161.45,360.53Q171.02,341.26 188.17,328.59L425.3,150.74Q449.41,132.35 480,132.35Q510.59,132.35 534.7,150.74L771.83,328.59Q788.98,341.26 798.55,360.53Q808.13,379.8 808.13,401.43L808.13,757.13Q808.13,794.91 781.52,821.52Q754.91,848.13 717.13,848.13L607.41,848.13Q588.26,848.13 575.09,834.96Q561.91,821.78 561.91,802.63L561.91,603.59Q561.91,584.43 548.74,571.26Q535.57,558.09 516.41,558.09L443.59,558.09Q424.43,558.09 411.26,571.26Q398.09,584.43 398.09,603.59L398.09,802.63Q398.09,821.78 384.91,834.96Q371.74,848.13 352.59,848.13L242.87,848.13Q205.09,848.13 178.48,821.52Q151.87,794.91 151.87,757.13Z"/></symbol><symbol id="i-ink_pen" viewBox="0 0 960 960"><g transform="translate(0 960.0)"><path d="M615.54-456.93 456.7-616.3l110.04-109.29-29.24-29.24-188.37 188.37q-12.96 12.96-30.51 12.96t-30.51-12.96q-13.2-12.95-13.08-31.01.12-18.05 13.08-31.01l184.98-184.98q27.11-27.11 64.27-27.11t64.27 27.11l26.61 26.37 49.28-49.28q13.68-13.67 32.33-13.67t32.32 13.67l93.96 93.96q13.67 13.67 13.67 32.44 0 18.77-13.67 32.45L615.54-456.93ZM155.46-110.2q-19.16 0-32.33-13.17-13.17-13.17-13.17-32.33v-75.56q0-18.15 6.83-34.69 6.84-16.53 19.51-29.2l263.63-264.39L559.3-400.7 295.15-136.54q-12.67 12.67-29.2 19.51-16.54 6.83-34.69 6.83h-75.8Z"/></g></symbol><symbol id="i-insights" viewBox="0 0 24 24"><path d="M3.1,20.1Q2.175,20.1 1.538,19.462Q0.9,18.825 0.9,17.9Q0.9,17 1.55,16.363Q2.2,15.725 3.1,15.725Q3.25,15.725 3.388,15.725Q3.525,15.725 3.65,15.775L7.875,11.575Q7.825,11.425 7.825,11.287Q7.825,11.15 7.825,11Q7.825,10.1 8.463,9.462Q9.1,8.825 10,8.825Q10.9,8.825 11.538,9.462Q12.175,10.1 12.175,11Q12.175,11.1 12.125,11.55L14.45,13.875Q14.6,13.825 14.725,13.825Q14.85,13.825 15,13.825Q15.15,13.825 15.288,13.825Q15.425,13.825 15.55,13.875L18.775,10.65Q18.725,10.525 18.725,10.387Q18.725,10.25 18.725,10.1Q18.725,9.2 19.363,8.55Q20,7.9 20.9,7.9Q21.825,7.9 22.463,8.537Q23.1,9.175 23.1,10.1Q23.1,11 22.45,11.637Q21.8,12.275 20.9,12.275Q20.75,12.275 20.613,12.275Q20.475,12.275 20.35,12.225L17.125,15.45Q17.175,15.575 17.175,15.712Q17.175,15.85 17.175,16Q17.175,16.9 16.538,17.538Q15.9,18.175 15,18.175Q14.1,18.175 13.463,17.538Q12.825,16.9 12.825,16Q12.825,15.85 12.825,15.712Q12.825,15.575 12.875,15.425L10.575,13.125Q10.425,13.175 10.288,13.175Q10.15,13.175 10,13.175Q9.9,13.175 9.45,13.125L5.225,17.35Q5.275,17.5 5.275,17.625Q5.275,17.75 5.275,17.9Q5.275,18.8 4.638,19.45Q4,20.1 3.1,20.1ZM4,10.125 L3.325,8.675 1.875,8 3.325,7.325 4,5.875 4.675,7.325 6.125,8 4.675,8.675ZM15,9.225 L13.975,7.025 11.775,6 13.975,4.975 15,2.775 16.025,4.975 18.225,6 16.025,7.025Z"/></symbol><symbol id="i-keyboard_arrow_down" viewBox="0 0 960 960"><path d="M480,604.5Q471.04,604.5 462.85,601.4Q454.65,598.3 447.93,591.59L264.17,407.83Q251.5,395.15 251.5,376Q251.5,356.85 264.17,344.17Q276.85,331.5 296,331.5Q315.15,331.5 327.83,344.17L480,496.35L632.17,344.17Q644.85,331.5 664,331.5Q683.15,331.5 695.83,344.17Q708.5,356.85 708.5,376Q708.5,395.15 695.83,407.83L512.07,591.59Q505.35,598.3 497.15,601.4Q488.96,604.5 480,604.5Z"/></symbol><symbol id="i-local_cafe" viewBox="0 0 960 960"><path d="M197.37,848.13Q178.22,848.13 165.04,834.96Q151.87,821.78 151.87,802.63Q151.87,783.48 165.04,770.3Q178.22,757.13 197.37,757.13L762.63,757.13Q781.78,757.13 794.96,770.3Q808.13,783.48 808.13,802.63Q808.13,821.78 794.96,834.96Q781.78,848.13 762.63,848.13L197.37,848.13ZM318.33,681.91Q249.46,681.91 200.66,633.12Q151.87,584.33 151.87,515.46L151.87,202.87Q151.87,165.09 178.48,138.48Q205.09,111.87 242.87,111.87L797.37,111.87Q834.91,111.87 861.52,138.6Q888.13,165.33 888.13,202.63L888.13,322.63Q888.13,359.93 861.52,386.66Q834.91,413.39 797.37,413.39L721.91,413.39L721.91,515.46Q721.91,584.33 673,633.12Q624.09,681.91 555.22,681.91L318.33,681.91ZM721.91,322.63L797.13,322.63Q797.13,322.63 797.13,322.63Q797.13,322.63 797.13,322.63L797.13,202.63Q797.13,202.63 797.13,202.63Q797.13,202.63 797.13,202.63L721.91,202.63L721.91,322.63Z"/></symbol><symbol id="i-receipt_long" viewBox="0 0 960 960"><path d="M241.2,894.59Q186.61,894.59 148.4,856.38Q110.2,818.17 110.2,763.59L110.2,681.2Q110.2,662.04 123.37,648.87Q136.54,635.7 155.7,635.7L233.78,635.7L233.78,101.61Q233.78,93.65 240.62,90.67Q247.46,87.7 253.17,93.41L280.02,120.26Q286.74,126.98 295.93,126.86Q305.13,126.74 311.85,120.02L341.46,90.41Q348.17,83.7 357.37,83.7Q366.57,83.7 373.28,90.41L402.89,120.02Q409.61,126.74 418.8,126.74Q428,126.74 434.72,120.02L464.57,90.41Q471.28,83.7 480.48,83.7Q489.67,83.7 496.39,90.41L526,120.02Q532.72,126.74 541.91,126.74Q551.11,126.74 557.83,120.02L587.43,90.41Q594.15,83.7 603.35,83.7Q612.54,83.7 619.26,90.41L648.87,120.02Q655.59,126.74 664.78,126.74Q673.98,126.74 680.7,120.02L710.3,90.41Q717.02,83.7 726.22,83.7Q735.41,83.7 742.13,90.41L771.74,120.02Q778.46,126.74 787.65,126.86Q796.85,126.98 803.57,120.26L830.41,93.41Q836.13,87.7 842.97,90.67Q849.8,93.65 849.8,101.61L849.8,763.59Q849.8,818.17 811.6,856.38Q773.39,894.59 718.8,894.59L241.2,894.59ZM718.8,803.59Q735.8,803.59 747.3,792.09Q758.8,780.59 758.8,763.59L758.8,206.7L324.78,206.7L324.78,635.7L633.3,635.7Q652.46,635.7 665.63,648.87Q678.8,662.04 678.8,681.2L678.8,763.59Q678.8,780.59 690.3,792.09Q701.8,803.59 718.8,803.59ZM404.78,288.61L558.8,288.61Q575.8,288.61 587.3,300.11Q598.8,311.61 598.8,328.61Q598.8,345.61 587.3,357.11Q575.8,368.61 558.8,368.61L404.78,368.61Q387.78,368.61 376.28,357.11Q364.78,345.61 364.78,328.61Q364.78,311.61 376.28,300.11Q387.78,288.61 404.78,288.61ZM404.78,408.61L558.8,408.61Q575.8,408.61 587.3,420.11Q598.8,431.61 598.8,448.61Q598.8,465.61 587.3,477.11Q575.8,488.61 558.8,488.61L404.78,488.61Q387.78,488.61 376.28,477.11Q364.78,465.61 364.78,448.61Q364.78,431.61 376.28,420.11Q387.78,408.61 404.78,408.61ZM678.8,368.61Q661.8,368.61 650.3,357.11Q638.8,345.61 638.8,328.61Q638.8,311.61 650.3,300.11Q661.8,288.61 678.8,288.61Q695.8,288.61 707.3,300.11Q718.8,311.61 718.8,328.61Q718.8,345.61 707.3,357.11Q695.8,368.61 678.8,368.61ZM678.8,488.61Q661.8,488.61 650.3,477.11Q638.8,465.61 638.8,448.61Q638.8,431.61 650.3,420.11Q661.8,408.61 678.8,408.61Q695.8,408.61 707.3,420.11Q718.8,431.61 718.8,448.61Q718.8,465.61 707.3,477.11Q695.8,488.61 678.8,488.61Z"/></symbol><symbol id="i-restaurant" viewBox="0 0 960 960"><path d="M276.41,356.41L276.41,120Q276.41,101.48 288.94,88.94Q301.48,76.41 320,76.41Q338.52,76.41 351.06,88.94Q363.59,101.48 363.59,120L363.59,356.41L403.59,356.41L403.59,120Q403.59,101.48 416.28,88.94Q428.98,76.41 447.41,76.41Q465.85,76.41 478.42,88.94Q491,101.48 491,120L491,356.41Q491,415.57 453.63,459.94Q416.26,504.3 363.59,518.3L363.59,840Q363.59,858.52 351.06,871.06Q338.52,883.59 320,883.59Q301.48,883.59 288.94,871.06Q276.41,858.52 276.41,840L276.41,518.3Q223.74,504.3 186.37,459.94Q149,415.57 149,356.41L149,120Q149,101.48 161.7,88.94Q174.39,76.41 192.83,76.41Q211.26,76.41 223.84,88.94Q236.41,101.48 236.41,120L236.41,356.41L276.41,356.41ZM687.41,563.59L612.91,563.59Q593.76,563.59 580.59,550.41Q567.41,537.24 567.41,518.09L567.41,280Q567.41,209.28 619.99,142.85Q672.57,76.41 728.04,76.41Q748.2,76.41 761.39,92.33Q774.59,108.24 774.59,129.63L774.59,840Q774.59,858.52 762.06,871.06Q749.52,883.59 731,883.59Q712.48,883.59 699.94,871.06Q687.41,858.52 687.41,840L687.41,563.59Z"/></symbol><symbol id="i-savings" viewBox="0 0 960 960"><g transform="translate(0 960.0)"><path d="M235.09-111.87q-27.79 0-53.35-18.99-25.57-18.99-33.76-46.53-24.76-83.76-40.52-144.78Q91.7-383.2 82.31-429.34q-9.38-46.14-13.26-81.9Q65.17-547 65.17-580q0-95.35 66.39-161.74 66.4-66.39 161.74-66.39h207.9q28.19-36 70.65-58 42.45-22 93.17-22 29.78 0 48.84 19.77 19.05 19.77 19.05 47.88 0 6.48-1.5 12.84-1.5 6.36-3.5 11.84-3.52 10.04-6.78 20.08-3.26 10.05-5.26 22.09l85.26 85.5h47.96q19.15 0 32.32 13.17 13.18 13.18 13.18 32.33v214.3q0 14.92-8.58 26.47-8.57 11.56-23.25 16.79l-84.28 27.53-48.09 160.78q-8.95 29.35-32.94 47.12-23.99 17.77-54.58 17.77h-74.74q-35.87 0-62.12-23.38t-28.88-56.62h-76.17q-2.63 33.24-28.88 56.62-26.25 23.38-62.12 23.38h-74.87Zm436.76-412.22q13.17-13.17 13.17-32.32 0-19.16-13.17-32.33-13.18-13.17-32.33-13.17t-32.32 13.17q-13.18 13.17-13.18 32.33 0 19.15 13.18 32.32 13.17 13.18 32.32 13.18t32.33-13.18Zm-195.92-64.19q18.44 0 31.02-12.7 12.57-12.69 12.57-31.13 0-18.43-12.57-31.01-12.58-12.58-31.02-12.58H353.07q-18.44 0-31.02 12.58-12.57 12.58-12.57 31.01 0 18.44 12.69 31.13 12.7 12.7 31.13 12.7h122.63Z"/></g></symbol><symbol id="i-search" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></symbol><symbol id="i-settings" viewBox="0 0 960 960"><path d="M428.46,888.13Q400.26,888.13 379.92,869.53Q359.59,850.93 355.59,823.74L346.59,757.5Q335.5,753.22 325.55,747.17Q315.61,741.13 306.04,734.33L244.28,760.33Q218.33,771.57 192.13,762.45Q165.93,753.33 151.46,729.13L99.91,638.76Q85.43,614.8 91.55,587.73Q97.67,560.65 119.63,543.17L172.39,503.17Q171.63,497.13 171.63,491.59Q171.63,486.04 171.63,480Q171.63,473.96 171.63,468.41Q171.63,462.87 172.39,456.83L119.63,417.07Q97.43,399.59 91.43,372.51Q85.43,345.43 99.91,321.24L151.46,231.11Q165.93,207.15 192.01,197.91Q218.09,188.67 244.04,199.91L306.52,225.91Q316.09,219.11 326.17,213.18Q336.26,207.26 346.59,202.98L355.59,136.5Q359.59,109.07 379.92,90.47Q400.26,71.87 428.46,71.87L531.54,71.87Q559.74,71.87 580.08,90.47Q600.41,109.07 604.41,136.5L613.41,202.98Q624.5,207.26 634.45,213.18Q644.39,219.11 653.96,225.91L715.72,199.91Q741.67,188.67 767.87,197.91Q794.07,207.15 808.54,231.11L860.09,321.24Q874.57,345.43 868.57,372.51Q862.57,399.59 840.37,417.07L787.37,456.83Q788.13,462.87 788.13,468.41Q788.13,473.96 788.13,480Q788.13,486.04 788.01,491.59Q787.89,497.13 786.37,503.17L839.37,542.93Q861.57,560.41 867.57,587.49Q873.57,614.57 859.09,638.76L806.54,729.13Q792.07,753.09 765.99,762.33Q739.91,771.57 713.96,760.33L653.48,734.33Q643.91,741.13 633.83,747.17Q623.74,753.22 613.41,757.5L604.41,823.74Q600.41,850.93 580.08,869.53Q559.74,888.13 531.54,888.13L428.46,888.13ZM481.28,620Q539.28,620 580.28,579Q621.28,538 621.28,480Q621.28,422 580.28,381Q539.28,340 481.28,340Q422.52,340 381.9,381Q341.28,422 341.28,480Q341.28,538 381.9,579Q422.52,620 481.28,620Z"/></symbol><symbol id="i-share" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11A2.99 2.99 0 0 0 21 5a3 3 0 1 0-5.91.7L8.04 9.81A2.99 2.99 0 0 0 3 12a3 3 0 0 0 5.04 2.19l7.12 4.16c-.05.21-.08.43-.08.65a2.92 2.92 0 1 0 2.92-2.92z"/></symbol><symbol id="i-theaters" viewBox="0 0 960 960"><path d="M241.91,769.09L241.91,801.91Q241.91,820.44 229.38,832.97Q216.85,845.5 198.33,845.5Q179.89,845.5 167.2,832.8Q154.5,820.11 154.5,801.67L154.5,158.09Q154.5,139.56 167.2,127.03Q179.89,114.5 198.33,114.5Q216.76,114.5 229.34,127.03Q241.91,139.56 241.91,158.09L241.91,190.91L318.09,190.91L318.09,160Q318.09,140.85 331.26,127.67Q344.43,114.5 363.59,114.5L596.41,114.5Q615.57,114.5 628.74,127.67Q641.91,140.85 641.91,160L641.91,190.91L718.09,190.91L718.09,158.09Q718.09,139.56 730.78,127.03Q743.48,114.5 761.91,114.5Q780.35,114.5 792.92,127.03Q805.5,139.56 805.5,158.09L805.5,801.91Q805.5,820.44 792.97,832.97Q780.44,845.5 761.91,845.5Q743.48,845.5 730.78,832.8Q718.09,820.11 718.09,801.67L718.09,769.09L641.91,769.09L641.91,800Q641.91,819.15 628.74,832.33Q615.57,845.5 596.41,845.5L363.59,845.5Q344.43,845.5 331.26,832.33Q318.09,819.15 318.09,800L318.09,769.09L241.91,769.09ZM241.91,681.91L318.09,681.91L318.09,605.5L241.91,605.5L241.91,681.91ZM241.91,518.09L318.09,518.09L318.09,441.91L241.91,441.91L241.91,518.09ZM241.91,354.5L318.09,354.5L318.09,278.09L241.91,278.09L241.91,354.5ZM641.91,681.91L718.09,681.91L718.09,605.5L641.91,605.5L641.91,681.91ZM641.91,518.09L718.09,518.09L718.09,441.91L641.91,441.91L641.91,518.09ZM641.91,354.5L718.09,354.5L718.09,278.09L641.91,278.09L641.91,354.5Z"/></symbol></svg>
+<div class="page-head"><small>Mock for owner approval · E35 · SELLO-198 · synthetic data · Cobalto light</small><h1>Compartir el mes: the month's budget as an image</h1><p class="lede">One image of the month on screen, sent through Android's share sheet: the headline, its stamp and each category's spent and limit. Budget only (owner, 2026-11-06): no notes, income, goals or investments. The button sits on Resumen's bar (owner, 2026-11-06).</p></div>
+<h2 class="sec">1 · Where the button goes</h2><div class="frames"><div class="card"><h3>Resumen's bar<span class="new">Nuevo</span></h3><p>Between the magnifier and Configuración. It shares the month on screen.</p><div class="phone" style="min-height:420px"><div class="app"><div class="top"><div class="bar"><div class="title">Octubre <small>2026</small><svg class="icon"><use href="#i-keyboard_arrow_down"/></svg></div><div class="sp"></div><div class="ibtn"><svg class="icon"><use href="#i-search"/></svg></div><div class="ibtn hl"><svg class="icon"><use href="#i-share"/></svg></div><div class="ibtn"><svg class="icon"><use href="#i-settings"/></svg></div></div></div><div class="content"><div class="slip">
+<div class="label">¿Cómo va este mes?</div><div class="hero">5.000</div>
+<div><b>menos que en septiembre</b></div><div class="cap" style="font-weight:700">↓ 14,3 % al mismo día del mes</div></div></div><div class="bottom"><div class="dock"><div class="btn"><svg class="icon"><use href="#i-add"/></svg> Anotar</div></div><div class="nav"><div class=""><svg class="icon"><use href="#i-receipt_long"/></svg>Recibo</div><div class="on"><svg class="icon"><use href="#i-insights"/></svg>Resumen</div><div class=""><svg class="icon"><use href="#i-flag"/></svg>Metas</div><div class=""><svg class="icon"><use href="#i-savings"/></svg>Inversiones</div></div></div></div></div></div></div><h2 class="sec">2 · Before it leaves the phone</h2><div class="frames"><div class="card"><h3>Preview sheet<span class="new">Nuevo</span></h3><p>Shows the exact image and says what is and isn't in it. Nothing is sent until Compartir imagen, and then only to the app the person picks.</p><div class="phone"><div class="app"><div class="scrim" style="min-height:60px"></div><div class="sheet"><div class="grab"></div><h3 class="h" style="margin-bottom:10px">Compartir octubre</h3><div class="share-img"><div class="band"><b>Octubre 2026</b><small>al 28 de octubre</small></div>
+<div class="body"><div class="answer-head"><span class="label">Restante del presupuesto</span><span class="stamp">Al día</span></div>
+<div class="mid" style="font-size:40px">63.100</div><div class="cap">Gastado 2.416.900 de 2.480.000</div>
+<div class="tear" style="margin:12px -16px"></div>
+<div class="catline"><div class="circle sm"><svg class="icon"><use href="#i-restaurant"/></svg></div><div><b>Alimentación</b> <span class="cap">de 900.000</span></div><span class="money">812.400</span><div class="track"><i class="" style="width:90%"></i></div></div>
+<div class="catline"><div class="circle sm"><svg class="icon"><use href="#i-directions_bus"/></svg></div><div><b>Transporte</b> <span class="cap">de 200.000</span></div><span class="money">155.000</span><div class="track"><i class="" style="width:78%"></i></div></div>
+<div class="catline"><div class="circle sm loss"><svg class="icon"><use href="#i-theaters"/></svg></div><div><b>Entretenimiento</b> <span class="cap">de 200.000</span></div><span class="money loss">221.500</span><div class="track"><i class="over" style="width:100%"></i></div></div>
+<div class="catline"><div class="circle sm"><svg class="icon"><use href="#i-local_cafe"/></svg></div><div><b>Café</b> <span class="cap">de 80.000</span></div><span class="money">48.000</span><div class="track"><i class="" style="width:60%"></i></div></div>
+<div class="catline"><div class="circle sm"><svg class="icon"><use href="#i-home"/></svg></div><div><b>Hogar</b> <span class="cap">de 1.100.000</span></div><span class="money">1.100.000</span><div class="track"><i class="" style="width:100%"></i></div></div>
+<div class="catline"><div class="circle sm dash"><svg class="icon"><use href="#i-ink_pen"/></svg></div><div><b>Arte</b> <span class="cap">sin límite</span></div><span class="money">80.000</span></div>
+</div><div class="foot"><span>Sello</span><span>Solo el presupuesto del mes</span></div></div><div class="hint">Se comparte solo esta imagen: el mes, lo que queda y cada categoría con su gasto y su límite. Sin notas, ingresos, metas ni inversiones.</div><div class="btn" style="margin-top:12px"><svg class="icon"><use href="#i-share"/></svg> Compartir imagen</div><div class="btn out" style="margin-top:8px">Cancelar</div></div></div></div></div><div class="card"><h3>The image<span class="new">Nuevo</span></h3><p>Always the light paper with the person's ink, whatever the phone's theme, so it reads well in any chat. A past month says Mes cerrado and its Cumplido or Excedido stamp.</p><div class="app" style="width:412px;margin:8px 0;background:none"><div class="share-img"><div class="band"><b>Octubre 2026</b><small>al 28 de octubre</small></div>
+<div class="body"><div class="answer-head"><span class="label">Restante del presupuesto</span><span class="stamp">Al día</span></div>
+<div class="mid" style="font-size:40px">63.100</div><div class="cap">Gastado 2.416.900 de 2.480.000</div>
+<div class="tear" style="margin:12px -16px"></div>
+<div class="catline"><div class="circle sm"><svg class="icon"><use href="#i-restaurant"/></svg></div><div><b>Alimentación</b> <span class="cap">de 900.000</span></div><span class="money">812.400</span><div class="track"><i class="" style="width:90%"></i></div></div>
+<div class="catline"><div class="circle sm"><svg class="icon"><use href="#i-directions_bus"/></svg></div><div><b>Transporte</b> <span class="cap">de 200.000</span></div><span class="money">155.000</span><div class="track"><i class="" style="width:78%"></i></div></div>
+<div class="catline"><div class="circle sm loss"><svg class="icon"><use href="#i-theaters"/></svg></div><div><b>Entretenimiento</b> <span class="cap">de 200.000</span></div><span class="money loss">221.500</span><div class="track"><i class="over" style="width:100%"></i></div></div>
+<div class="catline"><div class="circle sm"><svg class="icon"><use href="#i-local_cafe"/></svg></div><div><b>Café</b> <span class="cap">de 80.000</span></div><span class="money">48.000</span><div class="track"><i class="" style="width:60%"></i></div></div>
+<div class="catline"><div class="circle sm"><svg class="icon"><use href="#i-home"/></svg></div><div><b>Hogar</b> <span class="cap">de 1.100.000</span></div><span class="money">1.100.000</span><div class="track"><i class="" style="width:100%"></i></div></div>
+<div class="catline"><div class="circle sm dash"><svg class="icon"><use href="#i-ink_pen"/></svg></div><div><b>Arte</b> <span class="cap">sin límite</span></div><span class="money">80.000</span></div>
+</div><div class="foot"><span>Sello</span><span>Solo el presupuesto del mes</span></div></div></div></div></div>
+<h2 class="sec">Notes</h2><ul class="notes"><li>Archived categories without spending that month are left out; an archived one with spending is shown, as Recibo does.</li><li>The figures come from the same snapshot as Recibo, so the image never shows numbers Recibo doesn't. Older (stale) figures can't be shared: the button waits for a fresh read.</li><li>The PNG is written to cache/exports/ (the only shared folder), replaces the previous export, and is deleted at the next start, like CSV exports today.</li></ul>
+</body></html>
