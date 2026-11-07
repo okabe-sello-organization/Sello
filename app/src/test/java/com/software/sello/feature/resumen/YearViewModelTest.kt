@@ -7,16 +7,12 @@ import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.SpendingDirection
 import com.software.sello.domain.port.ReadState
-import com.software.sello.domain.port.YearSnapshotState
-import com.software.sello.domain.port.YearSnapshots
 import com.software.sello.navigation.HandFinancialClock
-import com.software.sello.testing.asNewObservation
+import com.software.sello.testing.HandYearSnapshots
 import com.software.sello.testing.testMoney
 import com.software.sello.testing.testMonthNames
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -234,20 +230,5 @@ class YearViewModelTest {
         val model = model(SavedStateHandle())
         watch(model)
         assertEquals(YearState.Loading(2026), model.state.value)
-    }
-}
-
-private class HandYearSnapshots : YearSnapshots {
-    private val states = mutableMapOf<Int, MutableStateFlow<YearSnapshotState>>()
-    var started = 0
-
-    fun of(year: Int) = states.getOrPut(year) {
-        MutableStateFlow<YearSnapshotState>(ReadState.Loading)
-    }
-
-    /** Each observation is new, as the real one is: Loading first, no earlier read kept. */
-    override fun observe(year: Int): Flow<YearSnapshotState> {
-        started++
-        return of(year).asNewObservation()
     }
 }

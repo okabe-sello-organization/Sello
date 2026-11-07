@@ -56,6 +56,7 @@ internal fun yearSnapshot(
         netFlow = Money.cop(if (empty) 0 else 17_270_000),
         incomeCount = if (empty) 0 else 12,
         expenseCount = if (empty) 0 else 180,
+        recordedDays = if (empty) 0 else 150,
         months = (1..12).map { number ->
             val month = YearMonth.of(year, number)
             // A finished year has no month in progress.

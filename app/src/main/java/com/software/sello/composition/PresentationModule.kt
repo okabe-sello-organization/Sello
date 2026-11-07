@@ -44,6 +44,7 @@ import com.software.sello.feature.recibo.CategoryDetailViewModel
 import com.software.sello.feature.recibo.CategoryExpensesViewModel
 import com.software.sello.feature.recibo.LimitSheetViewModel
 import com.software.sello.feature.recibo.ReciboViewModel
+import com.software.sello.feature.recibo.YearCloseViewModel
 import com.software.sello.feature.recibo.ShareMonthViewModel
 import com.software.sello.feature.recibo.UpcomingPaymentsViewModel
 import com.software.sello.feature.recurrence.CatchUpNoticeViewModel
@@ -133,6 +134,7 @@ private fun Module.viewModels() {
     factoryOf(::CorrectionAnnouncementsViewModel)
     factoryOf(::CategoryManagementViewModel)
     factoryOf(::ReciboViewModel)
+    factoryOf(::YearCloseViewModel)
     factoryOf(::ShareMonthViewModel)
     factoryOf(::ReciboGoalViewModel)
     factoryOf(::InversionesViewModel)

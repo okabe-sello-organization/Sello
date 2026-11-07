@@ -389,6 +389,41 @@ class YearPolicyTest {
     }
 
     @Test
+    fun aDayWithAnythingRecordedCountsOnce() {
+        val snapshot = read(
+            2026,
+            "2027-01-03",
+            listOf(
+                // Two expenses on 2 March, one on 5 March and one on 31 December.
+                expense("2026-03-02", 10_000),
+                expense("2026-03-02", 4_000),
+                expense("2026-03-05", 8_000),
+                expense("2026-12-31", 1_000)
+            ),
+            incomes = listOf(
+                // 5 March already counts; 20 June is a day of its own.
+                income("2026-03-05", 900_000),
+                income("2026-06-20", 900_000)
+            )
+        )
+
+        // 2 March, 5 March, 20 June and 31 December.
+        assertEquals(4, snapshot.recordedDays)
+        assertEquals(4, snapshot.expenseCount)
+    }
+
+    @Test
+    fun aYearInProgressCountsItsDaysUpToToday() {
+        val snapshot = read(
+            2026,
+            "2026-05-10",
+            listOf(expense("2026-05-10", 25_000), expense("2026-05-11", 999_000))
+        )
+
+        assertEquals(1, snapshot.recordedDays)
+    }
+
+    @Test
     fun aYearAfterTheCurrentOneCannotBeShown() {
         val day = FinancialDay(LocalDate.parse("2026-11-06"), bogota)
 

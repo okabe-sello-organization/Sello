@@ -48,6 +48,9 @@ import com.software.sello.feature.recibo.ReciboScreen
 import com.software.sello.feature.recibo.ReciboState
 import com.software.sello.feature.recibo.ReciboViewModel
 import com.software.sello.feature.recibo.UpcomingPaymentsRoot
+import com.software.sello.feature.recibo.YearCloseAction
+import com.software.sello.feature.recibo.YearCloseMoment
+import com.software.sello.feature.recibo.YearCloseViewModel
 import com.software.sello.feature.recurrence.CatchUpNoticeBar
 import com.software.sello.feature.recurrence.CatchUpNoticeViewModel
 import com.software.sello.presentation.corrections.CorrectionAnnouncementState
@@ -125,6 +128,9 @@ internal fun NavGraphBuilder.reciboDestinations(
             onOpenClosedMonth = { month ->
                 onShell(ShellAction.PickMonth(month))
                 tabs.onSelect(ShellTab.Resumen.id)
+            },
+            onOpenYear = { year ->
+                navigation.navigate(YearRoute(year)) { launchSingleTop = true }
             },
             onEditCategory = { id ->
                 navigation.navigate(CategoryEditRoute(id, state.selectedMonth.toString())) {
@@ -309,6 +315,7 @@ private fun ReciboDestination(
     onAllSchedules: () -> Unit,
     onAdjustBudget: () -> Unit,
     onOpenClosedMonth: (YearMonth) -> Unit,
+    onOpenYear: (Int) -> Unit,
     onSetMonthLimit: (String, YearMonth) -> Unit,
     onCreateCategory: () -> Unit
 ) {
@@ -317,6 +324,8 @@ private fun ReciboDestination(
     val catchUpState by catchUp.state.collectAsStateWithLifecycle()
     val detail: CategoryDetailViewModel = viewModel(factory = viewModels)
     val goal: ReciboGoalViewModel = viewModel(factory = viewModels)
+    val yearClose: YearCloseViewModel = viewModel(factory = viewModels)
+    val yearCloseState by yearClose.state.collectAsStateWithLifecycle()
     val reciboState by recibo.state.collectAsStateWithLifecycle()
     val goalState by goal.state.collectAsStateWithLifecycle()
     val detailState by detail.state.collectAsStateWithLifecycle()
@@ -402,6 +411,9 @@ private fun ReciboDestination(
 
                         is ReciboAction.DismissInvitation -> Unit
 
+                        is ReciboAction.OpenYear ->
+                            yearClose.onAction(YearCloseAction.Open(action.year))
+
                         is ReciboAction.SetMonthLimit ->
                             onSetMonthLimit(action.categoryId, action.month)
                     }
@@ -420,6 +432,14 @@ private fun ReciboDestination(
                 val plate = (completion as? CompletionState.Celebrating)?.plate
                 goal.onAction(ReciboGoalAction.CelebrationDone)
                 plate?.goalId?.takeIf { it.isNotEmpty() }?.let(onOpenGoal)
+            }
+        )
+        YearCloseMoment(
+            yearCloseState,
+            onDone = { yearClose.onAction(YearCloseAction.Done) },
+            onViewYear = { year ->
+                yearClose.onAction(YearCloseAction.Done)
+                onOpenYear(year)
             }
         )
         // Beside Recibo the detail is not a screen to leave: Back does what it does on Recibo.
