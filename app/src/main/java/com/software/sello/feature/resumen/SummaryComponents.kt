@@ -96,7 +96,7 @@ internal fun ComparisonSlip(
 }
 
 @Composable
-private fun ComparisonBars(bars: List<ComparisonBar>, modifier: Modifier) {
+internal fun ComparisonBars(bars: List<ComparisonBar>, modifier: Modifier = Modifier) {
     val colors = SelloTheme.colors
     val style = MaterialTheme.typography.bodyMedium
     Layout(

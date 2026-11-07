@@ -70,6 +70,7 @@ fun SettingsRoot(
     contentPadding: PaddingValues,
     onOpenSchedules: () -> Unit,
     onOpenRate: () -> Unit,
+    onOpenSmallExpenses: () -> Unit,
     tusDatos: @Composable () -> Unit
 ) {
     val model: SettingsViewModel = viewModel(factory = viewModels)
@@ -80,6 +81,7 @@ fun SettingsRoot(
         contentPadding = contentPadding,
         onOpenSchedules = onOpenSchedules,
         onOpenRate = onOpenRate,
+        onOpenSmallExpenses = onOpenSmallExpenses,
         tusDatos = tusDatos
     )
 }
@@ -103,7 +105,7 @@ private val newInvestmentCurrencies = listOf(Currency.COP, Currency.USD)
 
 /**
  * Configuración: Tus datos and its backup card first, then Lo que se repite, Apariencia,
- * Recibo and Inversiones. Every control is a real setting, never a placeholder.
+ * Recibo, Resumen and Inversiones. Every control is a real setting, never a placeholder.
  */
 @Composable
 fun SettingsScreen(
@@ -113,6 +115,7 @@ fun SettingsScreen(
     onOpenSchedules: () -> Unit,
     onOpenRate: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenSmallExpenses: () -> Unit = {},
     tusDatos: @Composable () -> Unit
 ) {
     var picking by rememberSaveable { mutableStateOf<SettingsPicker?>(null) }
@@ -147,6 +150,7 @@ fun SettingsScreen(
         RecurringControls(state, onOpenSchedules)
         AppearanceControls(state, onAction)
         CategoryOrderingControls(state) { picking = it }
+        SummaryControls(state, onOpenSmallExpenses)
         InvestmentControls(state, onOpenRate) { picking = it }
         Text(
             text = stringResource(R.string.settings_footer),
@@ -367,6 +371,25 @@ private fun CategoryOrderingControls(state: SettingsState, onPick: (SettingsPick
     }
 }
 
+/** Resumen's one setting: Gastos hormiga's line, set in its own form (SELLO-194). */
+@Composable
+private fun SummaryControls(state: SettingsState, onOpenSmallExpenses: () -> Unit) {
+    Slip(Modifier.fillMaxWidth().testTag(SETTINGS_SUMMARY_TAG)) {
+        SectionTitle(stringResource(R.string.settings_resumen))
+        SettingRow(
+            title = stringResource(R.string.small_expense_title),
+            icon = SelloIcon.Insights,
+            caption = stringResource(R.string.small_expense_caption),
+            value = state.smallExpenseLine?.let {
+                stringResource(R.string.small_expense_value, it)
+            },
+            onClick = onOpenSmallExpenses,
+            divider = false,
+            modifier = Modifier.testTag(SETTINGS_SMALL_EXPENSES_TAG)
+        )
+    }
+}
+
 @Composable
 private fun InvestmentControls(
     state: SettingsState,
@@ -449,6 +472,8 @@ const val SETTINGS_DATA_TAG = "settings:data"
 const val SETTINGS_RECURRING_TAG = "settings:recurring"
 const val SETTINGS_SCHEDULES_TAG = "settings:schedules"
 const val SETTINGS_INVESTMENTS_TAG = "settings:investments"
+const val SETTINGS_SUMMARY_TAG = "settings:summary"
+const val SETTINGS_SMALL_EXPENSES_TAG = "settings:small-expenses"
 const val SETTINGS_RATE_TAG = "settings:rate"
 
 /** Moneda al crear's option slip, open after tapping its row. */

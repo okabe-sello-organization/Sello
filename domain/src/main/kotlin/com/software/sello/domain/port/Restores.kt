@@ -3,6 +3,7 @@ package com.software.sello.domain.port
 import com.software.sello.domain.model.AppearancePreference
 import com.software.sello.domain.model.CategoryOrderingPreference
 import com.software.sello.domain.model.InvestmentPreference
+import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import java.time.Instant
@@ -178,9 +179,13 @@ sealed interface StageFailure {
 data class PendingPreferences(
     val appearance: AppearancePreference?,
     val ordering: CategoryOrderingPreference?,
-    val investments: InvestmentPreference? = null
+    val investments: InvestmentPreference? = null,
+    /** Gastos hormiga's line (SELLO-194). */
+    val smallExpenseLine: SmallExpenseLine? = null
 ) {
-    val done: Boolean get() = appearance == null && ordering == null && investments == null
+    val done: Boolean
+        get() = appearance == null && ordering == null && investments == null &&
+            smallExpenseLine == null
 }
 
 sealed interface RestoreOutcome {

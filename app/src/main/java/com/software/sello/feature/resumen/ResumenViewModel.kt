@@ -16,6 +16,7 @@ import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ResumenSnapshots
 import com.software.sello.domain.port.ScheduleBookState
 import com.software.sello.domain.port.ScheduleReads
+import com.software.sello.domain.port.SmallExpensePreferences
 import com.software.sello.domain.port.SuggestionPreferences
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.date.DateLabels
@@ -44,6 +45,7 @@ class ResumenViewModel(
     labels: DateLabels,
     months: MonthNames,
     private val suggestions: SuggestionPreferences,
+    smallExpenses: SmallExpensePreferences,
     schedules: ScheduleReads,
     clock: FinancialClock
 ) : ViewModel() {
@@ -54,9 +56,16 @@ class ResumenViewModel(
 
     /** The month as last read, so a Retry or a return never blanks figures already shown. */
     private val lastGood = LastGoodRead<ResumenSnapshot, SnapshotFailure>()
-    private val snapshot = combine(session.selectedMonth, attempts) { month, _ -> month }
-        .flatMapLatest { month -> lastGood.keep(month, reads.observe(month)) }
-        .combine(session.currentMonth, render::render)
+    /** Gastos hormiga's line; Reintentar reads it again too. */
+    private val line = attempts.flatMapLatest { smallExpenses.observeSmallExpenseLine() }
+
+    private val snapshot = combine(
+        combine(session.selectedMonth, attempts) { month, _ -> month }
+            .flatMapLatest { month -> lastGood.keep(month, reads.observe(month)) },
+        session.currentMonth,
+        line,
+        render::render
+    )
 
     /** What was dismissed, as last read. A failed read hides nothing: it is only advice. */
     private val dismissed = suggestions.observeDismissedSuggestion().map { read ->

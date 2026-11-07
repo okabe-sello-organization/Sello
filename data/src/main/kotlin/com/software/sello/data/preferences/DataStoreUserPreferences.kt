@@ -24,6 +24,7 @@ import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.InvestmentPreference
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.BackupRecord
@@ -40,6 +41,7 @@ import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceReset
 import com.software.sello.domain.port.PreferenceWrite
+import com.software.sello.domain.port.SmallExpensePreferences
 import com.software.sello.domain.port.SuggestionPreferences
 import java.io.IOException
 import java.time.Instant
@@ -66,6 +68,7 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
     AppearancePreferences,
     CategoryOrderingPreferences,
     InvestmentPreferences,
+    SmallExpensePreferences,
     CorrectionAnnouncementPreferences,
     SuggestionPreferences,
     IncomeSuggestionPreferences,
@@ -144,6 +147,12 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
 
     override suspend fun setInvestmentOrder(order: InvestmentOrder): PreferenceWrite =
         write { this[INVESTMENT_ORDER] = order.stored }
+
+    override fun observeSmallExpenseLine(): Flow<PreferenceRead<SmallExpenseLine>> =
+        observe(::smallExpenseLine)
+
+    override suspend fun setSmallExpenseLine(line: SmallExpenseLine): PreferenceWrite =
+        write { this[SMALL_EXPENSE_LINE] = line.pesos }
 
     override fun observeCorrectionAnnouncements():
         Flow<PreferenceRead<CorrectionAnnouncementPreference>> =
@@ -304,6 +313,12 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
         return Decoded.Value(InvestmentPreference(currency, order))
     }
 
+    /** Whole pesos; absent is the default, and outside the line's range is damage. */
+    private fun smallExpenseLine(stored: Preferences): Decoded<SmallExpenseLine> {
+        val pesos = stored[SMALL_EXPENSE_LINE] ?: return Decoded.Value(SmallExpenseLine.DEFAULT)
+        return SmallExpenseLine.of(pesos)?.let { Decoded.Value(it) } ?: Decoded.Invalid
+    }
+
     private fun correctionAnnouncements(stored: Preferences) = Decoded.Value(
         CorrectionAnnouncementPreference(
             pastExpenseSeen = stored[PAST_EXPENSE_SEEN] ?: false,
@@ -384,6 +399,7 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
         val CATEGORY_DIRECTION = stringPreferencesKey("recibo_category_direction_v1")
         val INVESTMENT_CURRENCY = stringPreferencesKey("investment_new_currency_v1")
         val INVESTMENT_ORDER = stringPreferencesKey("investment_order_v1")
+        val SMALL_EXPENSE_LINE = longPreferencesKey("resumen_small_expense_line_v1")
         val PAST_EXPENSE_SEEN = booleanPreferencesKey("past_expense_correction_seen_v1")
         val PAST_LIMIT_SEEN = booleanPreferencesKey("past_limit_correction_seen_v1")
         val SUGGESTION_DISMISSED = stringPreferencesKey("resumen_suggestion_dismissed_v1")

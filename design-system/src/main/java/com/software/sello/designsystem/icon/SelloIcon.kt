@@ -36,6 +36,7 @@ enum class SelloIcon(@DrawableRes val filled: Int, @DrawableRes val outlined: In
     Backup(R.drawable.ic_sello_backup),
     Block(R.drawable.ic_sello_block),
     Bolt(R.drawable.ic_sello_bolt),
+    BugReport(R.drawable.ic_sello_bug_report),
     Check(R.drawable.ic_sello_check),
     Checkroom(R.drawable.ic_sello_checkroom),
     ChevronLeft(R.drawable.ic_sello_chevron_left),

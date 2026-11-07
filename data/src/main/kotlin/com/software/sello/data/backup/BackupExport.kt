@@ -30,6 +30,7 @@ import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.InvestmentPreferences
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreparedBackup
+import com.software.sello.domain.port.SmallExpensePreferences
 import java.time.YearMonth
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
@@ -141,6 +142,7 @@ class BackupExport(
     private val appearance: AppearancePreferences,
     private val ordering: CategoryOrderingPreferences,
     private val investments: InvestmentPreferences,
+    private val smallExpenses: SmallExpensePreferences,
     private val auditClock: AuditClock,
     private val financialClock: FinancialClock,
     private val dispatchers: DispatcherProvider,
@@ -213,12 +215,13 @@ class BackupExport(
         val appearance = appearance.observeAppearance().first()
         val ordering = ordering.observeCategoryOrdering().first()
         val investments = investments.observeInvestments().first()
+        val line = smallExpenses.observeSmallExpenseLine().first()
         if (appearance !is PreferenceRead.Ready || ordering !is PreferenceRead.Ready ||
-            investments !is PreferenceRead.Ready
+            investments !is PreferenceRead.Ready || line !is PreferenceRead.Ready
         ) {
             return null
         }
-        return PortablePreferences(appearance.value, ordering.value, investments.value)
+        return PortablePreferences(appearance.value, ordering.value, investments.value, line.value)
     }
 
     private companion object {

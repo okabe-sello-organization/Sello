@@ -43,9 +43,48 @@ sealed interface ResumenState {
         /** The fact on the stub's Fijos half. */
         val nextFixed: ResumenNextFixed = ResumenNextFixed.Unknown,
         /** How dismissing [suggestion] went: being saved, or not saved and said (#377). */
-        val dismissal: SuggestionDismissal = SuggestionDismissal.Idle
+        val dismissal: SuggestionDismissal = SuggestionDismissal.Idle,
+        /** Gastos hormiga after the income slip; null when there is no slip (SELLO-194). */
+        val smallExpenses: ResumenSmallExpenses? = null
     ) : ResumenState
 }
+
+/** Gastos hormiga's slip: its figures, or a notice that they cannot be worked out. */
+sealed interface ResumenSmallExpenses {
+    /**
+     * [line] is the line as written ("20.000"); [count] small expenses add up to [total],
+     * [sharePercent] of the period's spending. [bars] compare with the same days of the month
+     * before, null when that month has nothing recorded; [throughDay] and
+     * [previousThroughDay] are those days, null for whole months. [olderLine]: the line could
+     * not be read again, so the last one read is used.
+     */
+    @Immutable
+    data class Shown(
+        val line: String,
+        val total: MoneyTextValue,
+        val count: Int,
+        val sharePercent: Int,
+        val previousName: String,
+        val bars: List<ComparisonBar>?,
+        val throughDay: Int?,
+        val previousThroughDay: Int?,
+        val categories: List<ResumenSmallCategory>,
+        val olderLine: Boolean = false
+    ) : ResumenSmallExpenses
+
+    /** The line cannot be read, and nothing was read before: said, never left out. */
+    data object Unreadable : ResumenSmallExpenses
+}
+
+/** A category of Donde más se juntan: [count] small expenses adding up to [amount]. */
+@Immutable
+data class ResumenSmallCategory(
+    val id: String,
+    val name: String,
+    val iconKey: String,
+    val count: Int,
+    val amount: MoneyTextValue
+)
 
 /** Dismissing the suggestion: nothing asked, being saved, or not saved. */
 enum class SuggestionDismissal { Idle, Saving, Failed }

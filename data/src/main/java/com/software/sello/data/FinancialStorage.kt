@@ -71,6 +71,7 @@ import com.software.sello.domain.port.MonotonicClock
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.PreferenceReset
 import com.software.sello.domain.port.RecordIdSource
+import com.software.sello.domain.port.SmallExpensePreferences
 import com.software.sello.domain.port.Resets
 import com.software.sello.domain.port.Restores
 import com.software.sello.domain.port.ResumenSnapshots
@@ -226,6 +227,7 @@ class FinancialStorage internal constructor(
         appearance: AppearancePreferences,
         ordering: CategoryOrderingPreferences,
         investments: InvestmentPreferences,
+        smallExpenses: SmallExpensePreferences,
         notice: CatchUpNoticePreferences,
         ids: RecordIdSource,
         audit: AuditClock,
@@ -238,6 +240,7 @@ class FinancialStorage internal constructor(
         appearance,
         ordering,
         investments,
+        smallExpenses,
         notice,
         ids,
         audit,
@@ -277,6 +280,7 @@ class FinancialStorage internal constructor(
         appearance: AppearancePreferences,
         ordering: CategoryOrderingPreferences,
         investments: InvestmentPreferences,
+        smallExpenses: SmallExpensePreferences,
         audit: AuditClock,
         clock: FinancialClock,
         dispatchers: DispatcherProvider,
@@ -286,6 +290,7 @@ class FinancialStorage internal constructor(
         appearance,
         ordering,
         investments,
+        smallExpenses,
         audit,
         clock,
         dispatchers,
