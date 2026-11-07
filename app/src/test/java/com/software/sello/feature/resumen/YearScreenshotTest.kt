@@ -95,9 +95,10 @@ class YearScreenshotTest {
 
     @Test fun recordsDark() = shot("records", ready, Look(dark = true), "year.records")
 
+    /** 10 February: January is the only finished month. */
     private val fewMonths = render.render(
         2026,
-        ReadState.Ready(yearSnapshot(records = YearRecords.TooFew))
+        ReadState.Ready(yearSnapshot(asOf = "2026-02-10", records = YearRecords.TooFew))
     )
 
     @Test fun recordsTooFewLight() = shot("records-too-few", fewMonths, Look(), "year.records")

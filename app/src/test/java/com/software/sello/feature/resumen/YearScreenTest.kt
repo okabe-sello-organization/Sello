@@ -140,14 +140,29 @@ class YearScreenTest {
     }
 
     @Test
-    fun withFewerThanTwoFinishedMonthsTheRecordsComeLater() {
+    fun inTheYearInProgressWithOneFinishedMonthTheRecordsComeLater() {
+        // 10 February: January is the only finished month.
         state.value = render.render(
             2026,
-            ReadState.Ready(yearSnapshot(records = YearRecords.TooFew))
+            ReadState.Ready(yearSnapshot(asOf = "2026-02-10", records = YearRecords.TooFew))
         )
         show()
         rule.onNodeWithTag("year.records.too_few").performScrollTo()
             .assertTextContains("Con un mes más verás tus récords.")
         rule.onNodeWithTag("year.records.dearest").assertDoesNotExist()
+    }
+
+    @Test
+    fun aFinishedYearWithoutRecordsShowsNoRecordsSlip() {
+        state.value = render.render(
+            2025,
+            ReadState.Ready(
+                yearSnapshot(year = 2025, firstYear = 2025, records = YearRecords.TooFew)
+            )
+        )
+        show()
+        rule.onNodeWithTag("year.categories").performScrollTo().assertIsDisplayed()
+        rule.onNodeWithTag("year.records").assertDoesNotExist()
+        rule.onNodeWithText("Con un mes más verás tus récords.").assertDoesNotExist()
     }
 }

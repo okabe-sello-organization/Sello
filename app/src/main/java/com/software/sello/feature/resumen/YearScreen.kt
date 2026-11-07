@@ -114,7 +114,7 @@ private fun YearSlips(state: YearState.Ready, onAction: (YearAction) -> Unit) {
     MonthByMonth(state, onAction)
     IncomeSlip(state)
     if (state.categories.isNotEmpty()) Categories(state, onAction)
-    Records(state.records)
+    if (state.records != null || state.recordsLater) Records(state.records)
 }
 
 /** ‹ 2026 ›: from the first year with records to the current one. */
@@ -401,7 +401,7 @@ private fun Categories(state: YearState.Ready, onAction: (YearAction) -> Unit) {
 
 /**
  * Récords del año: two by two, each with its icon, what it is, its figure and what it was.
- * With fewer than two finished months, a line saying the records come later.
+ * With fewer than two finished months in the year in progress, a line saying they come later.
  */
 @Composable
 private fun Records(records: YearRecordSlip?) {
@@ -456,8 +456,8 @@ private fun Records(records: YearRecordSlip?) {
                         {
                             Text(
                                 over.name,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = SelloTheme.type.weight.emphasis
+                                // As tall as the amounts beside it (MoneyStyle.Title).
+                                style = MaterialTheme.typography.titleLarge
                             )
                         },
                         pluralStringResource(
