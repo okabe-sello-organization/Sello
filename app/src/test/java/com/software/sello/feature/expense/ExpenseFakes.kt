@@ -200,6 +200,32 @@ class HandExpenseReads : ExpenseReads {
     override suspend fun lastUsedCategory(): Outcome<CategoryId?, StorageFailure> =
         failure?.let { Outcome.Failure(it) } ?: Outcome.Success(lastUsed)
 
+    /** Every range asked for, as (from, through). */
+    val ranges = mutableListOf<Pair<LocalDate, LocalDate>>()
+
+    /** Lets a test keep the range read waiting; [rangeFailure] makes it fail. */
+    var rangeHold: CompletableDeferred<Unit>? = null
+    var rangeFailure: StorageFailure? = null
+
+    /** Set when the range holds more than one read may: the read says some were left out. */
+    var rangeLeftSomeOut = false
+
+    override suspend fun between(
+        from: LocalDate,
+        through: LocalDate,
+        limit: Int
+    ): Outcome<ExpensePage, StorageFailure> {
+        ranges += from to through
+        rangeHold?.await()
+        rangeFailure?.let { return Outcome.Failure(it) }
+        val newestFirst = stored.values
+            .filter { !it.date.isBefore(from) && !it.date.isAfter(through) }
+            .sortedWith(compareByDescending<Expense> { it.date }.thenByDescending { it.sequence })
+        val next = newestFirst.lastOrNull()?.takeIf { rangeLeftSomeOut }
+            ?.let { ExpenseCursor(it.date, it.sequence) }
+        return Outcome.Success(ExpensePage(newestFirst, next))
+    }
+
     /** Every page asked for, as (cursor, limit). */
     val pages = mutableListOf<Pair<ExpenseCursor?, Int>>()
 

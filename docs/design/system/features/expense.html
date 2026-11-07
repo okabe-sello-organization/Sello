@@ -160,6 +160,7 @@
         <li>"Otro gasto": <code>Several</code>, which opens <a href="bulk.html">Anotar varios</a> with what is typed as line one.</li>
         <li>A category chip: <code>CategoryPicked</code>. "Nueva": the category editor; the new category comes back chosen (<code>ExpenseEntryScreen.kt:131</code>).</li>
         <li>The note line ("Agregar nota" / the note, "Editar"): <code>OpenNote</code>.</li>
+        <li>"⚡ Frecuentes" at the note line's end, only for a new expense once something is frequent: <code>OpenFrequent</code>. A row of its sheet, or a suggestion under the note being written: <code>FrequentPicked</code>, which fills the category, note and usual amount and saves nothing.</li>
         <li>Se repite's row: <code>Repeat(…)</code>, opening the recurrence sheet.</li>
         <li>The button: <code>Submit</code>, or <code>Retry</code> when the outcome is unknown.</li>
         <li>The pad: <code>Digit</code>, <code>TripleZero</code> ("000"), <code>Backspace</code>; a long press on backspace is <code>ClearAmount</code>.</li>
@@ -174,6 +175,7 @@
         <li>"Anotar gasto" (<code>expense_entry_submit</code>), read as "Anotar gasto de %1$s en %2$s" (<code>expense_entry_submit_description</code>); "Guardar cambios" (<code>expense_edit_submit</code>); "Guardar pago fijo" (<code>repeat_save_payment</code>); "Guardando…" (<code>expense_entry_saving</code>)</li>
         <li>"Comprobar si se guardó" (<code>expense_entry_check_again</code>), "Comprobar si se borró" (<code>expense_edit_check_deleted</code>)</li>
         <li>"Borrar" (<code>expense_edit_delete</code>), read as "Borrar este gasto" (<code>expense_edit_delete_description</code>)</li>
+        <li>"Frecuentes" (<code>expense_frequent</code>), read as "Frecuentes: llenar el gasto con uno que anotas seguido" (<code>expense_frequent_open</code>); "Lo que más anotas" (<code>expense_frequent_title</code>); "Toca uno para llenar el gasto. Lo guardas tú con Anotar gasto." (<code>expense_frequent_lede</code>); "%1$s · %2$d veces · usualmente" (<code>expense_frequent_caption</code>); a suggestion "%1$s · %2$s" (<code>expense_note_suggestion</code>)</li>
         <li>"No pudimos actualizar. Esto es lo último que se leyó y puede no estar al día." (<code>recibo_stale</code>)</li>
       </ul>
     </section>
@@ -209,6 +211,21 @@
         with the category icon (or a receipt icon), a counter "%1$d/%2$d" up to 60, the hint "Opcional", and
         "Listo" / "Cancelar". Over 60 characters it says "Máximo 60 caracteres. Tu texto sigue aquí." and cannot finish;
         a line break gives "La nota no puede tener saltos de línea." Screenshot: <code>expense-entry-note</code>.</p>
+    </section>
+
+    <section id="sheet-frequent">
+      <h2>Sheet: Lo que más anotas (SELLO-199)</h2>
+
+      <figure data-shot="expense-entry-frequent-button" data-module="app" data-caption="⚡ Frecuentes at the end of Agregar nota"></figure>
+      <figure data-shot="expense-entry-frequent-sheet" data-module="app" data-caption="Lo que más anotas: up to 5, each with its usual amount"></figure>
+      <figure data-shot="expense-entry-frequent-filled" data-module="app" data-caption="After tapping Almuerzo: filled, nothing saved"></figure>
+      <figure data-shot="expense-entry-frequent-suggestions" data-module="app" data-caption="Typing &quot;alm&quot;: past notes under the composer"></figure>
+      <p>A brand-soft pill inside <a href="../components.html#c-EntryLine"><code>EntryLine</code></a>'s <code>trailing</code> slot
+        opens a <a href="../components.html#c-SelloSheet"><code>SelloSheet</code></a> of
+        <a href="../components.html#c-ScheduleRow"><code>ScheduleRow</code></a>s: note, "Categoría · N veces · usualmente"
+        and the usual amount. The composer's <code>suggestions</code> slot holds
+        <a href="../components.html#c-FieldPill"><code>FieldPill</code></a>s "Nota · monto". A tap fills the form; Anotar
+        gasto saves it. Hidden when correcting, while the 90-day read is slow or failed, and when nothing is frequent.</p>
     </section>
 
     <section id="dialog-correction">
@@ -255,7 +272,9 @@
             <tr><td><a href="../components.html#c-EntryLine"><code>EntryLine</code></a></td><td><code>:design-system</code> <code>Controls.kt</code></td>
               <td>Note line with "Editar"; placeholder when blank</td><td>Opens the docked composer</td></tr>
             <tr><td><a href="../components.html#c-NoteComposer"><code>NoteComposer</code></a></td><td><code>:design-system</code> <code>Controls.kt</code></td>
-              <td>Note, 60 code points, context with category and amount</td><td>The form's only text input</td></tr>
+              <td>Note, 60 code points, context with category and amount; past notes in <code>suggestions</code></td><td>The form's only text input</td></tr>
+            <tr><td><a href="../components.html#c-SelloSheet"><code>SelloSheet</code></a> + <a href="../components.html#c-ScheduleRow"><code>ScheduleRow</code></a></td><td><code>:design-system</code> <code>Sheet.kt</code>, <code>Recurrence.kt</code></td>
+              <td>Lo que más anotas: icon, note, caption, usual amount; the row is one button</td><td>The sheet and row every list of repeated entries already uses</td></tr>
             <tr><td><a href="../components.html#c-FieldMessageText"><code>FieldMessageText</code></a></td><td><code>:design-system</code> <code>FieldMessage.kt</code></td>
               <td>Error, Warning (unknown outcome) and Hint (missing, past months)</td><td>Said above the button so it stays in view</td></tr>
             <tr><td><a href="../components.html#c-SelloButton"><code>SelloButton</code></a></td><td><code>:design-system</code> <code>SelloButton.kt</code></td>
@@ -289,6 +308,7 @@
       <h2>Feature-local parts that look like shared ones</h2>
       <ul>
         <li>None left: the form's pane, date picker (with the Se repite range), close button and note line are the shared <a href="../components.html#c-MovementPane"><code>MovementPane</code></a>, <a href="../components.html#c-MovementDatePicker"><code>MovementDatePicker</code></a>, <a href="../components.html#c-MovementCloseButton"><code>MovementCloseButton</code></a> and <a href="../components.html#c-MovementNoteLine"><code>MovementNoteLine</code></a>.</li>
+        <li>⚡ Frecuentes (<code>ExpenseFrequent.kt</code>): a 32dp brand-soft pill with a 48dp touch target, as the mock draws it; feature-local until a second feature needs one.</li>
       </ul>
     </section>
 

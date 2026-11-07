@@ -13,6 +13,7 @@ import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.assertTouchHeightIsEqualTo
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
@@ -24,6 +25,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.height
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
 import com.software.sello.designsystem.component.MoneySign
@@ -578,6 +581,93 @@ class ExpenseEntryScreenTest {
                 ExpenseEntryAction.FollowingChosen(false),
                 ExpenseEntryAction.FollowingDismissed
             ),
+            actions
+        )
+    }
+
+    // --- Frequent expenses (SELLO-199) ---
+
+    private val lunch = EntryFrequent(
+        "a",
+        "almuerzo",
+        "Almuerzo",
+        "Alimentación",
+        "restaurant",
+        12,
+        shown("18.000")
+    )
+    private val offered = empty.copy(frequent = listOf(lunch))
+
+    @Test
+    fun withNothingFrequentTheButtonIsNotThere() {
+        show(empty)
+
+        rule.onNodeWithTag(ENTRY_FREQUENT_TAG).assertDoesNotExist()
+        rule.onNodeWithTag(ENTRY_NOTE_TAG).performScrollTo().assertTextContains("Agregar nota")
+    }
+
+    @Test
+    fun theButtonIsItsOwnTargetAndTheRestOfTheRowStillOpensTheNote() {
+        show(offered)
+
+        rule.onNodeWithTag(ENTRY_FREQUENT_TAG).performScrollTo()
+            .assertContentDescriptionEquals(
+                "Frecuentes: llenar el gasto con uno que anotas seguido"
+            )
+            .assertHasClickAction()
+            .assertTouchHeightIsEqualTo(48.dp)
+            .performClick()
+        rule.onNodeWithTag(ENTRY_NOTE_TAG).assertTextContains("Agregar nota").performClick()
+
+        assertEquals(
+            listOf(ExpenseEntryAction.OpenFrequent, ExpenseEntryAction.OpenNote),
+            actions
+        )
+    }
+
+    @Test
+    fun theButtonKeepsTheNoteRowsHeight() {
+        val state = mutableStateOf(empty)
+        rule.showSello(Look()) { ExpenseEntryScreen(state.value, dateLabels(), {}) }
+        val without = rule.onNodeWithTag(ENTRY_NOTE_TAG).getUnclippedBoundsInRoot()
+        state.value = offered
+        rule.onNodeWithTag(ENTRY_FREQUENT_TAG).assertExists()
+        val with = rule.onNodeWithTag(ENTRY_NOTE_TAG).getUnclippedBoundsInRoot()
+
+        assertEquals(without.height, with.height)
+    }
+
+    @Test
+    fun theSheetSaysEachUsualAmountAndATapReportsWhichOne() {
+        show(offered.copy(frequentOpen = true))
+
+        rule.onNodeWithText("Lo que más anotas").assertIsDisplayed()
+        rule.onNodeWithTag(ENTRY_FREQUENT_ROW_TAG)
+            .assertContentDescriptionEquals(
+                "Almuerzo en Alimentación, 12 veces, usualmente 18.000 pesos. " +
+                    "Llena el gasto sin guardarlo"
+            )
+            .performClick()
+
+        assertEquals(
+            listOf<ExpenseEntryAction>(ExpenseEntryAction.FrequentPicked("a", "almuerzo")),
+            actions
+        )
+    }
+
+    @Test
+    fun theComposerOffersSuggestionsAndATapReportsWhichOne() {
+        show(
+            offered.copy(noteDraft = "alm", noteDraftLength = 3, noteSuggestions = listOf(lunch))
+        )
+
+        rule.onNodeWithText("Almuerzo · 18.000").assertIsDisplayed()
+        rule.onNodeWithContentDescription(
+            "Almuerzo en Alimentación, usualmente 18.000 pesos. Llena el gasto sin guardarlo"
+        ).assertHasClickAction().performClick()
+
+        assertEquals(
+            listOf<ExpenseEntryAction>(ExpenseEntryAction.FrequentPicked("a", "almuerzo")),
             actions
         )
     }

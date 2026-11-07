@@ -129,7 +129,7 @@ class ExpenseEditViewModelTest {
     private fun form(saved: SavedStateHandle = editing()) =
         ExpenseEntryViewModel(saved, commands, reads, snapshots, clock, {
             uuid(nextId++)
-        }, money, corrections, schedules, scheduleBook)
+        }, money, corrections, schedules, scheduleBook, Dispatchers.Main)
 
     /** The form opened on [expense], with it in storage and its months read. */
     private fun opened(
@@ -169,6 +169,24 @@ class ExpenseEditViewModelTest {
         assertTrue(form.now.canDelete)
         assertEquals(emptyList<YearMonth>(), form.now.pastMonths)
         assertEquals(emptyList<Any>(), commands.edited + commands.created)
+    }
+
+    @Test
+    fun aCorrectionIsOfferedNoFrequentExpenseAndAPickChangesNothing() {
+        listOf(101, 102, 103).forEach { n ->
+            val pan = storedExpense(n, 1, "2026-10-06", 9_000, "Pan")
+            reads.stored[pan.id] = pan
+        }
+        val form = opened()
+
+        form.onAction(ExpenseEntryAction.FrequentPicked(uuid(1), "pan"))
+        form.onAction(ExpenseEntryAction.OpenNote)
+        form.onAction(ExpenseEntryAction.NoteDraftChanged("Pa"))
+
+        assertEquals(emptyList<Any>(), reads.ranges)
+        assertTrue(form.now.frequent.isEmpty() && form.now.noteSuggestions.isEmpty())
+        assertFalse(form.now.frequentOpen)
+        assertEquals(stored, form.now.draft())
     }
 
     @Test

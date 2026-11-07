@@ -368,4 +368,81 @@ class ExpenseEntryScreenshotTest {
 
     @Test
     fun followingBusyDark() = shot("following-busy", following.copy(busy = true), Look(dark = true))
+
+    // --- Frequent expenses (SELLO-199), as the approved mock draws them ---
+
+    private fun frequent(
+        category: String,
+        note: String,
+        name: String,
+        icon: String,
+        count: Int,
+        digits: String
+    ) = EntryFrequent(category, note.lowercase(), note, name, icon, count, money(digits))
+
+    private val lunch = frequent("a", "Almuerzo", "Alimentación", "restaurant", 12, "18.000")
+    private val often = listOf(
+        lunch,
+        frequent("t", "Bus", "Transporte", "directions_bus", 22, "2.950"),
+        frequent("b", "Tinto", "Café", "local_cafe", 9, "3.500"),
+        frequent("a", "Mercado D1", "Alimentación", "restaurant", 4, "96.400"),
+        frequent("h", "Recarga", "Hogar", "home", 3, "20.000")
+    )
+
+    /**
+     * ⚡ Frecuentes at the end of Agregar nota, the form as it opens. Every frequent
+     * expense is in a category the form offers, with that category's icon, as the view
+     * model gives them.
+     */
+    private val offered = ready.copy(
+        categories = ready.categories + listOf(
+            EntryCategory("t", "Transporte", "directions_bus"),
+            EntryCategory("h", "Hogar", "home")
+        ),
+        categoryId = null,
+        amount = null,
+        missing = Missing.Amount,
+        frequent = often
+    )
+
+    @Test fun frequentButtonLight() = shot("frequent-button", offered, Look())
+
+    @Test fun frequentButtonDark() = shot("frequent-button", offered, Look(dark = true))
+
+    @Test
+    fun frequentSheetLight() = shot("frequent-sheet", offered.copy(frequentOpen = true), Look())
+
+    @Test
+    fun frequentSheetDark() =
+        shot("frequent-sheet", offered.copy(frequentOpen = true), Look(dark = true))
+
+    /** After tapping Almuerzo: category, note and usual amount filled; nothing saved. */
+    private val filled = offered.copy(
+        categoryId = "a",
+        amount = money("18.000"),
+        note = "Almuerzo",
+        missing = null
+    )
+
+    @Test fun frequentFilledLight() = shot("frequent-filled", filled, Look())
+
+    @Test fun frequentFilledDark() = shot("frequent-filled", filled, Look(dark = true))
+
+    /** Typing "alm" offers the notes that start that way, with their usual amounts. */
+    private val suggesting = offered.copy(
+        categoryId = "a",
+        amount = money("48.700"),
+        missing = null,
+        noteDraft = "alm",
+        noteDraftLength = 3,
+        noteSuggestions = listOf(
+            lunch,
+            frequent("a", "Almuerzo con Ana", "Alimentación", "restaurant", 1, "42.000")
+        )
+    )
+
+    @Test fun frequentSuggestionsLight() = shot("frequent-suggestions", suggesting, Look())
+
+    @Test
+    fun frequentSuggestionsDark() = shot("frequent-suggestions", suggesting, Look(dark = true))
 }

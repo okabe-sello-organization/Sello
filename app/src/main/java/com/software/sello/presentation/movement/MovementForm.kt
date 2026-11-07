@@ -29,13 +29,14 @@ fun MovementCloseButton(
     CloseButtonPart(stringResource(R.string.expense_entry_close), onClick, modifier, enabled)
 }
 
-/** The note line under the choices: the note, or the invitation to add one. */
+/** The note line under the choices: the note, or the invitation to add one; [trailing] at its end. */
 @Composable
 fun MovementNoteLine(
     note: String,
     enabled: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    trailing: (@Composable () -> Unit)? = null
 ) {
     NoteLinePart(
         note = note,
@@ -43,7 +44,8 @@ fun MovementNoteLine(
         editLabel = stringResource(R.string.expense_entry_edit_note),
         enabled = enabled,
         onClick = onClick,
-        modifier = modifier
+        modifier = modifier,
+        trailing = trailing
     )
 }
 
