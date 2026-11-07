@@ -44,6 +44,7 @@ import com.software.sello.feature.recibo.CategoryDetailViewModel
 import com.software.sello.feature.recibo.CategoryExpensesViewModel
 import com.software.sello.feature.recibo.LimitSheetViewModel
 import com.software.sello.feature.recibo.ReciboViewModel
+import com.software.sello.feature.recibo.ShareMonthViewModel
 import com.software.sello.feature.recibo.UpcomingPaymentsViewModel
 import com.software.sello.feature.recurrence.CatchUpNoticeViewModel
 import com.software.sello.feature.recurrence.CatchUpRunner
@@ -52,8 +53,10 @@ import com.software.sello.feature.recurrence.SchedulesViewModel
 import com.software.sello.feature.reset.ResetSession
 import com.software.sello.feature.reset.ResetViewModel
 import com.software.sello.feature.resumen.ResumenViewModel
+import com.software.sello.feature.resumen.YearViewModel
 import com.software.sello.feature.settings.AppearanceViewModel
 import com.software.sello.feature.settings.SettingsViewModel
+import com.software.sello.feature.settings.SmallExpenseLineViewModel
 import com.software.sello.feature.startup.StartupFailureViewModel
 import com.software.sello.feature.startup.StartupRecovery
 import com.software.sello.navigation.MonthSession
@@ -116,11 +119,13 @@ fun presentationModule(generation: Long): Module = module {
 private fun Module.viewModels() {
     factoryOf(::AppearanceViewModel)
     factoryOf(::SettingsViewModel)
+    factoryOf(::SmallExpenseLineViewModel)
     factoryOf(::ExportViewModel)
     factoryOf(::BackupViewModel)
     factoryOf(::RestoreViewModel)
     factoryOf(::ResetViewModel)
     factoryOf(::ResumenViewModel)
+    factoryOf(::YearViewModel)
     factoryOf(::IncomeHistoryViewModel)
     factoryOf(::IncomeFormViewModel)
     factoryOf(::ShellViewModel)
@@ -128,6 +133,7 @@ private fun Module.viewModels() {
     factoryOf(::CorrectionAnnouncementsViewModel)
     factoryOf(::CategoryManagementViewModel)
     factoryOf(::ReciboViewModel)
+    factoryOf(::ShareMonthViewModel)
     factoryOf(::ReciboGoalViewModel)
     factoryOf(::InversionesViewModel)
     factoryOf(::UsdRateViewModel)

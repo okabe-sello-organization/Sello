@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertContentDescriptionEquals
@@ -35,6 +36,7 @@ import com.software.sello.domain.model.AppearancePreference
 import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.platform.PhoneColor
+import com.software.sello.revealed
 import com.software.sello.showSello
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -64,10 +66,70 @@ class SettingsScreenTest {
             SETTINGS_RECURRING_TAG,
             SETTINGS_APPEARANCE_TAG,
             SETTINGS_ORDERING_TAG,
+            SETTINGS_SUMMARY_TAG,
             SETTINGS_INVESTMENTS_TAG
         ).map { rule.onNodeWithTag(it).getUnclippedBoundsInRoot().top }
         assertEquals(tops.sorted(), tops)
         assertEquals(0, rule.onAllNodes(hasText("Avisos")).fetchSemanticsNodes().size)
+    }
+
+    @Test
+    fun resumensRowSaysGastosHormigaItsLineAndOpensItsForm() {
+        var opened = 0
+        rule.showSello {
+            SettingsScreen(
+                state = SettingsState(loading = false, smallExpenseLine = "20.000"),
+                onAction = {},
+                contentPadding = PaddingValues(),
+                onOpenSchedules = {},
+                onOpenRate = {},
+                onOpenSmallExpenses = { opened++ }
+            ) { Text("Tus datos") }
+        }
+
+        rule.onNodeWithTag(SETTINGS_SUMMARY_TAG).revealed()
+        rule.onNodeWithText("Resumen").assertIsDisplayed()
+        rule.onNodeWithText("Gastos hormiga").assertIsDisplayed()
+        rule.onNodeWithText("Los que suma como pequeños").assertIsDisplayed()
+        rule.onNodeWithText("Hasta 20.000").assertIsDisplayed()
+        rule.onNodeWithTag(SETTINGS_SMALL_EXPENSES_TAG).performClick()
+
+        assertEquals(1, opened)
+    }
+
+    @Test
+    fun gastosHormigasLineIsSpokenAsAnAmountInPesos() {
+        rule.showSello {
+            SettingsScreen(
+                state = SettingsState(loading = false, smallExpenseLine = "20.000"),
+                onAction = {},
+                contentPadding = PaddingValues(),
+                onOpenSchedules = {},
+                onOpenRate = {}
+            ) { Text("Tus datos") }
+        }
+
+        // As the UI sweep reads a row: what a screen reader says for the whole button.
+        val row = rule.onNodeWithTag(SETTINGS_SMALL_EXPENSES_TAG).revealed().fetchSemanticsNode()
+        val spoken = row.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty()
+        assertEquals(listOf("Hasta 20.000 pesos"), spoken)
+    }
+
+    @Test
+    fun aLineNeverReadShowsNoValueInItsPlace() {
+        rule.showSello {
+            SettingsScreen(
+                state = SettingsState(loading = false),
+                onAction = {},
+                contentPadding = PaddingValues(),
+                onOpenSchedules = {},
+                onOpenRate = {}
+            ) { Text("Tus datos") }
+        }
+
+        rule.onNodeWithTag(SETTINGS_SMALL_EXPENSES_TAG).revealed()
+        val values = rule.onAllNodes(hasText("Hasta", substring = true)).fetchSemanticsNodes()
+        assertEquals(0, values.size)
     }
 
     private val red = AppearancePreference(ink = InkPreference.Tuya(InkHue.of(22)!!))

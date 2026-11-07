@@ -47,6 +47,10 @@ interface ExpenseDao {
     @Insert
     suspend fun insert(expense: ExpenseEntity)
 
+    /** The stored date of the earliest expense, or null when there is none. */
+    @Query("SELECT MIN(effective_date) FROM expense")
+    suspend fun earliestDate(): String?
+
     /** The highest sequence in use, or null when there is no expense. */
     @Query("SELECT MAX(sequence) FROM expense")
     suspend fun highestSequence(): Long?

@@ -7,6 +7,7 @@ import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.DismissedSuggestion
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ResumenSnapshot
+import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.policy.ScheduleListPolicy
 import com.software.sello.domain.port.FinancialClock
@@ -16,6 +17,7 @@ import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ResumenSnapshots
 import com.software.sello.domain.port.ScheduleBookState
 import com.software.sello.domain.port.ScheduleReads
+import com.software.sello.domain.port.SmallExpensePreferences
 import com.software.sello.domain.port.SuggestionPreferences
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.date.DateLabels
@@ -44,6 +46,7 @@ class ResumenViewModel(
     labels: DateLabels,
     months: MonthNames,
     private val suggestions: SuggestionPreferences,
+    smallExpenses: SmallExpensePreferences,
     schedules: ScheduleReads,
     clock: FinancialClock
 ) : ViewModel() {
@@ -54,9 +57,33 @@ class ResumenViewModel(
 
     /** The month as last read, so a Retry or a return never blanks figures already shown. */
     private val lastGood = LastGoodRead<ResumenSnapshot, SnapshotFailure>()
-    private val snapshot = combine(session.selectedMonth, attempts) { month, _ -> month }
-        .flatMapLatest { month -> lastGood.keep(month, reads.observe(month)) }
-        .combine(session.currentMonth, render::render)
+
+    /** The last line read in this view model's life, for a read that fails afresh. */
+    private var lastLine: SmallExpenseLine? = null
+
+    /**
+     * Gastos hormiga's line; Reintentar reads it again too. A new read starts with no last
+     * good line of its own, so a failure keeps the one this view model read last.
+     */
+    private val line = attempts.flatMapLatest { smallExpenses.observeSmallExpenseLine() }
+        .map { read ->
+            when (read) {
+                is PreferenceRead.Ready -> read.also { lastLine = it.value }
+
+                is PreferenceRead.Failed -> {
+                    read.lastGood?.let { lastLine = it }
+                    PreferenceRead.Failed(read.failure, read.lastGood ?: lastLine)
+                }
+            }
+        }
+
+    private val snapshot = combine(
+        combine(session.selectedMonth, attempts) { month, _ -> month }
+            .flatMapLatest { month -> lastGood.keep(month, reads.observe(month)) },
+        session.currentMonth,
+        line,
+        render::render
+    )
 
     /** What was dismissed, as last read. A failed read hides nothing: it is only advice. */
     private val dismissed = suggestions.observeDismissedSuggestion().map { read ->

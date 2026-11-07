@@ -12,6 +12,7 @@ import com.software.sello.domain.model.Income
 import com.software.sello.domain.model.InvestmentHistory
 import com.software.sello.domain.model.InvestmentPreference
 import com.software.sello.domain.model.MonthLimit
+import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.UsdRateEntry
 import com.software.sello.domain.port.StoredSchedule
 import java.time.Instant
@@ -76,7 +77,9 @@ data class PortablePreferences(
     val appearance: AppearancePreference,
     val ordering: CategoryOrderingPreference,
     /** Version 5 on; an older file brings the defaults (SELLO-120). */
-    val investments: InvestmentPreference = InvestmentPreference()
+    val investments: InvestmentPreference = InvestmentPreference(),
+    /** Gastos hormiga's line, version 10 on; an older file brings 20.000 (SELLO-194). */
+    val smallExpenseLine: SmallExpenseLine = SmallExpenseLine.DEFAULT
 )
 
 /**

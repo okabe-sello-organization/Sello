@@ -11,6 +11,7 @@ import com.software.sello.domain.port.CorrectionAnnouncementPreferences
 import com.software.sello.domain.port.IncomeSuggestionPreferences
 import com.software.sello.domain.port.InvestmentPreferences
 import com.software.sello.domain.port.PreferenceReset
+import com.software.sello.domain.port.SmallExpensePreferences
 import com.software.sello.domain.port.SuggestionPreferences
 import kotlinx.coroutines.CoroutineScope
 import org.koin.core.module.Module
@@ -25,6 +26,7 @@ fun preferencesModule(fileName: String = StorageNames.Normal.preferences): Modul
     single<AppearancePreferences> { get<DataStoreUserPreferences>() }
     single<CategoryOrderingPreferences> { get<DataStoreUserPreferences>() }
     single<InvestmentPreferences> { get<DataStoreUserPreferences>() }
+    single<SmallExpensePreferences> { get<DataStoreUserPreferences>() }
     single<CorrectionAnnouncementPreferences> { get<DataStoreUserPreferences>() }
     single<SuggestionPreferences> { get<DataStoreUserPreferences>() }
     single<IncomeSuggestionPreferences> { get<DataStoreUserPreferences>() }

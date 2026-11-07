@@ -6,6 +6,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.software.sello.R
+import com.software.sello.designsystem.component.DigitGrouping
 import com.software.sello.designsystem.component.RestorePending
 import com.software.sello.designsystem.component.RestoredSlip as RestoredSlipPart
 import com.software.sello.domain.model.CategoryOrder
@@ -111,6 +112,12 @@ private fun pendingItems(preferences: PendingPreferences, phone: PhoneColor): Li
                 stringResource(it.newCurrency.newInvestmentLabel()),
                 stringResource(it.order.label())
             )
+        },
+        preferences.smallExpenseLine?.let {
+            stringResource(
+                R.string.restore_pending_small_expenses,
+                DigitGrouping().shown(it.pesos.toString())
+            )
         }
     )
 
@@ -130,12 +137,20 @@ private fun applyLabel(preferences: PendingPreferences): Int {
     val appearance = preferences.appearance != null
     val ordering = preferences.ordering != null
     val investments = preferences.investments != null
+    val line = preferences.smallExpenseLine != null
     return when {
-        appearance && ordering && !investments -> R.string.restore_apply_both
-        listOf(appearance, ordering, investments).count { it } > 1 -> R.string.restore_apply_all
+        appearance && ordering && !investments && !line -> R.string.restore_apply_both
+
+        listOf(appearance, ordering, investments, line).count { it } > 1 ->
+            R.string.restore_apply_all
+
         appearance -> R.string.restore_apply_appearance
+
         ordering -> R.string.restore_apply_ordering
-        else -> R.string.restore_apply_investments
+
+        investments -> R.string.restore_apply_investments
+
+        else -> R.string.restore_apply_small_expenses
     }
 }
 

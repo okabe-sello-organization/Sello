@@ -13,6 +13,7 @@ import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.InvestmentPreference
 import com.software.sello.domain.model.ScheduledEntry
+import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.CategoryOrderingPreferences
@@ -25,6 +26,7 @@ import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ScheduleBookState
 import com.software.sello.domain.port.ScheduleReads
+import com.software.sello.domain.port.SmallExpensePreferences
 import com.software.sello.platform.PhoneColor
 import com.software.sello.platform.SystemColor
 import com.software.sello.presentation.appearance.startingHue
@@ -43,7 +45,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * Coordinates the appearance, Recibo-order and Inversiones controls, how many payments and
+ * Coordinates the appearance, Recibo-order, Gastos hormiga and Inversiones controls, how many payments and
  * incomes repeat and the current USD rate. [systemColor] is the phone's colour, for Sistema. The backup card reads the backup's own state.
  * The hue chosen in Tu tinta is kept in [handle] while the sheet is open, so it survives
  * rotation and process death; nothing is saved until Usar esta tinta.
@@ -54,6 +56,7 @@ class SettingsViewModel(
     private val appearancePreferences: AppearancePreferences,
     private val orderingPreferences: CategoryOrderingPreferences,
     private val investmentPreferences: InvestmentPreferences,
+    smallExpensePreferences: SmallExpensePreferences,
     schedules: ScheduleReads,
     investments: InvestmentReads,
     money: MoneyFormatter,
@@ -78,7 +81,8 @@ class SettingsViewModel(
         merge(
             appearancePreferences.observeAppearance().map(SettingsRead::Appearance),
             orderingPreferences.observeCategoryOrdering().map(SettingsRead::Ordering),
-            investmentPreferences.observeInvestments().map(SettingsRead::Investments)
+            investmentPreferences.observeInvestments().map(SettingsRead::Investments),
+            smallExpensePreferences.observeSmallExpenseLine().map(SettingsRead::SmallExpenses)
         )
     }
 
@@ -125,8 +129,27 @@ class SettingsViewModel(
                     investmentsFailure = value.failure
                 )
             }
+
+            is SettingsRead.SmallExpenses -> when (val value = read.value) {
+                is PreferenceRead.Ready -> old.copy(
+                    smallExpenseLine = money.format(value.value.money).digits,
+                    smallExpensesLoaded = true,
+                    smallExpensesFailure = null
+                )
+
+                // Never a default in its place: the row shows no value until it reads.
+                is PreferenceRead.Failed -> old.copy(
+                    smallExpenseLine = value.lastGood?.let { money.format(it.money).digits }
+                        ?: old.smallExpenseLine,
+                    smallExpensesLoaded = true,
+                    smallExpensesFailure = value.failure
+                )
+            }
         }.let {
-            it.copy(loading = !it.appearanceLoaded || !it.orderingLoaded || !it.investmentsLoaded)
+            it.copy(
+                loading = !it.appearanceLoaded || !it.orderingLoaded ||
+                    !it.investmentsLoaded || !it.smallExpensesLoaded
+            )
         }
     }
 
@@ -297,6 +320,10 @@ data class SettingsState(
     val appearanceFailure: PreferenceFailure? = null,
     val orderingFailure: PreferenceFailure? = null,
     val investmentsFailure: PreferenceFailure? = null,
+    /** Gastos hormiga's line as written ("20.000"); null until it is read. */
+    val smallExpenseLine: String? = null,
+    val smallExpensesLoaded: Boolean = false,
+    val smallExpensesFailure: PreferenceFailure? = null,
     val writeFailure: PreferenceFailure? = null,
     val busy: Boolean = false,
     val schedules: ScheduleCountLine = ScheduleCountLine.Loading,
@@ -308,6 +335,7 @@ data class SettingsState(
 ) {
     val failure: PreferenceFailure?
         get() = writeFailure ?: appearanceFailure ?: orderingFailure ?: investmentsFailure
+            ?: smallExpensesFailure
 }
 
 /**
@@ -343,4 +371,5 @@ private sealed interface SettingsRead {
     data class Appearance(val value: PreferenceRead<AppearancePreference>) : SettingsRead
     data class Ordering(val value: PreferenceRead<CategoryOrderingPreference>) : SettingsRead
     data class Investments(val value: PreferenceRead<InvestmentPreference>) : SettingsRead
+    data class SmallExpenses(val value: PreferenceRead<SmallExpenseLine>) : SettingsRead
 }

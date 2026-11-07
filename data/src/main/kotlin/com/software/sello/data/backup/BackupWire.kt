@@ -2,6 +2,7 @@ package com.software.sello.data.backup
 
 import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.InvestmentOrder
+import com.software.sello.domain.model.SmallExpenseLine
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -9,13 +10,14 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 
 /*
- * The wire shapes of versions 1 to 9, documented in docs/data/backup-format.md.
+ * The wire shapes of versions 1 to 10, documented in docs/data/backup-format.md.
  * Version 2 is version 1 plus `financial.goals` and `financial.featuredGoal`; version 3
  * is version 2 plus `financial.schedules` and each expense's and income's `origin`;
  * version 4 is version 3 plus `financial.investments` and `financial.usdRates`; version 5 adds
  * two investment settings to `preferences`; version 6 adds `financial.carryChains`; version 7
  * replaces `financial.featuredGoal` with `financial.starredGoals`; version 8 adds Tuya's hue
- * to `preferences`; version 9 has version 8's shape and adds the ink `sistema`. These classes
+ * to `preferences`; version 9 has version 8's shape and adds the ink `sistema`; version 10
+ * adds Gastos hormiga's line to `preferences`. These classes
  * are the file and nothing else: they never become Room entities or domain values
  * without going through BackupValidation. Every property is required, including the
  * nullable ones, and the JSON configuration refuses unknown keys. Numbers and flags
@@ -616,6 +618,49 @@ internal fun BackupFileV7.asVersion8() = BackupFileV8(
             categoryDirection = it.categoryDirection,
             investmentCurrency = it.investmentCurrency,
             investmentOrder = it.investmentOrder
+        )
+    }
+)
+
+/** Version 10: version 9 with Gastos hormiga's line in `preferences.smallExpenseLine` (SELLO-194). */
+@Serializable
+internal data class BackupFileV10(
+    val format: String,
+    val version: JsonElement,
+    val exportedAt: String,
+    val financial: FinancialV7,
+    val preferences: PreferencesV10?
+)
+
+/** `smallExpenseLine` is a bare whole number of pesos from 1000 to 100000. */
+@Serializable
+internal data class PreferencesV10(
+    val theme: String,
+    val ink: String,
+    val inkHue: JsonElement,
+    val categoryOrder: String,
+    val categoryDirection: String,
+    val investmentCurrency: String,
+    val investmentOrder: String,
+    val smallExpenseLine: JsonElement
+)
+
+/** A version 8 or 9 file read as version 10: its line is the default, 20000. */
+internal fun BackupFileV8.asVersion10() = BackupFileV10(
+    format = format,
+    version = version,
+    exportedAt = exportedAt,
+    financial = financial,
+    preferences = preferences?.let {
+        PreferencesV10(
+            theme = it.theme,
+            ink = it.ink,
+            inkHue = it.inkHue,
+            categoryOrder = it.categoryOrder,
+            categoryDirection = it.categoryDirection,
+            investmentCurrency = it.investmentCurrency,
+            investmentOrder = it.investmentOrder,
+            smallExpenseLine = JsonPrimitive(SmallExpenseLine.DEFAULT.pesos)
         )
     }
 )

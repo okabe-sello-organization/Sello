@@ -13,6 +13,7 @@ import com.software.sello.domain.model.InvestmentPreference
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.MonthLimit
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.SourceName
 import java.time.Instant
 import java.time.YearMonth
@@ -68,9 +69,9 @@ class BackupRoundTripTest {
     }
 
     @Test
-    fun `G01 is written byte for byte as the documented version 9 file`() {
+    fun `G01 is written byte for byte as the documented version 10 file`() {
         assertEquals(
-            String(resource("valid-g01-v9.json")),
+            String(resource("valid-g01-v10.json")),
             String(codec.encode(g01InDollars()).value())
         )
     }
@@ -104,6 +105,11 @@ class BackupRoundTripTest {
     }
 
     @Test
+    fun `the version 10 file reads back as the same G01 history`() {
+        assertEquals(g01InDollars(), codec.read(resource("valid-g01-v10.json")).value().contents)
+    }
+
+    @Test
     fun `a version 4 file reads with investments in pesos, largest value first`() {
         val contents = codec.read(resource("valid-g01-v4.json")).value().contents
 
@@ -134,7 +140,7 @@ class BackupRoundTripTest {
 
     @Test
     fun `every ink is written as the id it has always had, and reads back`() {
-        val file = String(resource("valid-g01-v9.json"))
+        val file = String(resource("valid-g01-v10.json"))
         for ((ink, id) in listOf(
             InkPreference.Cobalto to "cobalto",
             InkPreference.Violeta to "violeta",
@@ -167,7 +173,7 @@ class BackupRoundTripTest {
 
     @Test
     fun `Tuya is written with its hue and reads back the same, at every edge`() {
-        val file = String(resource("valid-g01-v9.json"))
+        val file = String(resource("valid-g01-v10.json"))
         for (hue in listOf(0L, 22L, 359L)) {
             val contents = g01In(InkPreference.Tuya(InkHue.of(hue)!!))
             val written = String(codec.encode(contents).value())
@@ -184,7 +190,7 @@ class BackupRoundTripTest {
 
     @Test
     fun `a hue outside the circle or as text, beside any ink, rejects the whole file`() {
-        val file = String(resource("valid-g01-v9.json"))
+        val file = String(resource("valid-g01-v10.json"))
         val tuya = "\"ink\": \"tuya\",\n    \"inkHue\": "
         for ((from, to) in listOf(
             "\"inkHue\": null" to "\"inkHue\": 360",
@@ -212,7 +218,7 @@ class BackupRoundTripTest {
 
     @Test
     fun `Tuya's hue kept beside another ink is written and reads back`() {
-        val file = String(resource("valid-g01-v9.json"))
+        val file = String(resource("valid-g01-v10.json"))
         for (hue in listOf(0L, 147L, 359L)) {
             val contents = g01InDollars().let {
                 it.copy(
@@ -241,7 +247,7 @@ class BackupRoundTripTest {
 
     @Test
     fun `Sistema is written with Tuya's kept hue or none, and reads back the same`() {
-        val file = String(resource("valid-g01-v9.json"))
+        val file = String(resource("valid-g01-v10.json"))
         for (hue in listOf(null, 0L, 147L, 359L)) {
             val contents = g01InDollars().let {
                 it.copy(
@@ -295,7 +301,7 @@ class BackupRoundTripTest {
 
     @Test
     fun `Sistema spelled any other way rejects the whole file`() {
-        val file = String(resource("valid-g01-v9.json"))
+        val file = String(resource("valid-g01-v10.json"))
         for (to in listOf("\"Sistema\"", "\"system\"", "\"sistema \"", "\"SISTEMA\"")) {
             val changed = file.replace("\"ink\": \"violeta\"", "\"ink\": $to")
             check(changed != file)
@@ -305,6 +311,99 @@ class BackupRoundTripTest {
                 (codec.read(changed.toByteArray()) as Outcome.Failure).error
             )
         }
+    }
+
+    // --- Gastos hormiga's line (version 10, SELLO-194) ---
+
+    @Test
+    fun `Gastos hormiga's line is written in pesos and reads back the same, at every edge`() {
+        val file = String(resource("valid-g01-v10.json"))
+        for (pesos in listOf(1_000L, 15_000L, 100_000L)) {
+            val contents = g01InDollars().let {
+                it.copy(
+                    preferences = it.preferences!!.copy(
+                        smallExpenseLine = SmallExpenseLine.of(pesos)!!
+                    )
+                )
+            }
+            val written = String(codec.encode(contents).value())
+            assertEquals(
+                file.replace("\"smallExpenseLine\": 20000", "\"smallExpenseLine\": $pesos"),
+                written
+            )
+            assertEquals(contents, codec.read(written.toByteArray()).value().contents)
+        }
+    }
+
+    @Test
+    fun `every file before version 10 reads with the line at 20000`() {
+        for (name in listOf(
+            "valid-g01.json",
+            "valid-g01-v4.json",
+            "valid-g01-v5.json",
+            "valid-g01-v6.json",
+            "valid-g01-v7.json",
+            "valid-g01-v8.json",
+            "valid-g01-v9.json"
+        )) {
+            assertEquals(
+                name,
+                SmallExpenseLine.of(20_000),
+                codec.read(resource(name)).value().contents.preferences?.smallExpenseLine
+            )
+        }
+    }
+
+    @Test
+    fun `a line outside 1000 to 100000, or not a bare whole number, rejects the whole file`() {
+        val file = String(resource("valid-g01-v10.json"))
+        for (to in listOf(
+            "999",
+            "100001",
+            "0",
+            "-20000",
+            "\"20000\"",
+            "20000.0",
+            "2e4",
+            "020000",
+            "null",
+            "9223372036854775808"
+        )) {
+            val changed = file.replace("\"smallExpenseLine\": 20000", "\"smallExpenseLine\": $to")
+            check(changed != file)
+            assertEquals(
+                to,
+                BackupRejection.InvalidValue("preferences.smallExpenseLine"),
+                (codec.read(changed.toByteArray()) as Outcome.Failure).error
+            )
+        }
+    }
+
+    @Test
+    fun `a version 10 file without the line is not a version 10 file`() {
+        val file = String(resource("valid-g01-v10.json"))
+        val missing = file.replace(",\n    \"smallExpenseLine\": 20000", "")
+        check(missing != file)
+        assertTrue(
+            (
+                codec.read(
+                    missing.toByteArray()
+                ) as Outcome.Failure
+                ).error is BackupRejection.Malformed
+        )
+    }
+
+    @Test
+    fun `a version 9 file cannot carry a line`() {
+        val v9 = String(resource("valid-g01-v9.json"))
+        val line = v9.replace(
+            "\"investmentOrder\": \"latest_update\"",
+            "\"investmentOrder\": \"latest_update\",\n    \"smallExpenseLine\": 15000"
+        )
+        check(line != v9)
+        assertTrue(
+            (codec.read(line.toByteArray()) as Outcome.Failure).error is BackupRejection.Malformed
+        )
     }
 
     @Test
@@ -521,7 +620,8 @@ class BackupRoundTripTest {
                 "categoryOrder",
                 "categoryDirection",
                 "investmentCurrency",
-                "investmentOrder"
+                "investmentOrder",
+                "smallExpenseLine"
             ),
             (file.getValue("preferences") as JsonObject).keys
         )
