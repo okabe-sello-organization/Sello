@@ -17,7 +17,9 @@ import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.YearSnapshotState
 import java.math.BigInteger
 import java.time.LocalDate
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -137,6 +139,36 @@ class YearSnapshotContractTest {
         assertEquals("Mercado", mercado.category.name.value)
         assertTrue(mercado.category.archived)
         assertEquals(Money.cop(40_000) to 100, mercado.spent to mercado.percent)
+    }
+
+    @Test
+    fun simultaneousWritesCannotMixMonthsAndIncomesFromDifferentRevisions() = runBlocking {
+        category()
+        val seen = mutableListOf<YearSnapshot>()
+        coroutineScope {
+            // Expenses in February and incomes in September: months read apart would mix.
+            val writer = launch(Dispatchers.Default) {
+                repeat(12) {
+                    spend(1_000, "2026-02-10")
+                    income(2_000, "2026-09-10")
+                }
+            }
+            launch(Dispatchers.Default) {
+                while (writer.isActive) seen += read(2026)
+                seen += read(2026)
+            }
+        }
+        for (year in seen) {
+            // Revision 1 is the category; then an expense, an income, an expense…
+            val changes = year.revision - 1
+            val spent = 1_000 * ((changes + 1) / 2)
+            val received = 2_000 * (changes / 2)
+            assertEquals(Money.cop(spent), year.spent)
+            assertEquals(Money.cop(spent), year.months[1].spent)
+            assertEquals(Money.cop(received), year.income)
+            assertEquals(Money.cop(received - spent), year.netFlow)
+        }
+        assertEquals(25L, seen.last().revision)
     }
 
     @Test
