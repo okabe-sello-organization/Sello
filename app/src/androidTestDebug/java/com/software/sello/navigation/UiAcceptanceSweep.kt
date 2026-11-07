@@ -143,7 +143,7 @@ abstract class UiAcceptanceSweep(private val window: Window) {
         check("Recibo")
 
         open(hasTestTag(reciboCategoryTag(transport)))
-        awaitOrDescribe(hasTestTag(CATEGORY_DETAIL_HEADER_TAG))
+        awaitCategoryDetail()
         check("Category detail")
         // The pinned day is what makes this the widest weekly chart, not luck of the calendar.
         rule.onAllNodes(
@@ -184,7 +184,7 @@ abstract class UiAcceptanceSweep(private val window: Window) {
         check("Resumen")
 
         open(hasTestTag("resumen.category.$transport"))
-        awaitOrDescribe(hasTestTag(CATEGORY_DETAIL_HEADER_TAG))
+        awaitCategoryDetail()
         check("Resumen category")
         back()
 
@@ -236,6 +236,16 @@ abstract class UiAcceptanceSweep(private val window: Window) {
                 timeout
             )
         }
+    }
+
+    /**
+     * Waits for a category detail with its insights read. They are read after the header,
+     * off the main thread, which waiting for idle does not wait for; until then a
+     * placeholder stands where the weekly chart goes.
+     */
+    private fun awaitCategoryDetail() {
+        awaitOrDescribe(hasTestTag(CATEGORY_DETAIL_HEADER_TAG))
+        awaitOrDescribe(hasTestTag("detail:weeks"))
     }
 
     private fun back() {
