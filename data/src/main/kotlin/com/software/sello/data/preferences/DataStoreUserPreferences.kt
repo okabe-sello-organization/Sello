@@ -94,12 +94,22 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
         write { this[THEME] = theme.stored }
 
     /**
-     * Tuya and its hue go in one edit, so Tuya is never stored without one; a hand-made ink
-     * leaves Tuya's hue where it is.
+     * Tuya and its hue go in one edit, so Tuya is never stored without one. A hand-made ink
+     * leaves Tuya's hue where it is, unless the stored one is damaged (not a whole degree
+     * from 0 to 359): then it goes in the same edit, so the pick reads back.
      */
     override suspend fun setInk(ink: InkPreference): PreferenceWrite = write {
         this[INK] = ink.id
-        if (ink is InkPreference.Tuya) this[INK_HUE] = ink.hue.degrees
+        when (ink) {
+            is InkPreference.Tuya -> this[INK_HUE] = ink.hue.degrees
+
+            InkPreference.Cobalto, InkPreference.Violeta -> {
+                val kept = asMap()[INK_HUE]
+                if (kept != null && (kept as? Int)?.toLong()?.let(InkHue::of) == null) {
+                    remove(INK_HUE)
+                }
+            }
+        }
     }
 
     override suspend fun restoreInk(ink: InkPreference, tuyaHue: InkHue?): PreferenceWrite {

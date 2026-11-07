@@ -454,6 +454,55 @@ class DataStoreUserPreferencesTest {
     }
 
     @Test
+    fun pickingAHandMadeInkOverADamagedHueDropsItSoThePickReadsBack() = runTest {
+        for (damaged in listOf(400, 360, -1)) {
+            val data = HandDataStore(mutablePreferencesOf(INK to "cobalto", INK_HUE to damaged))
+            val preferences = DataStoreUserPreferences(data)
+            assertEquals(
+                PreferenceRead.Failed<AppearancePreference>(PreferenceFailure.InvalidValue, null),
+                preferences.observeAppearance().first()
+            )
+
+            assertEquals(PreferenceWrite.Saved, preferences.setInk(InkPreference.Violeta))
+
+            assertEquals("$damaged", null, data.data.first()[INK_HUE])
+            assertEquals(
+                PreferenceRead.Ready(AppearancePreference(ink = InkPreference.Violeta)),
+                preferences.observeAppearance().first()
+            )
+        }
+    }
+
+    @Test
+    fun pickingAHandMadeInkOverAHueStoredAsTextDropsIt() = runTest {
+        val data = HandDataStore(
+            mutablePreferencesOf(
+                INK to "tuya",
+                stringPreferencesKey("appearance_ink_hue_v1") to "22"
+            )
+        )
+        val preferences = DataStoreUserPreferences(data)
+
+        assertEquals(PreferenceWrite.Saved, preferences.setInk(InkPreference.Cobalto))
+
+        assertEquals(
+            PreferenceRead.Ready(AppearancePreference(ink = InkPreference.Cobalto)),
+            preferences.observeAppearance().first()
+        )
+    }
+
+    @Test
+    fun pickingAHandMadeInkKeepsAGoodHueAtTheEdges() = runTest {
+        for (hue in listOf(0, 359)) {
+            val data = HandDataStore(mutablePreferencesOf(INK to "cobalto", INK_HUE to hue))
+
+            DataStoreUserPreferences(data).setInk(InkPreference.Violeta)
+
+            assertEquals("$hue", hue, data.data.first()[INK_HUE])
+        }
+    }
+
+    @Test
     fun aRestoreWritesTheInkAndTuyasHueExactlyAndCanForgetTheHue() = runTest {
         val data = HandDataStore()
         val preferences = DataStoreUserPreferences(data)
