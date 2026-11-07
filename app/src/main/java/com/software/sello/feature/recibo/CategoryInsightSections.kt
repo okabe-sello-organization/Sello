@@ -1,5 +1,6 @@
 package com.software.sello.feature.recibo
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,6 +22,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -131,10 +134,9 @@ private fun CategoryRepeats(
                 textAlign = TextAlign.End
             )
         }
-        HorizontalDivider(color = SelloTheme.colors.paperAlt)
+        DashedRule()
         val open = stringResource(R.string.category_detail_repeat_open)
         repeats.forEachIndexed { index, repeat ->
-            if (index > 0) HorizontalDivider(color = SelloTheme.colors.paperAlt)
             val spoken = pluralStringResource(
                 R.plurals.category_detail_repeat_spoken,
                 repeat.count,
@@ -172,9 +174,26 @@ private fun CategoryRepeats(
                     MoneyText(repeat.total, textStyle = MaterialTheme.typography.labelLarge)
                 }
             }
+            // A line under every row, the last included, as the mock draws it.
+            HorizontalDivider(color = SelloTheme.colors.paperAlt)
         }
         Spacer(Modifier.height(SelloTheme.spacing.sm))
         ChartDetail(stringResource(R.string.category_detail_repeats_note))
+    }
+}
+
+/** The mock's dashed rule under the column headers. */
+@Composable
+private fun DashedRule() {
+    val rule = SelloTheme.colors.rule
+    Canvas(Modifier.fillMaxWidth().height(2.dp)) {
+        drawLine(
+            color = rule,
+            start = Offset(0f, size.height / 2),
+            end = Offset(size.width, size.height / 2),
+            strokeWidth = 1.5.dp.toPx(),
+            pathEffect = PathEffect.dashPathEffect(floatArrayOf(5.dp.toPx(), 4.dp.toPx()))
+        )
     }
 }
 
