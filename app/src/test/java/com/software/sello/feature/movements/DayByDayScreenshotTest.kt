@@ -82,9 +82,10 @@ class DayByDayScreenshotTest {
     @get:Rule
     val rule = createComposeRule()
 
-    /** As MovementDestinations.kt frames it: the title over the month, no dock. */
-
-    /** [atEnd] scrolls to the foot of the list first, where a failed page is said. */
+    /**
+     * As MovementDestinations.kt frames it: the title over the month, no dock. [atEnd]
+     * scrolls to the foot of the list first, where a failed page is said.
+     */
     private fun capture(name: String, state: DayByDayState, look: Look, atEnd: Boolean = false) {
         rule.showSello(look) {
             ShellScreen(
