@@ -80,7 +80,7 @@ class ResumenScreenTest {
                     PaddingValues(),
                     { adjusted = it },
                     { schedulesClicks++ },
-                    { year = it }
+                    onYear = { year = it }
                 )
             }
         }

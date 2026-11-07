@@ -25,3 +25,7 @@ the [mock](attachments/movements-mock.html) the same day.
 **Planner's calls (2026-11-06), open to the owner:** the search field sits on the same
 screen, and an amount typed in the field finds that exact amount. See the
 [mock](attachments/movements-mock.html). Build after E32.
+
+**Orchestrated run (owner, 2026-11-06):** "Orchestrate the development" of E33–E36. Roles,
+models and merges follow [orchestration](../../development/orchestration.md); the owner
+delegates every merge in this run.

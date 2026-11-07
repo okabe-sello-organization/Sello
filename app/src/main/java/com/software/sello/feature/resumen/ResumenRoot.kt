@@ -16,6 +16,7 @@ fun ResumenRoot(
     padding: PaddingValues,
     onSchedules: () -> Unit,
     onAdjustLimit: (String) -> Unit,
+    onDayByDay: () -> Unit,
     onYear: (Int) -> Unit
 ) {
     val model: ResumenViewModel = viewModel(factory = factory)
@@ -29,6 +30,7 @@ fun ResumenRoot(
         padding,
         onAdjustLimit,
         onSchedules,
+        onDayByDay,
         onYear
     )
 }

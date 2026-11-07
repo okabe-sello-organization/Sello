@@ -54,6 +54,7 @@ import com.software.sello.feature.recurrence.CatchUpNoticeState
 import com.software.sello.feature.recurrence.CatchUpRecordedScreen
 import com.software.sello.feature.recurrence.RecordedItem
 import com.software.sello.navigation.CorrectionQuestionSlip
+import com.software.sello.navigation.DayByDayBarAction
 import com.software.sello.navigation.ShellScreen
 import com.software.sello.navigation.ShellState
 import com.software.sello.navigation.ShellTab
@@ -512,6 +513,7 @@ class CarryScreenshotTest {
                 {},
                 navigation = appTabs(ShellTab.Recibo),
                 actions = {
+                    DayByDayBarAction {}
                     IconButton(onClick = {}) {
                         Icon(SelloIcon.Settings.painter(), stringResource(R.string.settings_open))
                     }

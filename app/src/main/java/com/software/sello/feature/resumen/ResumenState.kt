@@ -52,12 +52,18 @@ enum class SuggestionDismissal { Idle, Saving, Failed }
 
 /**
  * The income slip's own figures; its rows are [ResumenState.Ready.categories]. [count] is
- * how many incomes make up the total. [spentShare] is how much of the bar is spent:
+ * how many incomes make up the total; [movements] how many expenses and incomes are dated
+ * in the month, as Día a día lists them. [spentShare] is how much of the bar is spent:
  * geometry only, never shown or turned back into money. [overspent] says spending went
  * above the income.
  */
 @Immutable
-data class ResumenIncome(val count: Int, val spentShare: Float, val overspent: Boolean)
+data class ResumenIncome(
+    val count: Int,
+    val spentShare: Float,
+    val overspent: Boolean,
+    val movements: Int = 0
+)
 
 /** The nearest fixed payment or income still to come, or why there is none to say. */
 sealed interface ResumenNextFixed {
