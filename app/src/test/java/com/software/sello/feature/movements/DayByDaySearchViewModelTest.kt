@@ -469,6 +469,89 @@ class DayByDaySearchViewModelTest {
         assertEquals(2, snapshots.started)
     }
 
+    @Test
+    fun comingBackFromAResultsEditorKeepsEveryPageListed() = runTest {
+        snapshots.of(october).value = ReadState.Ready(octoberSnapshot())
+        val many = (1..60).map { spent(100 + it, food, "2026-10-01", 18_000, "Almuerzo") }
+        search.found["almuerzo"] = many to SearchTotals(
+            listOf(MonthMatches(october, 60, Money.cop(1_080_000))),
+            // 18.000 × 60 = 1.080.000, worked by hand.
+            Matches(60, Money.cop(1_080_000)),
+            null
+        )
+        val model = model()
+        val screen = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            launch { model.state.collect {} }
+            launch { model.found.collect {} }
+        }
+        type(model, "almuerzo")
+        model.onAction(DayByDayAction.MoreFound)
+        assertEquals(40, model.ready.listed)
+
+        // The 40th result's editor stays open longer than sharing waits, then Back.
+        screen.cancel()
+        advanceTimeBy(6_000)
+        runCurrent()
+        watch(model)
+        runCurrent()
+
+        assertEquals(40, model.ready.listed)
+        assertEquals(many[39].expense.id.value, model.ready.months.single().rows.last().row.id)
+        assertTrue(model.ready.more)
+    }
+
+    @Test
+    fun aListedMonthMissingFromTheTotalsIsDamagedNeverACrash() = runTest {
+        snapshots.of(october).value = ReadState.Ready(octoberSnapshot())
+        // September is listed but its totals say nothing of it: damaged, not shown blank.
+        search.found["rappi"] = rappi to rappiTotals.copy(
+            months = rappiTotals.months.filter { it.month != YearMonth.of(2026, 9) }
+        )
+        val model = model()
+        watch(model)
+
+        type(model, "rappi")
+
+        assertEquals(
+            SearchState.Failed("rappi", MovementFilter.All, DayByDayProblem.Damaged),
+            model.found.value
+        )
+    }
+
+    @Test
+    fun clearingTheFieldCancelsTheReadOutAndShowsNoFailure() = runTest {
+        october()
+        val reply = CompletableDeferred<Unit>()
+        search.held["rappi"] = reply
+        val model = model()
+        watch(model)
+        type(model, "rappi")
+        assertEquals(SearchState.Loading("rappi", MovementFilter.All), model.found.value)
+
+        model.onAction(DayByDayAction.Search(""))
+
+        // The read is cancelled, never turned into a failure or an empty answer.
+        assertEquals(listOf("rappi"), search.cancelled)
+        assertEquals(SearchState.Off, model.found.value)
+        reply.complete(Unit)
+        advanceUntilIdle()
+        assertEquals(SearchState.Off, model.found.value)
+    }
+
+    @Test
+    fun aNewQueryCancelsTheOlderReadOut() = runTest {
+        october()
+        search.held["rap"] = CompletableDeferred()
+        val model = model()
+        watch(model)
+        type(model, "rap")
+
+        type(model, "rappi")
+
+        assertEquals(listOf("rap"), search.cancelled)
+        assertEquals("rappi", model.ready.words)
+    }
+
     private companion object {
         /** Longer than the pause the screen waits for after typing. */
         const val PAUSE = 300L

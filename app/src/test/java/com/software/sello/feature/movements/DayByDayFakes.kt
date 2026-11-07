@@ -32,6 +32,7 @@ import com.software.sello.testing.asNewObservation
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -145,6 +146,9 @@ class HandMovementSearch : MovementSearch {
     /** Replies held back by the words searched, until the test lets them go. */
     val held = mutableMapOf<String, CompletableDeferred<Unit>>()
     val asked = mutableListOf<Pair<String, MovementFilter>>()
+
+    /** The words of each read cancelled while it waited. */
+    val cancelled = mutableListOf<String>()
     var names: Map<String, String>? = null
 
     override suspend fun read(
@@ -156,7 +160,12 @@ class HandMovementSearch : MovementSearch {
     ): Outcome<SearchPage, MovementReadFailure> {
         asked += query.words to filter
         names = sourceNames
-        held[query.words]?.await()
+        try {
+            held[query.words]?.await()
+        } catch (cancelled: CancellationException) {
+            this.cancelled += query.words
+            throw cancelled
+        }
         failure?.let { return Outcome.Failure(it) }
         val (rows, totals) = found[query.words] ?: (emptyList<Movement>() to nothingFound)
         val listed = rows.filter {

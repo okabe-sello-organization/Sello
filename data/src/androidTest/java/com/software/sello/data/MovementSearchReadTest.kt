@@ -5,7 +5,9 @@ import com.software.sello.data.repository.RoomMovementSearch
 import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Note
+import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.SourceName
+import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.policy.Matches
 import com.software.sello.domain.policy.MonthMatches
@@ -14,6 +16,7 @@ import com.software.sello.domain.port.CreateIncome
 import com.software.sello.domain.port.Movement
 import com.software.sello.domain.port.MovementFilter
 import com.software.sello.domain.port.MovementQuery
+import com.software.sello.domain.port.MovementReadFailure
 import com.software.sello.domain.port.SearchPage
 import java.time.Instant
 import java.time.LocalDate
@@ -22,6 +25,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -311,6 +315,22 @@ class MovementSearchReadTest {
     fun accentMarksAloneFindNothingRatherThanEverything() {
         history()
 
-        assertEquals(emptyList<String>(), read("́").shown())
+        assertEquals(emptyList<String>(), read("\u0301").shown())
+    }
+
+    @Test
+    fun aDamagedIncomeFailsTheSearchNeverLeavesItOut() {
+        history()
+        // A source no income may have: the row cannot be read as an income.
+        ledger.database.openHelper.writableDatabase
+            .execSQL("UPDATE income SET source_key = 'damaged' WHERE note = 'Quincena'")
+
+        val read = runBlocking {
+            search.read(MovementQuery.of("rappi")!!, MovementFilter.All, names, null, 50)
+        }
+
+        val failure = (read as Outcome.Failure).error
+        assertTrue(failure is MovementReadFailure.Storage)
+        assertTrue((failure as MovementReadFailure.Storage).failure is StorageFailure.Integrity)
     }
 }

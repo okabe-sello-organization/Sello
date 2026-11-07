@@ -53,7 +53,7 @@ class IncomeMatchTest {
         assertTrue(finds(income("Rappí reembolso"), "RAPPI"))
         assertTrue(finds(income("Préstamo de María"), "prestamo de maria"))
         // An accent written as its own mark folds like the letter that carries it.
-        assertTrue(finds(income("Café vendido"), "café"))
+        assertTrue(finds(income("Cafe\u0301 vendido"), "café"))
     }
 
     @Test
@@ -99,6 +99,6 @@ class IncomeMatchTest {
     @Test
     fun aQueryThatFoldsToNothingFindsNothing() {
         // Accent marks alone fold away; they are in every text, so they find nothing.
-        assertFalse(finds(income("Salario"), "́"))
+        assertFalse(finds(income("Salario"), "\u0301"))
     }
 }

@@ -80,6 +80,13 @@ class DayByDayViewModel(
     /** The search and chip whose results [found] holds. */
     private var foundFor: Found? = null
 
+    /**
+     * The search and chip [wantedFound] counts pages for. Coming back from a result's editor
+     * after sharing stopped observes the same search again: its pages are kept, so the
+     * result opened is still listed (R1). Only another search or chip starts at one page.
+     */
+    private var pagedFor: Found? = null
+
     private data class Request(val month: YearMonth, val filter: MovementFilter)
 
     private data class Found(val query: MovementQuery, val filter: MovementFilter)
@@ -114,9 +121,13 @@ class DayByDayViewModel(
         .flatMapLatest { request ->
             if (request == null) {
                 foundFor = null
+                pagedFor = null
                 return@flatMapLatest flowOf<SearchState>(SearchState.Off)
             }
-            wantedFound.value = PAGE_SIZE
+            if (request != pagedFor) {
+                pagedFor = request
+                wantedFound.value = PAGE_SIZE
+            }
             flow<SearchState> {
                 // A new query waits for typing to pause; a reply to an older one is never
                 // read, as flatMapLatest drops it. Another chip reads at once.
@@ -339,6 +350,17 @@ class DayByDayViewModel(
             }
         }
         val all = totals ?: return@flow
+        // Pages are read one transaction each, at the same revision; the totals are the last
+        // page's. A listed month they leave out cannot happen in one history: it is damage,
+        // said as such, never a crash or a month without its figures.
+        val months = foundMonths(rows, all.months.associateBy { it.month })
+        if (months == null) {
+            emit(
+                listed?.copy(busy = false, pageFailure = DayByDayProblem.Damaged, more = false)
+                    ?: SearchState.Failed(words, request.filter, DayByDayProblem.Damaged)
+            )
+            return@flow
+        }
         foundFor = request
         emit(
             SearchState.Ready(
@@ -350,19 +372,21 @@ class DayByDayViewModel(
                 incomes = all.incomes?.let {
                     FoundTotal(it.count, money.format(it.total, signed = true))
                 },
-                months = foundMonths(rows, all.months.associateBy { it.month }),
+                months = months,
                 more = more
             )
         )
     }
 
-    /** Consecutive results of one month under its heading, with the month's whole totals. */
+    /**
+     * Consecutive results of one month under its heading, with the month's whole totals;
+     * null when a listed month has none.
+     */
     private fun foundMonths(
         rows: List<Movement>,
         totals: Map<YearMonth, MonthMatches>
-    ): List<FoundMonth> = rows.groupBy { YearMonth.from(it.date) }.map { (month, found) ->
-        // Read with the rows in one transaction, every listed month has its totals.
-        val matches = totals.getValue(month)
+    ): List<FoundMonth>? = rows.groupBy { YearMonth.from(it.date) }.map { (month, found) ->
+        val matches = totals[month] ?: return null
         FoundMonth(
             month,
             matches.count,
