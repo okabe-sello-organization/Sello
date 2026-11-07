@@ -73,6 +73,16 @@ interface ExpenseDao {
         limit: Int
     ): List<ExpenseEntity>
 
+    /**
+     * Expenses of every category dated from [from] up to and including [through], newest
+     * day first and within a day the highest sequence first, at most [limit].
+     */
+    @Query(
+        "SELECT * FROM expense WHERE effective_date >= :from AND effective_date <= :through " +
+            "ORDER BY effective_date DESC, sequence DESC LIMIT :limit"
+    )
+    suspend fun newestBetween(from: String, through: String, limit: Int): List<ExpenseEntity>
+
     /** The category of the expense added last, or null when there is no expense. */
     @Query("SELECT category_id FROM expense ORDER BY sequence DESC LIMIT 1")
     suspend fun lastAddedCategory(): String?

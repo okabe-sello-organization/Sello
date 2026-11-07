@@ -155,6 +155,10 @@ fun ExpenseEntryRoot(
     BackHandler(enabled = state.repeat.sheet != null) {
         viewModel.onAction(ExpenseEntryAction.Repeat(RepeatAction.Dismiss))
     }
+    // While Lo que más anotas is open, Back closes it and the form stays as it was.
+    BackHandler(enabled = state.frequentOpen) {
+        viewModel.onAction(ExpenseEntryAction.CloseFrequent)
+    }
     ExpenseEntryScreen(
         state,
         dateLabels(),
@@ -328,6 +332,7 @@ fun ExpenseEntryScreen(
         DayPicker(state.date, state.today, state.repeat.choice != null, onAction)
     }
     state.noteDraft?.let { NoteSheet(state, it, onAction) }
+    if (state.frequentOpen) FrequentSheet(state, onAction)
     RepeatChoiceSheet(state.repeat, state.date, state.today, dates) {
         onAction(ExpenseEntryAction.Repeat(it))
     }
@@ -458,11 +463,17 @@ private fun Choices(
             )
         }
     }
+    // ⚡ Frecuentes, only once something is frequent; the rest of the line opens the note.
     MovementNoteLine(
         state.note,
         state.editable,
         { onAction(ExpenseEntryAction.OpenNote) },
-        Modifier.testTag(ENTRY_NOTE_TAG)
+        Modifier.testTag(ENTRY_NOTE_TAG),
+        trailing = if (state.frequent.isNotEmpty()) {
+            { FrequentButton(state.editable) { onAction(ExpenseEntryAction.OpenFrequent) } }
+        } else {
+            null
+        }
     )
     state.noteProblem?.let {
         FieldMessageText(FieldMessage(stringResource(it.text())))
@@ -657,7 +668,12 @@ private fun NoteSheet(
         onDone = { onAction(ExpenseEntryAction.NoteDone) },
         onCancel = { onAction(ExpenseEntryAction.NoteCancelled) },
         contextIcon = category?.let { CategoryIcons.iconFor(it.iconKey) } ?: SelloIcon.ReceiptLong,
-        contextDescription = spoken
+        contextDescription = spoken,
+        suggestions = if (state.noteSuggestions.isNotEmpty()) {
+            { NoteSuggestions(state.noteSuggestions, onAction) }
+        } else {
+            null
+        }
     )
 }
 

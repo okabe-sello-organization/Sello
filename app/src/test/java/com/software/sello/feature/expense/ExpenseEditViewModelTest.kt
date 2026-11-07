@@ -172,6 +172,24 @@ class ExpenseEditViewModelTest {
     }
 
     @Test
+    fun aCorrectionIsOfferedNoFrequentExpenseAndAPickChangesNothing() {
+        listOf(101, 102, 103).forEach { n ->
+            val pan = storedExpense(n, 1, "2026-10-06", 9_000, "Pan")
+            reads.stored[pan.id] = pan
+        }
+        val form = opened()
+
+        form.onAction(ExpenseEntryAction.FrequentPicked(uuid(1), "pan"))
+        form.onAction(ExpenseEntryAction.OpenNote)
+        form.onAction(ExpenseEntryAction.NoteDraftChanged("Pa"))
+
+        assertEquals(emptyList<Any>(), reads.ranges)
+        assertTrue(form.now.frequent.isEmpty() && form.now.noteSuggestions.isEmpty())
+        assertFalse(form.now.frequentOpen)
+        assertEquals(stored, form.now.draft())
+    }
+
+    @Test
     fun itIsLoadingUntilTheExpenseAndItsMonthAreRead() {
         reads.stored[bread.id] = bread
         val form = form()

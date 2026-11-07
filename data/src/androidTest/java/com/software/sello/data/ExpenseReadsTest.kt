@@ -9,6 +9,7 @@ import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseCursor
 import com.software.sello.domain.port.ExpensePage
+import com.software.sello.domain.port.ExpenseReads
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlinx.coroutines.runBlocking
@@ -154,6 +155,37 @@ class ExpenseReadsTest {
             assertThrows(IllegalArgumentException::class.java) {
                 page(100, "2026-10", null, limit)
             }
+        }
+    }
+
+    private fun between(from: String, through: String, limit: Int) = runBlocking {
+        ledger.expenseReads
+            .between(LocalDate.parse(from), LocalDate.parse(through), limit)
+            .valueOrFail()
+    }
+
+    @Test
+    fun aRangeReadsEveryCategoryBothEndsIncludedAndSaysWhenItLeftSomeOut() {
+        twoCategoriesAcrossMonths()
+
+        val october = between("2026-10-01", "2026-10-31", ExpenseReads.MAX_RECENT)
+        val firstTwo = between("2026-10-01", "2026-10-31", 2)
+
+        assertEquals(
+            listOf(
+                "2026-10-31 3000",
+                "2026-10-15 7000",
+                "2026-10-15 6000",
+                "2026-10-15 4000",
+                "2026-10-01 2000"
+            ),
+            october.shown()
+        )
+        assertNull(october.next)
+        assertEquals(listOf("2026-10-31 3000", "2026-10-15 7000"), firstTwo.shown())
+        assertEquals(ExpenseCursor(LocalDate.parse("2026-10-15"), 7), firstTwo.next)
+        assertThrows(IllegalArgumentException::class.java) {
+            between("2026-10-01", "2026-10-31", ExpenseReads.MAX_RECENT + 1)
         }
     }
 

@@ -298,7 +298,9 @@ fun ChipRows(
 /**
  * A full-width line under the chips that opens an editor, such as the note or an income
  * source's name. Empty, it reads as a quiet [text] prompt; filled, it shows the value and
- * the brand [action] (Editar, Cambiar) on the trailing edge.
+ * the brand [action] (Editar, Cambiar) on the trailing edge. [trailing], when given, sits
+ * at the end of the line as a control of its own: tapping it does not open the editor, and
+ * the line keeps its height.
  */
 @Composable
 fun EntryLine(
@@ -308,38 +310,55 @@ fun EntryLine(
     modifier: Modifier = Modifier,
     action: String? = null,
     placeholder: Boolean = false,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    trailing: (@Composable () -> Unit)? = null
 ) {
     val colors = SelloTheme.colors
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = modifier
-            .fillMaxWidth()
-            .heightIn(min = SelloTheme.spacing.minTouchTarget)
-            .alpha(if (enabled) 1f else SelloTheme.alpha.disabled)
-            .clip(SelloTheme.shapes.inset)
-            .background(colors.paper)
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = SelloTheme.spacing.sm)
-    ) {
-        Icon(icon.painter(), null, tint = colors.brand, modifier = Modifier.size(22.dp))
-        Text(
-            text,
-            Modifier.weight(1f),
-            color = if (placeholder) colors.inkSoft else colors.ink,
-            fontWeight = if (placeholder) null else SelloTheme.type.weight.soft,
-            style = MaterialTheme.typography.bodyMedium,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis
-        )
-        if (action != null && !placeholder) {
+    val paper = Modifier
+        .fillMaxWidth()
+        .alpha(if (enabled) 1f else SelloTheme.alpha.disabled)
+        .clip(SelloTheme.shapes.inset)
+        .background(colors.paper)
+    val line: @Composable (Modifier) -> Unit = { lineModifier ->
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = lineModifier
+                .heightIn(min = SelloTheme.spacing.minTouchTarget)
+                .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+                .padding(
+                    start = 14.dp,
+                    end = if (trailing == null) 14.dp else SelloTheme.spacing.sm,
+                    top = SelloTheme.spacing.sm,
+                    bottom = SelloTheme.spacing.sm
+                )
+        ) {
+            Icon(icon.painter(), null, tint = colors.brand, modifier = Modifier.size(22.dp))
             Text(
-                action,
-                color = colors.brand,
-                fontWeight = SelloTheme.type.weight.emphasis,
-                style = MaterialTheme.typography.bodyMedium
+                text,
+                Modifier.weight(1f),
+                color = if (placeholder) colors.inkSoft else colors.ink,
+                fontWeight = if (placeholder) null else SelloTheme.type.weight.soft,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
+            if (action != null && !placeholder) {
+                Text(
+                    action,
+                    color = colors.brand,
+                    fontWeight = SelloTheme.type.weight.emphasis,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+    }
+    if (trailing == null) {
+        line(modifier.then(paper))
+    } else {
+        Row(paper, verticalAlignment = Alignment.CenterVertically) {
+            line(modifier.weight(1f))
+            trailing()
         }
     }
 }
@@ -367,7 +386,8 @@ fun NoteComposer(
     contextIcon: SelloIcon? = null,
     contextDescription: String = context.text,
     doneEnabled: Boolean = error == null,
-    windowInsets: WindowInsets = WindowInsets.safeDrawing
+    windowInsets: WindowInsets = WindowInsets.safeDrawing,
+    suggestions: (@Composable () -> Unit)? = null
 ) {
     val colors = SelloTheme.colors
     val focus = remember { FocusRequester() }
@@ -486,6 +506,9 @@ fun NoteComposer(
                                 )
                             }
                         }
+                    }
+                    if (suggestions != null) {
+                        Box(Modifier.padding(top = SelloTheme.spacing.xs)) { suggestions() }
                     }
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm),

@@ -562,9 +562,9 @@ fun MoreMenuDropdown(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-EntryLine">
-<h3><code>EntryLine</code> <span class="src"><code>component/Controls.kt:304</code></span></h3>
+<h3><code>EntryLine</code> <span class="src"><code>component/Controls.kt:306</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>A full-width line under the chips that opens an editor, such as the note or an income source's name. Empty, it reads as a quiet <code>text</code> prompt; filled, it shows the value and the brand <code>action</code> (Editar, Cambiar) on the trailing edge. It only opens an editor; something done at once, such as pausing a fixed payment, is a <code>SelloButton</code>.</dd>
+<dt>Purpose</dt><dd>A full-width line under the chips that opens an editor, such as the note or an income source's name. Empty, it reads as a quiet <code>text</code> prompt; filled, it shows the value and the brand <code>action</code> (Editar, Cambiar) on the trailing edge. <code>trailing</code>, when given, sits at the line's end as a control of its own, such as Anotar's ⚡ Frecuentes: tapping it does not open the editor, and the line keeps its height. It only opens an editor; something done at once, such as pausing a fixed payment, is a <code>SelloButton</code>.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 2</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/income.html">income · 2</a> <a class="tag" href="features/recurrence.html">recurrence · 2</a> <span class="muted">Inside the design system: <code>Movement.kt</code>, <code>RepeatParts.kt</code>.</span></dd>
 </dl>
 <pre><code>fun EntryLine(
@@ -574,10 +574,11 @@ fun MoreMenuDropdown(
     modifier: Modifier = Modifier,
     action: String? = null,
     placeholder: Boolean = false,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    trailing: (@Composable () -&gt; Unit)? = null
 )</code></pre>
 
-<p class="muted">Also visible in screen baselines: <code>expense-entry</code>.</p>
+<p class="muted">Also visible in screen baselines: <code>expense-entry</code>, <code>expense-entry-frequent-button</code>.</p>
 <figure data-shot="expense-entry" data-module="app" data-caption="Seen in Anotar: Agregar nota and Repetir este gasto"></figure>
 <div class="gaps"><p>No component capture.</p></div>
 </article>
@@ -599,9 +600,9 @@ fun MoreMenuDropdown(
 <div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
 </article>
 <article class="component" id="c-NoteComposer">
-<h3><code>NoteComposer</code> <span class="src"><code>component/Controls.kt:356</code></span></h3>
+<h3><code>NoteComposer</code> <span class="src"><code>component/Controls.kt:375</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>Native text input docked above the IME. <code>context</code> says what the text belongs to, with its facts in bold spans, and <code>contextIcon</code> leads it; <code>contextDescription</code> is what a screen reader hears for the box, with amounts spoken in full. Under the box, <code>hint</code> (such as "Opcional") gives way to <code>error</code>. Validation and draft retention are caller-owned. The paper reaches the screen's edges; its content keeps clear of <code>windowInsets</code> at the sides, such as a navigation bar on the right of a phone held sideways.</dd>
+<dt>Purpose</dt><dd>Native text input docked above the IME. <code>context</code> says what the text belongs to, with its facts in bold spans, and <code>contextIcon</code> leads it; <code>contextDescription</code> is what a screen reader hears for the box, with amounts spoken in full. Under the box, <code>suggestions</code>, when given (Anotar's past notes), then <code>hint</code> (such as "Opcional"), which gives way to <code>error</code>. Validation and draft retention are caller-owned. The paper reaches the screen's edges; its content keeps clear of <code>windowInsets</code> at the sides, such as a navigation bar on the right of a phone held sideways.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 2</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a> <span class="muted">Inside the design system: <code>Movement.kt</code>.</span></dd>
 </dl>
 <pre><code>fun NoteComposer(
@@ -618,10 +619,11 @@ fun MoreMenuDropdown(
     contextIcon: SelloIcon? = null,
     contextDescription: String = context.text,
     doneEnabled: Boolean = error == null,
-    windowInsets: WindowInsets = WindowInsets.safeDrawing
+    windowInsets: WindowInsets = WindowInsets.safeDrawing,
+    suggestions: (@Composable () -&gt; Unit)? = null
 )</code></pre>
 
-<p class="muted">Also visible in screen baselines: <code>expense-entry-note</code>.</p>
+<p class="muted">Also visible in screen baselines: <code>expense-entry-note</code>, <code>expense-entry-frequent-suggestions</code>.</p>
 <figure data-shot="expense-entry-note" data-module="app" data-caption="Seen in Anotar: the note composer over the keypad"></figure>
 <div class="gaps"><p>No component capture.</p></div>
 </article>
@@ -1524,7 +1526,7 @@ fun StatusSlip(
 <article class="component" id="c-MovementNoteLine">
 <h3><code>MovementNoteLine</code> <span class="src"><code>component/Movement.kt:62</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>The note line under the choices: the <code>note</code>, or <code>addLabel</code> as an invitation while it is blank; <code>editLabel</code> names the action.</dd>
+<dt>Purpose</dt><dd>The note line under the choices: the <code>note</code>, or <code>addLabel</code> as an invitation while it is blank; <code>editLabel</code> names the action. <code>trailing</code> is a control of its own at the line's end.</dd>
 <dt>Inputs</dt><dd>The note as typed, the invitation and action words ("Agregar nota", "Editar").</dd>
 <dt>Used by</dt><dd>Through the app's wrapper of the same name (<code>presentation/movement/MovementForm.kt</code>), which supplies the copy: <a class="tag" href="features/bulk.html">bulk · 1</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 2</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 2</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a></dd>
 </dl>
@@ -1534,7 +1536,8 @@ fun StatusSlip(
     editLabel: String,
     enabled: Boolean,
     onClick: () -&gt; Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    trailing: (@Composable () -&gt; Unit)? = null
 )</code></pre>
 
 <p class="muted">Also visible in screen baselines: <code>goal-movement</code>.</p>
@@ -1542,7 +1545,7 @@ fun StatusSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-MovementNoteComposer">
-<h3><code>MovementNoteComposer</code> <span class="src"><code>component/Movement.kt:111</code></span></h3>
+<h3><code>MovementNoteComposer</code> <span class="src"><code>component/Movement.kt:113</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The note composer over the form, its context the movement's <code>kind</code> and, once there is one, its signed <code>figure</code> in bold. <code>spoken</code> names what the note is for when read aloud, followed by <code>amountSpoken</code>. <code>counter</code>, <code>hint</code>, <code>error</code> and the two labels are the <code>NoteComposer</code>'s, already written.</dd>
 <dt>Inputs</dt><dd>The movement's kind and signed figure, the draft, and the composer's counter, hint, error and labels, already written; the app maps a note problem to its message.</dd>
@@ -1570,7 +1573,7 @@ fun StatusSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-MovementDatePicker">
-<h3><code>MovementDatePicker</code> <span class="src"><code>component/Movement.kt:157</code></span></h3>
+<h3><code>MovementDatePicker</code> <span class="src"><code>component/Movement.kt:159</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The date picker of a form, opened on <code>date</code>: only days from <code>first</code> to <code>last</code> can be picked, either end open when null. <code>confirmLabel</code> picks. It works in whole days, with no time or zone. Every date the app asks for uses it: a movement or expense already made (<code>last</code> = today), one that repeats (<code>first</code> = today), a schedule's start (from tomorrow) and a repeat's end (on or after the start).</dd>
 <dt>Inputs</dt><dd>The day it opens on, the first and last days that can be picked (plain <code>LocalDate</code>s) and the confirm label. The confirm button carries <code>MOVEMENT_DATE_CONFIRM_TAG</code>.</dd>
@@ -1590,7 +1593,7 @@ fun StatusSlip(
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 <article class="component" id="c-MovementDiscardSlip">
-<h3><code>MovementDiscardSlip</code> <span class="src"><code>component/Movement.kt:86</code></span></h3>
+<h3><code>MovementDiscardSlip</code> <span class="src"><code>component/Movement.kt:88</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>Asks before a typed movement is thrown away: <code>message</code>, then <code>confirmLabel</code> in loss ink, or <code>dismissLabel</code> to keep it. It is a <code>ConfirmSlip</code>.</dd>
 <dt>Inputs</dt><dd>The form's own title, the message, the confirm label and, when the form has its own, the keep label (default Cancelar).</dd>

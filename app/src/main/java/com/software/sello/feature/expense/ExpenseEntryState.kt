@@ -74,6 +74,21 @@ data class EntryCorrection(val list: CarryCorrectionList, val changed: Boolean)
 data class EntryCategory(val id: String, val name: String, val iconKey: String)
 
 /**
+ * An expense the person records often (SELLO-199): its [note], its category, how many
+ * times it was recorded in the last 90 days and its [usual] amount. [categoryId] and [key]
+ * name it when it is picked; picking only fills the form.
+ */
+data class EntryFrequent(
+    val categoryId: String,
+    val key: String,
+    val note: String,
+    val categoryName: String,
+    val iconKey: String,
+    val count: Int,
+    val usual: MoneyTextValue
+)
+
+/**
  * What is typed so far, handed to Anotar varios to become its line one: the amount's
  * digits, the chosen category, the note and the date. Each may be missing.
  */
@@ -143,7 +158,16 @@ data class ExpenseEntryState(
     /** Saving waits for the list of later months it changes to be confirmed. */
     val correction: EntryCorrection? = null,
     /** Varios was pressed: the form gives way to Anotar varios with what is typed. */
-    val several: ExpenseSeveral? = null
+    val several: ExpenseSeveral? = null,
+    /**
+     * Lo que más anotas, for a new expense once read: empty while it is read, when the read
+     * failed or when nothing is frequent, and then ⚡ Frecuentes is not shown.
+     */
+    val frequent: List<EntryFrequent> = emptyList(),
+    /** The sheet of [frequent] is open. */
+    val frequentOpen: Boolean = false,
+    /** While the note is written: past notes that start with what is typed. */
+    val noteSuggestions: List<EntryFrequent> = emptyList()
 ) {
     val canSubmit: Boolean
         get() = !loading && !loadFailed && !busy && missing == null && error !in Blocking &&
@@ -210,6 +234,17 @@ sealed interface ExpenseEntryAction {
 
     /** Close the composer; the note stays as it was. */
     data object NoteCancelled : ExpenseEntryAction
+
+    /** ⚡ Frecuentes: open the sheet of what is recorded most. */
+    data object OpenFrequent : ExpenseEntryAction
+
+    data object CloseFrequent : ExpenseEntryAction
+
+    /**
+     * A frequent expense, from the sheet or the composer's suggestions: fills the category,
+     * the note and the usual amount. Nothing is saved.
+     */
+    data class FrequentPicked(val categoryId: String, val key: String) : ExpenseEntryAction
 
     /** The category editor, opened from Nueva, created this category: choose it. */
     data class CategoryCreated(val id: String) : ExpenseEntryAction
