@@ -2,7 +2,7 @@
 
 - **Type:** Story
 - **Priority:** P1
-- **Status:** In Progress
+- **Status:** Done
 - **Depends on:** SELLO-192
 - **Gate:** G1
 
