@@ -3,6 +3,7 @@ package com.software.sello.designsystem.component
 import android.view.Choreographer
 import android.view.View
 import android.view.inputmethod.InputMethodManager
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,12 +28,17 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.software.sello.designsystem.icon.SelloIcon
+import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 
 /**
@@ -122,6 +129,85 @@ fun FormField(
             }
         }
     }
+}
+
+/**
+ * A search input: a magnifier, the [placeholder] while nothing is typed and, once
+ * something is, a clear button said as [clearLabel] that empties it. Like [FormField] it
+ * shows exactly what was typed and is underlined in the rule ink, the brand's while
+ * focused. The keyboard's search key puts the keyboard away. Screen readers call the
+ * field by its [placeholder].
+ */
+@Composable
+fun SearchField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    clearLabel: String,
+    modifier: Modifier = Modifier
+) {
+    val colors = SelloTheme.colors
+    var focused by remember { mutableStateOf(false) }
+    val view = LocalView.current
+    val focus = LocalFocusManager.current
+    DisposableEffect(view) { onDispose { if (focused) view.putKeyboardAwayIfUnused() } }
+    val line = if (focused) colors.brand else colors.rule
+    val edited = rememberEditedText(value)
+    BasicTextField(
+        value = edited.field,
+        onValueChange = { edited.edit(it)?.let(onValueChange) },
+        singleLine = true,
+        textStyle = MaterialTheme.typography.titleMedium.copy(color = colors.ink),
+        cursorBrush = SolidColor(colors.brand),
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        keyboardActions = KeyboardActions(onSearch = { focus.clearFocus() }),
+        modifier = modifier
+            .fillMaxWidth()
+            .onFocusChanged {
+                if (focused && !it.isFocused) view.putKeyboardAwayIfUnused()
+                focused = it.isFocused
+            }
+            .semantics { contentDescription = placeholder },
+        decorationBox = { field ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md),
+                modifier = Modifier
+                    .heightIn(min = SelloTheme.spacing.minTouchTarget)
+                    .drawBehind {
+                        val stroke = (if (focused) 2.dp else 1.5.dp).toPx()
+                        val y = size.height - stroke / 2
+                        drawLine(line, Offset(0f, y), Offset(size.width, y), stroke)
+                    }
+            ) {
+                Icon(
+                    SelloIcon.Search.painter(),
+                    contentDescription = null,
+                    tint = if (value.isEmpty()) colors.inkSoft else colors.ink
+                )
+                Box(modifier = Modifier.weight(1f)) {
+                    if (value.isEmpty()) {
+                        Text(
+                            placeholder,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = colors.inkSoft,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    field()
+                }
+                if (value.isNotEmpty()) {
+                    SelloIconButton(
+                        SelloIcon.Close,
+                        clearLabel,
+                        onClick = { onValueChange("") },
+                        tint = colors.inkSoft
+                    )
+                }
+            }
+        }
+    )
 }
 
 /**

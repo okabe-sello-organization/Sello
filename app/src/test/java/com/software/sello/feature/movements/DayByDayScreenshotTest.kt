@@ -75,6 +75,90 @@ internal val dayByDayReady = DayByDayState.Ready(
     more = false
 )
 
+private val icons = mapOf("Alimentación" to "restaurant", "Café" to "local_cafe", "Hogar" to "home")
+
+/** An expense a search found, on [date], with its category's icon. */
+private fun hit(date: String, id: String, note: String, category: String, amount: String) =
+    FoundRow(LocalDate.parse(date), expense(id, note, category, icons.getValue(category), amount))
+
+/** The mock's «rappi» search, synthetic: nine expenses over three months. */
+internal val foundRappi = SearchState.Ready(
+    words = "rappi",
+    amount = null,
+    today = LocalDate.of(2026, 10, 6),
+    filter = MovementFilter.All,
+    expenses = FoundTotal(9, plain("214.800")),
+    incomes = null,
+    months = listOf(
+        FoundMonth(
+            YearMonth.of(2026, 10),
+            3,
+            plain("61.200"),
+            listOf(
+                hit("2026-10-03", "11", "Rappi, almuerzo", "Alimentación", "20.600"),
+                hit("2026-10-01", "8", "Rappi, café", "Café", "15.000"),
+                hit("2026-10-01", "12", "RAPPI cena", "Alimentación", "25.600")
+            )
+        ),
+        FoundMonth(
+            YearMonth.of(2026, 9),
+            4,
+            plain("98.300"),
+            listOf(
+                hit("2026-09-27", "13", "Rappi, almuerzo", "Alimentación", "22.100"),
+                hit("2026-09-19", "14", "Rappí mercado", "Alimentación", "41.200"),
+                hit("2026-09-10", "15", "Rappi, desayuno", "Café", "17.000"),
+                hit("2026-09-02", "16", "Rappi, almuerzo", "Alimentación", "18.000")
+            )
+        ),
+        FoundMonth(
+            YearMonth.of(2026, 8),
+            2,
+            plain("55.300"),
+            listOf(
+                hit("2026-08-12", "17", "Rappi, almuerzo", "Alimentación", "27.900"),
+                hit("2026-08-05", "18", "Rappi, cena", "Alimentación", "27.400")
+            )
+        )
+    ),
+    more = false
+)
+
+/** The mock's «18.000»: the exact amount, an income among the expenses. */
+internal val foundAmount = SearchState.Ready(
+    words = "18.000",
+    amount = plain("18.000"),
+    today = LocalDate.of(2026, 10, 6),
+    filter = MovementFilter.All,
+    expenses = FoundTotal(14, plain("252.000")),
+    incomes = FoundTotal(1, plus("18.000")),
+    months = listOf(
+        FoundMonth(
+            YearMonth.of(2026, 10),
+            2,
+            plain("36.000"),
+            listOf(
+                hit("2026-10-06", "1", "Almuerzo", "Alimentación", "18.000"),
+                hit("2026-10-04", "21", "Almuerzo", "Alimentación", "18.000")
+            )
+        ),
+        FoundMonth(
+            YearMonth.of(2026, 9),
+            6,
+            plain("90.000"),
+            listOf(
+                hit("2026-09-30", "22", "Almuerzo", "Alimentación", "18.000"),
+                FoundRow(
+                    LocalDate.of(2026, 9, 20),
+                    DayRow.Received("23", "Reembolso", plus("18.000"), "transfer", null)
+                ),
+                hit("2026-09-13", "24", "Plomero", "Hogar", "18.000")
+            )
+        )
+    ),
+    more = true
+)
+
 /** What Día a día looks like in every state, light and dark (ADR 0022). */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -86,7 +170,14 @@ class DayByDayScreenshotTest {
      * As MovementDestinations.kt frames it: the title over the month, no dock. [atEnd]
      * scrolls to the foot of the list first, where a failed page is said.
      */
-    private fun capture(name: String, state: DayByDayState, look: Look, atEnd: Boolean = false) {
+    private fun capture(
+        name: String,
+        state: DayByDayState,
+        look: Look,
+        atEnd: Boolean = false,
+        query: String = "",
+        found: SearchState = SearchState.Off
+    ) {
         rule.showSello(look) {
             ShellScreen(
                 octoberShell,
@@ -97,7 +188,7 @@ class DayByDayScreenshotTest {
                 showMonthAsSubtitle = true,
                 entryDock = false
             ) { padding ->
-                DayByDayScreen(state, {}, {}, {}, {}, padding)
+                DayByDayScreen(state, query, found, {}, {}, {}, {}, padding)
             }
         }
         if (atEnd) rule.onNodeWithTag("dayByDay.pageFailed").performScrollTo()
@@ -165,4 +256,32 @@ class DayByDayScreenshotTest {
     @Test
     fun pageTooLargeOscuro() =
         capture("page-too-large", pageTooLarge, Look(dark = true), atEnd = true)
+
+    private val notFound = foundRappi.copy(
+        words = "plomería",
+        expenses = null,
+        months = emptyList()
+    )
+    private val searchFailed =
+        SearchState.Failed("rappi", MovementFilter.All, DayByDayProblem.Unread)
+
+    private fun search(name: String, query: String, found: SearchState, look: Look) =
+        capture("search-$name", dayByDayReady, look, query = query, found = found)
+
+    @Test fun searchWordsClaro() = search("words", "rappi", foundRappi, Look())
+
+    @Test fun searchWordsOscuro() = search("words", "rappi", foundRappi, Look(dark = true))
+
+    @Test fun searchAmountClaro() = search("amount", "18.000", foundAmount, Look())
+
+    @Test fun searchAmountOscuro() = search("amount", "18.000", foundAmount, Look(dark = true))
+
+    @Test fun searchNoneClaro() = search("none", "plomería", notFound, Look())
+
+    @Test fun searchNoneOscuro() = search("none", "plomería", notFound, Look(dark = true))
+
+    /** A failed read keeps the query in the field and offers Reintentar. */
+    @Test fun searchFailedClaro() = search("failed", "rappi", searchFailed, Look())
+
+    @Test fun searchFailedOscuro() = search("failed", "rappi", searchFailed, Look(dark = true))
 }

@@ -5,7 +5,7 @@
 > subject to the user's current instructions.
 
 **Snapshot:** 2026-11-07 · **Product baseline:** `main`; the release candidate is `0.1.0` from `a20ae90f`, and the [candidate checklist](../release/candidate-checklist.md) leaves only the owner's steps (the [MVP checklist](../release/mvp-checklist.md) is the October record).
-Done: E01–E10, E12, E13, E15–E32 and E35–E37; E33 and E34 are open. The owner dropped E14 and the
+Done: E01–E10, E12, E13, E15–E33 and E35–E37; E34 is open. The owner dropped E14 and the
 release tickets SELLO-043 and SELLO-113 on 2026-10-29. Each ticket's
 file under [docs/tickets](../tickets/README.md) and the pull request that closed it carry
 the details, and `python3 scripts/quality/tickets.py status` prints the current board.
@@ -85,6 +85,14 @@ This summary is refreshed when an epic closes and adds no verification claims.
   offered on Android 11, where a restored Sistema shows Cobalto) in Sello's own shades,
   read again each time Sello is on screen. Red and green hues get a note; gain, loss and
   warn never follow the ink. Backups carry the ink and Tuya's hue.
+- Día a día ([E33](../tickets/E33-movements/README.md)): a magnifier on Recibo's and
+  Resumen's bars and a third Resumen stub open the shared month's expenses and incomes
+  by day, newest first, each day headed by what was spent (incomes never netted in), with
+  Todo, Gastos and Ingresos chips. Its search looks through every month: a word finds
+  notes, category names and income sources whatever the accents or capitals, and a valid
+  COP amount also finds that exact amount. Results come by month with each month's count
+  and expense sum, and a summary of every match. Incomes are folded as they are read; no
+  schema change.
 - Compartir el mes ([E35](../tickets/E35-share-the-month/README.md)): Resumen's bar
   shares the month on screen as an image, after a preview sheet that shows it and says
   what it holds: the month, what is left of the total limit with its stamp, spent
@@ -180,7 +188,7 @@ What each ticket changed is in its pull request, linked from the ticket file
   the walk on the owner's phone, and the go/no-go. Distributing it is a separate,
   owner-authorized action. No release was published, signed with the owner's key or
   tagged; the only tag, `design-system-v1`, marks E32's design, not a release.
-- E33 and E34 (everyday features, #410) are open. Dropped on 2026-10-29: SELLO-043 (carryover release), SELLO-113
+- E34 (everyday features, #410) is open. Dropped on 2026-10-29: SELLO-043 (carryover release), SELLO-113
   (the `0.2.0` release) and E14 with SELLO-074 (manual TalkBack, Switch Access and
   keyboard walks). The automated accessibility checks from SELLO-033 stay.
 - Open GitHub issues are not tickets.

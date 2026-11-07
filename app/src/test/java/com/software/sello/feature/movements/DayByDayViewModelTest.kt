@@ -47,8 +47,15 @@ class DayByDayViewModelTest {
     @After
     fun reset() = Dispatchers.resetMain()
 
-    private fun model(saved: SavedStateHandle = SavedStateHandle()) =
-        DayByDayViewModel(saved, session, snapshots, movements, testMoney())
+    private fun model(saved: SavedStateHandle = SavedStateHandle()) = DayByDayViewModel(
+        saved,
+        session,
+        snapshots,
+        movements,
+        HandMovementSearch(),
+        handSourceNames,
+        testMoney()
+    )
 
     private fun TestScope.watch(model: DayByDayViewModel) =
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.state.collect {} }
