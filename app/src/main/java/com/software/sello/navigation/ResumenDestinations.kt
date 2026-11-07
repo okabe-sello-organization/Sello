@@ -58,7 +58,9 @@ internal fun NavGraphBuilder.resumenDestinations(
                 { navigation.navigate(ExpenseEntryRoute()) },
                 padding,
                 { navigation.navigate(SchedulesRoute()) },
-                { id -> navigation.navigate(CategoryEditRoute(id, state.selectedMonth.toString())) },
+                { id ->
+                    navigation.navigate(CategoryEditRoute(id, state.selectedMonth.toString()))
+                },
                 onDayByDay = { navigation.openDayByDay() }
             )
         }

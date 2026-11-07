@@ -55,7 +55,11 @@ class RoomMonthMovements(private val database: SelloDatabase) : MonthMovements {
         val keys = dao.page(from, through, expenses, incomes, offset, limit + 1)
         val shown = keys.take(limit)
         val totalCount = dao.count(from, through, expenses, incomes)
-        val amounts = when (val read = dao.expenseAmounts(from, through).decodeAll { it.toDomain() }) {
+        val amounts = when (
+            val read = dao.expenseAmounts(from, through).decodeAll {
+                it.toDomain()
+            }
+        ) {
             is Outcome.Failure -> return damaged(read.error)
             is Outcome.Success -> read.value
         }

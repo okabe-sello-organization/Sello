@@ -163,12 +163,10 @@ class DayByDayViewModel(
     }
 
     /** Consecutive rows of one day under its heading, with the day's whole expense sum. */
-    private fun groups(
-        rows: List<Movement>,
-        days: Map<LocalDate, Money>
-    ): List<DayGroup> = rows.groupBy { it.date }.map { (date, movements) ->
-        DayGroup(date, days[date]?.let(money::format), movements.map(::row))
-    }
+    private fun groups(rows: List<Movement>, days: Map<LocalDate, Money>): List<DayGroup> =
+        rows.groupBy { it.date }.map { (date, movements) ->
+            DayGroup(date, days[date]?.let(money::format), movements.map(::row))
+        }
 
     private fun row(movement: Movement): DayRow = when (movement) {
         is Movement.Spent -> DayRow.Spent(

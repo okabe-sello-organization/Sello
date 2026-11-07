@@ -105,7 +105,14 @@ fun ResumenScreen(
                         horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.lg)
                     ) {
                         ResumenPane(Modifier.weight(1f)) {
-                            SummarySlips(state, onIncome, onSchedules, onDayByDay, onAction, onCategory)
+                            SummarySlips(
+                                state,
+                                onIncome,
+                                onSchedules,
+                                onDayByDay,
+                                onAction,
+                                onCategory
+                            )
                         }
                         ResumenPane(Modifier.weight(1f)) {
                             ChartSlips(state, onAction, onExpense, onAdjustLimit)

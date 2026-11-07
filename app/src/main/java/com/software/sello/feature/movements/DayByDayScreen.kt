@@ -35,8 +35,8 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.onClick
@@ -138,7 +138,10 @@ private fun ColumnScope.Ready(
                 SelloIcon.ReceiptLong,
                 stringResource(R.string.day_by_day_empty_title)
             ),
-            message = stringResource(R.string.day_by_day_empty_body, months.inSentence(state.month)),
+            message = stringResource(
+                R.string.day_by_day_empty_body,
+                months.inSentence(state.month)
+            ),
             modifier = Modifier.testTag("dayByDay.empty"),
             action = StatusAction(stringResource(R.string.expense_entry_submit), onClick = onRecord)
         )
@@ -321,8 +324,12 @@ private fun MovementLine(row: DayRow, onClick: () -> Unit) {
     val note = row.note ?: stringResource(R.string.category_detail_no_note)
     val caption = when (row) {
         is DayRow.Spent -> row.categoryName
+
         is DayRow.Received ->
-            stringResource(R.string.day_by_day_income_of, incomeSourceLabel(row.sourceKey, row.sourceName))
+            stringResource(
+                R.string.day_by_day_income_of,
+                incomeSourceLabel(row.sourceKey, row.sourceName)
+            )
     }
     val fixed = row is DayRow.Spent && row.fixed
     val fixedWord = stringResource(R.string.day_by_day_fixed)
@@ -390,7 +397,7 @@ private fun MovementLine(row: DayRow, onClick: () -> Unit) {
                 color = if (row is DayRow.Received) colors.semantic.gain else Color.Unspecified
             )
         }
-        HorizontalDivider(thickness = 1.dp, color = colors.rule.copy(alpha = RowRuleAlpha))
+        HorizontalDivider(thickness = 1.dp, color = colors.rule.copy(alpha = ROW_RULE_ALPHA))
     }
 }
 
@@ -431,7 +438,7 @@ private fun FixedTag(text: String) {
 private val FixedTagShape = RoundedCornerShape(6.dp)
 
 /** Rows are parted by a lighter rule than a day's heading (no alpha token). */
-private const val RowRuleAlpha = 0.5f
+private const val ROW_RULE_ALPHA = 0.5f
 
 const val DAY_BY_DAY_TAG = "dayByDay"
 const val FIXED_TAG = "dayByDay.fixed"

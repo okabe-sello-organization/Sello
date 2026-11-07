@@ -38,9 +38,9 @@ import com.software.sello.feature.investments.InvestmentMovementViewModel
 import com.software.sello.feature.investments.InvestmentMovementsViewModel
 import com.software.sello.feature.investments.UsdRateEntryViewModel
 import com.software.sello.feature.investments.UsdRateViewModel
+import com.software.sello.feature.movements.DayByDayViewModel
 import com.software.sello.feature.recibo.AdjustBudgetViewModel
 import com.software.sello.feature.recibo.CategoryDetailViewModel
-import com.software.sello.feature.movements.DayByDayViewModel
 import com.software.sello.feature.recibo.CategoryExpensesViewModel
 import com.software.sello.feature.recibo.LimitSheetViewModel
 import com.software.sello.feature.recibo.ReciboViewModel

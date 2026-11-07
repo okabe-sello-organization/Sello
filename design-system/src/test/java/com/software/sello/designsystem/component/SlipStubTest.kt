@@ -115,7 +115,9 @@ class SlipStubTest {
             content = {
                 SlipStub(
                     listOf(
-                        { StubButton(SelloIcon.ReceiptLong, "Ingresos", {}, Modifier.testTag("a")) },
+                        {
+                            StubButton(SelloIcon.ReceiptLong, "Ingresos", {}, Modifier.testTag("a"))
+                        },
                         { StubButton(SelloIcon.Autorenew, "Fijos", {}, Modifier.testTag("b")) },
                         {
                             StubButton(

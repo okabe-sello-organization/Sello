@@ -53,7 +53,9 @@ internal fun NavGraphBuilder.movementDestinations(
             DayByDayScreen(
                 days,
                 model::onAction,
-                onExpense = { navigation.navigate(ExpenseEditRoute(it)) { launchSingleTop = true } },
+                onExpense = {
+                    navigation.navigate(ExpenseEditRoute(it)) { launchSingleTop = true }
+                },
                 onIncome = { navigation.navigate(IncomeEditRoute(it)) { launchSingleTop = true } },
                 onRecord = { onShell(ShellAction.StartEntry) },
                 padding = padding
@@ -69,7 +71,10 @@ internal fun NavHostController.openDayByDay() = navigate(DayByDayRoute) { launch
 @Composable
 internal fun DayByDayBarAction(onClick: () -> Unit) {
     IconButton(onClick = onClick, modifier = Modifier.testTag(DAY_BY_DAY_ACTION_TAG)) {
-        Icon(SelloIcon.Search.painter(), contentDescription = stringResource(R.string.day_by_day_open))
+        Icon(
+            SelloIcon.Search.painter(),
+            contentDescription = stringResource(R.string.day_by_day_open)
+        )
     }
 }
 
