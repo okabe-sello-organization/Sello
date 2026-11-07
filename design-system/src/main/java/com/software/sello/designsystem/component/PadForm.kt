@@ -22,7 +22,8 @@ sealed interface PadFormStage {
  * A full-screen form for one value typed on the Sello pad, such as the dollar rate or Gastos
  * hormiga's line: [title] with [navigationIcon] (a close button), then, by [stage], a
  * skeleton slip, a failed read with Reintentar, or [EntryLayout] with the [amount] slip,
- * one [fact] under it, the [action] and the [keypad]. [loadingModifier] and
+ * one [fact] under it, the [action] and the [keypad]. [modifier] is the scaffold's;
+ * [loadingModifier] and
  * [failedModifier] are the skeleton's and the failed slip's.
  */
 @Composable
@@ -34,10 +35,11 @@ fun PadForm(
     fact: @Composable () -> Unit,
     action: @Composable () -> Unit,
     keypad: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
     loadingModifier: Modifier = Modifier,
     failedModifier: Modifier = Modifier
 ) {
-    SelloScaffold(title = title, navigationIcon = navigationIcon) { padding ->
+    SelloScaffold(title = title, modifier = modifier, navigationIcon = navigationIcon) { padding ->
         when (stage) {
             PadFormStage.Loading -> Column(
                 Modifier.fillMaxSize().padding(padding).padding(SelloTheme.spacing.lg)

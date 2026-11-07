@@ -3,6 +3,7 @@ package com.software.sello.feature.resumen
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.domain.model.Expense
+import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ResumenSnapshot
 import com.software.sello.domain.model.SmallExpenseLine
@@ -217,10 +218,8 @@ class ResumenSmallExpensesTest {
     @Test
     fun smallExpensesThatCannotBeAddedUpAreSaidApartFromTheLine() {
         val read = snapshot(month)
-        // An expense the hero never counted: the slip's sum cannot be a share of it.
-        val broken = read.copy(
-            periods = read.periods.copy(current = read.periods.current + spend("2026-10-09", 1_000))
-        )
+        // A hero of 1.000 under 40.000 of small expenses: no share can be worked out.
+        val broken = read.copy(budget = read.budget.copy(spent = Money.cop(1_000)))
 
         assertEquals(ResumenSmallExpenses.Unavailable, small(broken))
     }
