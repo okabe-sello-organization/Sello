@@ -234,6 +234,22 @@ class ShareMonthViewModelTest {
     }
 
     @Test
+    fun figuresThatWentOlderWhileItWasPlacedRemoveItAndNeverReachTheShareSheet() = runTest {
+        val viewModel = started()
+        viewModel.readyToCapture()
+        val placing = CompletableDeferred<SharedExport?>()
+        shares.answer = { placing.await() }
+        viewModel.onAction(ShareMonthAction.Captured(image))
+
+        snapshots.of(october).value = ReadState.Failed(failure, lastGood = fresh)
+        placing.complete(SharedExport("content://exports/sello-2026-10.png", "image/png"))
+
+        assertEquals(SharePreview.Waiting, viewModel.open().preview)
+        assertEquals(ShareStep.Previewing, viewModel.open().step)
+        assertEquals(1, shares.cleared)
+    }
+
+    @Test
     fun leavingWhileItIsPlacedRemovesWhatWasWritten() = runTest {
         val viewModel = started()
         viewModel.readyToCapture()

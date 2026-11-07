@@ -81,9 +81,9 @@ This summary is refreshed when an epic closes and adds no verification claims.
   warn never follow the ink. Backups carry the ink and Tuya's hue.
 - Compartir el mes ([E35](../tickets/E35-share-the-month/README.md)): Resumen's bar
   shares the month on screen as an image, after a preview sheet that shows it and says
-  what it holds: the month, Recibo's headline and stamp, spent against the total limit
-  and each category's spent and limit. Never notes, income, goals, investments or
-  settings. Light paper in the person's ink; older figures wait for a fresh read. The PNG
+  what it holds: the month, what is left of the total limit with its stamp, spent
+  against that limit and each category Recibo lists with its spent and limit. Never
+  notes, income, goals, investments, settings or payments still to come. Light paper in the person's ink; older figures wait for a fresh read. The PNG
   goes through the export FileProvider in `cache/exports/`. Resumen's bar also gained
   Configuración.
 - Signed carryover ([E09](../tickets/E09-signed-carryover/README.md)): per category,

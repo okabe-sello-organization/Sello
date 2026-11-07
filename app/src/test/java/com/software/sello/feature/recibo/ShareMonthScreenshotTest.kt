@@ -44,8 +44,9 @@ class ShareMonthScreenshotTest {
         spent: String,
         limit: String?,
         fraction: Float?,
-        over: Boolean = false
-    ) = MonthShareCategory(name, icon, plain(spent), limit?.let(::plain), over, fraction, false)
+        over: Boolean = false,
+        archived: Boolean = false
+    ) = MonthShareCategory(name, icon, plain(spent), limit?.let(::plain), over, fraction, archived)
 
     /** The mock's October: one category over its limit and one without a limit. */
     private val image = MonthShareImage(
@@ -107,6 +108,22 @@ class ShareMonthScreenshotTest {
     /** The app in dark: the image keeps the light paper. */
     @Test
     fun imageInADarkApp() = captureImage(Look(dark = true), name = "cobalto-app-dark")
+
+    /**
+     * Gimnasio was archived this month with its 100.000 limit and nothing spent: it stays,
+     * as on Recibo, so the lines add up to the total. Limits 2.480.000 + 100.000 =
+     * 2.580.000; left 2.580.000 − 2.416.900 = 163.100.
+     */
+    private val archived = image.copy(
+        amount = plain("163.100"),
+        limit = plain("2.580.000"),
+        categories = image.categories.dropLast(1) +
+            line("Gimnasio", "fitness_center", "0", "100.000", 0f, archived = true) +
+            image.categories.last()
+    )
+
+    @Test
+    fun imageWithAnArchivedCategory() = captureImage(Look(), archived, "archived")
 
     @Test
     fun imageOfAPastMonth() = captureImage(Look(), september, "past-month")

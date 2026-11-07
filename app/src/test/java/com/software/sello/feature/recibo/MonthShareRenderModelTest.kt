@@ -2,14 +2,25 @@ package com.software.sello.feature.recibo
 
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.domain.model.Note
+import com.software.sello.domain.model.Occurrence
+import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.ReservedPayment
+import com.software.sello.domain.model.ScheduleId
+import com.software.sello.domain.policy.MonthlyBudgetPolicy
+import com.software.sello.domain.port.FinancialDay
+import com.software.sello.feature.expense.categoryId
 import com.software.sello.feature.expense.categoryIn
 import com.software.sello.feature.expense.monthOf
 import com.software.sello.feature.expense.storedExpense
+import com.software.sello.feature.expense.uuid
+import com.software.sello.testing.pesos
 import com.software.sello.testing.testMoney
 import java.lang.reflect.Modifier
 import java.lang.reflect.ParameterizedType
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.ZoneId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -144,7 +155,9 @@ class MonthShareRenderModelTest {
     }
 
     @Test
-    fun anArchivedCategoryIsShownOnlyWhenItHasSpendingThatMonth() {
+    fun theLinesAreRecibosSoTheyAddUpToTheTotalArchivedOnesIncluded() {
+        // Viejo was archived this month with its limit and nothing spent; Regalos was
+        // archived with spending. Recibo lists both, so the image does too.
         val idle = categoryIn(7, "Viejo", 50_000, archived = true)
         val used = categoryIn(8, "Regalos", null, archived = true, icon = "redeem")
         val image = render.image(
@@ -155,9 +168,60 @@ class MonthShareRenderModelTest {
             )
         )!!
 
-        assertEquals(listOf("Alimentación", "Regalos"), image.categories.map { it.name })
-        assertTrue(image.categories.single { it.name == "Regalos" }.archived)
+        assertEquals(
+            listOf("Alimentación", "Viejo", "Regalos"),
+            image.categories.map { it.name }
+        )
+        // Limits 900.000 + 50.000 = 950.000, the lines' limits; spent 100.000 + 30.000.
+        assertEquals(plain("950.000"), image.limit)
+        assertEquals(plain("130.000"), image.spent)
+        assertEquals(plain("50.000"), image.categories.single { it.name == "Viejo" }.limit)
+        assertTrue(image.categories.single { it.name == "Viejo" }.archived)
         assertEquals(plain("30.000"), image.categories.single { it.name == "Regalos" }.spent)
+    }
+
+    @Test
+    fun reservedPaymentsNeverReachTheHeadlineItIsTheLimitLessWhatWasSpent() {
+        // 22 October: Hogar 1.100.000, 800.000 spent, a 400.000 payment still to come.
+        // Recibo says "Falta para tus pagos 100.000 · Revisar"; the image says what is
+        // left of the limit, 1.100.000 − 800.000 = 300.000, Al día.
+        val payment = ReservedPayment(
+            (ScheduleId.of(uuid(700)) as Outcome.Success).value,
+            categoryId(5),
+            (Note.of("Arriendo de Juan") as Outcome.Success).value,
+            Occurrence(LocalDate.parse("2026-10-28"), 1),
+            pesos(400_000)
+        )
+        val snapshot = (
+            MonthlyBudgetPolicy.snapshot(
+                YearMonth.of(2026, 10),
+                FinancialDay(LocalDate.parse("2026-10-22"), ZoneId.of("America/Bogota")),
+                1,
+                1,
+                listOf(home),
+                listOf(spent(5, "2026-10-05", 800_000)),
+                listOf(payment)
+            ) as Outcome.Success
+            ).value
+
+        val image = render.image(snapshot)!!
+
+        assertEquals(ReciboAnswerLabel.Remaining, image.label)
+        assertEquals(plain("300.000"), image.amount)
+        assertEquals(ReciboStamp.OnTrack, image.stamp)
+        assertEquals(plain("800.000"), image.spent)
+        assertEquals(plain("1.100.000"), image.limit)
+        assertFalse(image.toString().contains("Arriendo de Juan"))
+    }
+
+    @Test
+    fun spendingExactlyTheLimitIsAlLimite() {
+        val image = render.image(
+            monthOf("2026-10-28", listOf(coffee), listOf(spent(4, "2026-10-04", 80_000)))
+        )!!
+
+        assertEquals(plain("0"), image.amount)
+        assertEquals(ReciboStamp.AtLimit, image.stamp)
     }
 
     @Test
@@ -176,10 +240,6 @@ class MonthShareRenderModelTest {
     @Test
     fun aMonthWithNothingToShowHasNoImage() {
         assertNull(render.image(monthOf("2026-10-28", emptyList())))
-        // Only an archived category with nothing spent: nothing to show either.
-        assertNull(
-            render.image(monthOf("2026-10-28", listOf(categoryIn(7, "Viejo", 50_000, true))))
-        )
     }
 
     @Test

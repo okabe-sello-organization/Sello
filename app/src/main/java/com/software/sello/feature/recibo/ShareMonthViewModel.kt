@@ -134,9 +134,19 @@ class ShareMonthViewModel(
         viewModelScope.launch {
             step.value = try {
                 val bytes = png.encode(captured.image)
-                bytes?.let { shares.place(it, "sello-$month.png", PNG) }
-                    ?.let(ShareStep::ReadyToShare)
-                    ?: ShareStep.Failed
+                val placed = bytes?.let { shares.place(it, "sello-$month.png", PNG) }
+                when {
+                    placed == null -> ShareStep.Failed
+
+                    // The figures went older while it was written: it is removed and
+                    // waits with the rest, never reaching the share sheet.
+                    (state.value as? ShareMonthState.Open)?.preview !is SharePreview.Ready -> {
+                        shares.clear()
+                        ShareStep.Previewing
+                    }
+
+                    else -> ShareStep.ReadyToShare(placed)
+                }
             } catch (cancelled: CancellationException) {
                 // Left before it was shared: whatever was written is removed.
                 withContext(NonCancellable) { shares.clear() }
