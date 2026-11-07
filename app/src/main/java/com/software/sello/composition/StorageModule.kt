@@ -35,6 +35,7 @@ import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.IncomeReads
 import com.software.sello.domain.port.InvestmentCommands
 import com.software.sello.domain.port.InvestmentReads
+import com.software.sello.domain.port.MonthMovements
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.Resets
 import com.software.sello.domain.port.RestoreRejection
@@ -120,6 +121,7 @@ fun storageModule(storage: FinancialStorage): Module = module {
     }
     single<CarryoverReads> { storage.carryoverReads(get(), get<DispatcherProvider>().default) }
     single<CategoryExpenseSearch> { storage.categoryExpenseSearch }
+    single<MonthMovements> { storage.monthMovements }
     single<MonthlySnapshots> {
         storage.monthlySnapshots(get(), get<DispatcherProvider>().default)
     }

@@ -108,4 +108,38 @@ class SlipStubTest {
             }
         }
     }
+
+    @Test
+    fun threePartsShareTheWidthInOrder() {
+        rule.inEveryScheme(
+            content = {
+                SlipStub(
+                    listOf(
+                        {
+                            StubButton(SelloIcon.ReceiptLong, "Ingresos", {}, Modifier.testTag("a"))
+                        },
+                        { StubButton(SelloIcon.Autorenew, "Fijos", {}, Modifier.testTag("b")) },
+                        {
+                            StubButton(
+                                SelloIcon.Event,
+                                "Día a día",
+                                { opened = "días" },
+                                Modifier.testTag("c"),
+                                fact = "48 en octubre"
+                            )
+                        }
+                    )
+                )
+            }
+        ) {
+            val parts = listOf("a", "b", "c").map {
+                rule.onNodeWithTag(it).getUnclippedBoundsInRoot()
+            }
+            assertEquals(parts[0].width.value, parts[1].width.value, 1f)
+            assertEquals(parts[1].width.value, parts[2].width.value, 1f)
+            assertTrue(parts[0].right <= parts[1].left && parts[1].right <= parts[2].left)
+        }
+        rule.onNodeWithTag("c").performClick()
+        assertEquals("días", opened)
+    }
 }

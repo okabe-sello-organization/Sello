@@ -15,6 +15,9 @@ path, treated the same way.
 Category detail's `sell` and `arrow_upward` icons use the same revision, weight,
 filled style and license to match the v1.1 statistics reference.
 
+The `search` magnifier that opens Día a día (SELLO-192) uses the same revision, weight,
+filled style and license.
+
 The debug-only Sello Herramientas launcher in `:app` (`src/debug/res/drawable/ic_tools_launcher_*.xml`)
 embeds the `build` (wrench) path from the same revision, weight and filled style, scaled
 and cut out of its badge. It ships only in debug builds, which include this module's licence text.

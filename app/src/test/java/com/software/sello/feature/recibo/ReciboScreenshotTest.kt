@@ -30,6 +30,7 @@ import com.software.sello.feature.goals.ReciboGoalState
 import com.software.sello.feature.goals.ReciboReachedGoal
 import com.software.sello.navigation.CategoryEditAction
 import com.software.sello.navigation.CorrectionNoticeBar
+import com.software.sello.navigation.DayByDayBarAction
 import com.software.sello.navigation.ShellDetail
 import com.software.sello.navigation.ShellScreen
 import com.software.sello.navigation.ShellState
@@ -289,6 +290,7 @@ class ReciboScreenshotTest {
                 navigation = appTabs(ShellTab.Recibo),
                 notice = { if (notice != null) CorrectionNoticeBar(notice) {} },
                 actions = {
+                    DayByDayBarAction {}
                     IconButton(onClick = {}) {
                         Icon(SelloIcon.Settings.painter(), stringResource(R.string.settings_open))
                     }
@@ -574,6 +576,7 @@ class ReciboScreenshotTest {
                 {},
                 navigation = appTabs(ShellTab.Recibo),
                 actions = {
+                    DayByDayBarAction {}
                     IconButton(onClick = {}) {
                         Icon(SelloIcon.Settings.painter(), stringResource(R.string.settings_open))
                     }

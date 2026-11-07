@@ -126,6 +126,10 @@ data class CategoryExpensesRoute(val categoryId: String)
 @Serializable
 data object IncomeHistoryRoute
 
+/** Día a día: the shared month's expenses and incomes by day (SELLO-192). */
+@Serializable
+data object DayByDayRoute
+
 /** The entry form for one income; with [repeat] it opens with Se repite's sheet. */
 @Serializable
 data class IncomeEntryRoute(val repeat: Boolean = false)
