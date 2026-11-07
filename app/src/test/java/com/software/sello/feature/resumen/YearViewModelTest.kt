@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -110,7 +111,31 @@ class YearViewModelTest {
         )
         model.onAction(YearAction.SelectMonth("2026-12"))
         assertEquals("2026-03", model.ready.selectedMonth)
+    }
+
+    @Test
+    fun aSelectionClearsThreeSecondsAfterTheLastTapAsResumens() = runTest {
+        val model = model()
+        watch(model)
+        reads.of(2026).value = ReadState.Ready(yearSnapshot())
+
         model.onAction(YearAction.SelectMonth("2026-03"))
+        advanceTimeBy(2_000)
+        // A second tap keeps it and starts the 3 seconds again; it never toggles off.
+        model.onAction(YearAction.SelectMonth("2026-03"))
+        advanceTimeBy(2_000)
+        assertEquals("2026-03", model.ready.selectedMonth)
+        advanceTimeBy(1_001)
+        assertNull(model.ready.selectedMonth)
+    }
+
+    @Test
+    fun aRestoredSelectionClearsLikeANewOne() = runTest {
+        val model = model(SavedStateHandle(mapOf("year" to 2026, "tuano.month" to "2026-03")))
+        watch(model)
+        reads.of(2026).value = ReadState.Ready(yearSnapshot())
+        assertEquals("2026-03", model.ready.selectedMonth)
+        advanceTimeBy(3_001)
         assertNull(model.ready.selectedMonth)
     }
 

@@ -279,16 +279,19 @@ private fun MonthByMonth(state: YearState.Ready, onAction: (YearAction) -> Unit)
         // Each mark under its own column; spoken with the column above.
         Row(Modifier.fillMaxWidth().clearAndSetSemantics {}) {
             state.months.forEach { column ->
+                // The month in progress has no verdict yet: a dot, not a blank.
+                val current = column.chart.period == ChartPeriod.Current
                 Text(
-                    when (column.mark) {
-                        YearMark.Within -> "✓"
-                        YearMark.Over -> "✗"
-                        YearMark.None -> ""
+                    when {
+                        column.mark == YearMark.Within -> "✓"
+                        column.mark == YearMark.Over -> "✗"
+                        current -> "·"
+                        else -> ""
                     },
-                    color = if (column.mark == YearMark.Over) {
-                        colors.semantic.loss
-                    } else {
-                        colors.semantic.gain
+                    color = when {
+                        column.mark == YearMark.Over -> colors.semantic.loss
+                        current -> colors.inkSoft
+                        else -> colors.semantic.gain
                     },
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = SelloTheme.type.weight.emphasis,

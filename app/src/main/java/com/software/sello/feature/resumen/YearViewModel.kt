@@ -11,6 +11,8 @@ import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.month.MonthNames
 import com.software.sello.presentation.read.LastGoodRead
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -19,6 +21,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 /**
  * Tu año. The year shown, the selected month and whether every category is listed are kept
@@ -34,6 +37,7 @@ class YearViewModel(
 ) : ViewModel() {
     private val render = YearRenderModel(money, months)
     private val attempts = MutableStateFlow(0)
+    private var expiry: Job? = null
 
     /** The year as last read, so a Retry or a return never blanks figures already shown. */
     private val lastGood = LastGoodRead<YearSnapshot, SnapshotFailure>()
@@ -69,6 +73,11 @@ class YearViewModel(
         YearState.Loading(year.value)
     )
 
+    init {
+        // A selection restored after process death clears like a new one.
+        if (saved.get<String>(SELECTED) != null) expiry = expire()
+    }
+
     fun onAction(action: YearAction) {
         when (action) {
             YearAction.Previous -> move(-1)
@@ -91,15 +100,23 @@ class YearViewModel(
         val current = state.value as? YearState.Ready ?: return
         val allowed = if (by < 0) current.canPrevious else current.canNext
         if (!allowed) return
+        expiry?.cancel()
         saved[SELECTED] = null
         saved[YEAR] = current.year + by
     }
 
-    /** A month that has begun; selecting it again lets it go. */
+    /** A month that has begun, shown for 3 seconds from the last tap, as Resumen's columns. */
     private fun select(id: String) {
         val current = state.value as? YearState.Ready ?: return
         if (current.months.none { it.chart.id == id && it.amount != null }) return
-        saved[SELECTED] = if (current.selectedMonth == id) null else id
+        saved[SELECTED] = id
+        expiry?.cancel()
+        expiry = expire()
+    }
+
+    private fun expire() = viewModelScope.launch {
+        delay(3_000)
+        saved[SELECTED] = null
     }
 
     private companion object {

@@ -22,11 +22,13 @@ internal fun yearSnapshot(
     empty: Boolean = false
 ): YearSnapshot {
     val today = LocalDate.parse(asOf)
-    // January to November 2026, then December of a finished year; March and July went over.
+    // Both add up to the year's 14.230.000: to 6 November, or a whole finished year.
+    // March and July went over.
+    val finished = year != today.year
     val spent = listOf(
         1_300_000L, 1_250_000L, 1_840_000L, 1_290_000L, 1_400_000L, 1_300_000L,
-        1_620_000L, 1_020_000L, 1_270_000L, 1_470_000L, 470_000L, 1_200_000L
-    )
+        1_620_000L, 1_020_000L, 1_270_000L, 1_470_000L
+    ) + if (finished) listOf(270_000L, 200_000L) else listOf(470_000L)
     val over = setOf(3, 7)
     val categories = listOf(
         Triple("Hogar", 6_600_000L, 46),
@@ -57,7 +59,7 @@ internal fun yearSnapshot(
         months = (1..12).map { number ->
             val month = YearMonth.of(year, number)
             // A finished year has no month in progress.
-            val current = if (year == today.year) today.monthValue else 13
+            val current = if (finished) 13 else today.monthValue
             when {
                 number > current -> YearMonthLine(month, null, YearMonthStatus.Upcoming)
 
