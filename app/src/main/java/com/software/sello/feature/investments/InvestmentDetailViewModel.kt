@@ -60,7 +60,12 @@ class InvestmentDetailViewModel(
         ->
         if (read !is PreferenceRead.Ready || closed) return@combine null
         NudgePolicy.pick(read.value, today.date, listOf(Nudge.Investments))
-            ?.let { Showing(ShownNudge(it, today.date), NudgePolicy.keptFor(read.value.memory, it, today.date)) }
+            ?.let {
+                Showing(
+                    ShownNudge(it, today.date),
+                    NudgePolicy.keptFor(read.value.memory, it, today.date)
+                )
+            }
     }
         // The page never waits on this read: no nudge until it is known.
         .onStart { emit(null) }
@@ -88,13 +93,14 @@ class InvestmentDetailViewModel(
         .combine(nudge) { detail, nudge ->
             val shown = nudge.takeIf { detail is InvestmentDetailState.Ready && !detail.stale }
             keepShown(shown)
-            if (detail is InvestmentDetailState.Ready) detail.copy(nudge = shown != null) else detail
+            val ready = detail as? InvestmentDetailState.Ready
+            ready?.copy(nudge = shown != null) ?: detail
         }
         .stateIn(
-        viewModelScope,
-        SharingStarted.WhileSubscribed(STOP_AFTER_MILLIS),
-        InvestmentDetailState.Loading
-    )
+            viewModelScope,
+            SharingStarted.WhileSubscribed(STOP_AFTER_MILLIS),
+            InvestmentDetailState.Loading
+        )
 
     fun onAction(action: InvestmentDetailAction) {
         when (action) {

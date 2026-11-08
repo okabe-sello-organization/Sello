@@ -253,7 +253,9 @@ class GoalDetailViewModel(
                     saved[KEY_PICKED] = null
                 }
                 // Changing which goals Recibo puts first closes its goal nudge for good.
-                if (step in STAR_STEPS) viewModelScope.launch { guidance.markSeen(Nudge.ReciboGoal) }
+                if (step in STAR_STEPS) {
+                    viewModelScope.launch { guidance.markSeen(Nudge.ReciboGoal) }
+                }
                 if (step == STEP_DELETE) {
                     saved[KEY_CONFIRM] = false
                     saved[KEY_DELETED] = true

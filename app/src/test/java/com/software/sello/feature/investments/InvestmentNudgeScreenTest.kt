@@ -81,7 +81,9 @@ class InvestmentNudgeScreenTest {
                 icon = SelloIcon.Add
             )
         ) { padding ->
-            InvestmentDetailScreen(ready().copy(nudge = true), { actions += it }, dateLabels(), padding)
+            InvestmentDetailScreen(ready().copy(nudge = true), {
+                actions += it
+            }, dateLabels(), padding)
         }
     }
 

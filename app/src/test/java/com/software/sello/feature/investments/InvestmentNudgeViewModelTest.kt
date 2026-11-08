@@ -106,7 +106,9 @@ class InvestmentNudgeViewModelTest {
 
     @Test
     fun anotherNudgeShownTodayLeavesItForAnotherDay() = runTest {
-        guidance.set(GuidanceMemory(lastShown = ShownNudge(Nudge.GuideHint, LocalDate.of(2026, 11, 8))))
+        guidance.set(
+            GuidanceMemory(lastShown = ShownNudge(Nudge.GuideHint, LocalDate.of(2026, 11, 8)))
+        )
         val today = opened().nudge()
 
         clock.goTo("2026-11-09")

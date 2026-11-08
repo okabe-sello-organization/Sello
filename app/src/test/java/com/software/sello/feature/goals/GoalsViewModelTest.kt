@@ -157,7 +157,9 @@ class GoalsViewModelTest {
     private fun detail(
         saved: SavedStateHandle = SavedStateHandle(mapOf("goalId" to viajeId)),
         source: HandGoalReads = reads
-    ) = GoalDetailViewModel(saved, source, commands, clock, money, ids, corrections, guidance) { false }
+    ) = GoalDetailViewModel(saved, source, commands, clock, money, ids, corrections, guidance) {
+        false
+    }
 
     private fun metas(source: HandGoalReads = reads, saved: SavedStateHandle = SavedStateHandle()) =
         MetasViewModel(saved, source, commands, clock, money, ids, corrections) {

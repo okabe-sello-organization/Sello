@@ -249,7 +249,16 @@ class InvestmentMovementViewModelTest {
                 movement?.let { InvestmentMovementViewModel.KEY_MOVEMENT to it }
             ).toMap()
         )
-    ) = InvestmentMovementViewModel(saved, reads, commands, clock, ids, money, corrections, guidance)
+    ) = InvestmentMovementViewModel(
+        saved,
+        reads,
+        commands,
+        clock,
+        ids,
+        money,
+        corrections,
+        guidance
+    )
 
     private fun InvestmentMovementViewModel.keys(vararg keys: String) = keys.forEach {
         onAction(
@@ -794,7 +803,16 @@ class InvestmentMovementViewModelTest {
             }
         }
         val model =
-            InvestmentMovementViewModel(saved, once, commands, clock, ids, money, corrections, guidance)
+            InvestmentMovementViewModel(
+                saved,
+                once,
+                commands,
+                clock,
+                ids,
+                money,
+                corrections,
+                guidance
+            )
         assertTrue(model.now.loadFailed)
 
         model.onAction(InvestmentMovementAction.Retry)
