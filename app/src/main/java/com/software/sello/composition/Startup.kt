@@ -32,8 +32,17 @@ sealed interface StartupState {
     data class Failed(val failure: StorageFailure) : StartupState
 }
 
-/** A graph built on storage that opened: its view models, and restores into that storage. */
-class Started(val viewModels: ViewModelProvider.Factory, val restores: Restores)
+/**
+ * A graph built on storage that opened: its view models, restores into that storage, and
+ * [afterStart], what an ordinary start runs next in the background. A graph a restore from
+ * the failure screen opens never runs it: that storage is empty until the restore lands,
+ * and the next start runs it on the restored data (SELLO-205).
+ */
+class Started(
+    val viewModels: ViewModelProvider.Factory,
+    val restores: Restores,
+    val afterStart: suspend () -> Unit
+)
 
 /**
  * A chosen file that passed the whole-file check, held until it is restored or forgotten.
@@ -173,7 +182,11 @@ class Startup(
     }
 
     private suspend fun attempt(): StartupState = when (val started = start()) {
-        is Outcome.Success -> StartupState.Ready(started.value.viewModels)
+        is Outcome.Success -> {
+            scope.launch { started.value.afterStart() }
+            StartupState.Ready(started.value.viewModels)
+        }
+
         is Outcome.Failure -> StartupState.Failed(started.error)
     }
 }

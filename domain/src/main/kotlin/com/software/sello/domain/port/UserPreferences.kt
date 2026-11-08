@@ -7,13 +7,17 @@ import com.software.sello.domain.model.CategoryOrderingPreference
 import com.software.sello.domain.model.CorrectionAnnouncementPreference
 import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.DismissedSuggestion
+import com.software.sello.domain.model.Guidance
+import com.software.sello.domain.model.GuidanceMemory
 import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.InvestmentPreference
+import com.software.sello.domain.model.Nudge
 import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.ThemePreference
 import java.time.Instant
+import java.time.LocalDate
 import java.time.YearMonth
 import kotlinx.coroutines.flow.Flow
 
@@ -117,4 +121,43 @@ interface CatchUpNoticePreferences {
     fun observeCatchUpNoticeSeen(): Flow<PreferenceRead<Instant?>>
 
     suspend fun markCatchUpNoticeSeen(at: Instant): PreferenceWrite
+}
+
+/**
+ * What guidance a person has seen (E38). Restablecer keeps all of it, and backups carry its
+ * [GuidanceMemory] from version 11 on. A stored value that cannot be read is
+ * [PreferenceFailure.InvalidValue], never taken as seen or not seen: while the guidance
+ * cannot be read, no nudge shows. A write that fails leaves the nudge to show again later.
+ */
+interface GuidancePreferences {
+    fun observeGuidance(): Flow<PreferenceRead<Guidance>>
+
+    /** [nudge] was seen and closed for good: its action was done or its ✕ tapped. */
+    suspend fun markSeen(nudge: Nudge): PreferenceWrite
+
+    /**
+     * [nudge] showed on [day], for the one-a-day rule. The backup reminder also records
+     * [day] as the day it last showed, in the same write.
+     */
+    suspend fun markShown(nudge: Nudge, day: LocalDate): PreferenceWrite
+
+    /** The backup reminder's "No volver a mostrar". */
+    suspend fun turnOffBackupReminder(): PreferenceWrite
+
+    /**
+     * Once per phone: if the person [wasUsingSello] (had any expense, income, goal or
+     * investment), every new-user nudge is marked seen; the Guía hint and the backup
+     * reminder are not. Then [Guidance.existingUseChecked] is set, in the same write, and
+     * asking again changes nothing.
+     */
+    suspend fun rememberExistingUse(wasUsingSello: Boolean): PreferenceWrite
+
+    /**
+     * Merges a restored backup's [memory] into the phone's, in one write, as
+     * [GuidanceMemory.mergedWith] says. Refused, writing nothing, while the phone's own
+     * guidance cannot be read.
+     * Refused with `PreferenceFailure.InvalidValue` only while the phone's own guidance cannot
+     * be read; an I/O failure is `Unavailable`.
+     */
+    suspend fun mergeRestored(memory: GuidanceMemory): PreferenceWrite
 }

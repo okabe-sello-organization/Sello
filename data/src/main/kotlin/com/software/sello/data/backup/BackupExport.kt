@@ -27,6 +27,7 @@ import com.software.sello.domain.port.BackupSummary
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.DispatcherProvider
 import com.software.sello.domain.port.FinancialClock
+import com.software.sello.domain.port.GuidancePreferences
 import com.software.sello.domain.port.InvestmentPreferences
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreparedBackup
@@ -143,6 +144,7 @@ class BackupExport(
     private val ordering: CategoryOrderingPreferences,
     private val investments: InvestmentPreferences,
     private val smallExpenses: SmallExpensePreferences,
+    private val guidance: GuidancePreferences,
     private val auditClock: AuditClock,
     private val financialClock: FinancialClock,
     private val dispatchers: DispatcherProvider,
@@ -221,7 +223,16 @@ class BackupExport(
         ) {
             return null
         }
-        return PortablePreferences(appearance.value, ordering.value, investments.value, line.value)
+        // The guidance seen travels when it reads; when it doesn't, the rest still does,
+        // and a restore of this file keeps the guidance the phone has.
+        val guidance = (guidance.observeGuidance().first() as? PreferenceRead.Ready)?.value
+        return PortablePreferences(
+            appearance.value,
+            ordering.value,
+            investments.value,
+            line.value,
+            guidance?.memory
+        )
     }
 
     private companion object {
