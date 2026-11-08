@@ -244,6 +244,8 @@ Defaults are Sistema/Cobalto/Más usadas, descending; next setup uses the device
 financial zone. Retain only minimal nonfinancial generation/completion metadata,
 with no former amounts, names or notes. Warn that external backups survive.
 Neither restore nor reset changes system permissions.
+The guidance seen (E38) is the one exception: reset keeps it and restore merges it
+([ADR 0027](0027-guidance-memory-outlives-reset-and-restore.md)).
 For data that cannot be opened, [ADR 0008](0008-unreadable-storage-start-over.md)
 defines retry and keeping the unreadable file aside. Restore must be reachable
 there, and reset must also erase that private kept copy.

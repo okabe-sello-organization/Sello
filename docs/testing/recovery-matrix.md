@@ -28,9 +28,10 @@ and [ADR 0008](../decisions/0008-unreadable-storage-start-over.md) define the ru
 | Backup format 7 | schema 9 | Read with its stars; no hue, so its ink is Cobalto or Violeta; `tuya` refused | `BackupRoundTripTest`, `StarredGoalBackupTest` (JVM) |
 | Backup format 8 | schema 9 | Read with Tuya's hue; `sistema` refused | `BackupRoundTripTest` (JVM) |
 | Backup format 9 | schema 9 | Read with Sistema and Tuya's hue; its Gastos hormiga line is 20.000; `smallExpenseLine` refused | `BackupRoundTripTest` (JVM) |
-| Backup format 10 (current) | schema 9 | Written and read byte for byte, Sistema, Tuya's hue and the Gastos hormiga line included; restored with the same figures, ink and line on a fresh installation; a line that cannot be saved stays pending alone | `BackupRoundTripTest` (JVM); `RecoveryRetentionTest`, `GoalBackupRestoreTest`, `InvestmentBackupRestoreTest`, `CarryBackupRestoreTest`, `RestoreCommandContractTest.aTuyaBackupRestoresTuyaWithItsHue`, `RestoreCommandContractTest.gastosHormigasLineIsAppliedAndOneThatFailsStaysPendingAlone`, `EraseThenRestoreTest` (device) |
+| Backup format 10 | schema 9 | Read with Sistema, Tuya's hue and the Gastos hormiga line; no guidance, so a restore keeps the phone's; `guidance` refused | `BackupRoundTripTest` (JVM); `RestoreCommandContractTest.aBackupWithoutGuidanceKeepsThePhones` (device) |
+| Backup format 11 (current) | schema 9 | Written and read byte for byte, Sistema, Tuya's hue, the Gastos hormiga line and the guidance seen included; restored with the same figures, ink and line on a fresh installation; a line that cannot be saved stays pending alone; the guidance seen is merged into the phone's once, and a merge that cannot be saved never holds the restore up | `BackupRoundTripTest` (JVM); `RecoveryRetentionTest`, `GoalBackupRestoreTest`, `InvestmentBackupRestoreTest`, `CarryBackupRestoreTest`, `RestoreCommandContractTest.aTuyaBackupRestoresTuyaWithItsHue`, `RestoreCommandContractTest.gastosHormigasLineIsAppliedAndOneThatFailsStaysPendingAlone`, `RestoreCommandContractTest.aRestoreMergesTheBackupsGuidanceIntoThePhonesOnce`, `EraseThenRestoreTest` (device) |
 | Erase all with goals | schema 9 | Every goal, its history, the undo copy and the stars removed | `GoalBackupRestoreTest.erasingEverythingRemovesEveryGoalItsHistoryAndTheStars` |
-| A newer backup format | — | Refused as "Lo hizo una versión más nueva de Sello"; nothing changes | `RestoreCommandContractTest.aFileThatCannotBeRestoredChangesNothingAndIsNotKept` (version 11) |
+| A newer backup format | — | Refused as "Lo hizo una versión más nueva de Sello"; nothing changes | `RestoreCommandContractTest.aFileThatCannotBeRestoredChangesNothingAndIsNotKept` (version 12) |
 
 Every format is read into the same plan before anything is written, so one restore path
 serves them all ([backup format](../data/backup-format.md#reading-a-file)).
@@ -104,6 +105,7 @@ The restored rows equal the originals for all five.
 | `compact.pending` cannot be written | Compacted all the same; the erase's file stays to look at again | `anEraseIsCompactedEvenWhenWhatItOwesCannotBeWrittenDown` |
 | Compaction's checkpoint kept busy, or refused by any database error | Not compacted: `compact.pending` stays and it is retried at the next start; restores and new erases go on | `aCompactionKeptBusyStaysOwedAndIsDoneLaterWithoutBlockingAnything`, `aCompactionRefusedAboveSQLiteStaysOwedAndIsDoneLater` |
 | What survives | Profile and one `history.reset` receipt; no erased name or note in the file's bytes | `nothingLeftInTheFilesHoldsAnOldNameOrNote` |
+| The guidance seen (SELLO-205) | Kept through the erase, damaged values included; every other preference cleared as before | `GuidancePreferencesTest.reset keeps every guidance value and clears everything else as before` (JVM, real DataStore file) |
 | After the erase | A new category and expense from empty; a backup restores across it | `theNewHistoryCanBeUsedFromEmpty`; `RecoveryRetentionTest` |
 
 ## Old work across a new generation

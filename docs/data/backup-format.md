@@ -1,4 +1,4 @@
-# Backup file format, version 10
+# Backup file format, version 11
 
 Rules: [architecture](../../ARCHITECTURE.md) §7, [D05, D08 and D09](../decisions/0001-mvp-contract.md#d08--privacy-and-portable-files),
 [ADR 0003](../decisions/0003-mvp-transaction-amount-range.md). Code: `data/.../backup`.
@@ -14,7 +14,7 @@ its financial zone (`BackupFormat.fileName`). MIME type: `application/json`.
 
 ## Shape
 
-Sello writes version 10 (SELLO-194) and reads versions 1 to 10. Version 2 is version 1
+Sello writes version 11 (SELLO-205) and reads versions 1 to 11. Version 2 is version 1
 plus `financial.goals` and `financial.featuredGoal` (SELLO-088); version 3 is version 2
 plus `financial.schedules` and each expense's and income's `origin` (SELLO-099);
 version 4 is version 3 plus `financial.investments` and `financial.usdRates` (SELLO-108);
@@ -24,20 +24,22 @@ version 5 is version 4 plus `preferences.investmentCurrency` and
 version 7 is version 6 with `financial.starredGoals` in place of `financial.featuredGoal`
 (SELLO-143); version 8 is version 7 plus `preferences.inkHue` (SELLO-202); version 9 has version 8's keys
 and adds the ink `sistema` (SELLO-203); version 10 is version 9 plus
-`preferences.smallExpenseLine` (SELLO-194). A version 1 file
+`preferences.smallExpenseLine` (SELLO-194); version 11 is version 10 plus
+`preferences.guidance` (SELLO-205). A version 1 file
 reads as having no goals, versions 1 and 2 as having no schedules and no origins, versions
 1 to 3 as having no investments and no rates, versions 1 to 4 as starting investments in
 `COP`, largest value first, and versions 1 to 5 as having no carry chains: **every category
 is off and no starting deficit or surplus is guessed**; versions 2 to 6 read with their
 `featuredGoal` as the one starred goal, or none when that goal is completed, and versions
-1 to 7 as having no hue: their ink is Cobalto or Violeta, and versions 1 to 9 with the
-Gastos hormiga line at `20000`. A backup with none of them is still version 10, so an app
-that reads only version 9 cannot read it.
+1 to 7 as having no hue: their ink is Cobalto or Violeta, versions 1 to 9 with the
+Gastos hormiga line at `20000`, and versions 1 to 10 with no guidance, so a restore keeps
+the phone's. A backup with none of them is still version 11, so an app that reads only
+version 10 cannot read it.
 
 ```json
 {
   "format": "sello-backup",
-  "version": 10,
+  "version": 11,
   "exportedAt": "2026-10-22T14:30:00Z",
   "financial": {
     "sourceRevision": 9,
@@ -70,10 +72,11 @@ same data in versions 2 to 4, and
 same data in versions 5 and 6, and
 [`valid-g01-v7.json`](../../data/src/test/resources/backup/valid-g01-v7.json),
 [`valid-g01-v8.json`](../../data/src/test/resources/backup/valid-g01-v8.json),
-[`valid-g01-v9.json`](../../data/src/test/resources/backup/valid-g01-v9.json) and
-[`valid-g01-v10.json`](../../data/src/test/resources/backup/valid-g01-v10.json) the same data
-in versions 7 to 10, the last as Sello writes it now, with its investments starting in
-dollars, no carry chains and no starred goal;
+[`valid-g01-v9.json`](../../data/src/test/resources/backup/valid-g01-v9.json),
+[`valid-g01-v10.json`](../../data/src/test/resources/backup/valid-g01-v10.json) and
+[`valid-g01-v11.json`](../../data/src/test/resources/backup/valid-g01-v11.json) the same data
+in versions 7 to 11, the last as Sello writes it now, with its investments starting in
+dollars, no carry chains, no starred goal and two nudges seen;
 [`valid-goals-v2.json`](../../data/src/test/resources/backup/valid-goals-v2.json) adds one
 goal (approved example MT07), and
 [`valid-schedules-v3.json`](../../data/src/test/resources/backup/valid-schedules-v3.json)
@@ -90,7 +93,7 @@ SC43 and SC22). The `invalid-*.json` files beside them each break one rule.
 | Key | Value |
 | --- | --- |
 | `format` | Always `"sello-backup"`. |
-| `version` | `1` to `9`. Any other number is refused as a version this app cannot read. |
+| `version` | `1` to `11`. Any other number is refused as a version this app cannot read. |
 | `exportedAt` | When the backup was made, UTC. |
 | `financial.sourceRevision` | The revision all financial rows were read at: one transaction, one revision. Informative; a restore does not reuse it. |
 | `financial.zone` | The financial zone, an IANA identifier such as `America/Bogota`. |
@@ -123,7 +126,8 @@ SC43 and SC22). The `invalid-*.json` files beside them each break one rule.
 version 8 `tuya` and from version 9 `sistema`), from version 8 `inkHue`, `categoryOrder` (`most_used`, `alphabetical`, `amount_spent`, `limit`,
 `latest_expense_added`), `categoryDirection` (`descending`, `ascending`) and, from
 version 5, `investmentCurrency` (`COP`, `USD`) and `investmentOrder` (`largest_value`,
-`return`, `alphabetical`, `newest`, `latest_update`) and, from version 10, `smallExpenseLine`.
+`return`, `alphabetical`, `newest`, `latest_update`), from version 10, `smallExpenseLine` and,
+from version 11, `guidance`.
 
 `inkHue` is Tuya's hue: a bare whole OKLCH degree from `0` to `359`. It is required when
 `ink` is `tuya`, and may also be given beside `cobalto`, `violeta` or `sistema`: the hue the person
@@ -143,6 +147,36 @@ Sello in Cobalto and keeps `sistema` as the choice.
 range, as text, with a fraction or as `null`, it is refused, never clipped. A restore writes
 it as the file has it (`20000` for a file before version 10), and a reset returns it to
 `20000`. A file before version 10 that has the key is refused.
+
+`guidance` is what in-app guidance the person has seen (E38), or `null` when the phone's could
+not be read while backing up: the rest of `preferences` is still carried.
+
+```json
+"guidance": {
+  "seen": ["bulk_entry", "guide_hint"],
+  "lastShown": { "nudge": "guide_hint", "day": "2026-10-20" },
+  "backupReminderShown": "2026-10-01",
+  "backupReminderOff": false
+}
+```
+
+- `seen`: each nudge seen and closed for good, named once, by name: `guide_hint`,
+  `backup_reminder`, `bulk_entry`, `fixed_payment`, `carry`, `deleting`, `investments`,
+  `recibo_goal`. Written sorted.
+- `lastShown`: the last nudge shown and its `yyyy-MM-dd` day (the one-a-day rule), or `null`.
+- `backupReminderShown`: the day the backup reminder last showed, or `null`.
+- `backupReminderOff`: its "No volver a mostrar", a bare `true` or `false`.
+
+An unknown or repeated name, a day that is not a real `yyyy-MM-dd`, or a flag written any
+other way rejects the whole file, never read as seen or not seen. A file before version 11
+that has the key is refused.
+
+Unlike the rest of `preferences`, guidance is **merged** into the phone's, not put in its
+place ([ADR 0027](../decisions/0027-guidance-memory-outlives-reset-and-restore.md)): a
+nudge counts as seen if the phone or the file says so, `backupReminderOff` holds if either
+says so, and the later of each day wins (on the same day the phone's last nudge stays). A
+file with no guidance, or `null`, keeps the phone's. Whether the person was already using
+Sello when guidance arrived stays on the phone.
 
 Every key is required, even when its value is `null`, and no other key is allowed.
 
@@ -257,7 +291,8 @@ position, the profile generation, operation receipts, the copies kept for undo
 a goal's stamps and percentage, an investment's value, gain and return, a category's
 carry, capacity and remaining (only the chains that produce them are in the file), a schedule's
 occurrences (worked out from its terms) and catch-up receipts, jobs, sandbox or debug
-state, one-time notice dismissals, permissions, URIs, paths and credentials.
+state, one-time notice dismissals other than the guidance seen, permissions, URIs, paths
+and credentials.
 
 ## Reading a file
 
@@ -334,7 +369,9 @@ receipt for the same operation means it already happened, so asking again after 
 outcome or a crash replays instead of replacing twice. Afterwards the backup's preferences
 are applied in four groups: appearance, order, Inversiones' settings and Gastos hormiga's
 line. A group that fails stays pending alone, with the file, and is retried at start-up and
-on request.
+on request. The guidance seen is merged once, beside them, like the catch-up notice's mark:
+a merge that fails is tried again only while another group is pending and is never shown as
+pending, since the worst case is a nudge shown once more.
 
 From the start-up failure screen there is no store to stage into, so the file is
 checked whole with `BackupCodec.check` and held in memory for the preview. Confirming
@@ -343,6 +380,6 @@ there as above.
 
 ## Changing the format
 
-Any change to keys, meanings or rules is a new `version`. Versions 1 to 10 stay
+Any change to keys, meanings or rules is a new `version`. Versions 1 to 11 stay
 readable for as long as the app supports restoring them; nothing translates older Sello
 databases or other apps' files.
