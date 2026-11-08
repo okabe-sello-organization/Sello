@@ -5,9 +5,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -27,6 +29,7 @@ import com.software.sello.R
 import com.software.sello.designsystem.component.AnswerSlip
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ButtonTone
+import com.software.sello.designsystem.component.CardHelp
 import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.MovementBalance
@@ -203,12 +206,23 @@ private fun Chart(
     // The line above the chart reads the picked value, the newest until another is tapped.
     val picked = chart.values.firstOrNull { it.id == state.selectedValue } ?: chart.values.last()
     Slip(Modifier.fillMaxWidth().testTag("investment.chart"), pinked = false) {
-        Text(
-            stringResource(R.string.investment_chart_title),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = SelloTheme.type.weight.emphasis,
-            modifier = Modifier.semantics { heading() }.padding(bottom = SelloTheme.spacing.xs)
-        )
+        Row(
+            Modifier.padding(bottom = SelloTheme.spacing.xs),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                stringResource(R.string.investment_chart_title),
+                Modifier.weight(1f, fill = false).semantics { heading() },
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = SelloTheme.type.weight.emphasis
+            )
+            Spacer(Modifier.width(SelloTheme.spacing.sm))
+            CardHelp(
+                stringResource(R.string.investment_help_chart_label),
+                { onAction(InvestmentDetailAction.ShowHelp(InvestmentHelp.Chart)) },
+                Modifier.testTag(INVESTMENT_CHART_HELP_TAG)
+            )
+        }
         Picked(picked, dates)
         RecordedValuesChart(
             values = chart.values.map {
@@ -412,3 +426,4 @@ private const val SHORT_LIST = 4
 
 const val INVESTMENT_DETAIL_TAG = "investment.detail"
 const val INVESTMENT_RECORD_VALUE_TAG = "investment.recordValue"
+const val INVESTMENT_CHART_HELP_TAG = "investment.help.chart"

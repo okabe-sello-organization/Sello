@@ -27,6 +27,7 @@ import com.software.sello.designsystem.component.SelloNavigation
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.domain.model.InvestmentMovementKind
+import com.software.sello.feature.guide.GuidePage
 import com.software.sello.feature.investments.InversionesAction
 import com.software.sello.feature.investments.InversionesScreen
 import com.software.sello.feature.investments.InversionesState
@@ -36,6 +37,7 @@ import com.software.sello.feature.investments.InvestmentDetailScreen
 import com.software.sello.feature.investments.InvestmentDetailState
 import com.software.sello.feature.investments.InvestmentDetailViewModel
 import com.software.sello.feature.investments.InvestmentEditorRoot
+import com.software.sello.feature.investments.InvestmentHelpSheet
 import com.software.sello.feature.investments.InvestmentMovementRoot
 import com.software.sello.feature.investments.InvestmentMovementViewModel
 import com.software.sello.feature.investments.InvestmentMovementsRoot
@@ -66,7 +68,8 @@ internal fun InversionesDestination(
     onOpenRate: (() -> Unit)? = null,
     onAdd: (() -> Unit)? = null,
     onMove: (() -> Unit)? = null,
-    notice: (@Composable () -> Unit)? = null
+    notice: (@Composable () -> Unit)? = null,
+    onOpenGuide: (GuidePage) -> Unit = {}
 ) {
     val model: InversionesViewModel = viewModel(factory = viewModels)
     val inversiones by model.state.collectAsStateWithLifecycle()
@@ -116,6 +119,17 @@ internal fun InversionesDestination(
         )
     }
     BackHandler(enabled = !state.monthPickerOpen) { tabs.onSelect(ShellTab.Recibo.id) }
+    // After the screen's own back, so that back closes the sheet first.
+    ready?.help?.let { help ->
+        InvestmentHelpSheet(
+            help,
+            onClose = { model.onAction(InversionesAction.CloseHelp) },
+            onGuide = { page ->
+                model.onAction(InversionesAction.OpenGuide)
+                onOpenGuide(page)
+            }
+        )
+    }
 }
 
 /**
@@ -133,7 +147,8 @@ internal fun InvestmentDestination(
     onEdit: () -> Unit,
     onMove: (kind: String?) -> Unit,
     onEditMovement: (String) -> Unit,
-    notice: (@Composable () -> Unit)? = null
+    notice: (@Composable () -> Unit)? = null,
+    onOpenGuide: (GuidePage) -> Unit = {}
 ) {
     val model: InvestmentDetailViewModel = viewModel(factory = viewModels)
     val detail by model.state.collectAsStateWithLifecycle()
@@ -175,6 +190,17 @@ internal fun InvestmentDestination(
         )
     }
     BackHandler(enabled = !state.monthPickerOpen) { onBack() }
+    // After the screen's own back, so that back closes the sheet first.
+    ready?.help?.let { help ->
+        InvestmentHelpSheet(
+            help,
+            onClose = { model.onAction(InvestmentDetailAction.CloseHelp) },
+            onGuide = { page ->
+                model.onAction(InvestmentDetailAction.OpenGuide)
+                onOpenGuide(page)
+            }
+        )
+    }
 }
 
 /** Inversiones' own action: in ink, so it is never taken for Anotar (brand) or Metas (green). */
@@ -248,7 +274,8 @@ internal fun NavGraphBuilder.investmentDestinations(
             onMove = {
                 navigation.navigate(InvestmentMovementRoute()) { launchSingleTop = true }
             },
-            notice = notice?.let { { CorrectionNoticeBar(it, onUndo) } }
+            notice = notice?.let { { CorrectionNoticeBar(it, onUndo) } },
+            onOpenGuide = navigation::openGuide
         )
     }
     composable<InvestmentRoute> { entry ->
@@ -277,7 +304,8 @@ internal fun NavGraphBuilder.investmentDestinations(
                     launchSingleTop = true
                 }
             },
-            notice = notice?.let { { CorrectionNoticeBar(it, onUndo) } }
+            notice = notice?.let { { CorrectionNoticeBar(it, onUndo) } },
+            onOpenGuide = navigation::openGuide
         )
     }
     composable<InvestmentEditorRoute> {

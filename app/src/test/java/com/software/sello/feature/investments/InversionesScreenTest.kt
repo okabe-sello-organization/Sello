@@ -26,6 +26,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -263,7 +264,9 @@ class InversionesScreenTest {
 
     private fun destination(state: InvestmentBoardState, onAdd: (() -> Unit)? = null) {
         val factory = viewModelFactory {
-            initializer { InversionesViewModel(Reads(state), Order(), clock, money) }
+            initializer {
+                InversionesViewModel(SavedStateHandle(), Reads(state), Order(), clock, money)
+            }
         }
         rule.showSello(Look(density = 1f)) {
             Box(Modifier.requiredSize(360.dp, 2000.dp)) {

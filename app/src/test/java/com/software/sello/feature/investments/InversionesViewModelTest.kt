@@ -76,7 +76,7 @@ class InversionesViewModelTest {
 
     @Test
     fun theListFollowsTheOrderChosenInConfiguracion() = runTest {
-        val model = InversionesViewModel(reads, preferences, clock, testMoney())
+        val model = InversionesViewModel(SavedStateHandle(), reads, preferences, clock, testMoney())
         backgroundScope.launch { model.state.collect {} }
         runCurrent()
         // Mayor valor, the default.
@@ -97,7 +97,7 @@ class InversionesViewModelTest {
     fun retryAndComingBackKeepInversionesFiguresAndAFailureAgainLeavesThemOlder() = runTest {
         val fresh = fresh()
         val good = fresh.board.value
-        val model = InversionesViewModel(fresh, preferences, clock, testMoney())
+        val model = InversionesViewModel(SavedStateHandle(), fresh, preferences, clock, testMoney())
         val first = backgroundScope.launch { model.state.collect {} }
         runCurrent()
         fresh.board.value = failure

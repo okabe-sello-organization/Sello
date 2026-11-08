@@ -46,10 +46,12 @@ import com.software.sello.feature.goals.GoalSeveral
 import com.software.sello.feature.goals.LogradaMoment
 import com.software.sello.feature.goals.METAS_CREATE_TAG
 import com.software.sello.feature.goals.MetasAction
+import com.software.sello.feature.goals.MetasHelpSheet
 import com.software.sello.feature.goals.MetasScreen
 import com.software.sello.feature.goals.MetasState
 import com.software.sello.feature.goals.MetasViewModel
 import com.software.sello.feature.goals.ReplaceStarSheet
+import com.software.sello.feature.guide.GuidePage
 import com.software.sello.feature.reset.back
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.GoalCelebration
@@ -72,7 +74,8 @@ internal fun MetasDestination(
     onOpenGoal: (String) -> Unit,
     onCreate: (() -> Unit)? = null,
     onContribute: (() -> Unit)? = null,
-    notice: (@Composable () -> Unit)? = null
+    notice: (@Composable () -> Unit)? = null,
+    onOpenGuide: (GuidePage) -> Unit = {}
 ) {
     val model: MetasViewModel = viewModel(factory = viewModels)
     val metas by model.state.collectAsStateWithLifecycle()
@@ -129,6 +132,16 @@ internal fun MetasDestination(
         }
     )
     BackHandler(enabled = !state.monthPickerOpen) { tabs.onSelect(ShellTab.Recibo.id) }
+    // After the screen's own back, so that back closes the sheet first.
+    if (ready?.helpOpen == true) {
+        MetasHelpSheet(
+            onClose = { model.onAction(MetasAction.CloseHelp) },
+            onGuide = { page ->
+                model.onAction(MetasAction.OpenGuide)
+                onOpenGuide(page)
+            }
+        )
+    }
 }
 
 /**
@@ -252,7 +265,8 @@ internal fun NavGraphBuilder.goalDestinations(
             },
             notice = notice?.let {
                 { StampNoticeBar(it, onUndo, lands) }
-            }
+            },
+            onOpenGuide = navigation::openGuide
         )
     }
     composable<GoalRoute> { entry ->

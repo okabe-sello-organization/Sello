@@ -44,7 +44,9 @@ sealed interface InvestmentDetailState {
         val allMovements: Boolean = false,
         /** The value the line above the chart reads; null reads the newest. */
         val selectedValue: String? = null,
-        val stale: Boolean = false
+        val stale: Boolean = false,
+        /** The help sheet open over the page, if any (SELLO-209). */
+        val help: InvestmentHelp? = null
     ) : InvestmentDetailState
 }
 
@@ -123,4 +125,13 @@ sealed interface InvestmentDetailAction {
     data object RecordValue : InvestmentDetailAction
 
     data class OpenMovement(val id: String) : InvestmentDetailAction
+
+    /** A **?** or an underlined word was tapped: its sheet opens. */
+    data class ShowHelp(val help: InvestmentHelp) : InvestmentDetailAction
+
+    /** Back or the scrim closed the sheet. */
+    data object CloseHelp : InvestmentDetailAction
+
+    /** "Ver más en la Guía de Sello": the sheet closes and the root opens the Guía. */
+    data object OpenGuide : InvestmentDetailAction
 }
