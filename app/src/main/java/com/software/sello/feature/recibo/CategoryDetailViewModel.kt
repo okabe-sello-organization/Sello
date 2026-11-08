@@ -7,20 +7,29 @@ import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.CategoryInsights
 import com.software.sello.domain.model.Expense
 import com.software.sello.domain.model.ExpenseId
+import com.software.sello.domain.model.Guidance
+import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.MonthlySnapshot
+import com.software.sello.domain.model.Nudge
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.SnapshotFailure
+import com.software.sello.domain.policy.FeatureNudgePolicy
 import com.software.sello.domain.policy.ScheduleListPolicy
 import com.software.sello.domain.policy.ScheduleStatus
+import com.software.sello.domain.policy.UndoPolicy
 import com.software.sello.domain.port.CategoryInsightsSnapshots
 import com.software.sello.domain.port.CategoryInsightsState
 import com.software.sello.domain.port.ExpenseCommands
 import com.software.sello.domain.port.ExpenseCursor
 import com.software.sello.domain.port.ExpensePage
 import com.software.sello.domain.port.ExpenseReads
+import com.software.sello.domain.port.FinancialClock
+import com.software.sello.domain.port.FinancialDay
+import com.software.sello.domain.port.GuidancePreferences
 import com.software.sello.domain.port.MonotonicClock
 import com.software.sello.domain.port.MonthlySnapshots
+import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.ScheduleBook
@@ -30,6 +39,8 @@ import com.software.sello.domain.port.SnapshotState
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.carry.carryProblem
 import com.software.sello.presentation.corrections.Corrections
+import com.software.sello.presentation.guidance.NudgeDays
+import com.software.sello.presentation.guidance.ScreenNudge
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.read.LastGoodRead
 import java.time.LocalDate
@@ -43,10 +54,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -74,7 +88,9 @@ class CategoryDetailViewModel(
     private val clock: MonotonicClock,
     commands: ExpenseCommands,
     ids: RecordIdSource,
-    saved: SavedStateHandle
+    saved: SavedStateHandle,
+    private val guidance: GuidancePreferences,
+    financial: FinancialClock
 ) : ViewModel() {
     private val render = ReciboRenderModel(money)
     private val category = MutableStateFlow<String?>(null)
@@ -135,6 +151,63 @@ class CategoryDetailViewModel(
     /** When a change began waiting for its detail figures; later changes share the wait. */
     private var waitingSince: Duration? = null
 
+    /** Nudges closed on this screen, so they go even when keeping that fails. */
+    private val closedHere = MutableStateFlow<Set<Nudge>>(emptySet())
+    private val nudgeDays = NudgeDays(guidance, viewModelScope)
+
+    /**
+     * What the last month the screen showed whole left or missed, for the arrastre nudge:
+     * worked out with its figures, of the same month, category and revision.
+     */
+    private var carryFact: CarryFact? = null
+
+    private data class CarryFact(
+        val shown: Shown,
+        val generation: Long,
+        val revision: Long,
+        val left: Money?
+    )
+
+    /**
+     * Every expense of the two months before the one shown, read once for it when it is the
+     * month in progress: what the pagos fijos nudge looks for. Null while it is read, when
+     * it failed or held more than one read may (never a part taken for the whole).
+     */
+    private val repeats: Flow<Repeats?> =
+        combine(session.selectedMonth, category, attempt, financial.today) { month, id, _, today ->
+            Shown(month, id).takeIf { month == YearMonth.from(today.date) }
+        }
+            .distinctUntilChanged()
+            .mapLatest { shown -> shown?.categoryId?.let { Repeats(shown, twoMonthsBefore(shown.month)) } }
+            .onStart { emit(null) }
+
+    private class Repeats(val shown: Shown, val expenses: List<Expense>?)
+
+    private suspend fun twoMonthsBefore(month: YearMonth): List<Expense>? {
+        val read = expenses.between(
+            month.minusMonths(2).atDay(1),
+            month.minusMonths(1).atEndOfMonth(),
+            ExpenseReads.MAX_RECENT
+        )
+        return (read as? Outcome.Success)?.value?.takeIf { it.next == null }?.expenses
+    }
+
+    /** What the nudge is worked out from besides the screen's own state. */
+    private class NudgeInputs(
+        val guidance: PreferenceRead<Guidance>,
+        val today: FinancialDay,
+        val repeats: Repeats?,
+        val closed: Set<Nudge>
+    )
+
+    private val nudgeInputs: Flow<NudgeInputs> = combine(
+        guidance.observeGuidance(),
+        financial.today,
+        repeats,
+        closedHere,
+        corrections.nudgesDone
+    ) { read, today, repeats, closed, done -> NudgeInputs(read, today, repeats, closed + done) }
+
     val state: StateFlow<CategoryDetailState> =
         combine(session.selectedMonth, category, attempt) { month, id, _ -> Shown(month, id) }
             .flatMapLatest { shown ->
@@ -194,11 +267,12 @@ class CategoryDetailViewModel(
                 if (state is CategoryDetailState.Ready) {
                     state.copy(
                         fixed = fixed(state, book)
-                    )
+                    ) to book
                 } else {
-                    state
+                    state to book
                 }
             }
+            .combine(nudgeInputs) { (state, book), inputs -> nudged(state, book, inputs) }
             .stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(STOP_AFTER_MILLIS),
@@ -226,6 +300,14 @@ class CategoryDetailViewModel(
             }
 
             is CategoryDetailAction.Delete -> delete(action.expenseId)
+
+            // Closed for good: the one shown, whichever it is.
+            CategoryDetailAction.CloseNudge ->
+                (state.value as? CategoryDetailState.Ready)?.nudge?.let { shown ->
+                    val nudge = shown.nudge
+                    closedHere.update { it + nudge }
+                    viewModelScope.launch { guidance.markSeen(nudge) }
+                }
 
             CategoryDetailAction.CheckDelete -> current?.let(::check)
         }
@@ -301,6 +383,62 @@ class CategoryDetailViewModel(
 
     private val Shown.place get() = "$month.$categoryId"
 
+    /**
+     * The one nudge due on [state], at most (SELLO-212): arrastre, then pagos fijos, both
+     * only in the month in progress, then deleting, once the list shows an expense. Only
+     * current figures carry one, never older ones or a carry problem, and only readings
+     * that worked count: while the guidance, the schedules or the months before are
+     * loading or failed, the nudges that need them do not show.
+     */
+    private fun nudged(
+        state: CategoryDetailState,
+        book: ScheduleBookState,
+        inputs: NudgeInputs
+    ): CategoryDetailState {
+        if (state !is CategoryDetailState.Ready) return state
+        val shown = Shown(state.month, state.category.id)
+        val fresh = !state.stale && state.carryProblem == null
+        val inProgress = state.month == YearMonth.from(inputs.today.date)
+        val carry = carryFact?.takeIf {
+            inProgress && it.shown == shown && it.generation == state.generation &&
+                it.revision == state.revision
+        }?.left
+        val schedules = (book as? ReadState.Ready)?.value
+            ?.takeIf { it.generation == state.generation }?.schedules
+        val repeated = inputs.repeats?.takeIf { it.shown == shown }?.expenses
+        val id = (CategoryId.of(state.category.id) as? Outcome.Success)?.value
+        val fixed = inProgress && !state.category.archived && id != null &&
+            repeated != null && schedules != null &&
+            FeatureNudgePolicy.fixedPaymentDue(
+                repeated,
+                id,
+                state.month,
+                schedules.map { it.schedule }
+            )
+        val listed = (state.expenses as? ExpenseListState.Rows)?.rows?.isNotEmpty() == true
+        val wanted = listOfNotNull(
+            Nudge.Carry.takeIf { carry != null },
+            Nudge.FixedPayment.takeIf { fixed },
+            Nudge.Deleting.takeIf { listed }
+        ) - inputs.closed
+        val picked = ScreenNudge.pick(inputs.guidance, inputs.today.date, wanted)
+            ?.takeIf { fresh }
+        nudgeDays.showing(picked)
+        val nudge = when (picked?.nudge) {
+            Nudge.Carry -> DetailNudge.Carry(
+                state.month.minusMonths(1),
+                surplus = checkNotNull(carry).minorUnits > 0
+            )
+
+            Nudge.FixedPayment -> DetailNudge.FixedPayment
+
+            Nudge.Deleting -> DetailNudge.Deleting(UndoPolicy.WINDOW.inWholeSeconds)
+
+            else -> null
+        }
+        return state.copy(nudge = nudge)
+    }
+
     /** Whether [insights] are still of an earlier revision than a newly read month. */
     private fun behind(state: SnapshotState, insights: CategoryInsightsState, id: CategoryId) =
         state is ReadState.Ready && when (insights) {
@@ -344,6 +482,22 @@ class CategoryDetailViewModel(
         }
         val line = render.categories(snapshot).firstOrNull { it.id == shown.categoryId }
             ?: return flowOf(CategoryDetailState.Gone)
+        carryFact = CarryFact(
+            shown,
+            snapshot.generation,
+            snapshot.revision,
+            (insights as? ReadState.Ready)?.value?.takeIf { it.isOf(snapshot, id) }
+                ?.let { figures ->
+                    snapshot.categories.firstOrNull { it.category.id == id }?.let { month ->
+                        FeatureNudgePolicy.carryDue(
+                            month,
+                            figures.history.firstOrNull {
+                                it.month == snapshot.month.minusMonths(1)
+                            }
+                        )
+                    }
+                }
+        )
         val ready = CategoryDetailState.Ready(
             category = line,
             month = snapshot.month,

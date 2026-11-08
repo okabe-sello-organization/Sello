@@ -1,6 +1,7 @@
 package com.software.sello.feature.recibo
 
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.domain.model.Nudge
 import com.software.sello.domain.model.RepeatRule
 import com.software.sello.presentation.carry.CarryProblem
 import java.time.LocalDate
@@ -38,7 +39,9 @@ sealed interface CategoryDetailState {
         /** Its payments still to come this month, from the same snapshot as [category]. */
         val upcoming: List<DetailUpcomingPayment> = emptyList(),
         /** The Pagos fijos slip (SELLO-135). */
-        val fixed: DetailFixedState = DetailFixedState.Hidden
+        val fixed: DetailFixedState = DetailFixedState.Hidden,
+        /** The one quiet line of guidance under the header, when one is due (SELLO-212). */
+        val nudge: DetailNudge? = null
     ) : CategoryDetailState
 
     /** The month was read and this category has nothing in it. */
@@ -48,6 +51,27 @@ sealed interface CategoryDetailState {
 
     /** A carry figure cannot be calculated and nothing earlier was read (CP8). */
     data class CarryFailed(val problem: CarryProblem) : CategoryDetailState
+}
+
+/** Category detail's quiet line of guidance (SELLO-212), with a ✕: one at a time. */
+sealed interface DetailNudge {
+    /** The nudge it is, closed for good by its ✕. */
+    val nudge: Nudge
+
+    /** That the month before, [month], ended with something left ([surplus]) or missing. */
+    data class Carry(val month: YearMonth, val surplus: Boolean) : DetailNudge {
+        override val nudge get() = Nudge.Carry
+    }
+
+    /** The same expense was recorded by hand in each of the two months before. */
+    data object FixedPayment : DetailNudge {
+        override val nudge get() = Nudge.FixedPayment
+    }
+
+    /** That a deleted expense can be undone for [undoSeconds] seconds. */
+    data class Deleting(val undoSeconds: Long) : DetailNudge {
+        override val nudge get() = Nudge.Deleting
+    }
 }
 
 /** One of the category's payments the month in progress still reserves. */
@@ -161,4 +185,7 @@ sealed interface CategoryDetailAction {
 
     /** Ask again, with its own operation, how an unresolved deletion ended. */
     data object CheckDelete : CategoryDetailAction
+
+    /** The nudge's ✕: closes it for good. */
+    data object CloseNudge : CategoryDetailAction
 }

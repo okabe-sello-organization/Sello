@@ -1,5 +1,7 @@
 package com.software.sello.feature.recibo
 
+import com.software.sello.testing.HandGuidance
+import com.software.sello.domain.model.Guidance
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.domain.model.CarryoverFailure
@@ -145,7 +147,9 @@ class CategoryDetailCarryTest {
             { testScheduler.currentTime.milliseconds },
             HandExpenseCommands(),
             { uuid(901) },
-            androidx.lifecycle.SavedStateHandle()
+            androidx.lifecycle.SavedStateHandle(),
+            HandGuidance(Guidance()),
+            HandFinancialClock("2027-03-10")
         )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.state.collect {}

@@ -1,5 +1,7 @@
 package com.software.sello.feature.recibo
 
+import com.software.sello.testing.HandGuidance
+import com.software.sello.domain.model.Guidance
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.software.sello.designsystem.component.MoneySign
@@ -116,7 +118,9 @@ class CategoryDetailViewModelTest {
                 { testScheduler.currentTime.milliseconds },
                 commands,
                 { uuid(nextOperation++) },
-                saved
+                saved,
+                HandGuidance(Guidance()),
+                HandFinancialClock("2026-10-23")
             )
         // Something has to be watching for the state to be kept up to date.
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
@@ -606,7 +610,9 @@ class CategoryDetailViewModelTest {
             { testScheduler.currentTime.milliseconds },
             commands,
             { uuid(nextOperation++) },
-            SavedStateHandle()
+            SavedStateHandle(),
+            HandGuidance(Guidance()),
+            HandFinancialClock("2026-10-23")
         )
         val first = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.state.collect {}

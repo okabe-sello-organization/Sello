@@ -1,9 +1,11 @@
 package com.software.sello.domain.policy
 
+import com.software.sello.domain.model.CategoryHistoryMonth
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.CategoryMonth
 import com.software.sello.domain.model.Expense
 import com.software.sello.domain.model.Money
+import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.Schedule
 import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.TransactionAmount
@@ -58,16 +60,17 @@ object FeatureNudgePolicy {
     }
 
     /**
-     * Arrastre: what [previous], the category's month before, ended with left (positive) or
-     * missing (negative), when [current], the same category in the month in progress, has
-     * a limit, is not archived and does not carry, and [previous] had a limit and did not
-     * end exactly on it. Null otherwise.
+     * Arrastre: what [previous], the category's month before as its history has it, ended
+     * with left (positive) or missing (negative), when [current], the same category in the
+     * month in progress, has a limit, is not archived and does not carry, and [previous] had
+     * a limit and did not end exactly on it. Null otherwise.
      */
-    fun carryDue(current: CategoryMonth, previous: CategoryMonth?): Money? {
+    fun carryDue(current: CategoryMonth, previous: CategoryHistoryMonth?): Money? {
         val budget = current.budget ?: return null
         if (current.category.archived || budget.carry != null) return null
-        if (previous == null || previous.category.id != current.category.id) return null
-        return previous.budget?.remaining?.takeIf { it.minorUnits != 0L }
+        val limit = previous?.limit ?: return null
+        val left = (limit - previous.spent) as? Outcome.Success ?: return null
+        return left.value.takeIf { it.minorUnits != 0L }
     }
 
     private data class Repeat(val amount: TransactionAmount, val note: String)

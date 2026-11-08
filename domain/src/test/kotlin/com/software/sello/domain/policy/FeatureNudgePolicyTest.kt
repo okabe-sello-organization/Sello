@@ -4,26 +4,29 @@ import com.software.sello.domain.model.BudgetLimit
 import com.software.sello.domain.model.BudgetStanding
 import com.software.sello.domain.model.CarryBreakdown
 import com.software.sello.domain.model.Category
+import com.software.sello.domain.model.CategoryHistoryMonth
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.CategoryMonth
 import com.software.sello.domain.model.CategoryName
 import com.software.sello.domain.model.EntryOrigin
 import com.software.sello.domain.model.Expense
 import com.software.sello.domain.model.ExpenseId
+import com.software.sello.domain.model.Forecast
 import com.software.sello.domain.model.IconKey
 import com.software.sello.domain.model.LimitedBudget
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.Occurrence
-import com.software.sello.domain.model.PastVerdict
 import com.software.sello.domain.model.Recurrence
 import com.software.sello.domain.model.RepeatRule
 import com.software.sello.domain.model.Schedule
 import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.model.ScheduledEntry
+import com.software.sello.domain.model.Verdict
 import com.software.sello.domain.port.FinancialDay
 import com.software.sello.domain.pesos
 import com.software.sello.domain.valueOrFail
+import java.math.BigInteger
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
@@ -246,41 +249,46 @@ class FeatureNudgePolicyTest {
     // Arrastre
 
     private val recorded = Instant.parse("2026-09-01T12:00:00Z")
-    private val past = BudgetStanding.Past(PastVerdict.WithinLimit)
-
-    private fun line(
-        limit: Long?,
-        spent: Long,
-        carry: CarryBreakdown? = null,
-        archived: Boolean = false,
-        id: CategoryId = comida
-    ) = CategoryMonth(
-        category = Category(
-            id,
-            CategoryName.of("Comida").valueOrFail(),
-            IconKey.of("restaurant").valueOrFail(),
-            archived = archived,
-            version = 1,
-            createdAt = recorded,
-            updatedAt = recorded
-        ),
-        state = MonthBudgetState.Limited(
-            limit?.let { BudgetLimit.finite(Money.cop(it)).valueOrFail() } ?: BudgetLimit.Unlimited,
-            explicit = false
-        ),
-        spent = Money.cop(spent),
-        budget = limit?.let {
-            LimitedBudget(Money.cop(it), Money.cop(spent), Money.cop(it - spent), past, carry)
-        },
-        expenseCount = 1
+    private val october = YearMonth.of(2026, 10)
+    private val current = BudgetStanding.Current(
+        Forecast(BigInteger.ZERO, 1, Money.cop(0)),
+        Verdict.OnTrack
     )
+
+    /** Comida in November, the month in progress. */
+    private fun now(limit: Long?, carry: CarryBreakdown? = null, archived: Boolean = false) =
+        CategoryMonth(
+            category = Category(
+                comida,
+                CategoryName.of("Comida").valueOrFail(),
+                IconKey.of("restaurant").valueOrFail(),
+                archived = archived,
+                version = 1,
+                createdAt = recorded,
+                updatedAt = recorded
+            ),
+            state = MonthBudgetState.Limited(
+                limit?.let { BudgetLimit.finite(Money.cop(it)).valueOrFail() }
+                    ?: BudgetLimit.Unlimited,
+                explicit = false
+            ),
+            spent = Money.cop(0),
+            budget = limit?.let {
+                LimitedBudget(Money.cop(it), Money.cop(0), Money.cop(it), current, carry)
+            },
+            expenseCount = 0
+        )
+
+    /** Comida's October as its history has it. */
+    private fun october(limit: Long?, spent: Long) =
+        CategoryHistoryMonth(october, Money.cop(spent), limit?.let(Money::cop))
 
     @Test
     fun aMonthThatEndedUnderItsLimitGivesWhatWasLeft() {
         // October: limit 500.000, spent 420.000, so 80.000 was left.
         assertEquals(
             Money.cop(80_000),
-            FeatureNudgePolicy.carryDue(line(500_000, 100_000), line(500_000, 420_000))
+            FeatureNudgePolicy.carryDue(now(500_000), october(500_000, 420_000))
         )
     }
 
@@ -289,13 +297,13 @@ class FeatureNudgePolicyTest {
         // October: limit 500.000, spent 530.000, so 30.000 was missing.
         assertEquals(
             Money.cop(-30_000),
-            FeatureNudgePolicy.carryDue(line(500_000, 100_000), line(500_000, 530_000))
+            FeatureNudgePolicy.carryDue(now(500_000), october(500_000, 530_000))
         )
     }
 
     @Test
     fun endingExactlyOnTheLimitLeavesNothingToCarry() {
-        assertNull(FeatureNudgePolicy.carryDue(line(500_000, 0), line(500_000, 500_000)))
+        assertNull(FeatureNudgePolicy.carryDue(now(500_000), october(500_000, 500_000)))
     }
 
     @Test
@@ -306,32 +314,28 @@ class FeatureNudgePolicyTest {
             capacity = Money.cop(500_000),
             chainStart = november
         )
-        assertNull(FeatureNudgePolicy.carryDue(line(500_000, 0, carrying), line(500_000, 420_000)))
+        assertNull(FeatureNudgePolicy.carryDue(now(500_000, carrying), october(500_000, 420_000)))
     }
 
     @Test
     fun withoutALimitThisMonthItCannotCarry() {
-        assertNull(FeatureNudgePolicy.carryDue(line(null, 0), line(500_000, 420_000)))
+        assertNull(FeatureNudgePolicy.carryDue(now(null), october(500_000, 420_000)))
     }
 
     @Test
     fun withoutALimitLastMonthNothingWasLeftOrMissing() {
-        assertNull(FeatureNudgePolicy.carryDue(line(500_000, 0), line(null, 420_000)))
+        assertNull(FeatureNudgePolicy.carryDue(now(500_000), october(null, 420_000)))
     }
 
     @Test
     fun anArchivedCategoryIsNotPointedAtIt() {
         assertNull(
-            FeatureNudgePolicy.carryDue(
-                line(500_000, 0, archived = true),
-                line(500_000, 420_000)
-            )
+            FeatureNudgePolicy.carryDue(now(500_000, archived = true), october(500_000, 420_000))
         )
     }
 
     @Test
-    fun withoutLastMonthOrWithAnotherCategoryItIsNotDue() {
-        assertNull(FeatureNudgePolicy.carryDue(line(500_000, 0), null))
-        assertNull(FeatureNudgePolicy.carryDue(line(500_000, 0), line(500_000, 420_000, id = casa)))
+    fun withoutLastMonthInItsHistoryItIsNotDue() {
+        assertNull(FeatureNudgePolicy.carryDue(now(500_000), null))
     }
 }
