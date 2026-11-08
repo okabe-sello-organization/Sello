@@ -14,6 +14,8 @@ import com.software.sello.Look
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.selloColors
 import com.software.sello.domain.model.AppearancePreference
+import com.software.sello.domain.model.CategoryOrderingPreference
+import com.software.sello.domain.model.GuidanceMemory
 import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.OperationId
@@ -139,6 +141,40 @@ class RestoreSectionTest {
         )
 
         rule.onNodeWithText("Gastos hormiga: hasta 20.000").assertIsDisplayed()
+        rule.onNodeWithText("Aplicar preferencias").assertIsDisplayed()
+    }
+
+    @Test
+    fun guidanceStillToMergeIsNamedAndAppliedByItsOwnName() {
+        show(
+            RestoreStep.Restored(
+                RestoreOutcome.Restored(
+                    BackupSummary(2, 3, 1, 0, 0),
+                    PendingPreferences(null, null, guidance = GuidanceMemory())
+                )
+            )
+        )
+
+        rule.onNodeWithText("Guía: lo que ya viste").assertIsDisplayed()
+        rule.onNodeWithText("Aplicar guía").assertIsDisplayed()
+    }
+
+    @Test
+    fun guidanceWithAnotherGroupIsAppliedAsPreferences() {
+        show(
+            RestoreStep.Restored(
+                RestoreOutcome.Restored(
+                    BackupSummary(2, 3, 1, 0, 0),
+                    PendingPreferences(
+                        AppearancePreference(ThemePreference.Light, InkPreference.Cobalto),
+                        CategoryOrderingPreference(),
+                        guidance = GuidanceMemory()
+                    )
+                )
+            )
+        )
+
+        rule.onNodeWithText("Guía: lo que ya viste").assertIsDisplayed()
         rule.onNodeWithText("Aplicar preferencias").assertIsDisplayed()
     }
 

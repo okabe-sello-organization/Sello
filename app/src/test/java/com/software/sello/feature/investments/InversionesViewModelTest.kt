@@ -9,6 +9,7 @@ import com.software.sello.domain.policy.InvestmentPolicy
 import com.software.sello.domain.port.InvestmentBoardState
 import com.software.sello.domain.port.ReadState
 import com.software.sello.navigation.HandFinancialClock
+import com.software.sello.testing.HandGuidance
 import com.software.sello.testing.testMoney
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -136,7 +137,8 @@ class InversionesViewModelTest {
             SavedStateHandle(mapOf(InvestmentDetailViewModel.KEY_INVESTMENT to zeta)),
             fresh,
             clock,
-            testMoney()
+            testMoney(),
+            HandGuidance()
         )
         val first = backgroundScope.launch { model.state.collect {} }
         runCurrent()

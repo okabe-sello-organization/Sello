@@ -43,6 +43,7 @@ import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
+import com.software.sello.testing.HandGuidance
 import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.LocalDate
@@ -74,6 +75,7 @@ class GoalsViewModelTest {
     private val clock = HandFinancialClock("2026-10-23")
     private val reads = HandGoalReads()
     private val commands = HandGoalCommands()
+    private val guidance = HandGuidance()
     private var nextId = 1
     private val ids = RecordIdSource { "00000000-0000-4000-a000-%012d".format(nextId++) }
 
@@ -155,7 +157,9 @@ class GoalsViewModelTest {
     private fun detail(
         saved: SavedStateHandle = SavedStateHandle(mapOf("goalId" to viajeId)),
         source: HandGoalReads = reads
-    ) = GoalDetailViewModel(saved, source, commands, clock, money, ids, corrections) { false }
+    ) = GoalDetailViewModel(saved, source, commands, clock, money, ids, corrections, guidance) {
+        false
+    }
 
     private fun metas(source: HandGoalReads = reads, saved: SavedStateHandle = SavedStateHandle()) =
         MetasViewModel(saved, source, commands, clock, money, ids, corrections) {
@@ -295,6 +299,70 @@ class GoalsViewModelTest {
         assertNull(ready(model).replacing)
     }
 
+    // ---------- Recibo's goal nudge closes once the choice changes (SELLO-213) ----------
+
+    @Test
+    fun aStarSavedClosesRecibosGoalNudgeForGoodAndNotBefore() = runTest {
+        reads.board.value = board(summary(viajeId, 1_710_000, 3_000_000), featured = viajeId)
+        commands.pause = true
+        val model = detail()
+        watch(model)
+
+        model.onAction(GoalDetailAction.ToggleStar)
+        val waiting = guidance.writes.toList()
+        commands.release(committed())
+
+        assertEquals(emptyList<String>(), waiting)
+        assertEquals(listOf("seen ReciboGoal"), guidance.writes)
+    }
+
+    @Test
+    fun aStarTakenAwayClosesItToo() = runTest {
+        reads.board.value = board(
+            summary(viajeId, 1_710_000, 3_000_000),
+            recibo = listOf(viajeId),
+            starred = setOf(viajeId)
+        )
+        val model = detail()
+        watch(model)
+
+        model.onAction(GoalDetailAction.ToggleStar)
+
+        assertTrue(commands.sent.single() is UnstarGoal)
+        assertEquals(listOf("seen ReciboGoal"), guidance.writes)
+    }
+
+    @Test
+    fun aStarRefusedOrNotKnownLeavesItOpen() = runTest {
+        reads.board.value = board(summary(viajeId, 1_710_000, 3_000_000), featured = celularId)
+        val model = detail()
+        watch(model)
+        commands.next = CommandOutcome.Rejected(CommandRejection.StaleGeneration(4))
+        model.onAction(GoalDetailAction.ToggleStar)
+        commands.next = CommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
+        commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
+
+        model.onAction(GoalDetailAction.ToggleStar)
+
+        assertEquals(GoalDetailError.Unknown, ready(model).error)
+        assertEquals(emptyList<String>(), guidance.writes)
+    }
+
+    @Test
+    fun deletingAGoalLeavesRecibosGoalNudgeOpen() = runTest {
+        reads.board.value = board(
+            summary(viajeId, 400_000, 400_000, completedOn = LocalDate.of(2026, 9, 30))
+        )
+        val model = detail()
+        watch(model)
+
+        model.onAction(GoalDetailAction.AskToDelete)
+        model.onAction(GoalDetailAction.Delete)
+
+        assertTrue(model.deleted.value)
+        assertEquals(emptyList<String>(), guidance.writes)
+    }
+
     // ---------- The sixth star (SELLO-144) ----------
 
     private val motoId = "00000000-0000-4000-9000-000000000003"
@@ -366,6 +434,7 @@ class GoalsViewModelTest {
         )
         assertNull(ready(model).replacing)
         assertNull(ready(model).error)
+        assertEquals(listOf("seen ReciboGoal"), guidance.writes)
     }
 
     @Test

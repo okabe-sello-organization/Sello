@@ -1,12 +1,14 @@
 package com.software.sello.feature.recibo
 
 import androidx.activity.compose.ReportDrawnWhen
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
@@ -55,7 +57,9 @@ import com.software.sello.designsystem.component.AnswerSlip
 import com.software.sello.designsystem.component.BandChip
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ButtonTone
+import com.software.sello.designsystem.component.CardHelp
 import com.software.sello.designsystem.component.Footnote
+import com.software.sello.designsystem.component.HelpTerm
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyStyle
 import com.software.sello.designsystem.component.MoneyText
@@ -100,9 +104,31 @@ fun ReciboScreen(
     // The start is complete once the month was read: its figures, a first run or a failure.
     ReportDrawnWhen { state !is ReciboState.Loading }
     val scroll = rememberScrollState()
+    Box(modifier.fillMaxSize()) {
+        ReciboContent(state, onAction, contentPadding, scroll, selectedCategoryId, goal)
+        // Over the month, outside its scrolling column; only while the month is shown.
+        (state as? ReciboState.Month)?.help?.let { topic ->
+            ReciboHelpSheet(
+                topic,
+                onDismiss = { onAction(ReciboAction.CloseHelp) },
+                onMore = { onAction(ReciboAction.OpenHelpGuide) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReciboContent(
+    state: ReciboState,
+    onAction: (ReciboAction) -> Unit,
+    contentPadding: PaddingValues,
+    scroll: ScrollState,
+    selectedCategoryId: String?,
+    goal: @Composable () -> Unit
+) {
     Column(
         verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md),
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .verticalScroll(scroll)
             .padding(contentPadding)
@@ -157,8 +183,11 @@ fun ReciboScreen(
                 SummarySlip(
                     state.summary,
                     onAdjust = { onAction(ReciboAction.AdjustBudget) },
-                    onReserved = { onAction(ReciboAction.OpenReserved) }
+                    onReserved = { onAction(ReciboAction.OpenReserved) },
+                    onHelp = { onAction(ReciboAction.ShowHelp(it)) }
                 )
+                // The goal card's own nudge sits under it; the others under the answer.
+                state.nudge?.takeIf { it != ReciboNudge.Goal }?.let { ReciboNudgeRow(it, onAction) }
                 state.invitation?.let { invitation ->
                     val onDismiss = { onAction(ReciboAction.DismissInvitation(invitation.month)) }
                     if (invitation.closesYear) {
@@ -176,6 +205,7 @@ fun ReciboScreen(
                     }
                 }
                 goal()
+                if (state.nudge == ReciboNudge.Goal) ReciboNudgeRow(ReciboNudge.Goal, onAction)
                 CategoriesSlip(
                     state.categories,
                     selectedCategoryId,
@@ -207,8 +237,14 @@ fun ReciboScreen(
  * pesos. Excedido." The minus is a character on the screen and a word when read.
  */
 @Composable
-private fun SummarySlip(summary: ReciboSummary, onAdjust: () -> Unit, onReserved: () -> Unit) {
+private fun SummarySlip(
+    summary: ReciboSummary,
+    onAdjust: () -> Unit,
+    onReserved: () -> Unit,
+    onHelp: (ReciboHelp) -> Unit
+) {
     val label = answerLabel(summary.label)
+    val helpLabel = stringResource(R.string.help_summary_open)
     val stamp = stampText(summary.stamp)
     AnswerSlip(
         label = label,
@@ -221,16 +257,33 @@ private fun SummarySlip(summary: ReciboSummary, onAdjust: () -> Unit, onReserved
             label,
             summary.amount.spoken,
             stamp
-        )
+        ),
+        labelHelp = {
+            CardHelp(
+                helpLabel,
+                onClick = { onHelp(ReciboHelp.Summary) },
+                modifier = Modifier.testTag(RECIBO_SUMMARY_HELP_TAG)
+            )
+        }
     ) {
         summary.closed?.let { ClosedMonthNote(it) }
         // Revisar's two facts under the big number, before the tear line
         // (docs/design/system/features/recibo.html).
         summary.shortfall?.let { ShortfallNote(it) }
-        summary.perDay?.let { PerDayFigure(it, over = summary.stamp == ReciboStamp.Over) }
+        summary.perDay?.let {
+            PerDayFigure(it, over = summary.stamp == ReciboStamp.Over) {
+                onHelp(ReciboHelp.PerDay)
+            }
+        }
         // Under the per-day line, only while a category carries
         // (docs/design/system/features/recibo.html#screen-recibo).
-        summary.carry?.let { MonthCarrySum(it) }
+        summary.carry?.let {
+            MonthCarrySum(
+                it,
+                onBaseHelp = { onHelp(ReciboHelp.Base) },
+                onCarryHelp = { onHelp(ReciboHelp.Carry) }
+            )
+        }
         summary.reserved?.let { ReservedFootnote(it, onReserved) }
         if (summary.adjustable) AdjustBudgetLink(onAdjust)
     }
@@ -379,7 +432,7 @@ internal fun ClosedMonthInvitation(
 
 /** Over the limit nothing is left per day: the 0 is in loss ink, and "Excedido" says why. */
 @Composable
-private fun PerDayFigure(perDay: ReciboPerDay, over: Boolean) {
+private fun PerDayFigure(perDay: ReciboPerDay, over: Boolean, onHelp: () -> Unit) {
     val days = pluralStringResource(
         R.plurals.recibo_days_including_today,
         perDay.days,
@@ -387,33 +440,40 @@ private fun PerDayFigure(perDay: ReciboPerDay, over: Boolean) {
     )
     val spoken = stringResource(R.string.recibo_per_day_description, perDay.amount.spoken, days)
     TearLine()
+    // Read as one sentence; "por día" is its own button, which explains it.
     Column(
         Modifier
             .fillMaxWidth()
             .testTag(RECIBO_PER_DAY_TAG)
-            .clearAndSetSemantics { contentDescription = spoken }
+            .semantics(mergeDescendants = true) { contentDescription = spoken }
     ) {
         // The unit moves under a figure too wide to share its line.
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             itemVerticalAlignment = Alignment.Bottom
         ) {
-            MoneyText(
-                perDay.amount,
-                style = MoneyStyle.Card,
-                color = if (over) SelloTheme.colors.semantic.loss else SelloTheme.colors.ink
-            )
-            Text(
+            Box(Modifier.clearAndSetSemantics {}) {
+                MoneyText(
+                    perDay.amount,
+                    style = MoneyStyle.Card,
+                    color = if (over) SelloTheme.colors.semantic.loss else SelloTheme.colors.ink
+                )
+            }
+            HelpTerm(
                 text = stringResource(R.string.recibo_per_day_unit),
+                onClick = onHelp,
                 style = MaterialTheme.typography.bodyLarge,
                 color = SelloTheme.colors.inkSoft,
-                modifier = Modifier.padding(bottom = SelloTheme.spacing.xs)
+                modifier = Modifier
+                    .padding(bottom = SelloTheme.spacing.xs)
+                    .testTag(RECIBO_PER_DAY_HELP_TAG)
             )
         }
         Text(
             text = days,
             style = MaterialTheme.typography.bodySmall,
-            color = SelloTheme.colors.inkSoft
+            color = SelloTheme.colors.inkSoft,
+            modifier = Modifier.clearAndSetSemantics {}
         )
     }
 }
@@ -617,6 +677,8 @@ const val RECIBO_SHORTFALL_TAG = "recibo:shortfall"
 const val RECIBO_RESERVED_TAG = "recibo:reserved"
 private const val AMOUNT_MARK = "\u0000"
 const val RECIBO_PER_DAY_TAG = "recibo:per-day"
+const val RECIBO_PER_DAY_HELP_TAG = "recibo:per-day:help"
+const val RECIBO_SUMMARY_HELP_TAG = "recibo:summary:help"
 const val RECIBO_INVITATION_TAG = "recibo:invitation"
 const val RECIBO_INVITATION_DISMISS_TAG = "recibo:invitation:dismiss"
 const val RECIBO_CLOSED_TAG = "recibo:closed"

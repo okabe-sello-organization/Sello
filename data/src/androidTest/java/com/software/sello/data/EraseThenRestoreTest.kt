@@ -167,6 +167,7 @@ class EraseThenRestoreTest {
             store,
             store,
             store,
+            HandGuidancePreferences(),
             NoticeSeen(),
             { uuid(nextId++) },
             {
@@ -475,6 +476,7 @@ class EraseThenRestoreTest {
             store,
             store,
             store,
+            HandGuidancePreferences(),
             NoticeSeen(),
             { uuid(nextId++) },
             { ledger.audit },

@@ -264,7 +264,7 @@ fun FactLine(text: String, bold: String, modifier: Modifier = Modifier)</code></
 <article class="component" id="c-LeaderLine">
 <h3><code>LeaderLine</code> <span class="src"><code>component/Lines.kt:46</code>, <code>component/Lines.kt:114</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>A receipt line: label, dotted leader, value. For two to six facts. Read as one node, "label, value". Put a <code>MoneyText</code> in <code>value</code> for amounts. A <code>LineEmphasis.Soft</code> line draws its label and, by default, its value in the soft ink; a <code>LineEmphasis.Strong</code> one sets its label in black weight, and the value should match. With <code>onLabelHelp</code> the label is a <a href="#c-HelpTerm"><code>HelpTerm</code></a> that opens what it means, its own button beside the line.<br>A <code>LeaderLine</code> whose value is plain text, such as a date or a count.</dd>
+<dt>Purpose</dt><dd>A receipt line: label, dotted leader, value. For two to six facts. Read as one node, "label, value". Put a <code>MoneyText</code> in <code>value</code> for amounts. A <code>LineEmphasis.Soft</code> line draws its label and, by default, its value in the soft ink; a <code>LineEmphasis.Strong</code> one sets its label in black weight, and the value should match. With <code>onLabelHelp</code> the label is a <a href="#c-HelpTerm"><code>HelpTerm</code></a> that opens what it means, its own button beside the line; the line still says its label first, "label, value".<br>A <code>LeaderLine</code> whose value is plain text, such as a date or a count.</dd>
 <dt>Variants</dt><dd>Two overloads: a composable <code>value</code> (put a <code>MoneyText</code> there) or a plain <code>String</code> value. <code>emphasis</code>: <code>LineEmphasis.Normal</code>, <code>Soft</code>, <code>Strong</code>; optional <code>icon</code>, <code>caption</code>, <code>onClick</code>, <code>onLabelHelp</code>.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 8</a> <a class="tag" href="features/goals.html">goals · 3</a> <a class="tag" href="features/income.html">income · 6</a> <a class="tag" href="features/investments.html">investments · 10</a> <a class="tag" href="features/recibo.html">recibo · 12</a> <a class="tag" href="features/resumen.html">resumen · 3</a> <span class="muted">Inside the design system: <code>Carry.kt</code>, <code>Lines.kt</code>.</span></dd>
 </dl>
@@ -1796,7 +1796,7 @@ fun StatusSlip(
 <h3><code>CardHelp</code> <span class="src"><code>component/Guidance.kt:57</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The <strong>?</strong> right after a card's title, which opens that card's <a href="#c-HelpSheet"><code>HelpSheet</code></a>: a solid soft disc in <code>paperDim</code> with a dark (<code>ink</code>) glyph and no ring, quieter than anything brand-coloured. The disc is 20 dp and its glyph 12 dp at every font size, and it takes only those 20 dp beside the title. Place it <code>spacing.sm</code> after the title; Compose widens its touch area to 48 dp around it, so a title row does not grow. <code>contentDescription</code> names what it explains, such as "Cómo leer este resumen", and TalkBack reads it as a button.</dd>
-<dt>Used by</dt><dd>None yet: SELLO-207 to SELLO-209 place it.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/investments.html">investments · 2</a> <a class="tag" href="features/recibo.html">recibo · 4</a> <span class="muted">Recibo, Pagos previstos and category detail (SELLO-207); Metas, Inversiones and an investment's page (SELLO-209).</span></dd>
 </dl>
 <pre><code>fun CardHelp(contentDescription: String, onClick: () -&gt; Unit, modifier: Modifier = Modifier)</code></pre>
 <figure data-shot="guidance-card-help-and-terms" data-module="design-system" data-variants="claro,oscuro" data-caption="A card title with its ?, and underlined terms in its lines"></figure>
@@ -1805,7 +1805,7 @@ fun StatusSlip(
 <h3><code>HelpTerm</code> <span class="src"><code>component/Guidance.kt:96</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>A word whose meaning is one tap away, such as "sobrante" in a line of figures: the text with a 1.5 dp dotted underline in <code>outline</code>, lighter than the <strong>?</strong>; a wrapped term underlines each of its lines. A tap calls <code>onClick</code>, which opens its explanation (usually a <a href="#c-HelpSheet"><code>HelpSheet</code></a>). TalkBack reads the word, then "Qué significa", as one button. <code>style</code> and <code>color</code> default to the text around it. It is the text's height plus 1 dp for the underline; Compose widens its touch area to 48 dp. It is its own piece of text, so it suits a short label in a row, such as "por día" beside a figure, not a word mid-sentence: it cannot flow with the words around it, and a row of several pieces wraps by piece.</dd>
-<dt>Used by</dt><dd>None yet: SELLO-207 to SELLO-209 place it.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/investments.html">investments · 1</a> <a class="tag" href="features/recibo.html">recibo · 3</a> <span class="muted">Inside the design system: <code>Lines.kt</code> (a <code>LeaderLine</code> with <code>onLabelHelp</code>).</span></dd>
 </dl>
 <pre><code>fun HelpTerm(
     text: String,
@@ -1820,7 +1820,7 @@ fun StatusSlip(
 <h3><code>HelpSheet</code> <span class="src"><code>component/Guidance.kt:147</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The explanation a <strong>?</strong> or an underlined term opens: a <a href="#c-SelloSheet"><code>SelloSheet</code></a> with the title, each <code>HelpEntry</code> as a bold term over its plain explanation in <code>inkSoft</code> (read together, "term. explanation"), an optional worked <code>example</code> on <code>paperAlt</code> in an inset, and, with <code>onMore</code>, the brand text link "Ver más en la Guía de Sello ›". The scrim calls <code>onDismiss</code>; the screen keeps it open in its State and owns Back. The words translate the rules the code applies today (epic decision).</dd>
-<dt>Used by</dt><dd>None yet: SELLO-207 to SELLO-209 fill it.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/investments.html">investments · 1</a> <a class="tag" href="features/recibo.html">recibo · 1</a> <span class="muted">Through <code>ReciboHelpSheet</code> (<code>feature/recibo/ReciboHelp.kt</code>), on Recibo, Pagos previstos and category detail; <code>MetasHelpSheet</code> (<code>feature/goals/MetasHelp.kt</code>) and <code>InvestmentHelpSheet</code> (<code>feature/investments/InvestmentHelp.kt</code>).</span></dd>
 </dl>
 <pre><code>data class HelpEntry(val term: String, val explanation: String)
 

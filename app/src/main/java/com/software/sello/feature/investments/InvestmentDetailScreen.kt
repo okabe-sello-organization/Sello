@@ -98,6 +98,7 @@ fun InvestmentDetailScreen(
                     )
                 }
                 Answer(state, dates, onAction)
+                if (state.nudge) InvestmentNudge(onAction)
                 state.chart?.takeIf {
                     it.values.isNotEmpty()
                 }?.let { Chart(it, state, dates, onAction) }

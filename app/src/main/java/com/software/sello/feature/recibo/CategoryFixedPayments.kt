@@ -3,11 +3,15 @@ package com.software.sello.feature.recibo
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -17,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
 import com.software.sello.designsystem.component.ButtonKind
+import com.software.sello.designsystem.component.CardHelp
 import com.software.sello.designsystem.component.EntryHeading
 import com.software.sello.designsystem.component.ScheduleRow
 import com.software.sello.designsystem.component.SelloButton
@@ -78,7 +83,9 @@ internal fun CategoryFixedPayments(
                     }
                 )
             }
-            FixedPaymentsSlip(fixed, state, month, dates, onOpenSchedule, onAllSchedules)
+            FixedPaymentsSlip(fixed, state, month, dates, onOpenSchedule, onAllSchedules) {
+                onAction(CategoryDetailAction.ShowHelp(ReciboHelp.FixedPayments))
+            }
         }
     }
 }
@@ -90,14 +97,23 @@ private fun FixedPaymentsSlip(
     month: String,
     dates: DateLabels,
     onOpenSchedule: (String) -> Unit,
-    onAllSchedules: () -> Unit
+    onAllSchedules: () -> Unit,
+    onHelp: () -> Unit
 ) {
     Slip(Modifier.fillMaxWidth().testTag(CATEGORY_DETAIL_FIXED_TAG)) {
-        Text(
-            stringResource(R.string.category_detail_fixed_title),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.semantics { heading() }
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                stringResource(R.string.category_detail_fixed_title),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.semantics { heading() }
+            )
+            Spacer(Modifier.width(SelloTheme.spacing.sm))
+            CardHelp(
+                stringResource(R.string.help_fixed_open),
+                onClick = onHelp,
+                modifier = Modifier.testTag(CATEGORY_DETAIL_FIXED_HELP_TAG)
+            )
+        }
         Group(stringResource(R.string.category_detail_fixed_coming, month), first = true)
         if (fixed.upcoming.isEmpty()) {
             Text(
@@ -189,3 +205,4 @@ const val CATEGORY_DETAIL_FIXED_FAILED_TAG = "detail:fixed-failed"
 const val CATEGORY_DETAIL_FIXED_NONE_LEFT_TAG = "detail:fixed-none-left"
 const val CATEGORY_DETAIL_FIXED_ALL_TAG = "detail:fixed-all"
 const val CATEGORY_DETAIL_FIXED_STALE_TAG = "detail:fixed-stale"
+const val CATEGORY_DETAIL_FIXED_HELP_TAG = "detail:fixed:help"

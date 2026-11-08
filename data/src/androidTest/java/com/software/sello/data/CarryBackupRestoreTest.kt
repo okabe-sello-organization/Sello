@@ -70,6 +70,7 @@ class CarryBackupRestoreTest {
     }
     private val investments = HandInvestmentPreferences()
     private val smallExpenses = HandSmallExpensePreferences()
+    private val guidance = HandGuidancePreferences()
     private val notice = NoticeSeen()
 
     /** The portable preferences, which can be told to fail. */
@@ -117,12 +118,13 @@ class CarryBackupRestoreTest {
 
     /**
      * A file as Sello wrote it at version 5: no chains, no financial month, no ink hue, no
-     * Gastos hormiga line and, with no goal starred, no chosen goal.
+     * Gastos hormiga line, no guidance and, with no goal starred, no chosen goal.
      */
-    private fun String.asVersion5() = replace("\"version\": 10,", "\"version\": 5,")
+    private fun String.asVersion5() = replace("\"version\": 11,", "\"version\": 5,")
         .also { check(it.contains("\"starredGoals\": [],")) }
         .replace(Regex("\\s+\"inkHue\": null,"), "")
         .replace(Regex(",\\s+\"smallExpenseLine\": [0-9]+"), "")
+        .replace(Regex(",\\s+\"guidance\": (null|\\{[^{}]*\\})"), "")
         .replace("\"starredGoals\": [],", "\"featuredGoal\": null,")
         .replace(Regex(",\\s+\"carryChains\": \\[[^]]*]"), "")
         .replace(Regex("\\s+\"financialMonth\": \"[0-9-]+\","), "")
@@ -137,6 +139,7 @@ class CarryBackupRestoreTest {
         preferences,
         investments,
         smallExpenses,
+        guidance,
         { source.audit },
         source.clock,
         dispatchers,
@@ -161,6 +164,7 @@ class CarryBackupRestoreTest {
         preferences,
         investments,
         smallExpenses,
+        guidance,
         notice,
         { uuid(nextId++) },
         { target.audit },
@@ -422,6 +426,7 @@ class CarryBackupRestoreTest {
             preferences,
             investments,
             smallExpenses,
+            guidance,
             notice,
             { uuid(nextId++) },
             { other.audit },

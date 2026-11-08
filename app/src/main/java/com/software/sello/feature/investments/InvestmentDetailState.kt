@@ -41,6 +41,8 @@ sealed interface InvestmentDetailState {
         val chart: ValuesChartModel?,
         val movements: List<InvestmentMovementModel>,
         val today: LocalDate,
+        /** The investments nudge under the answer, once (SELLO-213). */
+        val nudge: Boolean = false,
         val allMovements: Boolean = false,
         /** The value the line above the chart reads; null reads the newest. */
         val selectedValue: String? = null,
@@ -114,6 +116,9 @@ data class ValuesChartModel(
 
 sealed interface InvestmentDetailAction {
     data object Retry : InvestmentDetailAction
+
+    /** The investments nudge's ✕: closes it for good. */
+    data object CloseNudge : InvestmentDetailAction
 
     data object ShowAllMovements : InvestmentDetailAction
 
