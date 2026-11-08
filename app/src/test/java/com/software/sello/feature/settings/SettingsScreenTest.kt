@@ -50,7 +50,7 @@ class SettingsScreenTest {
     val rule = createComposeRule()
 
     @Test
-    fun tusDatosComesFirstThenLoQueSeRepiteAndThereIsNoAvisos() {
+    fun theGuideComesFirstThenTusDatosThenLoQueSeRepiteAndThereIsNoAvisos() {
         rule.showSello {
             SettingsScreen(
                 state = SettingsState(loading = false),
@@ -62,6 +62,7 @@ class SettingsScreenTest {
         }
 
         val tops = listOf(
+            SETTINGS_GUIDE_TAG,
             SETTINGS_DATA_TAG,
             SETTINGS_RECURRING_TAG,
             SETTINGS_APPEARANCE_TAG,
@@ -71,6 +72,27 @@ class SettingsScreenTest {
         ).map { rule.onNodeWithTag(it).getUnclippedBoundsInRoot().top }
         assertEquals(tops.sorted(), tops)
         assertEquals(0, rule.onAllNodes(hasText("Avisos")).fetchSemanticsNodes().size)
+    }
+
+    @Test
+    fun theGuidesRowNamesItAndOpensItEvenWhileSettingsLoad() {
+        var opened = 0
+        rule.showSello {
+            SettingsScreen(
+                state = SettingsState(loading = true),
+                onAction = {},
+                contentPadding = PaddingValues(),
+                onOpenSchedules = {},
+                onOpenRate = {},
+                onOpenGuide = { opened++ }
+            ) { Text("Tus datos") }
+        }
+
+        rule.onNodeWithText("Guía de Sello").assertIsDisplayed()
+        rule.onNodeWithText("Cómo funciona cada parte de Sello").assertIsDisplayed()
+        rule.onNodeWithTag(SETTINGS_GUIDE_TAG).performClick()
+
+        assertEquals(1, opened)
     }
 
     @Test
