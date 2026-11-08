@@ -10,14 +10,15 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 
 /*
- * The wire shapes of versions 1 to 10, documented in docs/data/backup-format.md.
+ * The wire shapes of versions 1 to 11, documented in docs/data/backup-format.md.
  * Version 2 is version 1 plus `financial.goals` and `financial.featuredGoal`; version 3
  * is version 2 plus `financial.schedules` and each expense's and income's `origin`;
  * version 4 is version 3 plus `financial.investments` and `financial.usdRates`; version 5 adds
  * two investment settings to `preferences`; version 6 adds `financial.carryChains`; version 7
  * replaces `financial.featuredGoal` with `financial.starredGoals`; version 8 adds Tuya's hue
  * to `preferences`; version 9 has version 8's shape and adds the ink `sistema`; version 10
- * adds Gastos hormiga's line to `preferences`. These classes
+ * adds Gastos hormiga's line to `preferences`; version 11 adds the guidance seen to
+ * `preferences`. These classes
  * are the file and nothing else: they never become Room entities or domain values
  * without going through BackupValidation. Every property is required, including the
  * nullable ones, and the JSON configuration refuses unknown keys. Numbers and flags
@@ -661,6 +662,70 @@ internal fun BackupFileV8.asVersion10() = BackupFileV10(
             investmentCurrency = it.investmentCurrency,
             investmentOrder = it.investmentOrder,
             smallExpenseLine = JsonPrimitive(SmallExpenseLine.DEFAULT.pesos)
+        )
+    }
+)
+
+/** Version 11: version 10 with the guidance seen in `preferences.guidance` (SELLO-205). */
+@Serializable
+internal data class BackupFileV11(
+    val format: String,
+    val version: JsonElement,
+    val exportedAt: String,
+    val financial: FinancialV7,
+    val preferences: PreferencesV11?
+)
+
+/**
+ * `guidance` is null when the phone's guidance could not be read while backing up, and in
+ * a file of version 10 or older read as version 11: either way a restore keeps the phone's.
+ */
+@Serializable
+internal data class PreferencesV11(
+    val theme: String,
+    val ink: String,
+    val inkHue: JsonElement,
+    val categoryOrder: String,
+    val categoryDirection: String,
+    val investmentCurrency: String,
+    val investmentOrder: String,
+    val smallExpenseLine: JsonElement,
+    val guidance: GuidanceV11?
+)
+
+/**
+ * `seen` names each nudge seen and closed for good once; `lastShown` is the last nudge
+ * shown and its day, or null; `backupReminderShown` is a `yyyy-MM-dd` day or null;
+ * `backupReminderOff` a bare flag.
+ */
+@Serializable
+internal data class GuidanceV11(
+    val seen: List<String>,
+    val lastShown: ShownNudgeV11?,
+    val backupReminderShown: String?,
+    val backupReminderOff: JsonElement
+)
+
+@Serializable
+internal data class ShownNudgeV11(val nudge: String, val day: String)
+
+/** A version 10 file, or an older one already read as version 10, read as version 11. */
+internal fun BackupFileV10.asVersion11() = BackupFileV11(
+    format = format,
+    version = version,
+    exportedAt = exportedAt,
+    financial = financial,
+    preferences = preferences?.let {
+        PreferencesV11(
+            theme = it.theme,
+            ink = it.ink,
+            inkHue = it.inkHue,
+            categoryOrder = it.categoryOrder,
+            categoryDirection = it.categoryDirection,
+            investmentCurrency = it.investmentCurrency,
+            investmentOrder = it.investmentOrder,
+            smallExpenseLine = it.smallExpenseLine,
+            guidance = null
         )
     }
 )

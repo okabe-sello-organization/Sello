@@ -4,6 +4,7 @@ import android.app.Application
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.ExportShares
+import com.software.sello.domain.usecase.RememberExistingUse
 import com.software.sello.platform.AndroidDocumentReader
 import com.software.sello.platform.ProcessFinancialZone
 import com.software.sello.platform.SystemAuditClock
@@ -71,6 +72,8 @@ class SelloApplication : Application() {
                 // Exports left for sharing by an earlier run go now (SELLO-121).
                 val koin = application.koin
                 koin.get<CoroutineScope>().launch { koin.get<ExportShares>().clear() }
+                // Whether the person was already using Sello, asked once (SELLO-205).
+                koin.get<CoroutineScope>().launch { koin.get<RememberExistingUse>().run() }
                 Outcome.Success(Started(viewModels(koin), koin.get()))
             }
         }

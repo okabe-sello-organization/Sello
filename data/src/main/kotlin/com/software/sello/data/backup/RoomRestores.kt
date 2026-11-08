@@ -30,6 +30,7 @@ import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.CheckedBackup
 import com.software.sello.domain.port.CheckedBackupFile
 import com.software.sello.domain.port.DispatcherProvider
+import com.software.sello.domain.port.GuidancePreferences
 import com.software.sello.domain.port.InvestmentPreferences
 import com.software.sello.domain.port.LegacyImportLine
 import com.software.sello.domain.port.LegacyImportReport
@@ -99,6 +100,7 @@ class RoomRestores(
     private val ordering: CategoryOrderingPreferences,
     private val investments: InvestmentPreferences,
     private val smallExpenses: SmallExpensePreferences,
+    private val guidance: GuidancePreferences,
     private val notice: CatchUpNoticePreferences,
     private val ids: RecordIdSource,
     private val audit: AuditClock,
@@ -644,6 +646,7 @@ class RoomRestores(
             if (saved && markApplied(SMALL_EXPENSES)) lineLeft = null
         }
         reviewRestoredEntries()
+        mergeGuidance(contents)
         val left = PendingPreferences(appearanceLeft, orderingLeft, investmentsLeft, lineLeft)
         if (left.done) {
             // The manifest first and `applied` last: a death between them leaves either this
@@ -677,6 +680,19 @@ class RoomRestores(
         if (notice.markCatchUpNoticeSeen(Instant.ofEpochMilli(restoredAt)).saved()) {
             markApplied(NOTICE)
         }
+    }
+
+    /**
+     * The backup's guidance seen is merged into the phone's (SELLO-205): nothing the phone
+     * has seen is forgotten. Done once; merging again would change nothing anyway. Like
+     * [reviewRestoredEntries] it is not kept pending if it cannot be saved: it is tried
+     * again only while another group is, and the worst case is a nudge shown once more.
+     */
+    private suspend fun mergeGuidance(contents: BackupContents) {
+        val memory = contents.preferences?.guidance ?: return
+        val done = appliedGroups() ?: return
+        if (GUIDANCE in done) return
+        if (guidance.mergeRestored(memory).saved()) markApplied(GUIDANCE)
     }
 
     private sealed interface Replacement {
@@ -1031,6 +1047,7 @@ class RoomRestores(
         const val INVESTMENTS = "investments"
         const val SMALL_EXPENSES = "small_expenses"
         const val NOTICE = "notice"
+        const val GUIDANCE = "guidance"
 
         /** An investment starts with its first aporte and value at positions 0 and 1. */
         const val FIRST_FREE_POSITION = 2L

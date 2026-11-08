@@ -25,6 +25,7 @@ import com.software.sello.domain.model.GoalMovementId
 import com.software.sello.domain.model.GoalMovementKind
 import com.software.sello.domain.model.GoalName
 import com.software.sello.domain.model.GoalTargetChange
+import com.software.sello.domain.model.GuidanceMemory
 import com.software.sello.domain.model.IconKey
 import com.software.sello.domain.model.Income
 import com.software.sello.domain.model.IncomeId
@@ -48,6 +49,7 @@ import com.software.sello.domain.model.MAX_CHAIN_BASE
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.MonthLimit
 import com.software.sello.domain.model.Note
+import com.software.sello.domain.model.Nudge
 import com.software.sello.domain.model.Occurrence
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.Recurrence
@@ -58,6 +60,7 @@ import com.software.sello.domain.model.Schedule
 import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.model.SchedulePause
 import com.software.sello.domain.model.ScheduledEntry
+import com.software.sello.domain.model.ShownNudge
 import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.model.TransactionAmount
@@ -120,6 +123,17 @@ internal object WireNames {
 
     /** The currencies a new investment may start in, written as amounts write theirs. */
     val newCurrencies = mapOf(Currency.COP to "COP", Currency.USD to "USD")
+    /** Stable names per nudge, as the file writes them. */
+    val nudges = mapOf(
+        Nudge.GuideHint to "guide_hint",
+        Nudge.BackupReminder to "backup_reminder",
+        Nudge.BulkEntry to "bulk_entry",
+        Nudge.FixedPayment to "fixed_payment",
+        Nudge.Carry to "carry",
+        Nudge.Deleting to "deleting",
+        Nudge.Investments to "investments",
+        Nudge.ReciboGoal to "recibo_goal"
+    )
     val investmentOrders = mapOf(
         InvestmentOrder.LargestValue to "largest_value",
         InvestmentOrder.Return to "return",
@@ -178,16 +192,16 @@ private fun flag(element: JsonElement, path: String): Boolean {
 }
 
 /**
- * Checks a decoded file completely, older versions read as version 10 included; the
+ * Checks a decoded file completely, older versions read as version 11 included; the
  * first problem rejects all of it.
  */
-internal fun validate(file: BackupFileV10): Outcome<BackupContents, BackupRejection> = try {
+internal fun validate(file: BackupFileV11): Outcome<BackupContents, BackupRejection> = try {
     Outcome.Success(contentsOf(file))
 } catch (rejected: Rejected) {
     Outcome.Failure(rejected.rejection)
 }
 
-private fun contentsOf(file: BackupFileV10): BackupContents {
+private fun contentsOf(file: BackupFileV11): BackupContents {
     val financial = file.financial
     val version = whole(file.version, "version")
     val revision = whole(financial.sourceRevision, "financial.sourceRevision")
@@ -1001,7 +1015,7 @@ private fun carryChains(
 private fun <T> Map<T, String>.decode(text: String, path: String): T =
     entries.firstOrNull { it.value == text }?.key ?: invalid(path)
 
-private fun preferences(wire: PreferencesV10, version: Long) = PortablePreferences(
+private fun preferences(wire: PreferencesV11, version: Long) = PortablePreferences(
     appearance = appearance(
         wire,
         WireNames.themes.decode(wire.theme, "preferences.theme"),
@@ -1027,8 +1041,36 @@ private fun preferences(wire: PreferencesV10, version: Long) = PortablePreferenc
     // Pesos from 1000 to 100000; anything else is refused, never clipped.
     smallExpenseLine = SmallExpenseLine.of(
         whole(wire.smallExpenseLine, "preferences.smallExpenseLine")
-    ) ?: invalid("preferences.smallExpenseLine")
+    ) ?: invalid("preferences.smallExpenseLine"),
+    guidance = wire.guidance?.let(::guidance)
 )
+
+/**
+ * Each seen nudge named once and known, days as `yyyy-MM-dd` and the flag bare. Anything
+ * else is refused, never read as seen or not seen.
+ */
+private fun guidance(wire: GuidanceV11): GuidanceMemory {
+    val seen = LinkedHashSet<Nudge>()
+    wire.seen.forEachIndexed { index, name ->
+        val path = "preferences.guidance.seen[$index]"
+        if (!seen.add(WireNames.nudges.decode(name, path))) {
+            reject(BackupRejection.DuplicateEntry(path))
+        }
+    }
+    return GuidanceMemory(
+        seen = seen,
+        lastShown = wire.lastShown?.let {
+            ShownNudge(
+                nudge = WireNames.nudges.decode(it.nudge, "preferences.guidance.lastShown.nudge"),
+                day = EffectiveDates.parseDate(it.day).or("preferences.guidance.lastShown.day")
+            )
+        },
+        backupReminderShown = wire.backupReminderShown?.let {
+            EffectiveDates.parseDate(it).or("preferences.guidance.backupReminderShown")
+        },
+        backupReminderOff = flag(wire.backupReminderOff, "preferences.guidance.backupReminderOff")
+    )
+}
 
 /**
  * The ink and Tuya's hue: a bare whole degree from 0 to 359, required with Tuya and kept,
@@ -1036,7 +1078,7 @@ private fun preferences(wire: PreferencesV10, version: Long) = PortablePreferenc
  * clipped. Sistema came with version 9: an older file that says it is refused.
  */
 private fun appearance(
-    wire: PreferencesV10,
+    wire: PreferencesV11,
     theme: ThemePreference,
     version: Long
 ): AppearancePreference {

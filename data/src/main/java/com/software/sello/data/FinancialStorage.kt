@@ -64,6 +64,7 @@ import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.FinancialProfileStore
 import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.GoalReads
+import com.software.sello.domain.port.GuidancePreferences
 import com.software.sello.domain.port.IncomeBatchCommands
 import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.IncomeReads
@@ -238,6 +239,7 @@ class FinancialStorage internal constructor(
         ordering: CategoryOrderingPreferences,
         investments: InvestmentPreferences,
         smallExpenses: SmallExpensePreferences,
+        guidance: GuidancePreferences,
         notice: CatchUpNoticePreferences,
         ids: RecordIdSource,
         audit: AuditClock,
@@ -251,6 +253,7 @@ class FinancialStorage internal constructor(
         ordering,
         investments,
         smallExpenses,
+        guidance,
         notice,
         ids,
         audit,
@@ -291,6 +294,7 @@ class FinancialStorage internal constructor(
         ordering: CategoryOrderingPreferences,
         investments: InvestmentPreferences,
         smallExpenses: SmallExpensePreferences,
+        guidance: GuidancePreferences,
         audit: AuditClock,
         clock: FinancialClock,
         dispatchers: DispatcherProvider,
@@ -301,6 +305,7 @@ class FinancialStorage internal constructor(
         ordering,
         investments,
         smallExpenses,
+        guidance,
         audit,
         clock,
         dispatchers,

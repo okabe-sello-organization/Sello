@@ -13,6 +13,7 @@ import com.software.sello.domain.port.AppRestart
 import com.software.sello.domain.port.DispatcherProvider
 import com.software.sello.domain.usecase.CatchUpNow
 import com.software.sello.domain.usecase.CatchUpSchedules
+import com.software.sello.domain.usecase.RememberExistingUse
 import com.software.sello.feature.backup.BackupSession
 import com.software.sello.feature.backup.BackupViewModel
 import com.software.sello.feature.backup.ExportSession
@@ -111,6 +112,8 @@ fun presentationModule(generation: Long): Module = module {
     single { CatchUpSchedules(get(), get(), generation) }
     single(createdAtStart = true) { CatchUpRunner(get(), get(), get(), get<CoroutineScope>()) }
     single<CatchUpNow> { get<CatchUpRunner>() }
+    // Run once the graph exists; it checks only on the first start with guidance (E38).
+    single { RememberExistingUse(get(), get()) }
     viewModels()
 }
 
