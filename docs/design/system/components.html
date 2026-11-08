@@ -13,7 +13,7 @@
       <p class="kicker">Sello design system</p>
       <h1>Components</h1>
       <p class="lede">Every public <code>@Composable</code> in
-        <code>design-system/src/main/java/com/software/sello/designsystem/</code> (75 names; overloads
+        <code>design-system/src/main/java/com/software/sello/designsystem/</code> (79 names; overloads
         share an entry), grouped by what they are for.</p>
     </div>
   </header>
@@ -31,9 +31,9 @@
           files that call it.</li>
         <li><strong>Screenshots</strong> are the dedicated component captures in
           <code>design-system/src/test/screenshots/components-*.png</code>,
-          <code>bulk-receipt-*</code>, <code>status-slip-*</code> and the app's <code>components-*.png</code>. These are Cobalto light only and
-          412 dp wide (<code>components-frame.png</code> is a whole 412 × 891 screen); the bulk receipt and
-          the status slip have light and dark. Where a part has no capture of its own, a screen
+          <code>bulk-receipt-*</code>, <code>status-slip-*</code>, <code>guidance-*</code> and the app's <code>components-*.png</code>. These are Cobalto light only and
+          412 dp wide (<code>components-frame.png</code> is a whole 412 × 891 screen); the bulk receipt, the status slip and
+          the guidance parts have light and dark. Where a part has no capture of its own, a screen
           baseline in which it is plainly visible is shown instead, if one was found.</li>
         <li>Link to a component from a feature page with <code>../components.html#c-Name</code>.</li>
       </ul>
@@ -50,10 +50,11 @@
 <li><a href="#g-goals">Goals and movements</a> <span class="muted">(11)</span></li>
 <li><a href="#g-rows">List rows</a> <span class="muted">(2)</span></li>
 <li><a href="#g-bulk">Bulk receipt</a> <span class="muted">(1)</span></li>
+<li><a href="#g-guidance">Guidance</a> <span class="muted">(4)</span></li>
 <li><a href="#g-theme">Theme and helpers</a> <span class="muted">(6)</span></li>
       </ul>
       <div class="gaps">
-        <p>Of 89 components, 25 have a component capture of their own, 56 are shown inside a screen baseline, and 8 are not shown at all: <a href="#c-SelloIconButton"><code>SelloIconButton</code></a> (no capture yet), <a href="#c-rememberSelectedFirst"><code>rememberSelectedFirst</code></a>, <a href="#c-SelloTheme"><code>SelloTheme</code></a>, <a href="#c-systemReducedMotion"><code>systemReducedMotion</code></a>, <a href="#c-StatusBarInk"><code>StatusBarInk</code></a>, <a href="#c-statusBarLightIconsUnder"><code>statusBarLightIconsUnder</code></a>, <a href="#c-DialogBarIcons"><code>DialogBarIcons</code></a>, <a href="#c-painter"><code>painter</code></a> (theme and helper functions with nothing of their own to draw). No component capture has a dark version except the bulk receipt and the status slip.</p>
+        <p>Of 93 components, 29 have a component capture of their own, 56 are shown inside a screen baseline, and 8 are not shown at all: <a href="#c-SelloIconButton"><code>SelloIconButton</code></a> (no capture yet), <a href="#c-rememberSelectedFirst"><code>rememberSelectedFirst</code></a>, <a href="#c-SelloTheme"><code>SelloTheme</code></a>, <a href="#c-systemReducedMotion"><code>systemReducedMotion</code></a>, <a href="#c-StatusBarInk"><code>StatusBarInk</code></a>, <a href="#c-statusBarLightIconsUnder"><code>statusBarLightIconsUnder</code></a>, <a href="#c-DialogBarIcons"><code>DialogBarIcons</code></a>, <a href="#c-painter"><code>painter</code></a> (theme and helper functions with nothing of their own to draw). No component capture has a dark version except the bulk receipt, the status slip and the guidance parts.</p>
       </div>
     </section>
 <section id="g-surfaces">
@@ -1784,6 +1785,78 @@ fun StatusSlip(
 <figure data-shot="bulk-receipt-investment" data-module="design-system" data-variants="claro,oscuro" data-caption="bulk-receipt-investment"></figure>
 <figure data-shot="bulk-receipt-usd" data-module="design-system" data-variants="claro,oscuro" data-caption="bulk-receipt-usd"></figure>
 <p class="muted">Also visible in screen baselines: <code>bulk-expenses-three-lines</code>.</p>
+</article>
+</section>
+<section id="g-guidance">
+<h2>Guidance</h2>
+<p>How a screen explains itself (E38, SELLO-204), as the <a href="../../tickets/E38-in-app-guidance/attachments/guidance-mock.html">approved mock</a> draws them. The <strong>?</strong> explains a whole card; an underline explains one word, and a card title takes the <strong>?</strong> only. A nudge is one quiet line in the page, never floating. All four are stateless: the screen owns whether a nudge shows, what a sheet says, and whether the sheet is open (kept in its State, with Back handled by the screen, as every Sello sheet).</p>
+<article class="component" id="c-CardHelp">
+<h3><code>CardHelp</code> <span class="src"><code>component/Guidance.kt:57</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>The <strong>?</strong> right after a card's title, which opens that card's <a href="#c-HelpSheet"><code>HelpSheet</code></a>: a solid soft disc in <code>paperDim</code> with a dark (<code>ink</code>) glyph and no ring, quieter than anything brand-coloured. The disc is 20 dp and its glyph 12 dp at every font size, and it takes only those 20 dp beside the title (placed <code>spacing.sm</code> after it); Compose widens its touch area to 48 dp around it, so a title row does not grow. <code>contentDescription</code> names what it explains, such as "Cómo leer este resumen", and TalkBack reads it as a button.</dd>
+<dt>Used by</dt><dd>None yet: SELLO-207 to SELLO-209 place it.</dd>
+</dl>
+<pre><code>fun CardHelp(contentDescription: String, onClick: () -&gt; Unit, modifier: Modifier = Modifier)</code></pre>
+<figure data-shot="guidance-card-help-and-terms" data-module="design-system" data-variants="claro,oscuro" data-caption="A card title with its ?, and underlined terms in its lines"></figure>
+</article>
+<article class="component" id="c-HelpTerm">
+<h3><code>HelpTerm</code> <span class="src"><code>component/Guidance.kt:96</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A word whose meaning is one tap away, such as "sobrante" in a line of figures: the text with a 1.5 dp dotted underline in <code>outline</code>, lighter than the <strong>?</strong>; a wrapped term underlines each of its lines. A tap calls <code>onClick</code>, which opens its explanation (usually a <a href="#c-HelpSheet"><code>HelpSheet</code></a>). TalkBack reads the word, then "Qué significa", as one button. <code>style</code> and <code>color</code> default to the text around it. It is the text's height plus 1 dp for the underline; Compose widens its touch area to 48 dp. It is its own piece of text, so it suits a short label in a row, such as "por día" beside a figure, not a word mid-sentence: it cannot flow with the words around it, and a row of several pieces wraps by piece.</dd>
+<dt>Used by</dt><dd>None yet: SELLO-207 to SELLO-209 place it.</dd>
+</dl>
+<pre><code>fun HelpTerm(
+    text: String,
+    onClick: () -&gt; Unit,
+    modifier: Modifier = Modifier,
+    style: TextStyle = LocalTextStyle.current,
+    color: Color = Color.Unspecified
+)</code></pre>
+<p class="muted">Shown in <code>CardHelp</code>'s capture: "por día", "base" and "sobrante".</p>
+</article>
+<article class="component" id="c-HelpSheet">
+<h3><code>HelpSheet</code> <span class="src"><code>component/Guidance.kt:147</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>The explanation a <strong>?</strong> or an underlined term opens: a <a href="#c-SelloSheet"><code>SelloSheet</code></a> with the title, each <code>HelpEntry</code> as a bold term over its plain explanation in <code>inkSoft</code> (read together, "term. explanation"), an optional worked <code>example</code> on <code>paperAlt</code> in an inset, and, with <code>onMore</code>, the brand text link "Ver más en la Guía de Sello ›". The scrim calls <code>onDismiss</code>; the screen keeps it open in its State and owns Back. The words translate the rules the code applies today (epic decision).</dd>
+<dt>Used by</dt><dd>None yet: SELLO-207 to SELLO-209 fill it.</dd>
+</dl>
+<pre><code>data class HelpEntry(val term: String, val explanation: String)
+
+fun HelpSheet(
+    title: String,
+    entries: List&lt;HelpEntry&gt;,
+    onDismiss: () -&gt; Unit,
+    modifier: Modifier = Modifier,
+    example: String? = null,
+    onMore: (() -&gt; Unit)? = null
+)</code></pre>
+<figure data-shot="guidance-help-sheet" data-module="design-system" data-variants="claro,oscuro" data-caption="Three entries, a worked example and the link to the Guía"></figure>
+</article>
+<article class="component" id="c-NudgeRow">
+<h3><code>NudgeRow</code> <span class="src"><code>component/Guidance.kt:220</code>, <code>component/Guidance.kt:313</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A quiet line in the page that points at something useful: plain <code>paper</code> in an inset shape with an 18 dp <code>inkSoft</code> icon and one or two lines of <code>bodySmall</code> text in <code>inkSoft</code> (a caller may set bold parts in <code>ink</code>). Any of: <code>onClose</code>, a brand ✕ (48 dp target, named "Cerrar" unless <code>closeLabel</code> says otherwise); <code>link</code>, a quiet text link in <code>outline</code> on the left, such as "No volver a mostrar"; and <code>pill</code>, a small tonal pill on the right (<code>brandSoft</code> with its label in <code>onBrandSoft</code>, bold <code>labelMedium</code>, 12 × 6 dp padding: smaller than <a href="#c-BandChip"><code>BandChip</code></a>, as the mock; Compose widens its touch area to 48 dp). With only the ✕ it is the "¿Dudas?" row; with a link and a pill, the backup reminder (option B). Text never clips: a longer sentence wraps.</dd>
+<dt>Variants</dt><dd>Plain or <code>AnnotatedString</code> text; any mix of <code>onClose</code>, <code>link</code> and <code>pill</code> (each a <code>NudgeAction(label, onClick)</code>).</dd>
+<dt>Used by</dt><dd>None yet: SELLO-211 to SELLO-213 place it.</dd>
+</dl>
+<pre><code>class NudgeAction(val label: String, val onClick: () -&gt; Unit)
+
+fun NudgeRow(
+    icon: SelloIcon,
+    text: AnnotatedString,
+    modifier: Modifier = Modifier,
+    onClose: (() -&gt; Unit)? = null,
+    closeLabel: String = stringResource(R.string.sello_close),
+    link: NudgeAction? = null,
+    pill: NudgeAction? = null
+)
+
+fun NudgeRow(
+    icon: SelloIcon,
+    text: String,
+    ...same parameters
+)</code></pre>
+<figure data-shot="guidance-nudge-rows" data-module="design-system" data-variants="claro,oscuro" data-caption="The ¿Dudas? row (✕), the backup reminder (link and pill), and a ✕ with a pill"></figure>
 </article>
 </section>
 <section id="g-theme">
