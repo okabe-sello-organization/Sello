@@ -210,7 +210,7 @@ class InversionesViewModelTest {
     fun eachInvestmentPageHelpSheetOpensClosesAndComesBackAfterARestart() = runTest {
         val zeta = investments[0].history.investment.id.value
         val saved = SavedStateHandle(mapOf(InvestmentDetailViewModel.KEY_INVESTMENT to zeta))
-        val model = InvestmentDetailViewModel(saved, reads, clock, testMoney())
+        val model = InvestmentDetailViewModel(saved, reads, clock, testMoney(), HandGuidance())
         backgroundScope.launch { model.state.collect {} }
         runCurrent()
         fun help(of: InvestmentDetailViewModel) =
@@ -228,7 +228,8 @@ class InversionesViewModelTest {
             SavedStateHandle(saved.keys().associateWith { saved[it] }),
             reads,
             clock,
-            testMoney()
+            testMoney(),
+            HandGuidance()
         )
         backgroundScope.launch { restored.state.collect {} }
         runCurrent()
