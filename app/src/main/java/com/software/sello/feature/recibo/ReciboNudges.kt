@@ -69,7 +69,7 @@ internal fun ReciboNudgeRow(
 
         ReciboNudge.Goal -> NudgeRow(
             icon = SelloIcon.Star,
-            text = withBold(
+            text = nudgeText(
                 stringResource(R.string.recibo_goal_nudge),
                 stringResource(R.string.goal_pin_off)
             ),
