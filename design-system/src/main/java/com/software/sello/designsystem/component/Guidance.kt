@@ -35,6 +35,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.getTextLayoutResult
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
@@ -112,6 +113,12 @@ fun HelpTerm(
             .clickable(role = Role.Button, onClick = onClick)
             .clearAndSetSemantics {
                 contentDescription = description
+                // Its text's layout stays readable, as a plain Text's is.
+                getTextLayoutResult { results ->
+                    val result = layout ?: return@getTextLayoutResult false
+                    results.add(result)
+                    true
+                }
             }
             .padding(bottom = HelpUnderlineGap)
             .drawBehind {
