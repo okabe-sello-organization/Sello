@@ -2,7 +2,7 @@
 
 - **Type:** Story
 - **Priority:** P1
-- **Status:** Backlog
+- **Status:** Done
 - **Depends on:** SELLO-204, SELLO-206
 - **Gate:** G2
 
@@ -20,8 +20,11 @@ underlined term explains one word, in plain Spanish that matches what the app co
     months.
 - **Underlined terms**, each opening a sheet for that word: **por día** (Recibo),
   **Al día** (category detail's per-day figure), **base** and **sobrante / faltante**
-  (Recibo summary and category history), **arrastre** (category editor switch),
-  **Separado** (Recibo, category detail).
+  (Recibo summary and category history). Recibo's summary sheet has a **Separado** entry.
+  *Changed on the orchestrator's ruling (2026-11-08), pending the owner's OK:* no
+  underline on **arrastre** (the editor switch never shows that word; its own help line
+  explains it) or on **Separado** (it appears only mid-sentence in a tappable footnote;
+  the **?** on "Separado en…" and on Pagos fijos explain it).
 - Each explanation states the rule the code applies today, with one small worked
   example in round numbers that are not anyone's data. Wording differs where the rule
   differs (for example por día counts today; say so).

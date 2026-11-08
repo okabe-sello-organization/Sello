@@ -36,6 +36,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
+import com.software.sello.designsystem.component.CardHelp
 import com.software.sello.designsystem.component.ChartPeriod
 import com.software.sello.designsystem.component.ChartPoint
 import com.software.sello.designsystem.component.ChartReference
@@ -89,7 +90,9 @@ internal fun CategoryInsightSections(
                 CategoryWeeks(state.category.id, figures)
             }
             if (figures.historicalAverage != null) {
-                CategoryHistory(state.category.id, figures, dates)
+                CategoryHistory(state.category.id, figures, dates) {
+                    onAction(CategoryDetailAction.ShowHelp(it))
+                }
             }
         }
     }
@@ -348,13 +351,27 @@ private fun CategoryWeeks(categoryId: String, figures: DetailInsights) {
 
 /** [dates] writes months as the rest of the app does: "sep 2026", never the device's "sept.". */
 @Composable
-private fun CategoryHistory(categoryId: String, figures: DetailInsights, dates: DateLabels) {
+private fun CategoryHistory(
+    categoryId: String,
+    figures: DetailInsights,
+    dates: DateLabels,
+    onHelp: (ReciboHelp) -> Unit
+) {
     var selected by rememberSaveable(categoryId, figures.history.lastOrNull()?.month) {
         mutableStateOf<String?>(null)
     }
     Slip(Modifier.fillMaxWidth().testTag("detail:history")) {
         val completedMonths = figures.history.count { !it.current }
-        ChartDetail(stringResource(R.string.category_detail_normal_month), heading = true)
+        val helpLabel = stringResource(R.string.help_history_open)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            ChartDetail(stringResource(R.string.category_detail_normal_month), heading = true)
+            Spacer(Modifier.width(SelloTheme.spacing.sm))
+            CardHelp(
+                helpLabel,
+                onClick = { onHelp(ReciboHelp.History) },
+                modifier = Modifier.testTag(CATEGORY_DETAIL_HISTORY_HELP_TAG)
+            )
+        }
         MoneyText(
             requireNotNull(figures.historicalAverage),
             textStyle = MaterialTheme.typography.headlineSmall
@@ -450,7 +467,9 @@ private fun CategoryHistory(categoryId: String, figures: DetailInsights, dates: 
                 CarryBreakdownSection(
                     carry,
                     footnote = null,
-                    tag = CATEGORY_DETAIL_HISTORY_CARRY_TAG
+                    tag = CATEGORY_DETAIL_HISTORY_CARRY_TAG,
+                    onBaseHelp = { onHelp(ReciboHelp.Base) },
+                    onCarryHelp = { onHelp(ReciboHelp.Carry) }
                 )
             } else {
                 entry.limit?.let { value ->
@@ -494,6 +513,7 @@ private val RepeatTotalWidth = 96.dp
 private val DetailLocale = Locale.forLanguageTag("es-CO")
 
 const val CATEGORY_DETAIL_HISTORY_CARRY_TAG = "detail:history-carry"
+const val CATEGORY_DETAIL_HISTORY_HELP_TAG = "detail:history:help"
 const val CATEGORY_DETAIL_REPEATS_TAG = "detail:repeats"
 
 fun categoryRepeatTag(index: Int) = "detail:repeat:$index"

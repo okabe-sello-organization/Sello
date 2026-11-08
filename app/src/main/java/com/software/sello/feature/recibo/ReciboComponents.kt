@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.software.sello.designsystem.component.CategoryCircle
+import com.software.sello.designsystem.component.HelpTerm
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.MoneyTextValue
@@ -390,7 +391,11 @@ internal fun LimitRow(
     }
 }
 
-/** A small label with a larger value under it, used in twos and threes under a tear line. */
+/**
+ * A small label with a larger value under it, used in twos and threes under a tear line.
+ * With [onLabelHelp] the label is a [HelpTerm], tagged [labelTag], that explains it; the
+ * pair still says its label first, "Al día, 31.950 pesos".
+ */
 @Composable
 internal fun KeyValue(
     label: String,
@@ -398,10 +403,15 @@ internal fun KeyValue(
     icon: SelloIcon? = null,
     caption: String? = null,
     horizontalAlignment: Alignment.Horizontal = Alignment.Start,
+    onLabelHelp: (() -> Unit)? = null,
+    labelTag: String = "",
     value: @Composable () -> Unit
 ) {
+    // The help button leaves the merged pair, so the pair names itself before its value.
     Column(
-        modifier = modifier.semantics(mergeDescendants = true) {},
+        modifier = modifier.semantics(mergeDescendants = true) {
+            if (onLabelHelp != null) contentDescription = label
+        },
         horizontalAlignment = horizontalAlignment
     ) {
         Row(
@@ -416,11 +426,21 @@ internal fun KeyValue(
                     modifier = Modifier.size(16.dp)
                 )
             }
-            Text(
-                label,
-                style = MaterialTheme.typography.labelMedium,
-                color = SelloTheme.colors.inkSoft
-            )
+            if (onLabelHelp == null) {
+                Text(
+                    label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = SelloTheme.colors.inkSoft
+                )
+            } else {
+                HelpTerm(
+                    label,
+                    onLabelHelp,
+                    modifier = Modifier.testTag(labelTag),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = SelloTheme.colors.inkSoft
+                )
+            }
         }
         value()
         if (caption != null) {

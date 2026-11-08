@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Help sheets on Recibo, Pagos previstos and category detail (SELLO-207). Each line says
+  the rule the code applies today, in the Guía's words where they meet
+  (strings_guide.xml); the owner reviews the copy. Round, made-up figures only. Where each
+  rule comes from is listed in the pull request.
+-->
+<resources>
+    <!-- What the ? and the underlined words open, as TalkBack names them. -->
+    <string name="help_summary_open">Cómo leer tu mes</string>
+    <string name="help_upcoming_open">Qué es lo separado</string>
+    <string name="help_fixed_open">Qué hace un pago fijo</string>
+    <string name="help_history_open">Cómo se calcula un mes normal</string>
+
+    <!-- Recibo's summary card -->
+    <string name="help_summary_title">Cómo leer tu mes</string>
+    <string name="help_summary_remaining">Restante</string>
+    <string name="help_summary_remaining_body">Tu límite del mes menos lo que llevas gastado y lo separado para tus pagos fijos: lo que aún puedes gastar este mes.</string>
+    <string name="help_summary_per_day">Por día</string>
+    <string name="help_summary_per_day_body">El restante repartido entre los días que faltan del mes, incluido hoy.</string>
+    <string name="help_summary_limit">Límite del mes</string>
+    <string name="help_summary_limit_body">La suma de los límites de tus categorías, con lo que les sobró o faltó si lo pasan al mes siguiente. Las que no tienen límite no suman.</string>
+    <string name="help_summary_spent">Gastado</string>
+    <string name="help_summary_spent_body">Todo lo que anotaste este mes hasta hoy, también en las categorías sin límite.</string>
+    <string name="help_summary_reserved">Separado</string>
+    <string name="help_summary_reserved_body">Lo que necesitan tus pagos fijos de este mes que aún no se anotan. Ya está descontado del restante.</string>
+    <string name="help_summary_example">Límite del mes 230.000 y gastado 100.000: te quedan 130.000. Con 7 días por delante, incluido hoy, son 18.550 por día.</string>
+
+    <!-- "por día" on Recibo -->
+    <string name="help_per_day_title">Por día</string>
+    <string name="help_per_day_term">Por día</string>
+    <string name="help_per_day_body">Lo que te queda, repartido entre los días que faltan del mes. Hoy cuenta como un día.</string>
+    <string name="help_per_day_rounding">Redondeo</string>
+    <string name="help_per_day_rounding_body">Hacia abajo, de 50 en 50, para que nunca pase de lo que te queda. Si no alcanza para 50 por cada día que falta, porque te pasaste, porque tus pagos fijos no alcanzan o porque queda muy poco, es 0.</string>
+    <string name="help_per_day_reserved">Con pagos fijos por venir</string>
+    <string name="help_per_day_reserved_body">Se reparte lo que queda después de separarlos.</string>
+    <string name="help_per_day_example">Te quedan 130.000 y hoy es 24 de un mes de 30 días: faltan 7 días, incluido hoy. 130.000 ÷ 7 da 18.571, que se muestra como 18.550 por día.</string>
+
+    <!-- "Al día" on category detail: the category's per-day figure -->
+    <string name="help_day_allowance_title">Al día</string>
+    <string name="help_day_allowance_term">Al día</string>
+    <string name="help_day_allowance_body">Lo que te queda en esta categoría, repartido entre los días que faltan del mes, incluido hoy. Se redondea hacia abajo, de 50 en 50. Si no alcanza para 50 por cada día que falta, porque te pasaste, porque tus pagos fijos no alcanzan o porque queda muy poco, es 0.</string>
+    <string name="help_day_allowance_days">Para</string>
+    <string name="help_day_allowance_days_body">Los días que faltan del mes, contando hoy.</string>
+    <string name="help_day_allowance_reserved">Con pagos fijos por venir</string>
+    <string name="help_day_allowance_reserved_body">Si esta categoría tiene pagos fijos por venir este mes, se reparte lo que queda después de separarlos.</string>
+    <string name="help_day_allowance_example">Te quedan 50.000 aquí y faltan 7 días, incluido hoy: 50.000 ÷ 7 da 7.142, que se muestra como 7.100 al día.</string>
+
+    <!-- "base" -->
+    <string name="help_base_title">Base</string>
+    <string name="help_base_term">Base</string>
+    <string name="help_base_body">El límite que le pusiste a una categoría para el mes, antes de sumarle lo que sobró o restarle lo que faltó en meses anteriores.</string>
+    <string name="help_base_recibo">En Recibo</string>
+    <string name="help_base_recibo_body">La suma de las bases de todas tus categorías con límite.</string>
+    <string name="help_base_example">Comida tiene 150.000 de base y le sobraron 80.000 el mes pasado: su límite del mes es 230.000.</string>
+
+    <!-- "sobrante" / "faltante" -->
+    <string name="help_carry_title">Sobrante y faltante</string>
+    <string name="help_carry_surplus">Sobrante</string>
+    <string name="help_carry_surplus_body">Lo que no gastaste en meses anteriores. Se suma a la base y sube el límite del mes.</string>
+    <string name="help_carry_deficit">Faltante</string>
+    <string name="help_carry_deficit_body">Lo que te pasaste en meses anteriores. Se resta de la base y baja el límite del mes.</string>
+    <string name="help_carry_when">Cuándo cuenta</string>
+    <string name="help_carry_when_body">Solo en las categorías con Pasar lo que sobre al mes siguiente activado, y desde el mes en que lo activas: ese mes empieza en 0. Viene apagado.</string>
+    <string name="help_carry_example">Base 150.000. Si en octubre te sobraron 80.000, noviembre empieza con 230.000. Si te pasaste por 30.000, empieza con 120.000.</string>
+
+    <!-- "Separado en …" on Pagos previstos -->
+    <string name="help_upcoming_title">Lo separado</string>
+    <string name="help_upcoming_reserved">Separado</string>
+    <string name="help_upcoming_reserved_body">Lo que necesitan tus pagos fijos de este mes que aún no se anotan. Recibo lo descuenta de lo que te queda, para que no lo gastes en otra cosa.</string>
+    <string name="help_upcoming_date">En su fecha</string>
+    <string name="help_upcoming_date_body">Sello anota el pago cuando abres la app. Desde entonces cuenta como gastado y deja de estar separado.</string>
+    <string name="help_upcoming_short">Si no alcanza</string>
+    <string name="help_upcoming_short_body">Si tus pagos suman más de lo que te queda, Recibo muestra cuánto falta para ellos y el sello Revisar.</string>
+    <string name="help_upcoming_example">Te quedan 300.000 y el arriendo de 200.000 llega el 25: Recibo te muestra 100.000 restantes y separa 200.000.</string>
+
+    <!-- Pagos fijos on category detail -->
+    <string name="help_fixed_title">Pagos fijos</string>
+    <string name="help_fixed_payment">Pago fijo</string>
+    <string name="help_fixed_payment_body">Un gasto que se repite, como el arriendo. En su fecha, Sello lo anota en esta categoría cuando abres la app, y cuenta como cualquier gasto.</string>
+    <string name="help_fixed_coming">Por venir</string>
+    <string name="help_fixed_coming_body">Los de este mes que aún no se anotan. Se separan de lo que te queda aquí y en Recibo.</string>
+    <string name="help_fixed_later">Más adelante</string>
+    <string name="help_fixed_later_body">Los demás pagos fijos de esta categoría. Este mes no separan nada.</string>
+    <string name="help_fixed_unlimited">Sin límite</string>
+    <string name="help_fixed_unlimited_body">Si la categoría no tiene límite, aquí no se separa nada; si tienes otras categorías con límite, Recibo sí los descuenta de lo que te queda en el mes.</string>
+    <string name="help_fixed_example">Límite 500.000, gastado 100.000 y un pago de 250.000 por venir: aquí te quedan 150.000.</string>
+
+    <!-- "Un mes normal aquí" on category detail -->
+    <string name="help_history_title">Un mes normal aquí</string>
+    <string name="help_history_average">Promedio</string>
+    <string name="help_history_average_body">Lo que gastaste en promedio en los meses completos de la gráfica, hasta 6. El mes en curso y los meses sin nada configurado en la categoría no cuentan.</string>
+    <string name="help_history_columns">Columnas</string>
+    <string name="help_history_columns_body">Lo gastado cada mes. La del mes en curso va hasta hoy.</string>
+    <string name="help_history_line">Línea punteada</string>
+    <string name="help_history_line_body">El límite de cada mes: su base, más lo que sobró o menos lo que faltó en meses anteriores si la categoría lo pasa al mes siguiente.</string>
+    <string name="help_history_example">Base 150.000 y en octubre te sobraron 80.000: la línea de noviembre marca 230.000.</string>
+</resources>

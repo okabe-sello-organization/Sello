@@ -38,7 +38,9 @@ sealed interface CategoryDetailState {
         /** Its payments still to come this month, from the same snapshot as [category]. */
         val upcoming: List<DetailUpcomingPayment> = emptyList(),
         /** The Pagos fijos slip (SELLO-135). */
-        val fixed: DetailFixedState = DetailFixedState.Hidden
+        val fixed: DetailFixedState = DetailFixedState.Hidden,
+        /** The explanation open over the category, from a **?** or an underlined word. */
+        val help: ReciboHelp? = null
     ) : CategoryDetailState
 
     /** The month was read and this category has nothing in it. */
@@ -161,4 +163,10 @@ sealed interface CategoryDetailAction {
 
     /** Ask again, with its own operation, how an unresolved deletion ended. */
     data object CheckDelete : CategoryDetailAction
+
+    /** Open [topic]'s explanation over the category shown. */
+    data class ShowHelp(val topic: ReciboHelp) : CategoryDetailAction
+
+    /** Close the explanation open. */
+    data object CloseHelp : CategoryDetailAction
 }

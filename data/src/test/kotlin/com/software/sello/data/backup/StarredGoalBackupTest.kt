@@ -22,7 +22,7 @@ class StarredGoalBackupTest {
     private val viaje = goalId(301)
 
     /**
-     * The same data as Sello writes it now: version 10, which keeps version 7's stars, MT07's
+     * The same data as Sello writes it now: version 11, which keeps version 7's stars, MT07's
      * goal starred.
      */
     private val version7 = String(codec.encode(read(version2).contents).value())
@@ -56,12 +56,12 @@ class StarredGoalBackupTest {
     )
 
     /**
-     * [version7] as version 6 wrote it: no ink hue, no Gastos hormiga line, and the one star
-     * as the chosen goal.
+     * [version7] as version 6 wrote it: no ink hue, no Gastos hormiga line, no guidance and
+     * the one star as the chosen goal.
      */
-    private fun asVersion6(text: String) = text.once("\"version\": 10,", "\"version\": 6,")
+    private fun asVersion6(text: String) = text.once("\"version\": 11,", "\"version\": 6,")
         .once("\n    \"inkHue\": null,", "")
-        .once(",\n    \"smallExpenseLine\": 20000", "")
+        .once(",\n    \"smallExpenseLine\": 20000,\n    \"guidance\": null", "")
         .once(starred, "\"featuredGoal\": \"${viaje.value}\"")
 
     @Test

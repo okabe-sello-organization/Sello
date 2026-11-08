@@ -266,6 +266,19 @@ fun version9AsVersion10(version9: String): String {
     return newer.replace(order) { "${it.groupValues[1]},\n    \"smallExpenseLine\": 20000\n" }
 }
 
+/**
+ * A version 10 file as Sello now writes the same contents when they hold no guidance:
+ * version 11, with `"guidance": null` after the line when it has preferences at all.
+ */
+fun version10AsVersion11(version10: String): String {
+    check(version10.contains("\"version\": 10,"))
+    val newer = version10.replace("\"version\": 10,", "\"version\": 11,")
+    if (newer.endsWith("\"preferences\": null\n}\n")) return newer
+    val line = Regex("(\n    \"smallExpenseLine\": [0-9]+)\n")
+    check(line.findAll(newer).count() == 1)
+    return newer.replace(line) { "${it.groupValues[1]},\n    \"guidance\": null\n" }
+}
+
 fun resource(name: String): ByteArray =
     requireNotNull(BackupFixtures::class.java.getResourceAsStream("/backup/$name")) {
         "missing test resource backup/$name"

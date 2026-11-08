@@ -1,6 +1,7 @@
 package com.software.sello.feature.recibo
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -70,6 +71,7 @@ import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.month.MonthNames
 import java.time.YearMonth
 import java.util.Locale
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
@@ -99,14 +101,63 @@ fun CategoryDetailScreen(
     onOpenSchedule: (String) -> Unit = {},
     onAllSchedules: () -> Unit = {},
     onAdjustBudget: () -> Unit = {},
-    onRecordSeveral: (() -> Unit)? = null
+    onRecordSeveral: (() -> Unit)? = null,
+    onOpenGuide: () -> Unit = {}
 ) {
     // The reserved footnote brings Pagos fijos into view, as Recibo's opens Pagos previstos.
     val fixedSlip = remember { BringIntoViewRequester() }
     val scope = rememberCoroutineScope()
+    Box(modifier.fillMaxSize()) {
+        CategoryDetailContent(
+            state, months, dates, showName, onAction, onRecordHere, contentPadding,
+            onEditExpense, onEditCategory, showPastLimitAnnouncement,
+            onDismissPastLimitAnnouncement, announcementBusy, announcementFailed,
+            onShowAllExpenses, onShowRepeated, onSetMonthLimit, onOpenSchedule,
+            onAllSchedules, onAdjustBudget, onRecordSeveral, fixedSlip, scope
+        )
+        // Over the category, outside its scrolling column; only while it is shown.
+        (state as? CategoryDetailState.Ready)?.help?.let { topic ->
+            ReciboHelpSheet(
+                topic,
+                onDismiss = { onAction(CategoryDetailAction.CloseHelp) },
+                // The Guía opens over the category: Back returns to it, not to the sheet.
+                onMore = {
+                    onAction(CategoryDetailAction.CloseHelp)
+                    onOpenGuide()
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun CategoryDetailContent(
+    state: CategoryDetailState,
+    months: MonthNames,
+    dates: DateLabels,
+    showName: Boolean,
+    onAction: (CategoryDetailAction) -> Unit,
+    onRecordHere: () -> Unit,
+    contentPadding: PaddingValues,
+    onEditExpense: (String) -> Unit,
+    onEditCategory: () -> Unit,
+    showPastLimitAnnouncement: Boolean,
+    onDismissPastLimitAnnouncement: () -> Unit,
+    announcementBusy: Boolean,
+    announcementFailed: Boolean,
+    onShowAllExpenses: () -> Unit,
+    onShowRepeated: (note: String) -> Unit,
+    onSetMonthLimit: (categoryId: String, month: YearMonth) -> Unit,
+    onOpenSchedule: (String) -> Unit,
+    onAllSchedules: () -> Unit,
+    onAdjustBudget: () -> Unit,
+    onRecordSeveral: (() -> Unit)?,
+    fixedSlip: BringIntoViewRequester,
+    scope: CoroutineScope
+) {
     Column(
         verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md),
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(contentPadding)
@@ -166,7 +217,8 @@ fun CategoryDetailScreen(
                     showName,
                     onEditCategory,
                     onAdjustBudget,
-                    onReserved = { scope.launch { fixedSlip.bringIntoView() } }
+                    onReserved = { scope.launch { fixedSlip.bringIntoView() } },
+                    onHelp = { onAction(CategoryDetailAction.ShowHelp(it)) }
                 )
                 // A month that is over can still have its limit corrected; said where
                 // that month is being looked at, every time.
@@ -234,7 +286,8 @@ private fun HeaderSlip(
     showName: Boolean,
     onEditCategory: () -> Unit,
     onAdjustBudget: () -> Unit,
-    onReserved: () -> Unit
+    onReserved: () -> Unit,
+    onHelp: (ReciboHelp) -> Unit
 ) {
     val category = state.category
     // While its payments are reserved, what they leave (SELLO-135), as Recibo's answer.
@@ -302,7 +355,12 @@ private fun HeaderSlip(
         // alone as "de 180.000" (ADR 0020 CP27).
         category.carry?.let { carry ->
             TearLine()
-            CarryBreakdownSection(carry, categoryCarryFootnote(carry))
+            CarryBreakdownSection(
+                carry,
+                categoryCarryFootnote(carry),
+                onBaseHelp = { onHelp(ReciboHelp.Base) },
+                onCarryHelp = { onHelp(ReciboHelp.Carry) }
+            )
         } ?: FlowRow(
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier.fillMaxWidth()
@@ -357,7 +415,9 @@ private fun HeaderSlip(
                     KeyValue(
                         stringResource(R.string.category_detail_per_day),
                         modifier = Modifier.weight(1f),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        onLabelHelp = { onHelp(ReciboHelp.DayAllowance) },
+                        labelTag = CATEGORY_DETAIL_PER_DAY_HELP_TAG
                     ) {
                         MoneyText(perDay.amount, textStyle = MaterialTheme.typography.titleMedium)
                     }
@@ -405,6 +465,7 @@ private fun HeaderSlip(
 }
 
 const val CATEGORY_DETAIL_DEFICIT_TAG = "detail:deficit"
+const val CATEGORY_DETAIL_PER_DAY_HELP_TAG = "detail:per-day:help"
 
 @Composable
 private fun Expenses(

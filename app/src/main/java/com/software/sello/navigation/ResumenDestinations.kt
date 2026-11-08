@@ -147,6 +147,7 @@ internal fun NavGraphBuilder.resumenDestinations(
                 onAllSchedules = {
                     navigation.navigate(SchedulesRoute()) { launchSingleTop = true }
                 },
+                onOpenGuide = { navigation.openGuide(GuidePage.Recibo) },
                 onAdjustBudget = {
                     navigation.navigate(AdjustBudgetRoute(state.selectedMonth.toString())) {
                         launchSingleTop = true
