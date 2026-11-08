@@ -416,6 +416,13 @@ class CategoryDetailViewModel(
                 schedules.map { it.schedule }
             )
         val listed = (state.expenses as? ExpenseListState.Rows)?.rows?.isNotEmpty() == true
+        // A nudge picked keeps the day, so none is picked while one that comes before it may
+        // still be due: its figures, the schedules or the months before are still being read.
+        val reading = inProgress && (
+            state.insights is DetailInsightsState.Loading || book is ReadState.Loading ||
+                inputs.repeats?.shown != shown
+            )
+        if (reading) return state.copy(nudge = null)
         val wanted = listOfNotNull(
             Nudge.Carry.takeIf { carry != null },
             Nudge.FixedPayment.takeIf { fixed },
