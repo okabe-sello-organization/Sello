@@ -23,6 +23,7 @@ import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
+import com.software.sello.feature.goals.HandGoalReads
 import com.software.sello.testing.HandGuidance
 import com.software.sello.testing.HandHistoryStart
 import com.software.sello.testing.HandSnapshots
@@ -80,7 +81,8 @@ class ReciboInvitationViewModelTest {
             years,
             HandGuidance(),
             HandBackupRecords(),
-            HandHistoryStart()
+            HandHistoryStart(),
+            HandGoalReads()
         )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.state.collect {}
@@ -293,7 +295,8 @@ class ReciboInvitationViewModelTest {
             years,
             HandGuidance(),
             HandBackupRecords(),
-            HandHistoryStart()
+            HandHistoryStart(),
+            HandGoalReads()
         )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             silent.state.collect {}

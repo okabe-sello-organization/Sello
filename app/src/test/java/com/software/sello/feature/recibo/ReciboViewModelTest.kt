@@ -27,6 +27,7 @@ import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
+import com.software.sello.feature.goals.HandGoalReads
 import com.software.sello.testing.HandGuidance
 import com.software.sello.testing.HandHistoryStart
 import com.software.sello.testing.HandSnapshots
@@ -93,7 +94,8 @@ class ReciboViewModelTest {
             HandYearSnapshots(),
             HandGuidance(),
             HandBackupRecords(),
-            HandHistoryStart()
+            HandHistoryStart(),
+            HandGoalReads()
         )
         // Something has to be watching for the state to be kept up to date.
         val watching =

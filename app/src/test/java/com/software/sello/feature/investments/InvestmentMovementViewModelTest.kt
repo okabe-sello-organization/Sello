@@ -46,6 +46,7 @@ import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
+import com.software.sello.testing.HandGuidance
 import com.software.sello.testing.TestMoneyLabels
 import com.software.sello.testing.testMoney
 import java.time.Instant
@@ -81,6 +82,7 @@ class InvestmentMovementViewModelTest {
     private val clock = HandFinancialClock("2026-10-25")
     private val reads = HandInvestmentReads()
     private val commands = HandInvestmentCommands()
+    private val guidance = HandGuidance()
     private var nextId = 1
     private val ids = RecordIdSource { "00000000-0000-4000-a000-%012d".format(nextId++) }
     private val scheduler = TestCoroutineScheduler()
@@ -247,7 +249,7 @@ class InvestmentMovementViewModelTest {
                 movement?.let { InvestmentMovementViewModel.KEY_MOVEMENT to it }
             ).toMap()
         )
-    ) = InvestmentMovementViewModel(saved, reads, commands, clock, ids, money, corrections)
+    ) = InvestmentMovementViewModel(saved, reads, commands, clock, ids, money, corrections, guidance)
 
     private fun InvestmentMovementViewModel.keys(vararg keys: String) = keys.forEach {
         onAction(
@@ -745,7 +747,7 @@ class InvestmentMovementViewModelTest {
             }
         }
         val model =
-            InvestmentMovementViewModel(saved, once, commands, clock, ids, money, corrections)
+            InvestmentMovementViewModel(saved, once, commands, clock, ids, money, corrections, guidance)
         assertTrue(model.now.loadFailed)
 
         model.onAction(InvestmentMovementAction.Retry)

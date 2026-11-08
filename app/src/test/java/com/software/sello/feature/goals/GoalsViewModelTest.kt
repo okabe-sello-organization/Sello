@@ -43,6 +43,7 @@ import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
+import com.software.sello.testing.HandGuidance
 import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.LocalDate
@@ -74,6 +75,7 @@ class GoalsViewModelTest {
     private val clock = HandFinancialClock("2026-10-23")
     private val reads = HandGoalReads()
     private val commands = HandGoalCommands()
+    private val guidance = HandGuidance()
     private var nextId = 1
     private val ids = RecordIdSource { "00000000-0000-4000-a000-%012d".format(nextId++) }
 
@@ -155,7 +157,7 @@ class GoalsViewModelTest {
     private fun detail(
         saved: SavedStateHandle = SavedStateHandle(mapOf("goalId" to viajeId)),
         source: HandGoalReads = reads
-    ) = GoalDetailViewModel(saved, source, commands, clock, money, ids, corrections) { false }
+    ) = GoalDetailViewModel(saved, source, commands, clock, money, ids, corrections, guidance) { false }
 
     private fun metas(source: HandGoalReads = reads, saved: SavedStateHandle = SavedStateHandle()) =
         MetasViewModel(saved, source, commands, clock, money, ids, corrections) {
