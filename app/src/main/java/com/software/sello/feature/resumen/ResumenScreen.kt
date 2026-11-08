@@ -61,7 +61,6 @@ import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.SpendingDirection
-import com.software.sello.feature.guide.GuidePage
 import com.software.sello.presentation.carry.CarryBreakdownSection
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.count.countText
@@ -80,7 +79,7 @@ fun ResumenScreen(
     onSchedules: () -> Unit = {},
     onDayByDay: () -> Unit = {},
     onYear: (Int) -> Unit = {},
-    onGuide: (GuidePage) -> Unit = {}
+    onOpenGuide: () -> Unit = {}
 ) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val layout = selloWindowLayout(maxWidth, maxHeight)
@@ -134,7 +133,7 @@ fun ResumenScreen(
                     ResumenHelpSheet(
                         help,
                         onAction,
-                        onGuide,
+                        onOpenGuide,
                         Modifier.padding(
                             top = padding.calculateTopPadding(),
                             bottom = padding.calculateBottomPadding()

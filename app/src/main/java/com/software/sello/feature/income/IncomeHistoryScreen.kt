@@ -46,7 +46,6 @@ import com.software.sello.designsystem.component.TotalLine
 import com.software.sello.designsystem.component.TotalRule
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
-import com.software.sello.feature.guide.GuidePage
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.income.incomeSourceLabel
 import com.software.sello.presentation.month.monthNames
@@ -70,7 +69,7 @@ fun IncomeHistoryScreen(
     onEdit: (String) -> Unit,
     padding: PaddingValues,
     help: IncomeHelp? = null,
-    onGuide: (GuidePage) -> Unit = {}
+    onOpenGuide: () -> Unit = {}
 ) {
     // As big as the list, which fills the shell's content area: the sheet covers just that.
     Box {
@@ -91,7 +90,7 @@ fun IncomeHistoryScreen(
             IncomeHelpSheet(
                 it,
                 onAction,
-                onGuide,
+                onOpenGuide,
                 Modifier.padding(
                     top = padding.calculateTopPadding(),
                     bottom = padding.calculateBottomPadding()

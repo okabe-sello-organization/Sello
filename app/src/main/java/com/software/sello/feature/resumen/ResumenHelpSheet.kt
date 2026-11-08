@@ -9,7 +9,6 @@ import androidx.compose.ui.res.stringResource
 import com.software.sello.R
 import com.software.sello.designsystem.component.HelpEntry
 import com.software.sello.designsystem.component.HelpSheet
-import com.software.sello.feature.guide.GuidePage
 
 /** A help sheet's words: its title, its entries as term and explanation, and its example. */
 private class HelpCopy(
@@ -59,19 +58,34 @@ private fun ResumenHelp.copy(): HelpCopy = when (this) {
     )
 }
 
-/** What a **?** on a Resumen card names for TalkBack: the title of the sheet it opens. */
+/**
+ * What a **?** on a Resumen card names for TalkBack: the title of the sheet it opens, or,
+ * where that title repeats the card's own, what the sheet answers.
+ */
 @Composable
-internal fun resumenHelpLabel(help: ResumenHelp): String = stringResource(help.copy().title)
+internal fun resumenHelpLabel(help: ResumenHelp): String = stringResource(
+    if (help == ResumenHelp.SmallExpenses) R.string.resumen_help_small_label else help.copy().title
+)
+
+/**
+ * Resumen's own Back, which returns to Recibo: composed after the screen, so it would win
+ * over an open help sheet's Back, as after a restart with the sheet open. While a sheet is
+ * open it steps aside, and Back closes the sheet.
+ */
+@Composable
+fun ResumenTabBack(state: ResumenState, enabled: Boolean, onBack: () -> Unit) {
+    BackHandler(enabled = enabled && (state as? ResumenState.Ready)?.help == null, onBack = onBack)
+}
 
 /**
  * The open [help] sheet. Back and the scrim close it; "Ver más en la Guía de Sello" closes
- * it and opens Resumen's page of the Guía, so coming back finds the screen as it was.
+ * it and opens the Guía (its Resumen page), so coming back finds the screen as it was.
  */
 @Composable
 internal fun ResumenHelpSheet(
     help: ResumenHelp,
     onAction: (ResumenAction) -> Unit,
-    onGuide: (GuidePage) -> Unit,
+    onOpenGuide: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val close = { onAction(ResumenAction.CloseHelp) }
@@ -87,7 +101,7 @@ internal fun ResumenHelpSheet(
         example = stringResource(copy.example),
         onMore = {
             close()
-            onGuide(GuidePage.Summary)
+            onOpenGuide()
         }
     )
 }

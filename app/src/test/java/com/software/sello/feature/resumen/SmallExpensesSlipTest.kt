@@ -56,7 +56,9 @@ class SmallExpensesSlipTest {
     fun theQuestionMarkAfterTheTitleOpensItsHelp() {
         show(shown)
 
-        rule.onNodeWithTag(RESUMEN_SMALL_HELP_TAG).assertContentDescriptionEquals("Gastos hormiga")
+        rule.onNodeWithTag(RESUMEN_SMALL_HELP_TAG).assertContentDescriptionEquals(
+            "Qué cuenta como gasto hormiga"
+        )
             .performClick()
 
         assertEquals(1, helped)

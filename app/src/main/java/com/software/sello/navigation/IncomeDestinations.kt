@@ -13,6 +13,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import com.software.sello.R
 import com.software.sello.designsystem.component.SelloDock
+import com.software.sello.feature.guide.GuidePage
 import com.software.sello.feature.income.IncomeFormRoot
 import com.software.sello.feature.income.IncomeHistoryScreen
 import com.software.sello.feature.income.IncomeHistoryViewModel
@@ -73,7 +74,7 @@ internal fun NavGraphBuilder.incomeDestinations(
                 { navigation.navigate(IncomeEditRoute(it)) },
                 padding,
                 help,
-                navigation::openGuide
+                { navigation.openGuide(GuidePage.Summary) }
             )
         }
     }

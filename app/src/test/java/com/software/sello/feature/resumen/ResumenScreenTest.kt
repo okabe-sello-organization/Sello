@@ -1,5 +1,7 @@
 package com.software.sello.feature.resumen
 
+import androidx.activity.OnBackPressedDispatcher
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,7 +34,6 @@ import com.software.sello.Look
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.SpendingDirection
-import com.software.sello.feature.guide.GuidePage
 import com.software.sello.showSello
 import com.software.sello.testing.testMoney
 import java.time.LocalDate
@@ -56,7 +57,7 @@ class ResumenScreenTest {
     private var adjusted: String? = null
     private var schedulesClicks = 0
     private var year: Int? = null
-    private var guide: GuidePage? = null
+    private var guides = 0
 
     private fun show(
         ink: SelloInk = SelloInk.Cobalto,
@@ -83,7 +84,7 @@ class ResumenScreenTest {
                     { adjusted = it },
                     { schedulesClicks++ },
                     onYear = { year = it },
-                    onGuide = { guide = it }
+                    onOpenGuide = { guides++ }
                 )
             }
         }
@@ -438,6 +439,62 @@ class ResumenScreenTest {
     }
 
     @Test
+    fun theGastosHormigaQuestionMarkOpensItsOwnSheet() {
+        val small = ResumenSmallExpenses.Shown(
+            line = "20.000",
+            total = money.format(Money.cop(60_000)),
+            count = 6,
+            sharePercent = 20,
+            previousName = "septiembre",
+            bars = null,
+            throughDay = 3,
+            previousThroughDay = 3,
+            categories = emptyList()
+        )
+        state.value = example().copy(smallExpenses = small)
+        show()
+
+        rule.onNodeWithTag(RESUMEN_SMALL_HELP_TAG).performScrollTo()
+            .assertContentDescriptionEquals("Qué cuenta como gasto hormiga").performClick()
+
+        assertEquals(listOf(ResumenAction.OpenHelp(ResumenHelp.SmallExpenses)), actions)
+    }
+
+    /** Resumen with its tab's Back composed after it, as ResumenDestinations.kt does. */
+    private fun showWithTabBack(shown: ResumenState, onTab: () -> Unit): OnBackPressedDispatcher {
+        lateinit var dispatcher: OnBackPressedDispatcher
+        rule.showSello(Look()) {
+            dispatcher = LocalOnBackPressedDispatcherOwner.current!!.onBackPressedDispatcher
+            ResumenScreen(shown, { actions += it }, {}, {}, {}, PaddingValues())
+            ResumenTabBack(shown, enabled = true, onBack = onTab)
+        }
+        return dispatcher
+    }
+
+    @Test
+    fun backClosesAnOpenSheetEvenWhenItWasOpenFromTheStart() {
+        var tab = 0
+        // As after a restart: the sheet is open on the first frame, before the tab's Back.
+        val dispatcher = showWithTabBack(example().copy(help = ResumenHelp.Month)) { tab++ }
+
+        rule.runOnIdle { dispatcher.onBackPressed() }
+
+        assertEquals(listOf<ResumenAction>(ResumenAction.CloseHelp), actions)
+        assertEquals(0, tab)
+    }
+
+    @Test
+    fun withNoSheetOpenBackIsTheTabs() {
+        var tab = 0
+        val dispatcher = showWithTabBack(example()) { tab++ }
+
+        rule.runOnIdle { dispatcher.onBackPressed() }
+
+        assertEquals(1, tab)
+        assertTrue(actions.isEmpty())
+    }
+
+    @Test
     fun aWholeMonthComparisonUnderlinesNothing() {
         state.value = example().copy(
             hero = example().hero.copy(
@@ -469,7 +526,7 @@ class ResumenScreenTest {
         rule.onNodeWithText("Ver más en la Guía de Sello").performScrollTo().performClick()
 
         assertEquals(listOf<ResumenAction>(ResumenAction.CloseHelp), actions)
-        assertEquals(GuidePage.Summary, guide)
+        assertEquals(1, guides)
     }
 
     // --- The comparison, a normal month, weekdays and the suggestion ---

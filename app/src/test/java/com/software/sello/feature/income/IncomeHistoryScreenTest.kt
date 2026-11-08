@@ -25,7 +25,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
-import com.software.sello.feature.guide.GuidePage
 import com.software.sello.showSello
 import com.software.sello.testing.pesos
 import java.time.LocalDate
@@ -44,7 +43,7 @@ class IncomeHistoryScreenTest {
     private val october = YearMonth.of(2026, 10)
     private val today = LocalDate.of(2026, 10, 22)
     private val actions = mutableListOf<IncomeHistoryAction>()
-    private var guide: GuidePage? = null
+    private var guides = 0
     private var created = 0
     private val edited = mutableListOf<String>()
     private val assigned = mutableListOf<String?>()
@@ -103,7 +102,7 @@ class IncomeHistoryScreenTest {
                 { edited += it },
                 PaddingValues(12.dp),
                 help,
-                { guide = it }
+                { guides++ }
             )
         }
     }
@@ -148,7 +147,7 @@ class IncomeHistoryScreenTest {
         rule.onNodeWithText("Ver más en la Guía de Sello").performScrollTo().performClick()
 
         assertEquals(listOf<IncomeHistoryAction>(IncomeHistoryAction.CloseHelp), actions)
-        assertEquals(GuidePage.Summary, guide)
+        assertEquals(1, guides)
     }
 
     @Test

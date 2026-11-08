@@ -8,7 +8,6 @@ import androidx.compose.ui.res.stringResource
 import com.software.sello.R
 import com.software.sello.designsystem.component.HelpEntry
 import com.software.sello.designsystem.component.HelpSheet
-import com.software.sello.feature.guide.GuidePage
 
 /** What the **?** on "Entró en {mes}" names for TalkBack: the title of its sheet. */
 @Composable
@@ -22,7 +21,7 @@ internal fun incomeHelpLabel(): String = stringResource(R.string.income_help_tit
 internal fun IncomeHelpSheet(
     help: IncomeHelp,
     onAction: (IncomeHistoryAction) -> Unit,
-    onGuide: (GuidePage) -> Unit,
+    onOpenGuide: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val close = { onAction(IncomeHistoryAction.CloseHelp) }
@@ -60,7 +59,7 @@ internal fun IncomeHelpSheet(
         example = stringResource(example),
         onMore = {
             close()
-            onGuide(GuidePage.Summary)
+            onOpenGuide()
         }
     )
 }

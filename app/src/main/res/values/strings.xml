@@ -889,6 +889,7 @@
     <string name="resumen_help_same_day_body">Lo que gastaste del 1 a hoy frente a lo que gastaste del 1 al mismo día del mes anterior: igual con igual, aunque el mes no haya terminado. Si el mes anterior es más corto, se cuenta hasta su último día.</string>
     <string name="resumen_help_same_day_example" formatted="false">Hoy es 15. Del 1 al 15 llevas 400.000; el mes anterior, del 1 al 15, llevabas 500.000. Vas 100.000 menos: un 20 % menos.</string>
     <string name="resumen_help_small_title">Gastos hormiga</string>
+    <string name="resumen_help_small_label">Qué cuenta como gasto hormiga</string>
     <string name="resumen_help_small_counts">Qué cuenta</string>
     <string name="resumen_help_small_counts_body">Cada gasto de tu línea o menos, en todas tus categorías, también tus pagos fijos. Se suman del 1 a hoy, o el mes completo si ya terminó.</string>
     <string name="resumen_help_small_line">Tu línea</string>
