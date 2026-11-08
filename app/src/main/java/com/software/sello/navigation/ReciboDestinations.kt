@@ -104,6 +104,9 @@ internal fun NavGraphBuilder.reciboDestinations(
             tabs = tabs,
             onOpenSettings = { navigation.navigate(SettingsRoute) { launchSingleTop = true } },
             onOpenDayByDay = { navigation.openDayByDay() },
+            onOpenGuide = { navigation.navigate(GuideRoute) { launchSingleTop = true } },
+            // Respaldo itself, as Configuración opens it: it never starts a backup.
+            onOpenBackup = { navigation.navigate(BackupRoute) { launchSingleTop = true } },
             onEditExpense = { id ->
                 navigation.navigate(ExpenseEditRoute(id)) { launchSingleTop = true }
             },
@@ -304,6 +307,8 @@ private fun ReciboDestination(
     tabs: SelloNavigation,
     onOpenSettings: () -> Unit,
     onOpenDayByDay: () -> Unit,
+    onOpenGuide: () -> Unit,
+    onOpenBackup: () -> Unit,
     onEditExpense: (String) -> Unit,
     onEditCategory: (String) -> Unit,
     onShowAllExpenses: (String) -> Unit,
@@ -416,6 +421,13 @@ private fun ReciboDestination(
 
                         is ReciboAction.SetMonthLimit ->
                             onSetMonthLimit(action.categoryId, action.month)
+
+                        ReciboAction.OpenGuide -> onOpenGuide()
+
+                        ReciboAction.OpenBackup -> onOpenBackup()
+
+                        ReciboAction.CloseGuideHint,
+                        ReciboAction.TurnOffBackupReminder -> Unit
                     }
                     recibo.onAction(action)
                 },
