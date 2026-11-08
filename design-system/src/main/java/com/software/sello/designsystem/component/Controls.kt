@@ -182,7 +182,8 @@ fun SelloNavigationBar(navigation: SelloNavigation, modifier: Modifier = Modifie
  *
  * With [onPaper] the same pill sits on a slip, as Recibo's **+ Nueva categoría**: the
  * soft brand fill instead of paper, which would not show on paper. [compact] is the
- * round + alone, for a band whose title would not fit beside the label.
+ * round + alone, for a band whose title would not fit beside the label. Without [plus]
+ * it is the label alone, as a [NudgeRow]'s pill that leads somewhere rather than adds.
  */
 @Composable
 fun BandChip(
@@ -190,7 +191,8 @@ fun BandChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     onPaper: Boolean = false,
-    compact: Boolean = false
+    compact: Boolean = false,
+    plus: Boolean = true
 ) {
     val colors = SelloTheme.colors
     val content = when {
@@ -222,11 +224,11 @@ fun BandChip(
             .clip(CircleShape)
             .background(fill)
             .clickable(role = Role.Button, onClick = onClick)
-            .padding(start = SelloTheme.spacing.sm, end = 14.dp),
+            .padding(start = if (plus) SelloTheme.spacing.sm else 14.dp, end = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.xs)
     ) {
-        Icon(SelloIcon.Add.painter(), null, Modifier.size(20.dp), tint = content)
+        if (plus) Icon(SelloIcon.Add.painter(), null, Modifier.size(20.dp), tint = content)
         Text(
             label,
             color = content,

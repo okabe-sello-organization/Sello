@@ -12,6 +12,10 @@
     <string name="sello_clear_all">Borrar todo</string>
     <string name="sello_paste">Pegar</string>
     <string name="sello_more_options">Más opciones</string>
+    <string name="sello_close">Cerrar</string>
+    <!-- A help term read aloud: the word, then what a tap does. -->
+    <string name="sello_help_term">%1$s. Qué significa</string>
+    <string name="sello_help_more">Ver más en la Guía de Sello</string>
     <string name="sello_amount_empty">Sin monto</string>
     <string name="sello_bulk_add_line">Otro renglón</string>
     <string name="sello_bulk_remove">Quitar</string>
