@@ -93,6 +93,7 @@ class StartupTest {
                     is Outcome.Success -> Outcome.Success(
                         Started(result.value, restores) { afterStarts++ }
                     )
+
                     is Outcome.Failure -> result
                 }
             },

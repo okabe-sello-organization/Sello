@@ -7,6 +7,7 @@ import com.software.sello.data.backup.FinancialSnapshot
 import com.software.sello.data.backup.PortablePreferences
 import com.software.sello.data.backup.RoomRestores
 import com.software.sello.data.backup.checkFile
+import com.software.sello.data.preferences.DataStoreUserPreferences
 import com.software.sello.data.repository.RoomCategoryExpenseSearch
 import com.software.sello.data.reset.RoomResets
 import com.software.sello.domain.model.AppearancePreference
@@ -42,6 +43,7 @@ import com.software.sello.domain.port.DispatcherProvider
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseOrder
 import com.software.sello.domain.port.ExpenseRejection
+import com.software.sello.domain.port.GuidancePreferences
 import com.software.sello.domain.port.PendingPreferences
 import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
@@ -68,14 +70,17 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.Runnable
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import org.junit.Assert.assertEquals
@@ -148,7 +153,10 @@ class RestoreCommandContractTest {
     private var whenStamped: () -> Unit = {}
     private var nextId = 5_000
 
-    private fun restores(dispatchers: DispatcherProvider = this.dispatchers) = RoomRestores(
+    private fun restores(
+        dispatchers: DispatcherProvider = this.dispatchers,
+        guidance: GuidancePreferences = this.guidance
+    ) = RoomRestores(
         ledger.database,
         files.restoreFolder,
         preferences,
@@ -173,42 +181,47 @@ class RestoreCommandContractTest {
         CategoryOrderingPreference(CategoryOrder.Alphabetical, CategoryOrderDirection.Ascending)
     )
 
-    private fun g01(preferences: PortablePreferences? = wanted, plaza: String = "Plaza") =
-        BackupCodec().encode(
-            BackupContents(
-                exportedAt = Instant.parse("2026-10-22T14:30:00Z"),
-                financialMonth = YearMonth.of(2026, 10),
-                financial = FinancialSnapshot(
-                    zone = lima,
-                    revision = 9,
-                    categories = listOf(
-                        category(1, "Comida"),
-                        category(2, "Café", archived = true)
-                    ),
-                    defaultLimits = listOf(
-                        DefaultLimit(
-                            ledger.categoryId(1),
-                            YearMonth.of(2026, 10),
-                            AutomaticBudget.Limit(finite(100_000))
-                        )
-                    ),
-                    monthLimits = emptyList(),
-                    expenses = listOf(
-                        expense(101, 1, "2026-10-01", 1, 10_000),
-                        expense(102, 1, "2026-10-02", 2, 15_000, note = plaza),
-                        expense(103, 1, "2026-10-03", 3, 5_000)
-                    ),
-                    incomes = listOf(income(201, "2026-10-01", 1, 200_000, IncomeSource.Salary)),
-                    goals = emptyList(),
-                    starredGoals = emptySet(),
-                    schedules = emptyList(),
-                    investments = emptyList(),
-                    usdRates = emptyList(),
-                    carryChains = emptyList()
+    /** [used]: false for a file with categories and limits but no expense or income. */
+    private fun g01(
+        preferences: PortablePreferences? = wanted,
+        plaza: String = "Plaza",
+        used: Boolean = true
+    ) = BackupCodec().encode(
+        BackupContents(
+            exportedAt = Instant.parse("2026-10-22T14:30:00Z"),
+            financialMonth = YearMonth.of(2026, 10),
+            financial = FinancialSnapshot(
+                zone = lima,
+                revision = 9,
+                categories = listOf(
+                    category(1, "Comida"),
+                    category(2, "Café", archived = true)
                 ),
-                preferences = preferences
-            )
-        ).valueOrFail()
+                defaultLimits = listOf(
+                    DefaultLimit(
+                        ledger.categoryId(1),
+                        YearMonth.of(2026, 10),
+                        AutomaticBudget.Limit(finite(100_000))
+                    )
+                ),
+                monthLimits = emptyList(),
+                expenses = listOf(
+                    expense(101, 1, "2026-10-01", 1, 10_000),
+                    expense(102, 1, "2026-10-02", 2, 15_000, note = plaza),
+                    expense(103, 1, "2026-10-03", 3, 5_000)
+                ).takeIf { used }.orEmpty(),
+                incomes = listOf(income(201, "2026-10-01", 1, 200_000, IncomeSource.Salary))
+                    .takeIf { used }.orEmpty(),
+                goals = emptyList(),
+                starredGoals = emptySet(),
+                schedules = emptyList(),
+                investments = emptyList(),
+                usdRates = emptyList(),
+                carryChains = emptyList()
+            ),
+            preferences = preferences
+        )
+    ).valueOrFail()
 
     /** Two expenses in Mercado, through the real commands. */
     private suspend fun currentHistory() {
@@ -887,27 +900,42 @@ class RestoreCommandContractTest {
         assertEquals(emptyList<String>(), stagingFiles())
     }
 
-    /** A merge that cannot be saved never holds the restore up; the phone keeps its own. */
+    /** A merge that cannot be saved stays pending alone, like any other group, until it lands. */
     @Test
-    fun aGuidanceMergeThatFailsLeavesTheRestoreDoneAndThePhonesGuidanceAlone() = runBlocking {
+    fun aGuidanceMergeThatFailsStaysPendingAloneAndIsAppliedLater() = runBlocking {
         currentHistory()
         guidance.value = phoneGuidance
         guidance.fail = true
+        val staged = stage(g01(wanted.copy(guidance = backupGuidance)))
 
-        val outcome = restores().replace(stage(g01(wanted.copy(guidance = backupGuidance))))
+        val outcome = restores().replace(staged)
 
         assertEquals(
-            RestoreOutcome.Restored(BackupSummary(2, 3, 1, 0, 0), PendingPreferences(null, null)),
+            RestoreOutcome.Restored(
+                BackupSummary(2, 3, 1, 0, 0),
+                PendingPreferences(null, null, guidance = backupGuidance)
+            ),
             outcome
         )
         assertEquals(phoneGuidance, guidance.value)
+
+        // After a restart it is still pending, and the history is not replaced again.
+        ledger.reopen()
+        val history = everyRow()
+        assertEquals(outcome, restores().pending())
+        guidance.fail = false
+        val done = restores().applyPending()
+
+        assertEquals(PendingPreferences(null, null), done?.preferences)
+        assertEquals(setOf(Nudge.GuideHint, Nudge.Carry), guidance.value.memory.seen)
+        assertEquals(history, everyRow())
         assertNull(restores().pending())
         assertEquals(emptyList<String>(), stagingFiles())
     }
 
-    /** While another group waits, the merge is tried again with it, and lands once. */
+    /** While another group waits, guidance applied once is never merged again. */
     @Test
-    fun aGuidanceMergeIsRetriedWithAPendingGroupAndNeverTwice() = runBlocking {
+    fun aGuidanceMergeAppliedBesideAPendingGroupIsNeverRepeated() = runBlocking {
         currentHistory()
         guidance.value = phoneGuidance
         guidance.fail = true
@@ -917,7 +945,6 @@ class RestoreCommandContractTest {
         restores().replace(
             stage(g01(wanted.copy(smallExpenseLine = line, guidance = backupGuidance)))
         )
-        assertEquals(phoneGuidance, guidance.value)
 
         ledger.reopen()
         guidance.fail = false
@@ -933,16 +960,93 @@ class RestoreCommandContractTest {
         assertNull(restores().pending())
     }
 
-    /** A backup without guidance, as one from before version 11, keeps the phone's as it is. */
+    private val newUserNudges = setOf(
+        Nudge.BulkEntry,
+        Nudge.FixedPayment,
+        Nudge.Carry,
+        Nudge.Deleting,
+        Nudge.Investments,
+        Nudge.ReciboGoal
+    )
+
+    /**
+     * A file without guidance (older than version 11) whose history was in use: its person
+     * was already using Sello, so the six new-user nudges are merged as seen; the Guía hint
+     * and the backup reminder are left as the phone has them.
+     */
     @Test
-    fun aBackupWithoutGuidanceKeepsThePhones() = runBlocking {
+    fun aBackupWithoutGuidanceButInUseMarksTheNewUserNudgesSeen() = runBlocking {
         currentHistory()
         guidance.value = phoneGuidance
 
         restores().replace(stage(g01(wanted)))
 
+        assertEquals(listOf(GuidanceMemory(seen = newUserNudges)), guidance.merges)
+        assertEquals(
+            phoneGuidance.copy(
+                memory = phoneGuidance.memory.copy(seen = newUserNudges + Nudge.GuideHint)
+            ),
+            guidance.value
+        )
+    }
+
+    /** The same with a backup made without preferences at all. */
+    @Test
+    fun aBackupWithoutPreferencesButInUseMarksTheNewUserNudgesSeen() = runBlocking {
+        currentHistory()
+
+        restores().replace(stage(g01(preferences = null)))
+
+        assertEquals(newUserNudges, guidance.value.memory.seen)
+    }
+
+    /** A file without guidance and no expense, income, goal or investment keeps the phone's. */
+    @Test
+    fun aBackupWithoutGuidanceOrUseKeepsThePhones() = runBlocking {
+        currentHistory()
+        guidance.value = phoneGuidance
+
+        val outcome = restores().replace(stage(g01(wanted, used = false)))
+
+        assertEquals(
+            PendingPreferences(null, null),
+            (outcome as RestoreOutcome.Restored).preferences
+        )
         assertEquals(phoneGuidance, guidance.value)
         assertTrue(guidance.merges.isEmpty())
+    }
+
+    /**
+     * On real Room and a real preferences file: a restore of an older file in use marks the
+     * six new-user nudges seen in one write, read back whole after its process ends.
+     */
+    @Test
+    fun anOlderFileInUseMarksTheNewUserNudgesInOneWriteOnARealFile() = runBlocking {
+        val name = "guidance-${files.name.removeSuffix(".db")}"
+        val context = files.context
+        fun open(job: Job) =
+            DataStoreUserPreferences(context, CoroutineScope(Dispatchers.IO + job), name)
+        val first = Job()
+        val next = Job()
+        try {
+            val real = open(first)
+            real.markSeen(Nudge.GuideHint)
+            currentHistory()
+
+            restores(guidance = real).replace(stage(g01(wanted)))
+            first.cancelAndJoin()
+
+            assertEquals(
+                PreferenceRead.Ready(
+                    Guidance(GuidanceMemory(seen = newUserNudges + Nudge.GuideHint))
+                ),
+                open(next).observeGuidance().first()
+            )
+        } finally {
+            first.cancelAndJoin()
+            next.cancelAndJoin()
+            File(context.filesDir, "datastore/$name.preferences_pb").delete()
+        }
     }
 
     @Test
