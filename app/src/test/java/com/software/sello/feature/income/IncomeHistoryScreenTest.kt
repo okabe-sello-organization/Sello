@@ -126,6 +126,18 @@ class IncomeHistoryScreenTest {
     }
 
     @Test
+    fun theUnderlinedSinAsignarLineStillSaysItsNameBeforeItsAmount() {
+        show(ready(), split)
+
+        rule.onNodeWithTag("income.unassigned").assert(
+            SemanticsMatcher.expectValue(
+                SemanticsProperties.ContentDescription,
+                listOf("Sin asignar", "50.000 pesos")
+            )
+        )
+    }
+
+    @Test
     fun eachHelpSheetShowsItsRuleAndLeadsToTheGuide() {
         show(ready(), split, help = IncomeHelp.CameIn)
         rule.onNodeWithTag("$INCOME_HELP_TAG.CameIn").assertIsDisplayed()
