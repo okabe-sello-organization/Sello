@@ -334,6 +334,9 @@ private fun ReciboDestination(
     val reciboState by recibo.state.collectAsStateWithLifecycle()
     val goalState by goal.state.collectAsStateWithLifecycle()
     val detailState by detail.state.collectAsStateWithLifecycle()
+    // The goal nudge follows the card as drawn (SELLO-213).
+    val goalsTakeTurns = takesTurns(goalState)
+    LaunchedEffect(goalsTakeTurns) { recibo.onAction(ReciboAction.GoalCard(goalsTakeTurns)) }
     val names = monthNames()
     val dates = dateLabels()
     BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -427,6 +430,8 @@ private fun ReciboDestination(
                         ReciboAction.OpenBackup -> onOpenBackup()
 
                         ReciboAction.CloseGuideHint,
+                        ReciboAction.CloseGoalNudge,
+                        is ReciboAction.GoalCard,
                         ReciboAction.TurnOffBackupReminder -> Unit
                     }
                     recibo.onAction(action)
@@ -485,3 +490,10 @@ internal fun SettingsAction(onClick: () -> Unit) {
 }
 
 const val SETTINGS_ACTION_TAG = "navigation:settings"
+
+/**
+ * Whether Recibo's goal card shows two or more goals taking turns with current figures:
+ * Hidden, loading, failed, one goal or older goals are no.
+ */
+internal fun takesTurns(card: ReciboGoalState): Boolean =
+    card is ReciboGoalState.Shown && !card.stale && card.pills.size >= 2

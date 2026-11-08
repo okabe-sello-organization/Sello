@@ -17,6 +17,10 @@ import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
+import com.software.sello.feature.goals.RECIBO_GOAL_DOTS_TAG
+import com.software.sello.feature.goals.ReciboGoal
+import com.software.sello.feature.goals.ReciboGoalPill
+import com.software.sello.feature.goals.ReciboGoalState
 import com.software.sello.navigation.DayByDayBarAction
 import com.software.sello.navigation.ShellScreen
 import com.software.sello.navigation.ShellTab
@@ -30,7 +34,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.GraphicsMode
 
-/** Recibo's Guía hint and backup reminder under the month's answer (SELLO-211). */
+/**
+ * Recibo's Guía hint and backup reminder under the month's answer (SELLO-211), and the goal
+ * nudge under the goal card (SELLO-213).
+ */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class ReciboNudgeScreenTest {
@@ -71,6 +78,14 @@ class ReciboNudgeScreenTest {
 
     private val actions = mutableListOf<ReciboAction>()
 
+    private val goals = ReciboGoalState.Shown(
+        listOf(
+            ReciboGoalPill("viaje", "Viaje a la costa", "flight", 57),
+            ReciboGoalPill("fondo", "Fondo de emergencia", "home", 42)
+        ),
+        reached = null
+    )
+
     private fun show(nudge: ReciboNudge, look: Look = Look()) = rule.showSello(look) {
         // As ReciboDestinations.kt frames the tab: the month bar, the settings action, Anotar.
         ShellScreen(
@@ -85,7 +100,10 @@ class ReciboNudgeScreenTest {
                 }
             }
         ) { padding ->
-            ReciboScreen(month(nudge), { actions += it }, padding)
+            ReciboScreen(month(nudge), { actions += it }, padding) {
+                // Two goals taking turns, as Recibo's goal card shows them, for its nudge only.
+                if (nudge == ReciboNudge.Goal) ReciboGoal(goals, {}, {}, {})
+            }
         }
     }
 
@@ -109,6 +127,25 @@ class ReciboNudgeScreenTest {
 
     @Test
     fun noBackupYetDark() = shot("no-backup", ReciboNudge.BackupReminder(null), Look(dark = true))
+
+    @Test fun goalNudgeLight() = shot("goal", ReciboNudge.Goal, Look())
+
+    @Test
+    fun theGoalNudgeSaysHowToPutAGoalFirstAndSitsUnderTheCardAlone() {
+        show(ReciboNudge.Goal)
+
+        rule.onNodeWithText(
+            "Tus metas destacadas salen primero aquí. Abre una en Metas y toca Destacar en Recibo."
+        ).assertIsDisplayed()
+        val dots = rule.onNodeWithTag(RECIBO_GOAL_DOTS_TAG).fetchSemanticsNode().boundsInRoot
+        val nudge = rule.onNodeWithTag(RECIBO_GOAL_NUDGE_TAG).fetchSemanticsNode().boundsInRoot
+        assert(nudge.top >= dots.bottom) { "the goal nudge $nudge is not under the card $dots" }
+        rule.onNodeWithTag(RECIBO_GUIDE_HINT_TAG).assertDoesNotExist()
+        rule.onNodeWithTag(RECIBO_BACKUP_REMINDER_TAG).assertDoesNotExist()
+        rule.onNodeWithContentDescription("Cerrar el aviso de las metas").performClick()
+
+        assertEquals(listOf(ReciboAction.CloseGoalNudge), actions)
+    }
 
     @Test
     fun theHintSaysWhereTheGuideIsAndItsTextOpensIt() {

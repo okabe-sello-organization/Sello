@@ -17,9 +17,10 @@ import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
 
 /**
- * Recibo's one quiet line of guidance under the month's answer (SELLO-211): the Guía hint,
+ * Recibo's one quiet line of guidance (SELLO-211): under the month's answer, the Guía hint,
  * whose text opens the Guía and whose ✕ closes it, or the backup reminder, with No volver
- * a mostrar on the left and Ir a Respaldo on the right.
+ * a mostrar on the left and Ir a Respaldo on the right; under the goal card, how to put a
+ * goal first there (SELLO-213), with a ✕.
  */
 @Composable
 internal fun ReciboNudgeRow(
@@ -65,8 +66,20 @@ internal fun ReciboNudgeRow(
             },
             modifier = modifier.testTag(RECIBO_BACKUP_REMINDER_TAG)
         )
+
+        ReciboNudge.Goal -> NudgeRow(
+            icon = SelloIcon.Star,
+            text = withBold(
+                stringResource(R.string.recibo_goal_nudge),
+                stringResource(R.string.goal_pin_off)
+            ),
+            onClose = { onAction(ReciboAction.CloseGoalNudge) },
+            closeLabel = stringResource(R.string.recibo_goal_nudge_close),
+            modifier = modifier.testTag(RECIBO_GOAL_NUDGE_TAG)
+        )
     }
 }
 
 const val RECIBO_GUIDE_HINT_TAG = "recibo:nudge:guide"
 const val RECIBO_BACKUP_REMINDER_TAG = "recibo:nudge:backup"
+const val RECIBO_GOAL_NUDGE_TAG = "recibo:nudge:goal"

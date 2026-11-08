@@ -180,6 +180,8 @@
     <string name="recibo_backup_reminder_none">Aún no tienes ningún respaldo. Tus datos viven solo en este teléfono.</string>
     <string name="recibo_backup_reminder_go">Ir a Respaldo</string>
     <string name="recibo_backup_reminder_off">No volver a mostrar</string>
+    <string name="recibo_goal_nudge">Tus metas destacadas salen primero aquí. Abre una en Metas y toca %1$s.</string>
+    <string name="recibo_goal_nudge_close">Cerrar el aviso de las metas</string>
     <string name="year_close_title">¡Un año\ncon Sello!</string>
     <string name="year_close_plate">Año cerrado</string>
     <string name="year_close_view">Ver tu año</string>
@@ -1708,6 +1710,8 @@
     <string name="investment_since">Desde %1$s</string>
     <string name="investment_valued_since">Valor anotado el %1$s · desde %2$s</string>
     <string name="investment_record_value">Anotar el valor de hoy</string>
+    <string name="investment_nudge">Lo que pones o sacas va en %1$s. El valor lo anotas tú cuando cambie.</string>
+    <string name="investment_nudge_close">Cerrar el aviso de las inversiones</string>
     <string name="investment_chart_title">Valor y lo que pusiste</string>
     <string name="investment_chart_values">Valor anotado</string>
     <string name="investment_chart_put">Lo que pusiste</string>

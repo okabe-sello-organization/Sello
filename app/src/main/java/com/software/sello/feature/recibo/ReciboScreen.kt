@@ -159,7 +159,8 @@ fun ReciboScreen(
                     onAdjust = { onAction(ReciboAction.AdjustBudget) },
                     onReserved = { onAction(ReciboAction.OpenReserved) }
                 )
-                state.nudge?.let { ReciboNudgeRow(it, onAction) }
+                // The goal card's own nudge sits under it; the others under the answer.
+                state.nudge?.takeIf { it != ReciboNudge.Goal }?.let { ReciboNudgeRow(it, onAction) }
                 state.invitation?.let { invitation ->
                     val onDismiss = { onAction(ReciboAction.DismissInvitation(invitation.month)) }
                     if (invitation.closesYear) {
@@ -177,6 +178,7 @@ fun ReciboScreen(
                     }
                 }
                 goal()
+                if (state.nudge == ReciboNudge.Goal) ReciboNudgeRow(ReciboNudge.Goal, onAction)
                 CategoriesSlip(
                     state.categories,
                     selectedCategoryId,
