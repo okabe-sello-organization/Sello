@@ -555,6 +555,13 @@ private fun Hero(hero: ResumenHero, firstMonth: Boolean, onAction: (ResumenActio
     } else {
         stringResource(R.string.resumen_hero_closed, hero.monthName)
     }
+    val help = @Composable {
+        CardHelp(
+            resumenHelpLabel(ResumenHelp.Month),
+            { onAction(ResumenAction.OpenHelp(ResumenHelp.Month)) },
+            Modifier.testTag(RESUMEN_HERO_HELP_TAG)
+        )
+    }
     val comparison = hero.comparison
     if (comparison == null) {
         AnswerSlip(
@@ -562,7 +569,8 @@ private fun Hero(hero: ResumenHero, firstMonth: Boolean, onAction: (ResumenActio
             amount = hero.spent,
             stamp = null,
             ink = StampInk.Neutral,
-            modifier = Modifier.testTag("resumen.hero")
+            modifier = Modifier.testTag("resumen.hero"),
+            labelHelp = help
         ) {
             ResumenNote(
                 if (hero.inProgress) {
@@ -624,7 +632,8 @@ private fun Hero(hero: ResumenHero, firstMonth: Boolean, onAction: (ResumenActio
         bars = comparison.bars,
         modifier = Modifier.testTag("resumen.hero"),
         trendTerm = stringResource(R.string.resumen_hero_same_day_term).takeIf { sameDay },
-        onTrendTerm = { onAction(ResumenAction.OpenHelp(ResumenHelp.SameDay)) }
+        onTrendTerm = { onAction(ResumenAction.OpenHelp(ResumenHelp.SameDay)) },
+        labelHelp = help
     )
 }
 
@@ -763,5 +772,7 @@ const val RESUMEN_DISMISS_FAILED_TAG = "resumen.suggestion.dismissFailed"
 const val RESUMEN_SEE_YEAR_TAG = "resumen.seeYear"
 
 const val RESUMEN_WEEKDAYS_HELP_TAG = "resumen.weekdays.help"
+
+const val RESUMEN_HERO_HELP_TAG = "resumen.hero.help"
 
 const val RESUMEN_SAME_DAY_TERM_TAG = "resumen.hero.sameDay"

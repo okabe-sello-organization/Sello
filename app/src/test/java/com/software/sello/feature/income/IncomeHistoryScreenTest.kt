@@ -5,6 +5,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.filterToOne
@@ -108,6 +109,23 @@ class IncomeHistoryScreenTest {
     }
 
     @Test
+    fun theQuestionMarkAndTheUnderlinedSinAsignarOpenTheirSheets() {
+        show(ready(), split)
+
+        rule.onNodeWithTag(INCOME_HERO_HELP_TAG)
+            .assertContentDescriptionEquals("Cómo se reparte lo que entró").performClick()
+        rule.onNodeWithContentDescription("Sin asignar. Qué significa").performClick()
+
+        assertEquals(
+            listOf(
+                IncomeHistoryAction.OpenHelp(IncomeHelp.CameIn),
+                IncomeHistoryAction.OpenHelp(IncomeHelp.Unassigned)
+            ),
+            actions
+        )
+    }
+
+    @Test
     fun eachHelpSheetShowsItsRuleAndLeadsToTheGuide() {
         show(ready(), split, help = IncomeHelp.CameIn)
         rule.onNodeWithTag("$INCOME_HELP_TAG.CameIn").assertIsDisplayed()
@@ -147,7 +165,7 @@ class IncomeHistoryScreenTest {
             )
         )
         rule.onNodeWithText("En presupuestos de categorías").assertIsDisplayed()
-        rule.onNodeWithText("Sin asignar").assertIsDisplayed()
+        rule.onNodeWithContentDescription("Sin asignar. Qué significa").assertIsDisplayed()
         rule.onNodeWithTag("income.overBasis").assertDoesNotExist()
         // Nothing is expected: no plan. And no suggestion here.
         rule.onNodeWithTag("income.plan").assertDoesNotExist()

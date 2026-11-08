@@ -421,12 +421,15 @@ class ResumenScreenTest {
     fun theUnderlinedSameDayAndTheWeekdaysQuestionMarkOpenTheirSheets() {
         show()
 
+        rule.onNodeWithTag(RESUMEN_HERO_HELP_TAG)
+            .assertContentDescriptionEquals("Cómo se compara tu mes").performClick()
         rule.onNodeWithTag(RESUMEN_SAME_DAY_TERM_TAG).performClick()
         rule.onNodeWithTag(RESUMEN_WEEKDAYS_HELP_TAG).performScrollTo()
             .assertContentDescriptionEquals("Cómo se saca el promedio por día").performClick()
 
         assertEquals(
             listOf(
+                ResumenAction.OpenHelp(ResumenHelp.Month),
                 ResumenAction.OpenHelp(ResumenHelp.SameDay),
                 ResumenAction.OpenHelp(ResumenHelp.Weekdays)
             ),
@@ -445,6 +448,8 @@ class ResumenScreenTest {
 
         rule.onNodeWithText("↓ 14,3 % que septiembre completo").assertIsDisplayed()
         rule.onNodeWithTag(RESUMEN_SAME_DAY_TERM_TAG).assertDoesNotExist()
+        // The card's ? stays: it explains whole months too.
+        rule.onNodeWithTag(RESUMEN_HERO_HELP_TAG).assertIsDisplayed()
     }
 
     @Test

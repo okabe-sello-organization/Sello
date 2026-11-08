@@ -62,7 +62,8 @@ internal fun ComparisonSlip(
     bars: List<ComparisonBar>,
     modifier: Modifier = Modifier,
     trendTerm: String? = null,
-    onTrendTerm: () -> Unit = {}
+    onTrendTerm: () -> Unit = {},
+    labelHelp: (@Composable () -> Unit)? = null
 ) {
     val colors = SelloTheme.colors
     val typography = MaterialTheme.typography
@@ -73,7 +74,8 @@ internal fun ComparisonSlip(
         stamp = null,
         ink = StampInk.Neutral,
         modifier = modifier,
-        lossAmount = false
+        lossAmount = false,
+        labelHelp = labelHelp
     ) {
         Text(
             explanation,

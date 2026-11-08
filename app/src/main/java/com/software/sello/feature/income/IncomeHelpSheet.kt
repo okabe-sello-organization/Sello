@@ -66,3 +66,4 @@ internal fun IncomeHelpSheet(
 }
 
 const val INCOME_HELP_TAG = "income.help"
+const val INCOME_HERO_HELP_TAG = "income.hero.help"
