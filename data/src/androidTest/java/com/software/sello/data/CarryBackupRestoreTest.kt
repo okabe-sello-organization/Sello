@@ -70,6 +70,7 @@ class CarryBackupRestoreTest {
     }
     private val investments = HandInvestmentPreferences()
     private val smallExpenses = HandSmallExpensePreferences()
+    private val guidance = HandGuidancePreferences()
     private val notice = NoticeSeen()
 
     /** The portable preferences, which can be told to fail. */
@@ -137,6 +138,7 @@ class CarryBackupRestoreTest {
         preferences,
         investments,
         smallExpenses,
+        guidance,
         { source.audit },
         source.clock,
         dispatchers,
@@ -161,6 +163,7 @@ class CarryBackupRestoreTest {
         preferences,
         investments,
         smallExpenses,
+        guidance,
         notice,
         { uuid(nextId++) },
         { target.audit },
@@ -422,6 +425,7 @@ class CarryBackupRestoreTest {
             preferences,
             investments,
             smallExpenses,
+            guidance,
             notice,
             { uuid(nextId++) },
             { other.audit },

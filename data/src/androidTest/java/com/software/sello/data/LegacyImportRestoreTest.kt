@@ -77,6 +77,7 @@ class LegacyImportRestoreTest {
 
     private val investments = HandInvestmentPreferences()
     private val smallExpenses = HandSmallExpensePreferences()
+    private val guidance = HandGuidancePreferences()
 
     private val preferences = Preferences()
     private var nextId = 5_000
@@ -90,6 +91,7 @@ class LegacyImportRestoreTest {
         preferences,
         investments,
         smallExpenses,
+        guidance,
         NoticeSeen(),
         { uuid(nextId++) },
         {

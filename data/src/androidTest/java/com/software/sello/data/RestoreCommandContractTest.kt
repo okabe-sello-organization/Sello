@@ -135,6 +135,7 @@ class RestoreCommandContractTest {
 
     private val investments = HandInvestmentPreferences()
     private val smallExpenses = HandSmallExpensePreferences()
+    private val guidance = HandGuidancePreferences()
 
     private val preferences = Preferences()
     private val notice = NoticeSeen()
@@ -149,6 +150,7 @@ class RestoreCommandContractTest {
         preferences,
         investments,
         smallExpenses,
+        guidance,
         notice,
         { uuid(nextId++) },
         {

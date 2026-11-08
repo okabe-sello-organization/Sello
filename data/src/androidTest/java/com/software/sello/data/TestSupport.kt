@@ -15,6 +15,8 @@ import com.software.sello.domain.model.CategoryName
 import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.Expense
 import com.software.sello.domain.model.ExpenseId
+import com.software.sello.domain.model.Guidance
+import com.software.sello.domain.model.GuidanceMemory
 import com.software.sello.domain.model.IconKey
 import com.software.sello.domain.model.Income
 import com.software.sello.domain.model.IncomeId
@@ -23,11 +25,14 @@ import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.InvestmentPreference
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Note
+import com.software.sello.domain.model.Nudge
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.ShownNudge
 import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.CatchUpNoticePreferences
 import com.software.sello.domain.port.DispatcherProvider
+import com.software.sello.domain.port.GuidancePreferences
 import com.software.sello.domain.port.InvestmentPreferences
 import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
@@ -191,6 +196,50 @@ class HandSmallExpensePreferences(var value: SmallExpenseLine = SmallExpenseLine
     override suspend fun setSmallExpenseLine(line: SmallExpenseLine): PreferenceWrite {
         if (fail) return PreferenceWrite.Failed(PreferenceFailure.Unavailable)
         value = line
+        return PreferenceWrite.Saved
+    }
+}
+
+/** The guidance seen as a test sets it; [fail] refuses writes. Merges as the app's does. */
+class HandGuidancePreferences(var value: Guidance = Guidance()) : GuidancePreferences {
+    var fail = false
+
+    override fun observeGuidance(): Flow<PreferenceRead<Guidance>> =
+        flowOf(PreferenceRead.Ready(value))
+
+    override suspend fun markSeen(nudge: Nudge) =
+        saved { value.copy(memory = value.memory.copy(seen = value.memory.seen + nudge)) }
+
+    override suspend fun markShown(nudge: Nudge, day: LocalDate) = saved {
+        val shown = value.memory.copy(lastShown = ShownNudge(nudge, day))
+        value.copy(
+            memory = if (nudge == Nudge.BackupReminder) {
+                shown.copy(backupReminderShown = day)
+            } else {
+                shown
+            }
+        )
+    }
+
+    override suspend fun turnOffBackupReminder() =
+        saved { value.copy(memory = value.memory.copy(backupReminderOff = true)) }
+
+    override suspend fun rememberExistingUse(wasUsingSello: Boolean) = saved {
+        if (value.existingUseChecked) {
+            value
+        } else {
+            val newUser = Nudge.entries.filter { it.forNewUsers }.toSet()
+            val seen = if (wasUsingSello) value.memory.seen + newUser else value.memory.seen
+            Guidance(value.memory.copy(seen = seen), existingUseChecked = true)
+        }
+    }
+
+    override suspend fun mergeRestored(memory: GuidanceMemory) =
+        saved { value.copy(memory = value.memory.mergedWith(memory)) }
+
+    private fun saved(next: () -> Guidance): PreferenceWrite {
+        if (fail) return PreferenceWrite.Failed(PreferenceFailure.Unavailable)
+        value = next()
         return PreferenceWrite.Saved
     }
 }
