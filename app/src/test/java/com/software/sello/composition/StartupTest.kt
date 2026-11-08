@@ -50,6 +50,9 @@ class StartupTest {
     private val opens = mutableListOf<Outcome<ViewModelProvider.Factory, StorageFailure>>()
     private var opened = 0
     private var moves = 0
+
+    /** How many times a graph's after-start work ran: the existing-use check (SELLO-205). */
+    private var afterStarts = 0
     private var move: Outcome<Unit, StorageFailure> = Outcome.Success(Unit)
 
     /** While set, the next open waits for it: the disk is slow. */
@@ -87,7 +90,10 @@ class StartupTest {
                 events += "open"
                 slowOpen?.await()
                 when (val result = opens[opened++]) {
-                    is Outcome.Success -> Outcome.Success(Started(result.value, restores))
+                    is Outcome.Success -> Outcome.Success(
+                        Started(result.value, restores) { afterStarts++ }
+                    )
+
                     is Outcome.Failure -> result
                 }
             },
@@ -251,6 +257,26 @@ class StartupTest {
         val startup = started(Outcome.Success(factory))
 
         assertSame(factory, (startup.state.value as StartupState.Ready).viewModels)
+    }
+
+    @Test
+    fun dataThatOpensRunsItsAfterStartWorkOnce() = runTest {
+        started(Outcome.Success(factory))
+        runCurrent()
+
+        assertEquals(1, afterStarts)
+    }
+
+    @Test
+    fun dataThatFailsToOpenRunsNoAfterStartWorkUntilARetryOpensIt() = runTest {
+        val startup = started(Outcome.Failure(corrupt), Outcome.Success(factory))
+        runCurrent()
+        assertEquals(0, afterStarts)
+
+        startup.retry()
+        runCurrent()
+
+        assertEquals(1, afterStarts)
     }
 
     @Test
@@ -419,6 +445,10 @@ class StartupTest {
         assertSame(file, restores.stagedFiles.single())
         // The new store is never shown: the app starts again in a new process.
         assertEquals(StartupState.Failed(corrupt), startup.state.value)
+        // Its graph never checks for existing use on the still-empty store; the next start
+        // checks the restored data.
+        runCurrent()
+        assertEquals(0, afterStarts)
     }
 
     @Test

@@ -273,6 +273,7 @@ class RecoveryRetentionTest {
             chosen,
             HandInvestmentPreferences(),
             HandSmallExpensePreferences(),
+            HandGuidancePreferences(),
             {
                 at
             },
@@ -307,6 +308,7 @@ class RecoveryRetentionTest {
             applied,
             HandInvestmentPreferences(),
             HandSmallExpensePreferences(),
+            HandGuidancePreferences(),
             NoticeSeen(),
             { uuid(nextOperation++) },
             { at },

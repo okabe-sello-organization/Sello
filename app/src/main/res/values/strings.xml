@@ -168,6 +168,20 @@
     <string name="recibo_year_card_title">¡Cerraste el año!</string>
     <string name="recibo_year_card_body">Mira cómo te fue en %1$s</string>
     <string name="recibo_year_card_description">¡Cerraste el año! Mira cómo te fue en %1$s</string>
+    <string name="recibo_guide_hint">¿Dudas? La %1$s está en Configuración.</string>
+    <string name="recibo_guide_hint_name">Guía de Sello</string>
+    <string name="recibo_guide_hint_open">Abrir la Guía de Sello</string>
+    <string name="recibo_guide_hint_close">Cerrar el aviso de la Guía</string>
+    <string name="recibo_backup_reminder">Tu último respaldo fue hace %1$s. Tus datos viven solo en este teléfono.</string>
+    <plurals name="recibo_backup_reminder_days">
+        <item quantity="one">%1$d día</item>
+        <item quantity="other">%1$d días</item>
+    </plurals>
+    <string name="recibo_backup_reminder_none">Aún no tienes ningún respaldo. Tus datos viven solo en este teléfono.</string>
+    <string name="recibo_backup_reminder_go">Ir a Respaldo</string>
+    <string name="recibo_backup_reminder_off">No volver a mostrar</string>
+    <string name="recibo_goal_nudge">Tus metas destacadas salen primero aquí. Abre una en Metas y toca %1$s.</string>
+    <string name="recibo_goal_nudge_close">Cerrar el aviso de las metas</string>
     <string name="year_close_title">¡Un año\ncon Sello!</string>
     <string name="year_close_plate">Año cerrado</string>
     <string name="year_close_view">Ver tu año</string>
@@ -1178,6 +1192,7 @@
     <string name="restore_pending_ordering">Orden de categorías: %1$s, %2$s</string>
     <string name="restore_pending_investments">Inversiones: %1$s, %2$s</string>
     <string name="restore_pending_small_expenses">Gastos hormiga: hasta %1$s</string>
+    <string name="restore_pending_guidance">Guía: lo que ya viste</string>
     <string name="restore_pending_descending">de mayor a menor</string>
     <string name="restore_pending_ascending">de menor a mayor</string>
     <string name="restore_apply_both">Aplicar apariencia y orden</string>
@@ -1185,6 +1200,7 @@
     <string name="restore_apply_ordering">Aplicar orden</string>
     <string name="restore_apply_investments">Aplicar inversiones</string>
     <string name="restore_apply_small_expenses">Aplicar gastos hormiga</string>
+    <string name="restore_apply_guidance">Aplicar guía</string>
     <string name="restore_apply_all">Aplicar preferencias</string>
     <string name="restore_preferences_unreadable">Tus gastos, ingresos, categorías y presupuestos ya se restauraron. No pudimos leer las preferencias del respaldo; puedes elegirlas en Configuración.</string>
     <string name="restore_pending_note">Solo se aplicarán las preferencias indicadas. Tu historial no se reemplazará otra vez.</string>
@@ -1684,6 +1700,8 @@
     <string name="investment_since">Desde %1$s</string>
     <string name="investment_valued_since">Valor anotado el %1$s · desde %2$s</string>
     <string name="investment_record_value">Anotar el valor de hoy</string>
+    <string name="investment_nudge">Lo que pones o sacas va en %1$s. El valor lo anotas tú cuando cambie.</string>
+    <string name="investment_nudge_close">Cerrar el aviso de las inversiones</string>
     <string name="investment_chart_title">Valor y lo que pusiste</string>
     <string name="investment_chart_values">Valor anotado</string>
     <string name="investment_chart_put">Lo que pusiste</string>

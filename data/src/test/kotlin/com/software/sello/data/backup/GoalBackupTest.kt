@@ -58,13 +58,17 @@ class GoalBackupTest {
     }
 
     @Test
-    fun `a file with goals is written back byte for byte, as version 10`() {
+    fun `a file with goals is written back byte for byte, as version 11`() {
         val plan = codec.read(goals.toByteArray()).value()
 
         assertEquals(
-            version9AsVersion10(
-                version8AsVersion9(
-                    version7AsVersion8(writtenAsVersion7(String(resource("valid-goals-v3.json"))))
+            version10AsVersion11(
+                version9AsVersion10(
+                    version8AsVersion9(
+                        version7AsVersion8(
+                            writtenAsVersion7(String(resource("valid-goals-v3.json")))
+                        )
+                    )
                 )
             ),
             String(codec.encode(plan.contents).value())

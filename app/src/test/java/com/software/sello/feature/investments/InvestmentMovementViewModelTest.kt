@@ -46,6 +46,7 @@ import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
+import com.software.sello.testing.HandGuidance
 import com.software.sello.testing.TestMoneyLabels
 import com.software.sello.testing.testMoney
 import java.time.Instant
@@ -81,6 +82,7 @@ class InvestmentMovementViewModelTest {
     private val clock = HandFinancialClock("2026-10-25")
     private val reads = HandInvestmentReads()
     private val commands = HandInvestmentCommands()
+    private val guidance = HandGuidance()
     private var nextId = 1
     private val ids = RecordIdSource { "00000000-0000-4000-a000-%012d".format(nextId++) }
     private val scheduler = TestCoroutineScheduler()
@@ -247,7 +249,16 @@ class InvestmentMovementViewModelTest {
                 movement?.let { InvestmentMovementViewModel.KEY_MOVEMENT to it }
             ).toMap()
         )
-    ) = InvestmentMovementViewModel(saved, reads, commands, clock, ids, money, corrections)
+    ) = InvestmentMovementViewModel(
+        saved,
+        reads,
+        commands,
+        clock,
+        ids,
+        money,
+        corrections,
+        guidance
+    )
 
     private fun InvestmentMovementViewModel.keys(vararg keys: String) = keys.forEach {
         onAction(
@@ -711,6 +722,53 @@ class InvestmentMovementViewModelTest {
         assertEquals(CorrectionNotice.InvestmentMovementRestored, corrections.notice.value)
     }
 
+    // ---------- The investments nudge closes once a movement is saved (SELLO-213) ----------
+
+    @Test
+    fun anAporteSavedClosesTheInvestmentsNudgeForGood() = runTest {
+        val model = model(investment = ecopetrol)
+        model.keys("5", "0", "0", "000")
+        model.onAction(InvestmentMovementAction.Submit)
+
+        assertTrue(model.now.closed)
+        assertEquals(listOf("seen Investments"), guidance.writes)
+    }
+
+    @Test
+    fun aValueUpdatedClosesItToo() = runTest {
+        val model = model(investment = ecopetrol, kind = InvestmentMovementViewModel.KIND_VALUATION)
+        model.keys("3", "1", "000", "000")
+        model.onAction(InvestmentMovementAction.Submit)
+
+        assertTrue(commands.sent.single() is RecordInvestmentMovement)
+        assertEquals(listOf("seen Investments"), guidance.writes)
+    }
+
+    @Test
+    fun aMovementCorrectedClosesItToo() = runTest {
+        val model = model(investment = ecopetrol, movement = movementId(23).value)
+        model.onAction(InvestmentMovementAction.ClearAmount)
+        model.keys("9", "0", "000")
+        model.onAction(InvestmentMovementAction.Submit)
+
+        assertTrue(commands.sent.single() is EditInvestmentMovement)
+        assertEquals(listOf("seen Investments"), guidance.writes)
+    }
+
+    @Test
+    fun aDeletionOrARefusedSaveLeavesItOpen() = runTest {
+        model(investment = prueba, movement = movementId(35).value)
+            .onAction(InvestmentMovementAction.Delete)
+        commands.answers += CommandOutcome.Rejected(Specific(InvestmentRejection.LastContribution))
+        val refused = model(investment = ecopetrol)
+        refused.keys("5", "000")
+        refused.onAction(InvestmentMovementAction.Submit)
+
+        assertTrue(commands.sent.first() is DeleteInvestmentMovement)
+        assertFalse(refused.now.closed)
+        assertEquals(emptyList<String>(), guidance.writes)
+    }
+
     @Test
     fun aFailedReadIsNotNoInvestments() = runTest {
         reads.board.value = ReadState.Failed(StorageFailure.Unavailable("x"), null)
@@ -745,7 +803,16 @@ class InvestmentMovementViewModelTest {
             }
         }
         val model =
-            InvestmentMovementViewModel(saved, once, commands, clock, ids, money, corrections)
+            InvestmentMovementViewModel(
+                saved,
+                once,
+                commands,
+                clock,
+                ids,
+                money,
+                corrections,
+                guidance
+            )
         assertTrue(model.now.loadFailed)
 
         model.onAction(InvestmentMovementAction.Retry)

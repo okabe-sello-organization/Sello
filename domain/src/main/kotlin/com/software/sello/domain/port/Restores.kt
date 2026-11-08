@@ -2,6 +2,7 @@ package com.software.sello.domain.port
 
 import com.software.sello.domain.model.AppearancePreference
 import com.software.sello.domain.model.CategoryOrderingPreference
+import com.software.sello.domain.model.GuidanceMemory
 import com.software.sello.domain.model.InvestmentPreference
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
@@ -181,11 +182,16 @@ data class PendingPreferences(
     val ordering: CategoryOrderingPreference?,
     val investments: InvestmentPreference? = null,
     /** Gastos hormiga's line (SELLO-194). */
-    val smallExpenseLine: SmallExpenseLine? = null
+    val smallExpenseLine: SmallExpenseLine? = null,
+    /**
+     * The guidance seen still to merge into the phone's (SELLO-205, ADR 0027): the backup's,
+     * or for a file without it whose history was in use, the new-user nudges.
+     */
+    val guidance: GuidanceMemory? = null
 ) {
     val done: Boolean
         get() = appearance == null && ordering == null && investments == null &&
-            smallExpenseLine == null
+            smallExpenseLine == null && guidance == null
 }
 
 sealed interface RestoreOutcome {

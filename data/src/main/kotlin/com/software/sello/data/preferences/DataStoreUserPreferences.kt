@@ -2,6 +2,7 @@ package com.software.sello.data.preferences
 
 import android.content.Context
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -19,13 +20,19 @@ import com.software.sello.domain.model.CategoryOrderingPreference
 import com.software.sello.domain.model.CorrectionAnnouncementPreference
 import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.DismissedSuggestion
+import com.software.sello.domain.model.Guidance
+import com.software.sello.domain.model.GuidanceMemory
 import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.InvestmentPreference
+import com.software.sello.domain.model.Nudge
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.ShownNudge
 import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.ThemePreference
+import com.software.sello.domain.policy.EffectiveDates
+import com.software.sello.domain.policy.NudgePolicy
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.BackupRecord
 import com.software.sello.domain.port.BackupRecords
@@ -34,6 +41,7 @@ import com.software.sello.domain.port.CatchUpNoticePreferences
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.ClosedMonthInvitePreferences
 import com.software.sello.domain.port.CorrectionAnnouncementPreferences
+import com.software.sello.domain.port.GuidancePreferences
 import com.software.sello.domain.port.IncomeSuggestionPreferences
 import com.software.sello.domain.port.InvestmentPreferences
 import com.software.sello.domain.port.LastBackup
@@ -45,6 +53,7 @@ import com.software.sello.domain.port.SmallExpensePreferences
 import com.software.sello.domain.port.SuggestionPreferences
 import java.io.IOException
 import java.time.Instant
+import java.time.LocalDate
 import java.time.YearMonth
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -74,6 +83,7 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
     IncomeSuggestionPreferences,
     ClosedMonthInvitePreferences,
     CatchUpNoticePreferences,
+    GuidancePreferences,
     BackupRecords,
     PreferenceReset {
     private val readAttempt = MutableStateFlow(0L)
@@ -207,8 +217,62 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
 
     override suspend fun backupAbandoned(): PreferenceWrite = write { remove(BACKUP_UNFINISHED) }
 
-    /** Every key goes in one edit, so each reads its first-run default again. */
-    override suspend fun resetAll(): PreferenceWrite = write { clear() }
+    override fun observeGuidance(): Flow<PreferenceRead<Guidance>> = observe(::guidance)
+
+    override suspend fun markSeen(nudge: Nudge): PreferenceWrite =
+        write { this[seenKey(nudge)] = true }
+
+    /**
+     * Read and written in one edit: the nudge last shown, once its day has passed, is kept
+     * as seen in the same write that replaces it, so no screen ever writes over one that
+     * was not kept (NudgePolicy.expired).
+     */
+    override suspend fun markShown(nudge: Nudge, day: LocalDate): PreferenceWrite =
+        writeReading { current ->
+            NudgePolicy.expired(current.memory, day)?.let { this[seenKey(it)] = true }
+            this[GUIDANCE_LAST_SHOWN] = "${EffectiveDates.storedText(day)}|${nudge.stored}"
+            if (nudge == Nudge.BackupReminder) {
+                this[GUIDANCE_BACKUP_REMINDER_SHOWN] = EffectiveDates.storedText(day)
+            }
+        }
+
+    override suspend fun turnOffBackupReminder(): PreferenceWrite =
+        write { this[GUIDANCE_BACKUP_REMINDER_OFF] = true }
+
+    /** Read and written in one edit, so two starts never both decide. */
+    override suspend fun rememberExistingUse(wasUsingSello: Boolean): PreferenceWrite =
+        writeReading { current ->
+            if (current.existingUseChecked) return@writeReading
+            if (wasUsingSello) {
+                Nudge.entries.filter { it.forNewUsers }.forEach { this[seenKey(it)] = true }
+            }
+            this[GUIDANCE_EXISTING_USE_CHECKED] = true
+        }
+
+    /** Read and written in one edit, so a nudge seen meanwhile is never lost. */
+    override suspend fun mergeRestored(memory: GuidanceMemory): PreferenceWrite =
+        writeReading { current ->
+            val merged = current.memory.mergedWith(memory)
+            merged.seen.forEach { this[seenKey(it)] = true }
+            merged.lastShown?.let {
+                this[GUIDANCE_LAST_SHOWN] =
+                    "${EffectiveDates.storedText(it.day)}|${it.nudge.stored}"
+            }
+            merged.backupReminderShown?.let {
+                this[GUIDANCE_BACKUP_REMINDER_SHOWN] = EffectiveDates.storedText(it)
+            }
+            if (merged.backupReminderOff) this[GUIDANCE_BACKUP_REMINDER_OFF] = true
+        }
+
+    /**
+     * Every key but the guidance's goes in one edit, so each reads its first-run default
+     * again; what guidance was seen stays (ADR 0027: Restablecer does not clear it). Guidance
+     * that cannot be read goes with the rest, so a reset still starts it over cleanly.
+     */
+    override suspend fun resetAll(): PreferenceWrite = write {
+        val keep = guidance(this) is Decoded.Value
+        asMap().keys.filterNot { keep && it in GUIDANCE_KEYS }.forEach { remove(it) }
+    }
 
     /**
      * A failed DataStore collection ends, so keep the public flow alive around each attempt.
@@ -261,6 +325,77 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
         throw cancelled
     } catch (_: IOException) {
         PreferenceWrite.Failed(PreferenceFailure.Unavailable)
+    }
+
+    /**
+     * Like [write], with the guidance as stored passed to [change] inside the same edit.
+     * Guidance that cannot be read refuses the write and changes nothing.
+     */
+    private suspend fun writeReading(change: MutablePreferences.(Guidance) -> Unit) = try {
+        write {
+            when (val current = guidance(this)) {
+                is Decoded.Value -> change(current.value)
+                Decoded.Invalid -> throw UnreadableGuidance()
+            }
+        }
+    } catch (_: UnreadableGuidance) {
+        PreferenceWrite.Failed(PreferenceFailure.InvalidValue)
+    }
+
+    /** Thrown inside an edit only, so DataStore keeps what it had. */
+    private class UnreadableGuidance : RuntimeException() {
+        override fun fillInStackTrace(): Throwable = this
+    }
+
+    /**
+     * Each key is checked for its own type here, since a write reads them too: a value of
+     * another type, a day that is not `yyyy-MM-dd` or an unknown nudge is damage.
+     */
+    private fun guidance(stored: Preferences): Decoded<Guidance> {
+        val values = stored.asMap()
+        fun flag(key: Preferences.Key<Boolean>): Boolean? = when (val value = values[key]) {
+            null -> false
+            is Boolean -> value
+            else -> null
+        }
+        fun day(text: String): LocalDate? =
+            (EffectiveDates.parseDate(text) as? Outcome.Success)?.value
+        val seen = Nudge.entries.filter { nudge ->
+            flag(seenKey(nudge)) ?: return Decoded.Invalid
+        }.toSet()
+        val lastShown = when (val raw = values[GUIDANCE_LAST_SHOWN]) {
+            null -> null
+
+            is String -> {
+                val parts = raw.split('|')
+                if (parts.size != 2) return Decoded.Invalid
+                ShownNudge(
+                    nudge = Nudge.entries.firstOrNull { it.stored == parts[1] }
+                        ?: return Decoded.Invalid,
+                    day = day(parts[0]) ?: return Decoded.Invalid
+                )
+            }
+
+            else -> return Decoded.Invalid
+        }
+        val reminderShown = when (val raw = values[GUIDANCE_BACKUP_REMINDER_SHOWN]) {
+            null -> null
+            is String -> day(raw) ?: return Decoded.Invalid
+            else -> return Decoded.Invalid
+        }
+        return Decoded.Value(
+            Guidance(
+                memory = GuidanceMemory(
+                    seen = seen,
+                    lastShown = lastShown,
+                    backupReminderShown = reminderShown,
+                    backupReminderOff = flag(GUIDANCE_BACKUP_REMINDER_OFF)
+                        ?: return Decoded.Invalid
+                ),
+                existingUseChecked = flag(GUIDANCE_EXISTING_USE_CHECKED)
+                    ?: return Decoded.Invalid
+            )
+        )
     }
 
     private fun appearance(stored: Preferences): Decoded<AppearancePreference> {
@@ -418,6 +553,39 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
         val BACKUP_GOALS = intPreferencesKey("backup_last_goals_v1")
         val BACKUP_SCHEDULES = intPreferencesKey("backup_last_schedules_v1")
         val BACKUP_INVESTMENTS = intPreferencesKey("backup_last_investments_v1")
+
+        /** `2026-11-08|guide_hint`: the day the last nudge showed, and which one. */
+        val GUIDANCE_LAST_SHOWN = stringPreferencesKey("guidance_last_shown_v1")
+        val GUIDANCE_BACKUP_REMINDER_SHOWN =
+            stringPreferencesKey("guidance_backup_reminder_shown_v1")
+        val GUIDANCE_BACKUP_REMINDER_OFF = booleanPreferencesKey("guidance_backup_reminder_off_v1")
+        val GUIDANCE_EXISTING_USE_CHECKED =
+            booleanPreferencesKey("guidance_existing_use_checked_v1")
+
+        /** A stable name per nudge, never its ordinal or class name. */
+        val Nudge.stored: String
+            get() = when (this) {
+                Nudge.GuideHint -> "guide_hint"
+                Nudge.BackupReminder -> "backup_reminder"
+                Nudge.BulkEntry -> "bulk_entry"
+                Nudge.FixedPayment -> "fixed_payment"
+                Nudge.Carry -> "carry"
+                Nudge.Deleting -> "deleting"
+                Nudge.Investments -> "investments"
+                Nudge.ReciboGoal -> "recibo_goal"
+            }
+
+        /** True once [nudge] was seen and closed for good. */
+        fun seenKey(nudge: Nudge) = booleanPreferencesKey("guidance_seen_${nudge.stored}_v1")
+
+        /** What Restablecer keeps. */
+        val GUIDANCE_KEYS: Set<Preferences.Key<*>> = Nudge.entries.map(::seenKey).toSet() +
+            setOf(
+                GUIDANCE_LAST_SHOWN,
+                GUIDANCE_BACKUP_REMINDER_SHOWN,
+                GUIDANCE_BACKUP_REMINDER_OFF,
+                GUIDANCE_EXISTING_USE_CHECKED
+            )
 
         val ThemePreference.stored: String
             get() = when (this) {

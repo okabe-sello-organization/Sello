@@ -23,10 +23,13 @@ import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.ReadState
+import com.software.sello.feature.backup.HandBackupRecords
 import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
+import com.software.sello.testing.HandGuidance
+import com.software.sello.testing.HandHistoryStart
 import com.software.sello.testing.HandSnapshots
 import com.software.sello.testing.HandYearSnapshots
 import com.software.sello.testing.NewObservationSnapshots
@@ -91,6 +94,9 @@ class ReciboViewModelTest {
             clock,
             categoryReads,
             HandYearSnapshots(),
+            HandGuidance(),
+            HandBackupRecords(),
+            HandHistoryStart(),
             saved
         )
         // Something has to be watching for the state to be kept up to date.
@@ -325,7 +331,7 @@ class ReciboViewModelTest {
 
         val (restarted) = started(saved = saved)
         val reopened = (restarted.state.value as ReciboState.Month).help
-        restarted.onAction(ReciboAction.OpenGuide)
+        restarted.onAction(ReciboAction.OpenHelpGuide)
 
         assertEquals(ReciboHelp.PerDay, reopened)
         assertNull((restarted.state.value as ReciboState.Month).help)

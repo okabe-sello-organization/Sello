@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.software.sello.domain.model.GoalId
+import com.software.sello.domain.model.Nudge
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
@@ -17,6 +18,7 @@ import com.software.sello.domain.port.GoalCommand
 import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.GoalRejection
+import com.software.sello.domain.port.GuidancePreferences
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.ReplaceStar
 import com.software.sello.domain.port.StarGoal
@@ -54,6 +56,7 @@ class GoalDetailViewModel(
     money: MoneyFormatter,
     private val ids: RecordIdSource,
     corrections: Corrections,
+    private val guidance: GuidancePreferences,
     screenReader: ScreenReader
 ) : ViewModel() {
     private class Ui(val busy: Boolean = false, val error: GoalDetailError? = null)
@@ -249,6 +252,10 @@ class GoalDetailViewModel(
                     saved[KEY_REPLACE] = false
                     saved[KEY_PICKED] = null
                 }
+                // Changing which goals Recibo puts first closes its goal nudge for good.
+                if (step in STAR_STEPS) {
+                    viewModelScope.launch { guidance.markSeen(Nudge.ReciboGoal) }
+                }
                 if (step == STEP_DELETE) {
                     saved[KEY_CONFIRM] = false
                     saved[KEY_DELETED] = true
@@ -287,6 +294,7 @@ class GoalDetailViewModel(
         private const val STEP_UNSTAR = "unstar"
         private const val STEP_REPLACE = "replace"
         private const val STEP_DELETE = "delete"
+        private val STAR_STEPS = setOf(STEP_FEATURE, STEP_UNSTAR, STEP_REPLACE)
 
         /** Long enough to outlast a rotation without reading again. */
         private const val STOP_AFTER_MILLIS = 5_000L

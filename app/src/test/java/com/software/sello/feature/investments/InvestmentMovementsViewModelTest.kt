@@ -33,6 +33,7 @@ import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
+import com.software.sello.testing.HandGuidance
 import com.software.sello.testing.testMoney
 import java.time.LocalDate
 import kotlin.time.Duration.Companion.milliseconds
@@ -67,6 +68,7 @@ class InvestmentMovementsViewModelTest {
     private val reads = HandInvestmentReads()
     private val hand = HandInvestmentCommands()
     private val commands = GatedCommands(hand)
+    private val guidance = HandGuidance()
     private var nextId = 1
     private val ids = RecordIdSource { "00000000-0000-4000-a000-%012d".format(nextId++) }
     private val scheduler = TestCoroutineScheduler()
@@ -147,7 +149,16 @@ class InvestmentMovementsViewModelTest {
         saved: SavedStateHandle = SavedStateHandle(
             mapOf(InvestmentMovementsViewModel.KEY_INVESTMENT to investment)
         )
-    ) = InvestmentMovementsViewModel(saved, reads, commands, clock, ids, testMoney(), corrections)
+    ) = InvestmentMovementsViewModel(
+        saved,
+        reads,
+        commands,
+        clock,
+        ids,
+        testMoney(),
+        corrections,
+        guidance
+    )
 
     private fun InvestmentMovementsViewModel.keys(vararg keys: String) = keys.forEach {
         onAction(
@@ -275,6 +286,31 @@ class InvestmentMovementsViewModelTest {
         assertTrue(model.now.closed)
         val notice = corrections.notice.value as CorrectionNotice.InvestmentMovementsRecorded
         assertEquals(3 to "Ecopetrol", notice.count to notice.investmentName)
+    }
+
+    // ---------- The investments nudge closes once the receipt is saved (SELLO-213) ----------
+
+    @Test
+    fun aSavedReceiptClosesTheInvestmentsNudgeForGood() = runTest {
+        val model = model()
+        model.threeLines()
+
+        model.act(InvestmentMovementsAction.Submit)
+
+        assertTrue(model.now.closed)
+        assertEquals(listOf("seen Investments"), guidance.writes)
+    }
+
+    @Test
+    fun aRefusedReceiptLeavesItOpen() = runTest {
+        val model = model()
+        model.threeLines()
+        hand.answers += CommandOutcome.Rejected(CommandRejection.StaleGeneration(4))
+
+        model.act(InvestmentMovementsAction.Submit)
+
+        assertFalse(model.now.closed)
+        assertEquals(emptyList<String>(), guidance.writes)
     }
 
     @Test
@@ -806,7 +842,8 @@ class InvestmentMovementsViewModelTest {
             clock,
             ids,
             testMoney(),
-            corrections
+            corrections,
+            guidance
         )
         assertTrue(model.now.loadFailed)
 

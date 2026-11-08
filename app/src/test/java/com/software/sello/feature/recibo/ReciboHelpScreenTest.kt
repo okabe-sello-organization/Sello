@@ -92,7 +92,7 @@ class ReciboHelpScreenTest {
         rule.onNodeWithTag(reciboHelpTag(ReciboHelp.Summary)).assertIsDisplayed()
         rule.onNodeWithText("Ver más en la Guía de Sello").performScrollTo().performClick()
 
-        assertEquals(listOf<ReciboAction>(ReciboAction.OpenGuide), actions)
+        assertEquals(listOf<ReciboAction>(ReciboAction.OpenHelpGuide), actions)
     }
 
     private val upcoming = UpcomingState.Ready(

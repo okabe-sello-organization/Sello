@@ -105,6 +105,9 @@ internal fun NavGraphBuilder.reciboDestinations(
             tabs = tabs,
             onOpenSettings = { navigation.navigate(SettingsRoute) { launchSingleTop = true } },
             onOpenDayByDay = { navigation.openDayByDay() },
+            onOpenGuide = { navigation.navigate(GuideRoute) { launchSingleTop = true } },
+            // Respaldo itself, as Configuración opens it: it never starts a backup.
+            onOpenBackup = { navigation.navigate(BackupRoute) { launchSingleTop = true } },
             onEditExpense = { id ->
                 navigation.navigate(ExpenseEditRoute(id)) { launchSingleTop = true }
             },
@@ -143,7 +146,7 @@ internal fun NavGraphBuilder.reciboDestinations(
                     launchSingleTop = true
                 }
             },
-            onOpenGuide = { navigation.openGuide(GuidePage.Recibo) }
+            onOpenHelpGuide = { navigation.openGuide(GuidePage.Recibo) }
         ) { navigation.navigate(CategoryEditorRoute()) }
     }
     composable<CategoryExpensesRoute> { entry ->
@@ -307,6 +310,8 @@ private fun ReciboDestination(
     tabs: SelloNavigation,
     onOpenSettings: () -> Unit,
     onOpenDayByDay: () -> Unit,
+    onOpenGuide: () -> Unit,
+    onOpenBackup: () -> Unit,
     onEditExpense: (String) -> Unit,
     onEditCategory: (String) -> Unit,
     onShowAllExpenses: (String) -> Unit,
@@ -320,7 +325,7 @@ private fun ReciboDestination(
     onOpenClosedMonth: (YearMonth) -> Unit,
     onOpenYear: (Int) -> Unit,
     onSetMonthLimit: (String, YearMonth) -> Unit,
-    onOpenGuide: () -> Unit,
+    onOpenHelpGuide: () -> Unit,
     onCreateCategory: () -> Unit
 ) {
     val recibo: ReciboViewModel = viewModel(factory = viewModels)
@@ -333,6 +338,9 @@ private fun ReciboDestination(
     val reciboState by recibo.state.collectAsStateWithLifecycle()
     val goalState by goal.state.collectAsStateWithLifecycle()
     val detailState by detail.state.collectAsStateWithLifecycle()
+    // The goal nudge follows the card as drawn (SELLO-213).
+    val goalsTakeTurns = takesTurns(goalState)
+    LaunchedEffect(goalsTakeTurns) { recibo.onAction(ReciboAction.GoalCard(goalsTakeTurns)) }
     val names = monthNames()
     val dates = dateLabels()
     BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -386,7 +394,7 @@ private fun ReciboDestination(
                         onAllSchedules = onAllSchedules,
                         onAdjustBudget = onAdjustBudget,
                         onRecordSeveral = { onRecordSeveral(id) },
-                        onOpenGuide = onOpenGuide,
+                        onOpenGuide = onOpenHelpGuide,
                         showPastLimitAnnouncement = !announcements.loading &&
                             !announcements.preference.pastLimitSeen,
                         onDismissPastLimitAnnouncement = onDismissPastLimit,
@@ -424,7 +432,16 @@ private fun ReciboDestination(
 
                         ReciboAction.OpenGuide -> onOpenGuide()
 
-                        is ReciboAction.ShowHelp, ReciboAction.CloseHelp -> Unit
+                        ReciboAction.OpenHelpGuide -> onOpenHelpGuide()
+
+                        ReciboAction.OpenBackup -> onOpenBackup()
+
+                        is ReciboAction.ShowHelp,
+                        ReciboAction.CloseHelp,
+                        ReciboAction.CloseGuideHint,
+                        ReciboAction.CloseGoalNudge,
+                        is ReciboAction.GoalCard,
+                        ReciboAction.TurnOffBackupReminder -> Unit
                     }
                     recibo.onAction(action)
                 },
@@ -482,3 +499,10 @@ internal fun SettingsAction(onClick: () -> Unit) {
 }
 
 const val SETTINGS_ACTION_TAG = "navigation:settings"
+
+/**
+ * Whether Recibo's goal card shows two or more goals taking turns with current figures:
+ * Hidden, loading, failed, one goal or older goals are no.
+ */
+internal fun takesTurns(card: ReciboGoalState): Boolean =
+    card is ReciboGoalState.Shown && !card.stale && card.pills.size >= 2

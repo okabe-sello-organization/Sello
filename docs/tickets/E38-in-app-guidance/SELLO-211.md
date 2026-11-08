@@ -2,7 +2,7 @@
 
 - **Type:** Story
 - **Priority:** P1
-- **Status:** Backlog
+- **Status:** Done
 - **Depends on:** SELLO-204, SELLO-205, SELLO-206
 - **Gate:** G2
 
@@ -13,8 +13,8 @@ without a backup, a quiet line reminds them their data lives only on this phone.
 ### Acceptance criteria
 - **Nudge rules** (a domain rule every nudge uses): one nudge at a time on a screen and
   at most one a day across the app; a nudge closes for good when its action is done or
-  its ✕ is tapped. The rule is tested with a controlled clock across midnight and a
-  time-zone change.
+  its ✕ is tapped, or once the day it showed has passed. The rule is tested with a
+  controlled clock across midnight and a time-zone change.
 - **Guía hint** on Recibo, below the summary card, after the first expense is saved:
   "¿Dudas? La Guía de Sello está en Configuración." with a ✕, as in the
   [mock](attachments/guidance-mock.html). Tapping the text opens the Guía; either closes
@@ -36,6 +36,8 @@ without a backup, a quiet line reminds them their data lives only on this phone.
   both rows in light and dark.
 
 ### Notes
+- "Or once the day it showed has passed": aligned with the owner's "shows once" direction
+  (2026-11-08) on the orchestrator's ruling.
 - Lighter review unless the work changes storage beyond using SELLO-205's port; then
   adversarial.
 - The backup time is `BACKUP_AT` in `DataStoreUserPreferences`.
