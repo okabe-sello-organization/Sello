@@ -3,7 +3,6 @@ package com.software.sello.feature.recibo
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.MaterialTheme
@@ -203,7 +202,8 @@ fun UpcomingPaymentsScreen(
     onHelp: (open: Boolean) -> Unit = {},
     onOpenGuide: () -> Unit = {}
 ) {
-    Box(Modifier.fillMaxSize()) {
+    // Sized by the list, as before; the sheet, when open, fills the screen itself.
+    Box {
         UpcomingPaymentsList(state, padding, onRetry, onOpenSchedule, onAllSchedules, onHelp)
         if ((state as? UpcomingState.Ready)?.help == true) {
             ReciboHelpSheet(
