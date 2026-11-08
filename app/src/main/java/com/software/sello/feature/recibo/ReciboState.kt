@@ -285,6 +285,12 @@ sealed interface ReciboAction {
     /** The goal card nudge's ✕: closes it for good. */
     data object CloseGoalNudge : ReciboAction
 
+    /**
+     * What the goal card shows, from the root: [takesTurns] while it shows two or more goals
+     * with current figures. Only then may its nudge show.
+     */
+    data class GoalCard(val takesTurns: Boolean) : ReciboAction
+
     /** The backup reminder's "No volver a mostrar". */
     data object TurnOffBackupReminder : ReciboAction
 }

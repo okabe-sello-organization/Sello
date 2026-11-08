@@ -348,6 +348,21 @@ class GoalsViewModelTest {
         assertEquals(emptyList<String>(), guidance.writes)
     }
 
+    @Test
+    fun deletingAGoalLeavesRecibosGoalNudgeOpen() = runTest {
+        reads.board.value = board(
+            summary(viajeId, 400_000, 400_000, completedOn = LocalDate.of(2026, 9, 30))
+        )
+        val model = detail()
+        watch(model)
+
+        model.onAction(GoalDetailAction.AskToDelete)
+        model.onAction(GoalDetailAction.Delete)
+
+        assertTrue(model.deleted.value)
+        assertEquals(emptyList<String>(), guidance.writes)
+    }
+
     // ---------- The sixth star (SELLO-144) ----------
 
     private val motoId = "00000000-0000-4000-9000-000000000003"

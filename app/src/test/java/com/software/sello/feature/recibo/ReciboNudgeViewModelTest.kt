@@ -4,7 +4,6 @@ import com.software.sello.domain.model.Category
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.CategoryMonth
 import com.software.sello.domain.model.CategoryName
-import com.software.sello.domain.model.GoalId
 import com.software.sello.domain.model.Guidance
 import com.software.sello.domain.model.GuidanceMemory
 import com.software.sello.domain.model.IconKey
@@ -21,12 +20,10 @@ import com.software.sello.domain.port.BackupRecord
 import com.software.sello.domain.port.BackupSummary
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.FinancialDay
-import com.software.sello.domain.port.GoalBoard
 import com.software.sello.domain.port.LastBackup
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.ReadState
 import com.software.sello.feature.backup.HandBackupRecords
-import com.software.sello.feature.goals.HandGoalReads
 import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
@@ -79,7 +76,6 @@ class ReciboNudgeViewModelTest {
     private val guidance = HandGuidance()
     private val backups = HandBackupRecords()
     private val history = HandHistoryStart()
-    private val goals = HandGoalReads()
 
     @Before
     fun mainDispatcher() = Dispatchers.setMain(UnconfinedTestDispatcher())
@@ -99,8 +95,7 @@ class ReciboNudgeViewModelTest {
             HandYearSnapshots(),
             kept,
             backups,
-            history,
-            goals
+            history
         )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.state.collect {}
@@ -572,7 +567,7 @@ class ReciboNudgeViewModelTest {
         history.starts("2026-11-08", "2026-11-08")
         val viewModel = ReciboViewModel(
             session, snapshots, HandOrderings(), testMoney(), HandInvitations(), clock,
-            HandCategoryReads(), HandYearSnapshots(), fresh, backups, history, goals
+            HandCategoryReads(), HandYearSnapshots(), fresh, backups, history
         )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.state.collect {}
@@ -583,65 +578,66 @@ class ReciboNudgeViewModelTest {
 
     // The goal card's nudge (SELLO-213).
 
-    /** The goal card with [count] goals taking turns, as storage orders them for Recibo. */
-    private fun goalsOnCard(count: Int) {
-        val ids = List(count) {
-            (GoalId.of("00000000-0000-4000-9000-00000000000${it + 1}") as Outcome.Success).value
-        }
-        goals.board.value = ReadState.Ready(GoalBoard(1, 1, emptyList(), emptySet(), ids))
-    }
-
     /** The Guía hint and the backup reminder are done with, so only the goal nudge is left. */
     private fun onlyTheGoalNudgeLeft() {
         guidance.set(GuidanceMemory(seen = setOf(Nudge.GuideHint, Nudge.BackupReminder)))
     }
 
+    /** The goal card as the root reports it: two or more goals taking turns, or not. */
+    private fun ReciboViewModel.card(takesTurns: Boolean) =
+        onAction(ReciboAction.GoalCard(takesTurns))
+
     @Test
-    fun twoGoalsTakingTurnsBringTheGoalNudgeAndKeepTheDay() = runTest {
+    fun aCardTakingTurnsBringsTheGoalNudgeAndKeepsTheDay() = runTest {
         publish()
         onlyTheGoalNudgeLeft()
-        goalsOnCard(2)
+        val viewModel = started()
 
-        assertEquals(ReciboNudge.Goal, nudgeOf(started()))
+        viewModel.card(takesTurns = true)
+
+        assertEquals(ReciboNudge.Goal, nudgeOf(viewModel))
         assertEquals(listOf("shown ReciboGoal 2026-11-08"), guidance.writes)
     }
 
     @Test
-    fun oneGoalAloneBringsNoGoalNudge() = runTest {
-        publish()
-        onlyTheGoalNudgeLeft()
-        goalsOnCard(1)
-        val viewModel = started()
-        val alone = nudgeOf(viewModel)
-
-        goalsOnCard(2)
-
-        assertNull(alone)
-        assertEquals(ReciboNudge.Goal, nudgeOf(viewModel))
-    }
-
-    @Test
-    fun aGoalReadThatIsLoadingOrFailedBringsNoGoalNudge() = runTest {
+    fun whileTheCardIsHiddenOrShowsOneGoalTheNudgeNeitherShowsNorSpendsTheDay() = runTest {
         publish()
         onlyTheGoalNudgeLeft()
         val viewModel = started()
-        val loading = nudgeOf(viewModel)
+        val hidden = nudgeOf(viewModel)
 
-        goals.board.value = ReadState.Failed(StorageFailure.Unavailable("x"), lastGood = null)
+        viewModel.card(takesTurns = false)
 
-        assertNull(loading)
+        assertNull(hidden)
         assertNull(nudgeOf(viewModel))
         assertEquals(emptyList<String>(), guidance.writes)
     }
 
     @Test
-    fun anEarlierMonthHasNoGoalCardSoNoGoalNudge() = runTest {
-        publish(YearMonth.of(2026, 10))
+    fun whenTheCardHidesAgainTheNudgeGoesWithIt() = runTest {
+        publish()
         onlyTheGoalNudgeLeft()
-        goalsOnCard(3)
-        session.select(YearMonth.of(2026, 10))
+        val viewModel = started()
+        viewModel.card(takesTurns = true)
+        val shown = nudgeOf(viewModel)
 
-        assertNull(nudgeOf(started()))
+        viewModel.card(takesTurns = false)
+
+        assertEquals(ReciboNudge.Goal, shown)
+        assertNull(nudgeOf(viewModel))
+    }
+
+    @Test
+    fun theBackupReminderTakesTheDayBeforeTheGoalNudge() = runTest {
+        publish()
+        guidance.set(GuidanceMemory(seen = setOf(Nudge.GuideHint)))
+        history.starts(firstExpense = null, firstMovement = "2026-01-05")
+        val viewModel = started()
+
+        viewModel.card(takesTurns = true)
+
+        assertEquals(ReciboNudge.BackupReminder(daysSinceBackup = null), nudgeOf(viewModel))
+        assertEquals(listOf("shown BackupReminder 2026-11-08"), guidance.writes)
     }
 
     @Test
@@ -649,8 +645,8 @@ class ReciboNudgeViewModelTest {
         publish()
         guidance.set(GuidanceMemory(seen = setOf(Nudge.BackupReminder)))
         history.starts("2026-11-08", "2026-11-08")
-        goalsOnCard(2)
         val viewModel = started()
+        viewModel.card(takesTurns = true)
         val first = nudgeOf(viewModel)
 
         goTo("2026-11-09")
@@ -664,14 +660,16 @@ class ReciboNudgeViewModelTest {
     fun theGoalNudgesCrossClosesItForGood() = runTest {
         publish()
         onlyTheGoalNudgeLeft()
-        goalsOnCard(2)
         val viewModel = started()
+        viewModel.card(takesTurns = true)
 
         viewModel.onAction(ReciboAction.CloseGoalNudge)
 
         assertNull(nudgeOf(viewModel))
         assertEquals(true, Nudge.ReciboGoal in guidance.stored.memory.seen)
-        assertNull(nudgeOf(started()))
+        val again = started()
+        again.card(takesTurns = true)
+        assertNull(nudgeOf(again))
     }
 
     @Test
@@ -680,9 +678,11 @@ class ReciboNudgeViewModelTest {
         existing.set(GuidanceMemory(seen = setOf(Nudge.GuideHint, Nudge.BackupReminder)))
         existing.rememberExistingUse(wasUsingSello = true)
         publish()
-        goalsOnCard(2)
+        val viewModel = started(existing)
 
-        assertNull(nudgeOf(started(existing)))
+        viewModel.card(takesTurns = true)
+
+        assertNull(nudgeOf(viewModel))
     }
 
     @Test
@@ -690,8 +690,8 @@ class ReciboNudgeViewModelTest {
         val unchecked = HandGuidance(Guidance(existingUseChecked = false))
         unchecked.set(GuidanceMemory(seen = setOf(Nudge.GuideHint, Nudge.BackupReminder)))
         publish()
-        goalsOnCard(2)
         val viewModel = started(unchecked)
+        viewModel.card(takesTurns = true)
         val waiting = nudgeOf(viewModel)
 
         unchecked.rememberExistingUse(wasUsingSello = false)

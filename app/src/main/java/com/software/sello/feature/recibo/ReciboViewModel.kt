@@ -16,7 +16,6 @@ import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.CategoryReads
 import com.software.sello.domain.port.ClosedMonthInvitePreferences
 import com.software.sello.domain.port.FinancialClock
-import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.GuidancePreferences
 import com.software.sello.domain.port.HistoryStartReads
 import com.software.sello.domain.port.MonthlySnapshots
@@ -60,8 +59,7 @@ class ReciboViewModel(
     private val years: YearSnapshots,
     private val guidance: GuidancePreferences,
     backups: BackupRecords,
-    history: HistoryStartReads,
-    goals: GoalReads
+    history: HistoryStartReads
 ) : ViewModel() {
     private val render = ReciboRenderModel(money)
     private val attempt = MutableStateFlow(0)
@@ -142,17 +140,11 @@ class ReciboViewModel(
     private val closedHere = MutableStateFlow<Set<Nudge>>(emptySet())
 
     /**
-     * Whether the goal card takes turns among two or more goals (SELLO-213): it shows only
-     * on the current month, and a goal read that is loading or failed counts as no.
+     * Whether the goal card is shown taking turns among two or more goals, with current
+     * figures (SELLO-213), as the root reports it from the card itself: Hidden, loading,
+     * failed or older goals count as no, so the nudge never shows without its card.
      */
-    private val goalCarousel = combine(
-        goals.observeBoard(),
-        session.selectedMonth,
-        session.currentMonth
-    ) { board, selected, current ->
-        board is ReadState.Ready && selected == current &&
-            board.value.reciboGoals.size >= CAROUSEL_GOALS
-    }
+    private val goalCarousel = MutableStateFlow(false)
 
     /**
      * The one nudge due on Recibo: the backup reminder first, then the Guía hint once an
@@ -268,6 +260,8 @@ class ReciboViewModel(
 
             ReciboAction.CloseGoalNudge -> close(Nudge.ReciboGoal) { guidance.markSeen(it) }
 
+            is ReciboAction.GoalCard -> goalCarousel.value = action.takesTurns
+
             ReciboAction.TurnOffBackupReminder ->
                 close(Nudge.BackupReminder) { guidance.turnOffBackupReminder() }
 
@@ -316,8 +310,5 @@ class ReciboViewModel(
     private companion object {
         /** Long enough to outlast a rotation without reading again. */
         const val STOP_AFTER_MILLIS = 5_000L
-
-        /** Goals on the card from which it takes turns, and its nudge may show. */
-        const val CAROUSEL_GOALS = 2
     }
 }

@@ -18,7 +18,6 @@ import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.ReadState
 import com.software.sello.feature.backup.HandBackupRecords
-import com.software.sello.feature.goals.HandGoalReads
 import com.software.sello.feature.resumen.yearSnapshot
 import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
@@ -81,8 +80,7 @@ class ReciboInvitationViewModelTest {
             years,
             HandGuidance(),
             HandBackupRecords(),
-            HandHistoryStart(),
-            HandGoalReads()
+            HandHistoryStart()
         )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.state.collect {}
@@ -295,8 +293,7 @@ class ReciboInvitationViewModelTest {
             years,
             HandGuidance(),
             HandBackupRecords(),
-            HandHistoryStart(),
-            HandGoalReads()
+            HandHistoryStart()
         )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             silent.state.collect {}
