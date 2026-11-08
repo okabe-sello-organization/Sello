@@ -1110,14 +1110,18 @@ class RestoreCommandContractTest {
         assertTrue(restores().pending() is RestoreOutcome.Restored)
     }
 
-    /** Every preference G01 brings, none applied. */
+    /**
+     * Every preference G01 brings, none applied: with no guidance of its own and a history in
+     * use, it brings the new-user nudges as seen.
+     */
     private val everyPreference = RestoreOutcome.Restored(
         BackupSummary(2, 3, 1, 0, 0),
         PendingPreferences(
             wanted.appearance,
             wanted.ordering,
             InvestmentPreference(),
-            SmallExpenseLine.DEFAULT
+            SmallExpenseLine.DEFAULT,
+            GuidanceMemory(seen = newUserNudges)
         )
     )
 
