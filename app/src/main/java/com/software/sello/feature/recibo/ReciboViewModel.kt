@@ -1,5 +1,6 @@
 package com.software.sello.feature.recibo
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.software.sello.domain.model.CategoryOrderingPreference
@@ -59,7 +60,8 @@ class ReciboViewModel(
     private val years: YearSnapshots,
     private val guidance: GuidancePreferences,
     backups: BackupRecords,
-    history: HistoryStartReads
+    history: HistoryStartReads,
+    private val saved: SavedStateHandle
 ) : ViewModel() {
     private val render = ReciboRenderModel(money)
     private val attempt = MutableStateFlow(0)
@@ -220,6 +222,10 @@ class ReciboViewModel(
                 keepShown(shown)
                 if (state is ReciboState.Month) state.copy(nudge = shown?.render) else state
             }
+            // Kept across a restart, as the screen's other state is; shown with the month.
+            .combine(saved.getStateFlow<String?>(KEY_HELP, null)) { state, help ->
+                if (state is ReciboState.Month) state.copy(help = ReciboHelp.named(help)) else state
+            }
             .stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(STOP_AFTER_MILLIS),
@@ -253,6 +259,11 @@ class ReciboViewModel(
 
             // The year card stands in December's place: handling it handles December.
             is ReciboAction.OpenYear -> handle(YearMonth.of(action.year, Month.DECEMBER))
+
+            is ReciboAction.ShowHelp -> saved[KEY_HELP] = action.topic.name
+
+            // The Guía opens over Recibo: Back returns to the month, not to the sheet.
+            ReciboAction.CloseHelp, ReciboAction.OpenHelpGuide -> saved[KEY_HELP] = null
 
             // Closed for good; opening the Guía is the root's.
             ReciboAction.OpenGuide,
@@ -310,5 +321,7 @@ class ReciboViewModel(
     private companion object {
         /** Long enough to outlast a rotation without reading again. */
         const val STOP_AFTER_MILLIS = 5_000L
+
+        const val KEY_HELP = "reciboHelp"
     }
 }

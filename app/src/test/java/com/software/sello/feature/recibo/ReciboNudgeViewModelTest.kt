@@ -1,5 +1,6 @@
 package com.software.sello.feature.recibo
 
+import androidx.lifecycle.SavedStateHandle
 import com.software.sello.domain.model.Category
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.CategoryMonth
@@ -95,7 +96,8 @@ class ReciboNudgeViewModelTest {
             HandYearSnapshots(),
             kept,
             backups,
-            history
+            history,
+            SavedStateHandle()
         )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.state.collect {}
@@ -192,6 +194,19 @@ class ReciboNudgeViewModelTest {
 
         assertNull(nudgeOf(viewModel))
         assertEquals(setOf(Nudge.GuideHint), guidance.stored.memory.seen)
+    }
+
+    @Test
+    fun aHelpSheetsGuideLinkLeavesTheGuideHintAsItIs() = runTest {
+        publish()
+        history.starts("2026-11-01", "2026-11-01")
+        val viewModel = started()
+
+        viewModel.onAction(ReciboAction.ShowHelp(ReciboHelp.Summary))
+        viewModel.onAction(ReciboAction.OpenHelpGuide)
+
+        assertEquals(ReciboNudge.GuideHint, nudgeOf(viewModel))
+        assertEquals(emptySet<Nudge>(), guidance.stored.memory.seen)
     }
 
     @Test
@@ -567,7 +582,7 @@ class ReciboNudgeViewModelTest {
         history.starts("2026-11-08", "2026-11-08")
         val viewModel = ReciboViewModel(
             session, snapshots, HandOrderings(), testMoney(), HandInvitations(), clock,
-            HandCategoryReads(), HandYearSnapshots(), fresh, backups, history
+            HandCategoryReads(), HandYearSnapshots(), fresh, backups, history, SavedStateHandle()
         )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.state.collect {}

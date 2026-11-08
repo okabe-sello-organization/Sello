@@ -41,7 +41,9 @@ sealed interface CategoryDetailState {
         /** The Pagos fijos slip (SELLO-135). */
         val fixed: DetailFixedState = DetailFixedState.Hidden,
         /** The one quiet line of guidance under the header, when one is due (SELLO-212). */
-        val nudge: DetailNudge? = null
+        val nudge: DetailNudge? = null,
+        /** The explanation open over the category, from a **?** or an underlined word. */
+        val help: ReciboHelp? = null
     ) : CategoryDetailState
 
     /** The month was read and this category has nothing in it. */
@@ -188,4 +190,10 @@ sealed interface CategoryDetailAction {
 
     /** The nudge's ✕: closes it for good. */
     data object CloseNudge : CategoryDetailAction
+
+    /** Open [topic]'s explanation over the category shown. */
+    data class ShowHelp(val topic: ReciboHelp) : CategoryDetailAction
+
+    /** Close the explanation open. */
+    data object CloseHelp : CategoryDetailAction
 }

@@ -1194,4 +1194,37 @@ class CategoryDetailViewModelTest {
         assertEquals(1, commands.deleted.size)
         assertEquals(null, reopened.ready.deleteProblem)
     }
+
+    @Test
+    fun aHelpTopicOpensOverTheCategoryAndClosesAgain() = runTest {
+        val vm = started()
+        commit(many(1))
+        show(vm, 1)
+
+        val opened = ReciboHelp.entries.map { topic ->
+            vm.onAction(CategoryDetailAction.ShowHelp(topic))
+            vm.ready.help
+        }
+        vm.onAction(CategoryDetailAction.CloseHelp)
+
+        assertEquals(ReciboHelp.entries.toList(), opened)
+        assertEquals(null, vm.ready.help)
+    }
+
+    @Test
+    fun theOpenHelpSurvivesARestartButNotAnotherCategory() = runTest {
+        val saved = SavedStateHandle()
+        val first = started(saved = saved)
+        commit(many(1))
+        show(first, 1)
+        first.onAction(CategoryDetailAction.ShowHelp(ReciboHelp.History))
+
+        val restarted = started(saved = saved)
+        show(restarted, 1)
+        val reopened = restarted.ready.help
+        show(restarted, 2)
+
+        assertEquals(ReciboHelp.History, reopened)
+        assertEquals(null, restarted.ready.help)
+    }
 }

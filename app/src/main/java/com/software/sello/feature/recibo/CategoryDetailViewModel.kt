@@ -88,7 +88,7 @@ class CategoryDetailViewModel(
     private val clock: MonotonicClock,
     commands: ExpenseCommands,
     ids: RecordIdSource,
-    saved: SavedStateHandle,
+    private val saved: SavedStateHandle,
     private val guidance: GuidancePreferences,
     financial: FinancialClock
 ) : ViewModel() {
@@ -275,6 +275,20 @@ class CategoryDetailViewModel(
                 }
             }
             .combine(nudgeInputs) { (state, book), inputs -> nudged(state, book, inputs) }
+            // Kept across a restart with the category it was opened on: another one
+            // shown since never opens with it.
+            .combine(
+                combine(
+                    saved.getStateFlow<String?>(KEY_HELP, null),
+                    saved.getStateFlow<String?>(KEY_HELP_FOR, null)
+                ) { help, of -> help to of }
+            ) { state, (help, of) ->
+                if (state is CategoryDetailState.Ready) {
+                    state.copy(help = ReciboHelp.named(help)?.takeIf { of == state.category.id })
+                } else {
+                    state
+                }
+            }
             .stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(STOP_AFTER_MILLIS),
@@ -312,6 +326,14 @@ class CategoryDetailViewModel(
                 }
 
             CategoryDetailAction.CheckDelete -> current?.let(::check)
+
+            is CategoryDetailAction.ShowHelp -> {
+                val shown = state.value as? CategoryDetailState.Ready ?: return
+                saved[KEY_HELP_FOR] = shown.category.id
+                saved[KEY_HELP] = action.topic.name
+            }
+
+            CategoryDetailAction.CloseHelp -> saved[KEY_HELP] = null
         }
     }
 
@@ -734,6 +756,8 @@ class CategoryDetailViewModel(
         const val STOP_AFTER_MILLIS = 5_000L
         const val PAGE_SIZE = 20
         const val KEY_DELETE = "categoryDetail.delete"
+        const val KEY_HELP = "categoryDetail.help"
+        const val KEY_HELP_FOR = "categoryDetail.helpFor"
     }
 }
 

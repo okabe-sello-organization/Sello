@@ -543,6 +543,8 @@ private val PinnedAmountMinHeight = 600.dp
  * label, stamp and amount are read as that one sentence; [detail] is read on its own.
  * [heading], such as a category's name, comes first; [leading], such as the category's
  * circle, stands beside the amount, or above it when the slip is too narrow.
+ * [labelHelp], such as a [CardHelp], sits `spacing.sm` after the label and stays its own
+ * button for a screen reader, apart from [description].
  */
 @Composable
 fun AnswerSlip(
@@ -555,38 +557,71 @@ fun AnswerSlip(
     lossAmount: Boolean = ink == StampInk.Over,
     heading: @Composable () -> Unit = {},
     leading: (@Composable () -> Unit)? = null,
+    labelHelp: (@Composable () -> Unit)? = null,
     detail: @Composable () -> Unit = {}
 ) {
     Slip(modifier.fillMaxWidth()) {
         heading()
-        val answer = if (description == null) {
-            Modifier
+        // With a help button inside, the answer is merged instead of cleared, and each part
+        // of it is silenced, so the button stays reachable and the sentence is said once.
+        val answer = when {
+            description == null -> Modifier
+            labelHelp == null -> Modifier.clearAndSetSemantics { contentDescription = description }
+            else -> Modifier.semantics(mergeDescendants = true) { contentDescription = description }
+        }
+        val quiet = if (description != null && labelHelp != null) {
+            Modifier.clearAndSetSemantics {}
         } else {
-            Modifier.clearAndSetSemantics { contentDescription = description }
+            Modifier
+        }
+        // Only wraps a part when there is something to silence: otherwise drawn as it was.
+        val silenced = @Composable { part: @Composable () -> Unit ->
+            if (quiet == Modifier) part() else Box(quiet) { part() }
         }
         Column(answer.fillMaxWidth()) {
+            val title = @Composable { rowModifier: Modifier ->
+                if (labelHelp == null) {
+                    Text(
+                        label,
+                        modifier = rowModifier.then(quiet),
+                        color = SelloTheme.colors.inkSoft
+                    )
+                } else {
+                    Row(rowModifier, verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            label,
+                            modifier = Modifier.weight(1f, fill = false).then(quiet),
+                            color = SelloTheme.colors.inkSoft
+                        )
+                        Spacer(Modifier.width(SelloTheme.spacing.sm))
+                        labelHelp()
+                    }
+                }
+            }
             if (stamp == null) {
-                Text(label, color = SelloTheme.colors.inkSoft)
+                title(Modifier)
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(label, modifier = Modifier.weight(1f), color = SelloTheme.colors.inkSoft)
+                    title(Modifier.weight(1f))
                     Stamp(
                         stamp,
                         ink,
-                        Modifier.padding(vertical = SelloTheme.spacing.sm),
+                        Modifier.padding(vertical = SelloTheme.spacing.sm).then(quiet),
                         angle = -5f
                     )
                 }
             }
             val figure = @Composable {
-                FittedMoneyText(
-                    amount,
-                    color = if (lossAmount) {
-                        SelloTheme.colors.semantic.loss
-                    } else {
-                        SelloTheme.colors.ink
-                    }
-                )
+                silenced {
+                    FittedMoneyText(
+                        amount,
+                        color = if (lossAmount) {
+                            SelloTheme.colors.semantic.loss
+                        } else {
+                            SelloTheme.colors.ink
+                        }
+                    )
+                }
             }
             if (leading == null) {
                 figure()
@@ -594,7 +629,7 @@ fun AnswerSlip(
                 BoxWithConstraints(Modifier.fillMaxWidth()) {
                     if (maxWidth < AnswerBesideMinWidth) {
                         Column {
-                            leading()
+                            silenced(leading)
                             figure()
                         }
                     } else {
@@ -602,7 +637,7 @@ fun AnswerSlip(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md)
                         ) {
-                            leading()
+                            silenced(leading)
                             Column(Modifier.weight(1f)) { figure() }
                         }
                     }

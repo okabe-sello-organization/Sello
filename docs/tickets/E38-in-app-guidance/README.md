@@ -45,6 +45,16 @@ mocks; the approved pieces are collected in the [mock](attachments/guidance-mock
   separate review agents are approved, and the owner delegated every merge except a
   release.
 
+**Owner approvals (2026-11-08, later):** the owner answered "Approved" to the open items:
+
+- SELLO-210: the empty Recibo's body line becomes "Crea una categoría para lo que importa."
+  and Ocio keeps the film-strip icon.
+- SELLO-207: no underline on "arrastre" or "Separado"; the card **?** sheets explain them.
+- SELLO-212: the deleting nudge only says a deleted expense can be undone for a few
+  seconds; where Borrar is already shows on screen.
+- The copy "Guía: lo que ya viste" / "Aplicar guía" and "Aún no tienes ningún respaldo.
+  Tus datos viven solo en este teléfono." stays as merged.
+
 **Orchestrator's calls (2026-11-08), open to the owner:**
 
 - Configuración is the screen's real name (`settings_title`), so the hint says
