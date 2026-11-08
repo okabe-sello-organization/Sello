@@ -73,7 +73,9 @@ internal fun NavGraphBuilder.resumenDestinations(
                     navigation.navigate(CategoryEditRoute(id, state.selectedMonth.toString()))
                 },
                 onDayByDay = { navigation.openDayByDay() },
-                onYear = { year -> navigation.navigate(YearRoute(year)) { launchSingleTop = true } },
+                onYear = { year ->
+                    navigation.navigate(YearRoute(year)) { launchSingleTop = true }
+                },
                 onGuide = navigation::openGuide
             )
         }

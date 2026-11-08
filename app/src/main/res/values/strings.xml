@@ -820,7 +820,6 @@
     <string name="resumen_hero_more">más que en %1$s</string>
     <string name="resumen_hero_less">menos que en %1$s</string>
     <string name="resumen_hero_same">lo mismo que en %1$s</string>
-    <string name="resumen_hero_trend_same_day">%1$s %% al mismo día del mes</string>
     <string name="resumen_hero_trend_whole">%1$s %% que %2$s completo</string>
     <string name="resumen_hero_same_days">Del 1 al %1$d de cada mes</string>
     <string name="resumen_hero_capped_days">Del 1 al %1$d de %2$s · Del 1 al %3$d de %4$s</string>

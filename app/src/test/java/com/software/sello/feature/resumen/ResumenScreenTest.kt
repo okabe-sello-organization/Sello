@@ -32,6 +32,7 @@ import com.software.sello.Look
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.SpendingDirection
+import com.software.sello.feature.guide.GuidePage
 import com.software.sello.showSello
 import com.software.sello.testing.testMoney
 import java.time.LocalDate
@@ -55,6 +56,7 @@ class ResumenScreenTest {
     private var adjusted: String? = null
     private var schedulesClicks = 0
     private var year: Int? = null
+    private var guide: GuidePage? = null
 
     private fun show(
         ink: SelloInk = SelloInk.Cobalto,
@@ -80,7 +82,8 @@ class ResumenScreenTest {
                     PaddingValues(),
                     { adjusted = it },
                     { schedulesClicks++ },
-                    onYear = { year = it }
+                    onYear = { year = it },
+                    onGuide = { guide = it }
                 )
             }
         }
@@ -412,6 +415,58 @@ class ResumenScreenTest {
             .assertContentDescriptionEquals("Ingresos, Ninguno en octubre")
     }
 
+    // --- Help sheets (SELLO-208) ---
+
+    @Test
+    fun theUnderlinedSameDayAndTheWeekdaysQuestionMarkOpenTheirSheets() {
+        show()
+
+        rule.onNodeWithTag(RESUMEN_SAME_DAY_TERM_TAG).performClick()
+        rule.onNodeWithTag(RESUMEN_WEEKDAYS_HELP_TAG).performScrollTo()
+            .assertContentDescriptionEquals("Cómo se saca el promedio por día").performClick()
+
+        assertEquals(
+            listOf(
+                ResumenAction.OpenHelp(ResumenHelp.SameDay),
+                ResumenAction.OpenHelp(ResumenHelp.Weekdays)
+            ),
+            actions
+        )
+    }
+
+    @Test
+    fun aWholeMonthComparisonUnderlinesNothing() {
+        state.value = example().copy(
+            hero = example().hero.copy(
+                comparison = comparison().copy(throughDay = null, previousThroughDay = null)
+            )
+        )
+        show()
+
+        rule.onNodeWithText("↓ 14,3 % que septiembre completo").assertIsDisplayed()
+        rule.onNodeWithTag(RESUMEN_SAME_DAY_TERM_TAG).assertDoesNotExist()
+    }
+
+    @Test
+    fun eachSheetShowsItsRuleAndExampleAndLeadsToTheGuide() {
+        ResumenHelp.entries.forEach { help ->
+            state.value = example().copy(help = help)
+            if (help == ResumenHelp.entries.first()) show()
+            rule.onNodeWithTag("$RESUMEN_HELP_TAG.${help.name}").assertIsDisplayed()
+        }
+        state.value = example().copy(help = ResumenHelp.Weekdays)
+        rule.onNodeWithText("Cómo se saca el promedio por día").assertIsDisplayed()
+        rule.onNodeWithText(
+            "En 4 sábados gastaste 100.000, 0, 60.000 y 40.000: tu promedio del sábado es " +
+                "200.000 entre 4, o sea 50.000."
+        ).performScrollTo().assertIsDisplayed()
+
+        rule.onNodeWithText("Ver más en la Guía de Sello").performScrollTo().performClick()
+
+        assertEquals(listOf<ResumenAction>(ResumenAction.CloseHelp), actions)
+        assertEquals(GuidePage.Summary, guide)
+    }
+
     // --- The comparison, a normal month, weekdays and the suggestion ---
 
     private fun example() = resumenExample(money)
@@ -424,7 +479,9 @@ class ResumenScreenTest {
 
         rule.onNodeWithText("¿Cómo va este mes?").assertIsDisplayed()
         rule.onNodeWithText("menos que en septiembre").assertIsDisplayed()
-        rule.onNodeWithText("↓ 14,3 % al mismo día del mes").assertIsDisplayed()
+        rule.onNodeWithText("↓ 14,3 %").assertIsDisplayed()
+        rule.onNodeWithTag(RESUMEN_SAME_DAY_TERM_TAG)
+            .assertContentDescriptionEquals("al mismo día del mes. Qué significa")
         rule.onNodeWithText("Del 1 al 3 de cada mes").assertIsDisplayed()
         rule.onNodeWithText("Octubre").assertIsDisplayed()
         rule.onNodeWithText("Septiembre").assertIsDisplayed()

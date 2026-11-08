@@ -47,9 +47,27 @@ class SmallExpensesSlipTest {
 
     private val inProgress = ResumenHero(true, "octubre", pesos(2_480_000), 28, null)
     private var retried = 0
+    private var helped = 0
 
     private fun show(small: ResumenSmallExpenses, hero: ResumenHero = inProgress) =
-        rule.showSello { SmallExpensesSlip(small, hero) { retried++ } }
+        rule.showSello { SmallExpensesSlip(small, hero, onHelp = { helped++ }) { retried++ } }
+
+    @Test
+    fun theQuestionMarkAfterTheTitleOpensItsHelp() {
+        show(shown)
+
+        rule.onNodeWithTag(RESUMEN_SMALL_HELP_TAG).assertContentDescriptionEquals("Gastos hormiga")
+            .performClick()
+
+        assertEquals(1, helped)
+    }
+
+    @Test
+    fun aNoticeInPlaceOfTheSlipHasNoQuestionMark() {
+        show(ResumenSmallExpenses.Unreadable)
+
+        rule.onNodeWithTag(RESUMEN_SMALL_HELP_TAG).assertDoesNotExist()
+    }
 
     @Test
     fun theSlipSaysTheTotalTheShareTheDaysAndWhereTheyGather() {

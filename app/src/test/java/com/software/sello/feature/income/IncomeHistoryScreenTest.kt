@@ -24,6 +24,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.feature.guide.GuidePage
 import com.software.sello.showSello
 import com.software.sello.testing.pesos
 import java.time.LocalDate
@@ -42,6 +43,7 @@ class IncomeHistoryScreenTest {
     private val october = YearMonth.of(2026, 10)
     private val today = LocalDate.of(2026, 10, 22)
     private val actions = mutableListOf<IncomeHistoryAction>()
+    private var guide: GuidePage? = null
     private var created = 0
     private val edited = mutableListOf<String>()
     private val assigned = mutableListOf<String?>()
@@ -84,7 +86,8 @@ class IncomeHistoryScreenTest {
         state: IncomeHistoryState,
         split: IncomeSplit?,
         plan: IncomePlanState = IncomePlanState.None,
-        assign: AssignSuggestion? = null
+        assign: AssignSuggestion? = null,
+        help: IncomeHelp? = null
     ) {
         rule.showSello(Look()) {
             IncomeHistoryScreen(
@@ -97,9 +100,37 @@ class IncomeHistoryScreenTest {
                 { created++ },
                 { assigned += it },
                 { edited += it },
-                PaddingValues(12.dp)
+                PaddingValues(12.dp),
+                help,
+                { guide = it }
             )
         }
+    }
+
+    @Test
+    fun eachHelpSheetShowsItsRuleAndLeadsToTheGuide() {
+        show(ready(), split, help = IncomeHelp.CameIn)
+        rule.onNodeWithTag("$INCOME_HELP_TAG.CameIn").assertIsDisplayed()
+        rule.onNodeWithText("Cómo se reparte lo que entró").assertIsDisplayed()
+        rule.onNodeWithContentDescription("Plan del mes. Aparece cuando", substring = true)
+            .performScrollTo().assertIsDisplayed()
+
+        rule.onNodeWithText("Ver más en la Guía de Sello").performScrollTo().performClick()
+
+        assertEquals(listOf<IncomeHistoryAction>(IncomeHistoryAction.CloseHelp), actions)
+        assertEquals(GuidePage.Summary, guide)
+    }
+
+    @Test
+    fun theUnassignedSheetSaysWhatANegativeFigureMeans() {
+        show(ready(), split, help = IncomeHelp.Unassigned)
+
+        rule.onNodeWithTag("$INCOME_HELP_TAG.Unassigned").assertIsDisplayed()
+        rule.onNodeWithContentDescription("Si sale en rojo. Tus límites", substring = true)
+            .performScrollTo().assertIsDisplayed()
+        rule.onNodeWithText(
+            "Entraron 2.000.000 y tus límites suman 2.500.000: Sin asignar es −500.000."
+        ).performScrollTo().assertIsDisplayed()
     }
 
     @Test
