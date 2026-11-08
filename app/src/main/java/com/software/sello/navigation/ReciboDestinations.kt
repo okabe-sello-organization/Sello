@@ -32,6 +32,7 @@ import com.software.sello.feature.goals.ReciboGoal
 import com.software.sello.feature.goals.ReciboGoalAction
 import com.software.sello.feature.goals.ReciboGoalState
 import com.software.sello.feature.goals.ReciboGoalViewModel
+import com.software.sello.feature.guide.GuidePage
 import com.software.sello.feature.recibo.AdjustBudgetRoot
 import com.software.sello.feature.recibo.CATEGORY_DETAIL_EDIT_TAG
 import com.software.sello.feature.recibo.CategoryDetailAction
@@ -141,7 +142,8 @@ internal fun NavGraphBuilder.reciboDestinations(
                 navigation.navigate(CategoryEditRoute(id, month.toString())) {
                     launchSingleTop = true
                 }
-            }
+            },
+            onOpenGuide = { navigation.openGuide(GuidePage.Recibo) }
         ) { navigation.navigate(CategoryEditorRoute()) }
     }
     composable<CategoryExpensesRoute> { entry ->
@@ -200,7 +202,8 @@ internal fun NavGraphBuilder.reciboDestinations(
                 },
                 onAllSchedules = {
                     navigation.navigate(SchedulesRoute()) { launchSingleTop = true }
-                }
+                },
+                onOpenGuide = { navigation.openGuide(GuidePage.Recibo) }
             )
         }
     }
@@ -317,6 +320,7 @@ private fun ReciboDestination(
     onOpenClosedMonth: (YearMonth) -> Unit,
     onOpenYear: (Int) -> Unit,
     onSetMonthLimit: (String, YearMonth) -> Unit,
+    onOpenGuide: () -> Unit,
     onCreateCategory: () -> Unit
 ) {
     val recibo: ReciboViewModel = viewModel(factory = viewModels)
@@ -382,6 +386,7 @@ private fun ReciboDestination(
                         onAllSchedules = onAllSchedules,
                         onAdjustBudget = onAdjustBudget,
                         onRecordSeveral = { onRecordSeveral(id) },
+                        onOpenGuide = onOpenGuide,
                         showPastLimitAnnouncement = !announcements.loading &&
                             !announcements.preference.pastLimitSeen,
                         onDismissPastLimitAnnouncement = onDismissPastLimit,
@@ -416,6 +421,10 @@ private fun ReciboDestination(
 
                         is ReciboAction.SetMonthLimit ->
                             onSetMonthLimit(action.categoryId, action.month)
+
+                        ReciboAction.OpenGuide -> onOpenGuide()
+
+                        is ReciboAction.ShowHelp, ReciboAction.CloseHelp -> Unit
                     }
                     recibo.onAction(action)
                 },

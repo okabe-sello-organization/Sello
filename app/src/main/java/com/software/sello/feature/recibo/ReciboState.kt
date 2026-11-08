@@ -24,7 +24,9 @@ sealed interface ReciboState {
         val stale: Boolean,
         /** Why the latest read failed, when it is a carry figure that cannot be calculated. */
         val carryProblem: CarryProblem? = null,
-        val invitation: ReciboInvitation? = null
+        val invitation: ReciboInvitation? = null,
+        /** The explanation open over the month, from its **?** or an underlined word. */
+        val help: ReciboHelp? = null
     ) : ReciboState
 
     /** The read failed and there is nothing earlier to show. */
@@ -252,4 +254,13 @@ sealed interface ReciboAction {
 
     /** Open the category's form on [month], to give that month a limit. Navigation is the root's. */
     data class SetMonthLimit(val categoryId: String, val month: YearMonth) : ReciboAction
+
+    /** Open [topic]'s explanation over the month. */
+    data class ShowHelp(val topic: ReciboHelp) : ReciboAction
+
+    /** Close the explanation open. */
+    data object CloseHelp : ReciboAction
+
+    /** "Ver más en la Guía de Sello": closes the explanation; opening the Guía is the root's. */
+    data object OpenGuide : ReciboAction
 }

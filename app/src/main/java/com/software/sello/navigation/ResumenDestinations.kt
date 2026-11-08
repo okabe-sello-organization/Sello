@@ -15,6 +15,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.software.sello.R
 import com.software.sello.designsystem.component.SelloNavigation
+import com.software.sello.feature.guide.GuidePage
 import com.software.sello.feature.recibo.CategoryDetailAction
 import com.software.sello.feature.recibo.CategoryDetailScreen
 import com.software.sello.feature.recibo.CategoryDetailState
@@ -138,6 +139,7 @@ internal fun NavGraphBuilder.resumenDestinations(
                 onAllSchedules = {
                     navigation.navigate(SchedulesRoute()) { launchSingleTop = true }
                 },
+                onOpenGuide = { navigation.openGuide(GuidePage.Recibo) },
                 onAdjustBudget = {
                     navigation.navigate(AdjustBudgetRoute(state.selectedMonth.toString())) {
                         launchSingleTop = true

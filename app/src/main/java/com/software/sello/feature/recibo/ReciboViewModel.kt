@@ -1,5 +1,6 @@
 package com.software.sello.feature.recibo
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.software.sello.domain.model.CategoryOrderingPreference
@@ -48,7 +49,8 @@ class ReciboViewModel(
     private val invitations: ClosedMonthInvitePreferences,
     clock: FinancialClock,
     private val categories: CategoryReads,
-    private val years: YearSnapshots
+    private val years: YearSnapshots,
+    private val saved: SavedStateHandle
 ) : ViewModel() {
     private val render = ReciboRenderModel(money)
     private val attempt = MutableStateFlow(0)
@@ -137,6 +139,10 @@ class ReciboViewModel(
             .combine(invitation) { state, invitation ->
                 if (state is ReciboState.Month) state.copy(invitation = invitation) else state
             }
+            // Kept across a restart, as the screen's other state is; shown with the month.
+            .combine(saved.getStateFlow<String?>(KEY_HELP, null)) { state, help ->
+                if (state is ReciboState.Month) state.copy(help = ReciboHelp.named(help)) else state
+            }
             .stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(STOP_AFTER_MILLIS),
@@ -171,6 +177,11 @@ class ReciboViewModel(
             // The year card stands in December's place: handling it handles December.
             is ReciboAction.OpenYear -> handle(YearMonth.of(action.year, Month.DECEMBER))
 
+            is ReciboAction.ShowHelp -> saved[KEY_HELP] = action.topic.name
+
+            // The Guía opens over Recibo: Back returns to the month, not to the sheet.
+            ReciboAction.CloseHelp, ReciboAction.OpenGuide -> saved[KEY_HELP] = null
+
             // Handled by the root, which owns navigation and the selection.
             ReciboAction.CreateCategory,
             is ReciboAction.OpenCategory,
@@ -190,5 +201,7 @@ class ReciboViewModel(
     private companion object {
         /** Long enough to outlast a rotation without reading again. */
         const val STOP_AFTER_MILLIS = 5_000L
+
+        const val KEY_HELP = "reciboHelp"
     }
 }

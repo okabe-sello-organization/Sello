@@ -1,5 +1,6 @@
 package com.software.sello.feature.recibo
 
+import androidx.lifecycle.SavedStateHandle
 import com.software.sello.domain.model.Category
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.CategoryMonth
@@ -74,7 +75,8 @@ class ReciboInvitationViewModelTest {
             invitations,
             clock,
             HandCategoryReads(),
-            years
+            years,
+            SavedStateHandle()
         )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.state.collect {}
@@ -284,7 +286,8 @@ class ReciboInvitationViewModelTest {
             NeverRead(),
             clock,
             HandCategoryReads(),
-            years
+            years,
+            SavedStateHandle()
         )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             silent.state.collect {}
