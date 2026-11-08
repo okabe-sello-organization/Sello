@@ -36,7 +36,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
 import com.software.sello.designsystem.component.AnswerSlip
-import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.MilestoneRow
 import com.software.sello.designsystem.component.MilestoneSpec
@@ -60,16 +59,14 @@ import com.software.sello.presentation.month.monthNames
 /**
  * Metas: a stamp card per active goal, highest completion first, then the completed
  * goals as rows whose LOGRADA comes down once as each first scrolls into view. Loading
- * and a failed read are never "no goals". [onBulk] (Anotar varios, with no goal chosen)
- * sits at the foot of the active goals, and only while there is one.
+ * and a failed read are never "no goals".
  */
 @Composable
 fun MetasScreen(
     state: MetasState,
     onAction: (MetasAction) -> Unit,
     dates: DateLabels,
-    padding: PaddingValues,
-    onBulk: (() -> Unit)? = null
+    padding: PaddingValues
 ) {
     val direction = LocalLayoutDirection.current
     val spacing = SelloTheme.spacing
@@ -184,19 +181,6 @@ fun MetasScreen(
                         }
                     }
                 }
-                if (onBulk != null && state.goals.isNotEmpty()) {
-                    item(key = METAS_BULK_TAG) {
-                        Row {
-                            SelloButton(
-                                stringResource(R.string.metas_record_several),
-                                onBulk,
-                                Modifier.testTag(METAS_BULK_TAG),
-                                kind = ButtonKind.Text,
-                                icon = SelloIcon.ReceiptLong
-                            )
-                        }
-                    }
-                }
                 items(state.completed, key = { it.id }) { goal ->
                     val land = remember(goal.id) { goal.id !in landed }
                     LaunchedEffect(goal.id) { if (goal.id !in landed) landed += goal.id }
@@ -291,5 +275,4 @@ private fun MetasTotal(band: MetasBand) {
 const val METAS_LIST_TAG = "metas.list"
 const val METAS_TOTAL_TAG = "metas.total"
 const val METAS_CREATE_TAG = "metas.create"
-const val METAS_BULK_TAG = "metas.bulk"
 const val METAS_COMPLETION_PROBLEM_TAG = "metas.completion.problem"

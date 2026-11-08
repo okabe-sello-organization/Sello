@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -81,7 +80,6 @@ fun GoalDetailScreen(
     padding: PaddingValues,
     onWithdraw: (() -> Unit)? = null,
     onEditMovement: ((String) -> Unit)? = null,
-    onBulk: (() -> Unit)? = null,
     landing: Set<GoalPlace> = emptySet(),
     relighting: Set<GoalPlace> = emptySet()
 ) {
@@ -116,7 +114,6 @@ fun GoalDetailScreen(
                 months,
                 onWithdraw,
                 onEditMovement,
-                onBulk,
                 landing,
                 relighting
             )
@@ -132,7 +129,6 @@ private fun ColumnScope.Ready(
     months: MonthNames,
     onWithdraw: (() -> Unit)?,
     onEditMovement: ((String) -> Unit)?,
-    onBulk: (() -> Unit)?,
     landing: Set<GoalPlace>,
     relighting: Set<GoalPlace>
 ) {
@@ -160,8 +156,7 @@ private fun ColumnScope.Ready(
         dates,
         months,
         onWithdraw.takeIf { goal.completedOn == null },
-        onEditMovement.takeIf { goal.completedOn == null },
-        onBulk.takeIf { goal.completedOn == null }
+        onEditMovement.takeIf { goal.completedOn == null }
     )
     if (goal.completedOn != null) {
         if (state.confirmingDelete) {
@@ -378,8 +373,7 @@ private fun Movements(
     dates: DateLabels,
     months: MonthNames,
     onWithdraw: (() -> Unit)?,
-    onEditMovement: ((String) -> Unit)?,
-    onBulk: (() -> Unit)?
+    onEditMovement: ((String) -> Unit)?
 ) {
     val goal = state.goal
     Slip(Modifier.fillMaxWidth().testTag("goal.movements"), pinked = false) {
@@ -473,33 +467,17 @@ private fun Movements(
                 rule = next != null && !(state.allMovements && month(next) != month(movement))
             )
         }
-        val showAll = !state.allMovements && goal.movements.size > SHORT_LIST
-        if (onBulk != null || showAll) {
-            // Aportar varios at the start of the foot, Ver los N at its end.
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (onBulk != null) {
-                    SelloButton(
-                        stringResource(R.string.goal_bulk_title),
-                        onBulk,
-                        Modifier.testTag(GOAL_BULK_OPEN_TAG),
-                        kind = ButtonKind.Text,
-                        icon = SelloIcon.ReceiptLong
-                    )
-                }
-                Spacer(Modifier.weight(1f))
-                if (showAll) {
-                    SelloButton(
-                        pluralStringResource(
-                            R.plurals.goal_movements_all,
-                            goal.movements.size,
-                            goal.movements.size
-                        ),
-                        { onAction(GoalDetailAction.ShowAllMovements) },
-                        Modifier.testTag("goal.showAll"),
-                        kind = ButtonKind.Text
-                    )
-                }
-            }
+        if (!state.allMovements && goal.movements.size > SHORT_LIST) {
+            SelloButton(
+                pluralStringResource(
+                    R.plurals.goal_movements_all,
+                    goal.movements.size,
+                    goal.movements.size
+                ),
+                { onAction(GoalDetailAction.ShowAllMovements) },
+                Modifier.align(Alignment.End).testTag("goal.showAll"),
+                kind = ButtonKind.Text
+            )
         }
     }
 }
@@ -527,5 +505,3 @@ private const val SHORT_LIST = 4
 
 const val GOAL_DETAIL_TAG = "goal.detail"
 const val GOAL_MARK_COMPLETE_TAG = "goal.markComplete"
-
-const val GOAL_BULK_OPEN_TAG = "goal.bulk.open"

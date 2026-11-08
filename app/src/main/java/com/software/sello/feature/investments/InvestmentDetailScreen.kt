@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -361,28 +360,17 @@ private fun Movements(
                 rule = next != null && !(state.allMovements && month(next) != month(movement))
             )
         }
-        // The foot: Varios movimientos, and Ver los N while some are hidden.
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        if (!state.allMovements && state.movements.size > SHORT_LIST) {
             SelloButton(
-                stringResource(R.string.investment_movements_title),
-                { onAction(InvestmentDetailAction.RecordSeveral) },
-                Modifier.testTag(INVESTMENT_RECORD_SEVERAL_TAG),
-                kind = ButtonKind.Text,
-                icon = SelloIcon.ReceiptLong
+                pluralStringResource(
+                    R.plurals.investment_movements_all,
+                    state.movements.size,
+                    state.movements.size
+                ),
+                { onAction(InvestmentDetailAction.ShowAllMovements) },
+                Modifier.align(Alignment.End).testTag("investment.showAll"),
+                kind = ButtonKind.Text
             )
-            Spacer(Modifier.weight(1f))
-            if (!state.allMovements && state.movements.size > SHORT_LIST) {
-                SelloButton(
-                    pluralStringResource(
-                        R.plurals.investment_movements_all,
-                        state.movements.size,
-                        state.movements.size
-                    ),
-                    { onAction(InvestmentDetailAction.ShowAllMovements) },
-                    Modifier.testTag("investment.showAll"),
-                    kind = ButtonKind.Text
-                )
-            }
         }
     }
 }
@@ -424,4 +412,3 @@ private const val SHORT_LIST = 4
 
 const val INVESTMENT_DETAIL_TAG = "investment.detail"
 const val INVESTMENT_RECORD_VALUE_TAG = "investment.recordValue"
-const val INVESTMENT_RECORD_SEVERAL_TAG = "investment.recordSeveral"

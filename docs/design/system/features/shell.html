@@ -106,9 +106,9 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Not yet read</td><td>Title only, no chip, no dock.</td><td><code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:101</code>, <code>app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:95</code></td><td><code>metas-loading</code></td></tr>
-            <tr><td>Empty</td><td>No chip; the dock creates the first one.</td><td><code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:104</code></td><td><code>metas-empty</code></td></tr>
-            <tr><td>With items</td><td>Chip beside the title; dock records a movement.</td><td><code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:90</code></td><td><code>shell-titled</code></td></tr>
+            <tr><td>Not yet read</td><td>Title only, no chip, no dock.</td><td><code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:100</code>, <code>app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:94</code></td><td><code>metas-loading</code></td></tr>
+            <tr><td>Empty</td><td>No chip; the dock creates the first one.</td><td><code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:103</code></td><td><code>metas-empty</code></td></tr>
+            <tr><td>With items</td><td>Chip beside the title; dock records a movement.</td><td><code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:89</code></td><td><code>shell-titled</code></td></tr>
             <tr><td>Compact chip</td><td>The chip is the round "+" alone when the title would not fit beside it.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:141</code></td><td>Not capturable: only at widths Sello does not support</td></tr>
           </tbody>
         </table>
@@ -118,7 +118,7 @@
       <ul>
         <li>"Nueva meta" / "Nueva inversión" → the goal or investment editor.</li>
         <li>The dock → the goal or investment movement form, or the editor when empty.</li>
-        <li>System Back → Recibo, <code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:133</code>, <code>app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:120</code>.</li>
+        <li>System Back → Recibo, <code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:131</code>, <code>app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:118</code>.</li>
       </ul>
 
       <h3>Key copy</h3>
@@ -160,7 +160,7 @@
             </table>
           </div>
         </li>
-        <li>A goal's band can carry its star pin (<code>band</code>), <code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:173</code>.</li>
+        <li>A goal's band can carry its star pin (<code>band</code>), <code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:169</code>.</li>
         <li>The past-month ribbon, unless the destination passes <code>pastMonthRibbon = false</code> (every month-less one does).</li>
         <li>The dock: "+ Anotar" by default; a category's own dock (below); "Anotar ingreso" on Ingresos; "Listo" with a check on Lo que Sello anotó; none where <code>entryDock = false</code>. Configuración keeps the default "+ Anotar" (it does not pass <code>entryDock</code>), <code>app/src/main/java/com/software/sello/navigation/SettingsDestinations.kt:27</code>.</li>
       </ol>
@@ -170,8 +170,8 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Title not yet known</td><td>A fallback title: "Todos los gastos", "Categoría", the tab name for an investment, "Meta" for a goal.</td><td><code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:153</code>, <code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:171</code></td><td><code>category-expenses-loading</code>, <code>category-detail-untitled</code></td></tr>
-            <tr><td>Item gone</td><td>A deleted goal or investment leaves its page by itself.</td><td><code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:160</code>, <code>app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:144</code></td><td>—</td></tr>
+            <tr><td>Title not yet known</td><td>A fallback title: "Todos los gastos", "Categoría", the tab name for an investment, "Meta" for a goal.</td><td><code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:153</code>, <code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:167</code></td><td><code>category-expenses-loading</code>, <code>category-detail-untitled</code></td></tr>
+            <tr><td>Item gone</td><td>A deleted goal or investment leaves its page by itself.</td><td><code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:156</code>, <code>app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:140</code></td><td>—</td></tr>
             <tr><td>Archived category</td><td>The dock stays in place, disabled, "Archivada" beside a prohibited sign.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:72</code></td><td><code>shell-archived-dock</code></td></tr>
             <tr><td>Archived not yet known</td><td>"+ Anotar", disabled.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:85</code></td><td><code>shell-waiting-dock</code></td></tr>
           </tbody>
@@ -181,7 +181,7 @@
       <h3>Controls</h3>
       <ul>
         <li>Back arrow → pop; on Respaldo after a restore that replaced (or may have replaced) the history, the arrow leaves through the restore's restart, <code>app/src/main/java/com/software/sello/navigation/BackupDestinations.kt:36</code>; on Borrar datos it goes through the reset model, <code>app/src/main/java/com/software/sello/navigation/ResetDestinations.kt:33</code>.</li>
-        <li>Edit pencil on a category from Resumen, a goal and an investment → its editor. A completed goal has only ⋮ "Borrar meta", <code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:185</code>.</li>
+        <li>Edit pencil on a category from Resumen, a goal and an investment → its editor. A completed goal has only ⋮ "Borrar meta", <code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:181</code>.</li>
       </ul>
 
       <h3>Key copy</h3>
@@ -416,7 +416,7 @@
           <tbody>
             <tr><td>Month picker open (any screen)</td><td>Closes the picker. Declared after the navigation host, so it is asked first.</td><td><code>app/src/main/java/com/software/sello/navigation/SelloApp.kt:184</code></td></tr>
             <tr><td>Recibo with a category open (one pane)</td><td>Closes the detail.</td><td><code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:385</code></td></tr>
-            <tr><td>Resumen, Metas, Inversiones</td><td>Goes to Recibo.</td><td><code>app/src/main/java/com/software/sello/navigation/ResumenDestinations.kt:61</code>, <code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:133</code>, <code>app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:120</code></td></tr>
+            <tr><td>Resumen, Metas, Inversiones</td><td>Goes to Recibo.</td><td><code>app/src/main/java/com/software/sello/navigation/ResumenDestinations.kt:61</code>, <code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:131</code>, <code>app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:118</code></td></tr>
             <tr><td>Pushed screens</td><td>Pops; some declare it (Configuración, Respaldo, an investment, Dólar), the rest use the host's default.</td><td><code>app/src/main/java/com/software/sello/navigation/SettingsDestinations.kt:54</code>, <code>app/src/main/java/com/software/sello/navigation/BackupDestinations.kt:49</code></td></tr>
             <tr><td>Respaldo after a replacing restore</td><td>The screen's own handler restarts, as the arrow does.</td><td><code>app/src/main/java/com/software/sello/feature/backup/BackupScreen.kt:59</code></td></tr>
             <tr><td>Forms</td><td>Each form routes Back through its ViewModel (discard question, unknown outcome), as its Close button does.</td><td>e.g. <code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:153</code></td></tr>
@@ -460,7 +460,7 @@
           <tbody>
             <tr><td><a href="../components.html#c-SelloScaffold"><code>SelloScaffold</code></a></td><td><code>:design-system</code> <code>SelloScaffold.kt</code></td><td><code>blotter = Short</code>; <code>topBar</code> for tabs, its own title row for pushed screens; <code>ribbon</code>, <code>notice</code>, <code>dock</code>, <code>navigation</code>, <code>secondaryPane</code> for the picker panel or the detail beside</td><td>One frame that arranges bar, rail, dock and panes for the window; holds no state</td></tr>
             <tr><td><a href="../components.html#c-SelloNavigationBar"><code>SelloNavigationBar</code></a> / <a href="../components.html#c-SelloNavigationRail"><code>SelloNavigationRail</code></a></td><td><code>:design-system</code> <code>Controls.kt</code>, <code>Navigation.kt</code></td><td>Four <code>SelloDestination</code>s with receipt, insights, flag and bank icons</td><td>Only tabs whose screens work; no placeholder tab (<code>Routes.kt:218</code>)</td></tr>
-            <tr><td><a href="../components.html#c-EntryDock"><code>EntryDock</code></a> (via <code>SelloDock</code>)</td><td><code>:design-system</code> <code>Controls.kt</code></td><td>Brand "+ Anotar"; disabled with the prohibited sign for an archived category; Gain + flag for Metas; Ink + "+" for Inversiones; check for "Listo"</td><td>Tones keep each tab's action from being taken for Anotar (<code>GoalDestinations.kt:225</code>, <code>InvestmentDestinations.kt:185</code>)</td></tr>
+            <tr><td><a href="../components.html#c-EntryDock"><code>EntryDock</code></a> (via <code>SelloDock</code>)</td><td><code>:design-system</code> <code>Controls.kt</code></td><td>Brand "+ Anotar"; disabled with the prohibited sign for an archived category; Gain + flag for Metas; Ink + "+" for Inversiones; check for "Listo"</td><td>Tones keep each tab's action from being taken for Anotar (<code>GoalDestinations.kt:220</code>, <code>InvestmentDestinations.kt:180</code>)</td></tr>
             <tr><td><a href="../components.html#c-BandChip"><code>BandChip</code></a></td><td><code>:design-system</code> <code>Controls.kt</code></td><td>"Nueva meta" / "Nueva inversión" in <code>TitleBar</code>, <code>compact</code> when the title would not fit</td><td>The add action beside the title once the list is not empty</td></tr>
             <tr><td><a href="../components.html#c-MonthGrid"><code>MonthGrid</code></a></td><td><code>:design-system</code> <code>Navigation.kt</code></td><td>Cells from <code>monthCells</code>; arrows off at 2000 and at this year</td><td>Later months cannot be picked</td></tr>
             <tr><td><a href="../components.html#c-SelloButton"><code>SelloButton</code></a></td><td><code>:design-system</code> <code>SelloButton.kt</code></td><td><code>kind = Text</code> for "Mes actual"</td><td>A secondary action beside the picker's title</td></tr>

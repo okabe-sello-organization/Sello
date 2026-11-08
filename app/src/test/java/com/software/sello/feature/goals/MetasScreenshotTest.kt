@@ -123,19 +123,12 @@ class MetasScreenshotTest {
     )
     private val metas = GoalsRenderModel(money).metas(ReadState.Ready(board), today)
 
-    private fun capture(look: Look, name: String = "metas", onBulk: (() -> Unit)? = null) {
+    private fun capture(look: Look) {
         rule.showSello(look) {
-            MetasScreen(metas, {}, dateLabels(), PaddingValues(16.dp), onBulk = onBulk)
+            MetasScreen(metas, {}, dateLabels(), PaddingValues(16.dp))
         }
-        rule.captureStill("src/test/screenshots/$name-${look.label}.png")
+        rule.captureStill("src/test/screenshots/metas-${look.label}.png")
     }
-
-    /** Anotar varios at the foot of the active goals, before the completed one. */
-    @Test
-    fun anotarVariosLight() = capture(Look(), "metas-bulk", onBulk = {})
-
-    @Test
-    fun anotarVariosDark() = capture(Look(dark = true), "metas-bulk", onBulk = {})
 
     @Test
     fun violetaDark() = capture(Look(ink = SelloInk.Violeta, dark = true))

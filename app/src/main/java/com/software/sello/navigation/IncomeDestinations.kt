@@ -70,8 +70,7 @@ internal fun NavGraphBuilder.incomeDestinations(
                     navigation.navigate(CategoryEditorRoute(limit = it)) { launchSingleTop = true }
                 },
                 { navigation.navigate(IncomeEditRoute(it)) },
-                padding,
-                onRecordSeveral = { navigation.navigate(BulkEntryRoute(income = true)) }
+                padding
             )
         }
     }

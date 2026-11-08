@@ -65,8 +65,7 @@ fun IncomeHistoryScreen(
     onCreate: () -> Unit,
     onAssign: (limit: String?) -> Unit,
     onEdit: (String) -> Unit,
-    padding: PaddingValues,
-    onRecordSeveral: (() -> Unit)? = null
+    padding: PaddingValues
 ) {
     val dates = dateLabels()
     val months = monthNames()
@@ -162,17 +161,6 @@ fun IncomeHistoryScreen(
                         }
                         TotalLine(stringResource(R.string.income_list_total)) {
                             MoneyText(state.total, style = MoneyStyle.Title)
-                        }
-                        // Several incomes at once, on one receipt.
-                        onRecordSeveral?.let {
-                            SelloButton(
-                                text = stringResource(R.string.income_record_several),
-                                onClick = it,
-                                kind = ButtonKind.Text,
-                                icon = SelloIcon.ReceiptLong,
-                                contentPadding = PaddingValues(end = SelloTheme.spacing.md),
-                                modifier = Modifier.testTag(INCOME_RECORD_SEVERAL_TAG)
-                            )
                         }
                     }
                 }
@@ -392,5 +380,3 @@ private fun CameIn(
         }
     }
 }
-
-const val INCOME_RECORD_SEVERAL_TAG = "income.record-several"

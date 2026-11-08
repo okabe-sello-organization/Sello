@@ -49,9 +49,9 @@ data class InvestmentMovementRoute(
 
 /**
  * Varios movimientos: movements of one or several investments on one receipt, line one in
- * [investmentId] when opened from it (none from the Inversiones list). From Anotar
- * movimiento, [kind] (as [InvestmentMovementRoute] takes it), [amount] (minor units, cents
- * when [usd]), [note] and [date] are what was typed there, to become line one.
+ * [investmentId] when opened from it. From Anotar movimiento, [kind] (as
+ * [InvestmentMovementRoute] takes it), [amount] (minor units, cents when [usd]), [note] and
+ * [date] are what was typed there, to become line one.
  */
 @Serializable
 data class InvestmentMovementsRoute(
@@ -96,9 +96,9 @@ data class GoalMovementRoute(
 
 /**
  * Aportar varios: several aportes and retiros, each line naming its goal, on one receipt.
- * [goalId] is the goal it was opened from, line one's goal; null from the Metas list. The
- * screen reads the goals itself. From Aportar or Retirar, [withdrawal], [amount], [note] and
- * [date] are what was typed there, to become line one.
+ * [goalId] is the goal it was opened from, line one's goal. The screen reads the goals
+ * itself. From Aportar or Retirar, [withdrawal], [amount], [note] and [date] are what was
+ * typed there, to become line one.
  */
 @Serializable
 data class GoalBulkRoute(

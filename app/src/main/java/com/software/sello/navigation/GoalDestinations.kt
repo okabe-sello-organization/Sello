@@ -72,7 +72,6 @@ internal fun MetasDestination(
     onOpenGoal: (String) -> Unit,
     onCreate: (() -> Unit)? = null,
     onContribute: (() -> Unit)? = null,
-    onBulk: (() -> Unit)? = null,
     notice: (@Composable () -> Unit)? = null
 ) {
     val model: MetasViewModel = viewModel(factory = viewModels)
@@ -117,8 +116,7 @@ internal fun MetasDestination(
                 model.onAction(action)
             },
             dates = dateLabels(),
-            padding = padding,
-            onBulk = onBulk
+            padding = padding
         )
     }
     LogradaMoment(
@@ -135,9 +133,8 @@ internal fun MetasDestination(
 
 /**
  * One goal, titled with its name and never a month. The star on the band chooses it for
- * Recibo. [onEdit], [onContribute], [onWithdraw] and [onBulk] (Aportar varios) are offered
- * only once their screens exist, and never on a completed goal, which can only be deleted,
- * from the top bar's ⋮.
+ * Recibo. [onEdit], [onContribute] and [onWithdraw] are offered only once their screens
+ * exist, and never on a completed goal, which can only be deleted, from the top bar's ⋮.
  * A deleted goal leaves through [onBack].
  */
 @Composable
@@ -150,7 +147,6 @@ internal fun GoalDestination(
     onContribute: (() -> Unit)? = null,
     onWithdraw: (() -> Unit)? = null,
     onEditMovement: ((String) -> Unit)? = null,
-    onBulk: (() -> Unit)? = null,
     notice: (@Composable () -> Unit)? = null,
     celebration: GoalCelebration? = null
 ) {
@@ -208,7 +204,6 @@ internal fun GoalDestination(
                 padding = padding,
                 onWithdraw = onWithdraw,
                 onEditMovement = onEditMovement.takeIf { active },
-                onBulk = onBulk.takeIf { active },
                 landing = celebration?.earned.orEmpty().toSet(),
                 relighting = celebration?.relit.orEmpty().toSet()
             )
@@ -255,7 +250,6 @@ internal fun NavGraphBuilder.goalDestinations(
             onContribute = {
                 navigation.navigate(GoalMovementRoute()) { launchSingleTop = true }
             },
-            onBulk = { navigation.navigate(GoalBulkRoute()) { launchSingleTop = true } },
             notice = notice?.let {
                 { StampNoticeBar(it, onUndo, lands) }
             }
@@ -288,7 +282,6 @@ internal fun NavGraphBuilder.goalDestinations(
                     launchSingleTop = true
                 }
             },
-            onBulk = { navigation.navigate(GoalBulkRoute(id)) { launchSingleTop = true } },
             // Another goal's stamps are not in view here: they land on a ticket, as on Metas.
             notice = notice?.let {
                 {
