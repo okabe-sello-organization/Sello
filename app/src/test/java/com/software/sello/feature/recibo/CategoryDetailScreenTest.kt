@@ -183,12 +183,9 @@ class CategoryDetailScreenTest {
         listOf("Para", "Frente a sep").forEach {
             assertEquals(12.5.sp, textStyle(it).fontSize)
         }
-        // Set in the same style as "Para": the same height, less its dotted underline's gap.
-        assertEquals(
-            (labels[0].bottom - labels[0].top).value,
-            (labels[1].bottom - labels[1].top).value - 1f,
-            0.5f
-        )
+        val perDayLayout = mutableListOf<TextLayoutResult>()
+        perDay.performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(perDayLayout) }
+        assertEquals(12.5.sp, perDayLayout.single().layoutInput.style.fontSize)
         listOf("9 días", "+6,7 %").forEach {
             assertEquals(16.sp, textStyle(it).fontSize)
             assertEquals(FontWeight.W800, textStyle(it).fontWeight)

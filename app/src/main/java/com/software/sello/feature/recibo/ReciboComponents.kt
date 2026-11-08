@@ -393,7 +393,8 @@ internal fun LimitRow(
 
 /**
  * A small label with a larger value under it, used in twos and threes under a tear line.
- * With [onLabelHelp] the label is a [HelpTerm], tagged [labelTag], that explains it.
+ * With [onLabelHelp] the label is a [HelpTerm], tagged [labelTag], that explains it; the
+ * pair still says its label first, "Al día, 31.950 pesos".
  */
 @Composable
 internal fun KeyValue(
@@ -406,8 +407,11 @@ internal fun KeyValue(
     labelTag: String = "",
     value: @Composable () -> Unit
 ) {
+    // The help button leaves the merged pair, so the pair names itself before its value.
     Column(
-        modifier = modifier.semantics(mergeDescendants = true) {},
+        modifier = modifier.semantics(mergeDescendants = true) {
+            if (onLabelHelp != null) contentDescription = label
+        },
         horizontalAlignment = horizontalAlignment
     ) {
         Row(

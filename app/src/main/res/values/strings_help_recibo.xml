@@ -31,7 +31,7 @@
     <string name="help_per_day_term">Por día</string>
     <string name="help_per_day_body">Lo que te queda, repartido entre los días que faltan del mes. Hoy cuenta como un día.</string>
     <string name="help_per_day_rounding">Redondeo</string>
-    <string name="help_per_day_rounding_body">Hacia abajo, de 50 en 50, para que nunca pase de lo que te queda. Si ya te pasaste del límite, es 0.</string>
+    <string name="help_per_day_rounding_body">Hacia abajo, de 50 en 50, para que nunca pase de lo que te queda. Si no alcanza para 50 por cada día que falta, porque te pasaste, porque tus pagos fijos no alcanzan o porque queda muy poco, es 0.</string>
     <string name="help_per_day_reserved">Con pagos fijos por venir</string>
     <string name="help_per_day_reserved_body">Se reparte lo que queda después de separarlos.</string>
     <string name="help_per_day_example">Te quedan 130.000 y hoy es 24 de un mes de 30 días: faltan 7 días, incluido hoy. 130.000 ÷ 7 da 18.571, que se muestra como 18.550 por día.</string>
@@ -39,7 +39,7 @@
     <!-- "Al día" on category detail: the category's per-day figure -->
     <string name="help_day_allowance_title">Al día</string>
     <string name="help_day_allowance_term">Al día</string>
-    <string name="help_day_allowance_body">Lo que te queda en esta categoría, repartido entre los días que faltan del mes, incluido hoy. Se redondea hacia abajo, de 50 en 50; si ya te pasaste, es 0.</string>
+    <string name="help_day_allowance_body">Lo que te queda en esta categoría, repartido entre los días que faltan del mes, incluido hoy. Se redondea hacia abajo, de 50 en 50. Si no alcanza para 50 por cada día que falta, porque te pasaste, porque tus pagos fijos no alcanzan o porque queda muy poco, es 0.</string>
     <string name="help_day_allowance_days">Para</string>
     <string name="help_day_allowance_days_body">Los días que faltan del mes, contando hoy.</string>
     <string name="help_day_allowance_reserved">Con pagos fijos por venir</string>
@@ -83,7 +83,7 @@
     <string name="help_fixed_later">Más adelante</string>
     <string name="help_fixed_later_body">Los demás pagos fijos de esta categoría. Este mes no separan nada.</string>
     <string name="help_fixed_unlimited">Sin límite</string>
-    <string name="help_fixed_unlimited_body">Si la categoría no tiene límite, aquí no se separa nada, pero Recibo sí los descuenta de tu mes.</string>
+    <string name="help_fixed_unlimited_body">Si la categoría no tiene límite, aquí no se separa nada; si tienes otras categorías con límite, Recibo sí los descuenta de lo que te queda en el mes.</string>
     <string name="help_fixed_example">Límite 500.000, gastado 100.000 y un pago de 250.000 por venir: aquí te quedan 150.000.</string>
 
     <!-- "Un mes normal aquí" on category detail -->

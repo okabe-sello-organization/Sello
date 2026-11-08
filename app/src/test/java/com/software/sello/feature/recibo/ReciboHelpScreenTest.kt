@@ -1,6 +1,8 @@
 package com.software.sello.feature.recibo
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -236,6 +238,32 @@ class ReciboHelpScreenTest {
             ).map { CategoryDetailAction.ShowHelp(it) },
             actions
         )
+    }
+
+    @Test
+    fun anUnderlinedLabelStillNamesItsFigureForAScreenReader() {
+        rule.showSello(Look()) {
+            CategoryDetailScreen(
+                state = detail,
+                months = monthNames(),
+                dates = dateLabels(),
+                showName = false,
+                onAction = {},
+                onRecordHere = {},
+                contentPadding = PaddingValues(12.dp)
+            )
+        }
+
+        // The pair and the line are read "label, value"; the underline is its own button.
+        listOf(
+            listOf("Al día", "18.550 pesos"),
+            listOf("Límite base", "150.000 pesos"),
+            listOf("Sobrante", "más 80.000 pesos")
+        ).forEach { spoken ->
+            rule.onNode(
+                SemanticsMatcher.expectValue(SemanticsProperties.ContentDescription, spoken)
+            ).assertExists()
+        }
     }
 
     @Test
