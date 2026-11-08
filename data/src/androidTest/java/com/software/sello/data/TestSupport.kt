@@ -206,6 +206,9 @@ class HandSmallExpensePreferences(var value: SmallExpenseLine = SmallExpenseLine
  */
 class HandGuidancePreferences(var value: Guidance = Guidance()) : GuidancePreferences {
     var fail = false
+
+    /** Why a refused write fails: I/O by default, or guidance on the phone that won't read. */
+    var failure: PreferenceFailure = PreferenceFailure.Unavailable
     val merges = mutableListOf<GuidanceMemory>()
 
     override fun observeGuidance(): Flow<PreferenceRead<Guidance>> =
@@ -244,7 +247,7 @@ class HandGuidancePreferences(var value: Guidance = Guidance()) : GuidancePrefer
     }
 
     private fun saved(next: () -> Guidance): PreferenceWrite {
-        if (fail) return PreferenceWrite.Failed(PreferenceFailure.Unavailable)
+        if (fail) return PreferenceWrite.Failed(failure)
         value = next()
         return PreferenceWrite.Saved
     }

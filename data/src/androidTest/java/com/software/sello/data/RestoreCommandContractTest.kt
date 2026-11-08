@@ -933,6 +933,28 @@ class RestoreCommandContractTest {
         assertEquals(emptyList<String>(), stagingFiles())
     }
 
+    /**
+     * The phone's own guidance cannot be read, so no merge will ever land: the group is done
+     * and the restore finishes with nothing pending.
+     */
+    @Test
+    fun guidanceThePhoneCannotReadEndsTheGroupInsteadOfLeavingItPendingForGood() = runBlocking {
+        currentHistory()
+        guidance.fail = true
+        guidance.failure = PreferenceFailure.InvalidValue
+
+        val outcome = restores().replace(stage(g01(wanted.copy(guidance = backupGuidance))))
+
+        assertEquals(
+            RestoreOutcome.Restored(BackupSummary(2, 3, 1, 0, 0), PendingPreferences(null, null)),
+            outcome
+        )
+        assertEquals(listOf(backupGuidance), guidance.merges)
+        ledger.reopen()
+        assertNull(restores().pending())
+        assertEquals(emptyList<String>(), stagingFiles())
+    }
+
     /** While another group waits, guidance applied once is never merged again. */
     @Test
     fun aGuidanceMergeAppliedBesideAPendingGroupIsNeverRepeated() = runBlocking {

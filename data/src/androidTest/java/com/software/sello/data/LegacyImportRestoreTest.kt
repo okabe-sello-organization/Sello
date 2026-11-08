@@ -6,8 +6,11 @@ import com.software.sello.domain.model.AppearancePreference
 import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
 import com.software.sello.domain.model.CategoryOrderingPreference
+import com.software.sello.domain.model.Guidance
+import com.software.sello.domain.model.GuidanceMemory
 import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
+import com.software.sello.domain.model.Nudge
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.port.AppearancePreferences
@@ -17,18 +20,21 @@ import com.software.sello.domain.port.LegacyImportLine
 import com.software.sello.domain.port.LegacyImportReport
 import com.software.sello.domain.port.LegacyReason
 import com.software.sello.domain.port.LegacyRecord
+import com.software.sello.domain.port.PendingPreferences
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.RestoreRejection
 import com.software.sello.domain.port.StageFailure
 import com.software.sello.domain.port.StagedLookup
+import java.io.File
 import java.time.Instant
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -263,6 +269,54 @@ class LegacyImportRestoreTest {
             preferences.written
         )
         assertEquals(emptyList<String>(), stagingFiles())
+    }
+
+    /** What the phone had seen before the import (SELLO-205). */
+    private val phoneGuidance = Guidance(
+        GuidanceMemory(seen = setOf(Nudge.GuideHint)),
+        existingUseChecked = true
+    )
+
+    /**
+     * A FinanceTracker import brings no Sello guidance, even with expenses: the phone's
+     * stays as it is, never marked as someone already using Sello (ADR 0027).
+     */
+    @Test
+    fun aLegacyImportLeavesThePhonesGuidanceAsItIs() = runBlocking {
+        currentHistory()
+        guidance.value = phoneGuidance
+
+        val outcome = restores().replace(restores().stage(legacy.toByteArray()).valueOrFail())
+
+        assertEquals(
+            PendingPreferences(null, null),
+            (outcome as RestoreOutcome.Restored).preferences
+        )
+        assertEquals(phoneGuidance, guidance.value)
+        assertTrue(guidance.merges.isEmpty())
+        assertEquals(emptyList<String>(), stagingFiles())
+    }
+
+    /** The same when the import's file only moves after a restart. */
+    @Test
+    fun aLegacyImportMovedAfterARestartStillLeavesThePhonesGuidance() = runBlocking {
+        currentHistory()
+        guidance.value = phoneGuidance
+        val staged = restores().stage(legacy.toByteArray()).valueOrFail()
+        // Something sits where the file moves to, so the rename after the commit fails.
+        val blocker = File(files.restoreFolder, "restored.json").apply { mkdirs() }
+
+        val outcome = restores().replace(staged) as RestoreOutcome.Restored
+        assertEquals(null, outcome.preferences.guidance)
+
+        blocker.delete()
+        ledger.reopen()
+        val done = restores().applyPending()
+
+        assertEquals(PendingPreferences(null, null), done?.preferences)
+        assertEquals(phoneGuidance, guidance.value)
+        assertTrue(guidance.merges.isEmpty())
+        assertNull(restores().pending())
     }
 
     /** The report is kept with the staged file, so a restart still shows what was left out. */

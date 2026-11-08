@@ -39,6 +39,7 @@ import com.software.sello.domain.port.LegacyImportReport
 import com.software.sello.domain.port.LegacyReason
 import com.software.sello.domain.port.LegacyRecord
 import com.software.sello.domain.port.PendingPreferences
+import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.RestoreOutcome
@@ -301,12 +302,27 @@ class RoomRestores(
     /**
      * The staged file becomes the restored one. Until then an `applied` list can only be
      * an earlier replacement's, left by a clean-up cut short, even one an earlier version
-     * staged beside; it is not this one's.
+     * staged beside; it is not this one's. A FinanceTracker translation starts with its
+     * guidance group applied, written before the move: it brings nothing of Sello's
+     * guidance, so the phone's stays as it is (ADR 0027).
      */
     private fun moveToRestored(): Boolean {
-        if (!restored.exists()) clear(applied)
+        if (!restored.exists()) {
+            if (translated()) {
+                if (!writeAtomically(applied, GUIDANCE.toByteArray())) return false
+            } else {
+                clear(applied)
+            }
+        }
         return staged.renameTo(restored)
     }
+
+    /**
+     * Whether the staged file is a FinanceTracker translation, as its manifest says. Throws
+     * [IOException] when the manifest cannot be read now; false without one.
+     */
+    private fun translated(): Boolean =
+        manifest.exists() && manifestProperties()?.getProperty(LEGACY_LINES) != null
 
     override suspend fun discard() {
         held = null
@@ -407,7 +423,11 @@ class RoomRestores(
                     if (io(failed = false) { moveToRestored() }) {
                         apply(contents)
                     } else {
-                        pendingFrom(contents, done = null)
+                        pendingFrom(
+                            contents,
+                            done = null,
+                            translated = readManifest()?.report != null
+                        )
                     }
                 }
 
@@ -584,7 +604,11 @@ class RoomRestores(
      * What of [contents] is still to apply. [done] is the groups applied; null when that
      * cannot be read, and then every group is pending: none is applied twice.
      */
-    private fun pendingFrom(contents: BackupContents, done: Set<String>?): RestoreOutcome.Restored {
+    private fun pendingFrom(
+        contents: BackupContents,
+        done: Set<String>?,
+        translated: Boolean = false
+    ): RestoreOutcome.Restored {
         val preferences = contents.preferences
         fun applied(group: String) = done != null && group in done
         return RestoreOutcome.Restored(
@@ -595,31 +619,25 @@ class RoomRestores(
                 investments = preferences?.investments?.takeUnless { applied(INVESTMENTS) },
                 smallExpenseLine = preferences?.smallExpenseLine
                     ?.takeUnless { applied(SMALL_EXPENSES) },
-                guidance = guidanceFrom(contents)?.takeUnless { applied(GUIDANCE) }
+                guidance = guidanceFrom(contents)?.takeUnless { translated || applied(GUIDANCE) }
             )
         )
     }
 
     /**
      * What a restore of [contents] merges into the phone's guidance seen (ADR 0027): the
-     * file's own, or for a file without it (older than version 11, or made while it could
-     * not be read) whose history has any expense, income, goal or investment, the new-user
-     * nudges, since its person was already using Sello. Null when there is nothing to merge.
+     * file's own, or for a Sello file without it (older than version 11, or made while it
+     * could not be read) whose history has any expense, income, goal or investment, the
+     * new-user nudges, since its person was already using Sello. Null when there is nothing
+     * to merge. A FinanceTracker translation merges nothing: see [moveToRestored].
      */
     private fun guidanceFrom(contents: BackupContents): GuidanceMemory? {
         contents.preferences?.guidance?.let { return it }
         val financial = contents.financial
         val used = financial.expenses.isNotEmpty() || financial.incomes.isNotEmpty() ||
             financial.goals.isNotEmpty() || financial.investments.isNotEmpty()
-        return if (used) {
-            GuidanceMemory(
-                seen = Nudge.entries.filter {
-                    it.forNewUsers
-                }.toSet()
-            )
-        } else {
-            null
-        }
+        val newUser = Nudge.entries.filter { it.forNewUsers }.toSet()
+        return if (used) GuidanceMemory(seen = newUser) else null
     }
 
     /**
@@ -631,7 +649,11 @@ class RoomRestores(
         val manifest = readManifest() ?: return null
         if (committed(manifest.operation) != true) return null
         val bytes = io(failed = null) { staged.takeIf { it.isFile }?.readBytes() } ?: return null
-        return pendingFrom(parse(bytes)?.contents ?: return null, done = null)
+        return pendingFrom(
+            parse(bytes)?.contents ?: return null,
+            done = null,
+            translated = manifest.report != null
+        )
     }
 
     /** A committed replacement whose file is still staged is moved first, as a look does. */
@@ -673,8 +695,13 @@ class RoomRestores(
         }
         // Merged, never put in place of the phone's, so nothing seen is forgotten (ADR 0027).
         guidanceLeft?.let { wanted ->
-            val saved = guidance.mergeRestored(wanted).saved()
-            if (saved && markApplied(GUIDANCE)) guidanceLeft = null
+            // The phone's own guidance cannot be read: a merge will never land, and a reset
+            // clears it. The group is done rather than pending for good; an I/O failure stays.
+            val done = when (val merged = guidance.mergeRestored(wanted)) {
+                PreferenceWrite.Saved -> true
+                is PreferenceWrite.Failed -> merged.failure == PreferenceFailure.InvalidValue
+            }
+            if (done && markApplied(GUIDANCE)) guidanceLeft = null
         }
         reviewRestoredEntries()
         val left = PendingPreferences(
