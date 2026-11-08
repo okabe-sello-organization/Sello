@@ -27,6 +27,7 @@ import androidx.compose.ui.layout.FirstBaseline
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.software.sello.designsystem.icon.SelloIcon
@@ -41,7 +42,8 @@ enum class LineEmphasis { Normal, Soft, Strong }
  * "label, value". Put a [MoneyText] in [value] for amounts. A [LineEmphasis.Soft] line
  * draws its label and, by default, its value in the soft ink; a [LineEmphasis.Strong]
  * one sets its label in black weight, and the value should match. With [onLabelHelp] the
- * label is a [HelpTerm] that opens what it means, its own button beside the line.
+ * label is a [HelpTerm] that opens what it means, its own button beside the line; the line
+ * still says its label first, "label, value".
  */
 @Composable
 fun LeaderLine(
@@ -64,8 +66,15 @@ fun LeaderLine(
     } else {
         Modifier.clickable(role = Role.Button, onClick = onClick)
     }
+    // The help button leaves the merged line, so the line names itself before its value.
+    val named = if (onLabelHelp == null) {
+        Modifier
+    } else {
+        Modifier.semantics { contentDescription = label }
+    }
     LeaderLayout(
-        modifier = modifier.fillMaxWidth().then(interaction).heightIn(min = minHeight),
+        modifier = modifier.fillMaxWidth().then(interaction).then(named)
+            .heightIn(min = minHeight),
         start = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (icon != null) {
