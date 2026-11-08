@@ -1,6 +1,7 @@
 package com.software.sello.feature.recibo
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -12,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -20,6 +22,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.software.sello.R
 import com.software.sello.designsystem.component.AnswerSlip
 import com.software.sello.designsystem.component.ButtonKind
+import com.software.sello.designsystem.component.CardHelp
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.component.ScheduleRow
 import com.software.sello.designsystem.component.SelloButton
@@ -79,13 +82,17 @@ sealed interface UpcomingState {
      */
     data class Empty(val month: YearMonth, val stale: Boolean = false) : UpcomingState
 
-    /** [stale]: the month could not be read again; these are the payments as last read. */
+    /**
+     * [stale]: the month could not be read again; these are the payments as last read.
+     * [help]: the explanation of what is set aside is open over them.
+     */
     data class Ready(
         val month: YearMonth,
         val today: LocalDate,
         val total: MoneyTextValue,
         val payments: List<UpcomingPayment>,
-        val stale: Boolean = false
+        val stale: Boolean = false,
+        val help: Boolean = false
     ) : UpcomingState
 }
 
@@ -97,7 +104,8 @@ sealed interface UpcomingState {
 class UpcomingPaymentsViewModel(
     snapshots: MonthlySnapshots,
     clock: FinancialClock,
-    private val money: MoneyFormatter
+    private val money: MoneyFormatter,
+    private val saved: SavedStateHandle
 ) : ViewModel() {
     private val attempts = MutableStateFlow(0)
 
@@ -112,9 +120,18 @@ class UpcomingPaymentsViewModel(
             val month = YearMonth.from(today)
             lastGood.keep(month, snapshots.observe(month)).map { render(it, today) }
         }
+        // Kept across a restart, as the screen's other state is; shown with the payments.
+        .combine(saved.getStateFlow(KEY_HELP, false)) { state, help ->
+            if (state is UpcomingState.Ready) state.copy(help = help) else state
+        }
         .stateIn(viewModelScope, SharingStarted.Eagerly, UpcomingState.Loading)
 
     fun retry() = attempts.update { it + 1 }
+
+    /** Open or close the explanation of what is set aside. */
+    fun help(open: Boolean) {
+        saved[KEY_HELP] = open
+    }
 
     private fun render(state: SnapshotState, today: LocalDate): UpcomingState {
         val snapshot = when (state) {
@@ -144,6 +161,10 @@ class UpcomingPaymentsViewModel(
             stale = stale
         )
     }
+
+    private companion object {
+        const val KEY_HELP = "upcomingHelp"
+    }
 }
 
 @Composable
@@ -151,11 +172,24 @@ fun UpcomingPaymentsRoot(
     viewModels: ViewModelProvider.Factory,
     padding: PaddingValues,
     onOpenSchedule: (String) -> Unit,
-    onAllSchedules: () -> Unit
+    onAllSchedules: () -> Unit,
+    onOpenGuide: () -> Unit = {}
 ) {
     val model: UpcomingPaymentsViewModel = viewModel(factory = viewModels)
     val state by model.state.collectAsStateWithLifecycle()
-    UpcomingPaymentsScreen(state, padding, model::retry, onOpenSchedule, onAllSchedules)
+    UpcomingPaymentsScreen(
+        state,
+        padding,
+        model::retry,
+        onOpenSchedule,
+        onAllSchedules,
+        onHelp = model::help,
+        // The Guía opens over this screen: Back returns to the payments, not to the sheet.
+        onOpenGuide = {
+            model.help(false)
+            onOpenGuide()
+        }
+    )
 }
 
 @Composable
@@ -164,10 +198,35 @@ fun UpcomingPaymentsScreen(
     padding: PaddingValues,
     onRetry: () -> Unit,
     onOpenSchedule: (String) -> Unit,
-    onAllSchedules: () -> Unit
+    onAllSchedules: () -> Unit,
+    onHelp: (open: Boolean) -> Unit = {},
+    onOpenGuide: () -> Unit = {}
+) {
+    // Sized by the list, as before; the sheet, when open, fills the screen itself.
+    Box {
+        UpcomingPaymentsList(state, padding, onRetry, onOpenSchedule, onAllSchedules, onHelp)
+        if ((state as? UpcomingState.Ready)?.help == true) {
+            ReciboHelpSheet(
+                ReciboHelp.Upcoming,
+                onDismiss = { onHelp(false) },
+                onMore = onOpenGuide
+            )
+        }
+    }
+}
+
+@Composable
+private fun UpcomingPaymentsList(
+    state: UpcomingState,
+    padding: PaddingValues,
+    onRetry: () -> Unit,
+    onOpenSchedule: (String) -> Unit,
+    onAllSchedules: () -> Unit,
+    onHelp: (open: Boolean) -> Unit
 ) {
     val months = monthNames()
     val dates = dateLabels()
+    val helpLabel = stringResource(R.string.help_upcoming_open)
     LazyColumn(
         contentPadding = padding,
         verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md),
@@ -237,7 +296,14 @@ fun UpcomingPaymentsScreen(
                         ),
                         amount = state.total,
                         stamp = null,
-                        ink = StampInk.Neutral
+                        ink = StampInk.Neutral,
+                        labelHelp = {
+                            CardHelp(
+                                helpLabel,
+                                onClick = { onHelp(true) },
+                                modifier = Modifier.testTag(UPCOMING_HELP_TAG)
+                            )
+                        }
                     ) {
                         Text(
                             stringResource(
@@ -299,3 +365,4 @@ fun UpcomingPaymentsScreen(
 
 const val UPCOMING_TAG = "upcoming"
 const val UPCOMING_STALE_TAG = "upcoming.stale"
+const val UPCOMING_HELP_TAG = "upcoming.help"

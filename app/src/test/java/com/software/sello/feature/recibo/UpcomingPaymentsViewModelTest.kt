@@ -1,5 +1,6 @@
 package com.software.sello.feature.recibo
 
+import androidx.lifecycle.SavedStateHandle
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.Occurrence
 import com.software.sello.domain.model.Outcome
@@ -68,7 +69,7 @@ class UpcomingPaymentsViewModelTest {
 
     @Test
     fun theReservedPaymentsAreListedByDateNamedByNoteElseCategory() {
-        val model = UpcomingPaymentsViewModel(snapshots, clock, money)
+        val model = UpcomingPaymentsViewModel(snapshots, clock, money, SavedStateHandle())
         publish(
             payment(700, "2026-10-25", 120_000, "Suscripciones"),
             payment(701, "2026-10-30", 80_000, null)
@@ -88,7 +89,7 @@ class UpcomingPaymentsViewModelTest {
 
     @Test
     fun nothingReservedIsEmptyAndAFailedReadBeforeAnyIsFailedNeverEmpty() {
-        val failing = UpcomingPaymentsViewModel(snapshots, clock, money)
+        val failing = UpcomingPaymentsViewModel(snapshots, clock, money, SavedStateHandle())
         snapshots.of(october).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
         val failed = failing.state.value
         publish()
@@ -99,7 +100,7 @@ class UpcomingPaymentsViewModelTest {
 
     @Test
     fun aFailedReadKeepsTheLastListAsOlderAndRetryKeepsIt() {
-        val model = UpcomingPaymentsViewModel(snapshots, clock, money)
+        val model = UpcomingPaymentsViewModel(snapshots, clock, money, SavedStateHandle())
         publish(payment(700, "2026-10-25", 120_000, "Suscripciones"))
         snapshots.of(october).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
         val older = model.state.value as UpcomingState.Ready
@@ -115,10 +116,27 @@ class UpcomingPaymentsViewModelTest {
 
     @Test
     fun aFailedReadAfterNothingReservedStaysNothingReservedAsOlder() {
-        val model = UpcomingPaymentsViewModel(snapshots, clock, money)
+        val model = UpcomingPaymentsViewModel(snapshots, clock, money, SavedStateHandle())
         publish()
         snapshots.of(october).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
 
         assertEquals(UpcomingState.Empty(october, stale = true), model.state.value)
+    }
+
+    @Test
+    fun theHelpOpensOverThePaymentsAndIsKeptAcrossARestart() {
+        val saved = SavedStateHandle()
+        val model = UpcomingPaymentsViewModel(snapshots, clock, money, saved)
+        publish(payment(700, "2026-10-25", 120_000, "Suscripciones"))
+
+        model.help(true)
+        val opened = model.state.value as UpcomingState.Ready
+        val restarted = UpcomingPaymentsViewModel(snapshots, clock, money, saved)
+        val reopened = restarted.state.value as UpcomingState.Ready
+        restarted.help(false)
+
+        assertEquals(true, opened.help)
+        assertEquals(true, reopened.help)
+        assertEquals(false, (restarted.state.value as UpcomingState.Ready).help)
     }
 }

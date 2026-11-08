@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
@@ -154,8 +155,14 @@ class CategoryDetailScreenTest {
         )
         heroText("9 días").assertIsDisplayed()
         heroText("9 días, incluido hoy").assertDoesNotExist()
-        val labels = listOf("Para", "Al día", "Frente a sep")
-            .map { heroText(it).getUnclippedBoundsInRoot() }
+        // "Al día" is an underlined term (SELLO-207): one button, found by its tag.
+        val perDay = rule.onNodeWithTag(CATEGORY_DETAIL_PER_DAY_HELP_TAG, useUnmergedTree = true)
+        perDay.assertContentDescriptionEquals("Al día. Qué significa")
+        val labels = listOf(
+            heroText("Para").getUnclippedBoundsInRoot(),
+            perDay.getUnclippedBoundsInRoot(),
+            heroText("Frente a sep").getUnclippedBoundsInRoot()
+        )
         assertEquals(labels[0].top, labels[1].top)
         assertEquals(labels[1].top, labels[2].top)
         // Centred in three equal columns, so the label centres are evenly spaced.
@@ -173,9 +180,12 @@ class CategoryDetailScreenTest {
                 kotlin.math.abs(((bounds.left + bounds.right) / 2 - centres[column]).value) <= 1f
             )
         }
-        listOf("Para", "Al día", "Frente a sep").forEach {
+        listOf("Para", "Frente a sep").forEach {
             assertEquals(12.5.sp, textStyle(it).fontSize)
         }
+        val perDayLayout = mutableListOf<TextLayoutResult>()
+        perDay.performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(perDayLayout) }
+        assertEquals(12.5.sp, perDayLayout.single().layoutInput.style.fontSize)
         listOf("9 días", "+6,7 %").forEach {
             assertEquals(16.sp, textStyle(it).fontSize)
             assertEquals(FontWeight.W800, textStyle(it).fontWeight)

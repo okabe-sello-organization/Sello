@@ -26,7 +26,9 @@ sealed interface ReciboState {
         /** Why the latest read failed, when it is a carry figure that cannot be calculated. */
         val carryProblem: CarryProblem? = null,
         val invitation: ReciboInvitation? = null,
-        val nudge: ReciboNudge? = null
+        val nudge: ReciboNudge? = null,
+        /** The explanation open over the month, from its **?** or an underlined word. */
+        val help: ReciboHelp? = null
     ) : ReciboState
 
     /** The read failed and there is nothing earlier to show. */
@@ -293,4 +295,16 @@ sealed interface ReciboAction {
 
     /** The backup reminder's "No volver a mostrar". */
     data object TurnOffBackupReminder : ReciboAction
+
+    /** Open [topic]'s explanation over the month. */
+    data class ShowHelp(val topic: ReciboHelp) : ReciboAction
+
+    /** Close the explanation open. */
+    data object CloseHelp : ReciboAction
+
+    /**
+     * The explanation's "Ver más en la Guía de Sello": closes it; opening the Guía at its
+     * Recibo page is the root's.
+     */
+    data object OpenHelpGuide : ReciboAction
 }

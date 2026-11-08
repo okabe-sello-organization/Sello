@@ -27,6 +27,7 @@ import androidx.compose.ui.layout.FirstBaseline
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.software.sello.designsystem.icon.SelloIcon
@@ -40,7 +41,9 @@ enum class LineEmphasis { Normal, Soft, Strong }
  * A receipt line: label, dotted leader, value. For two to six facts. Read as one node,
  * "label, value". Put a [MoneyText] in [value] for amounts. A [LineEmphasis.Soft] line
  * draws its label and, by default, its value in the soft ink; a [LineEmphasis.Strong]
- * one sets its label in black weight, and the value should match.
+ * one sets its label in black weight, and the value should match. With [onLabelHelp] the
+ * label is a [HelpTerm] that opens what it means, its own button beside the line; the line
+ * still says its label first, "label, value".
  */
 @Composable
 fun LeaderLine(
@@ -50,6 +53,7 @@ fun LeaderLine(
     caption: String? = null,
     onClick: (() -> Unit)? = null,
     emphasis: LineEmphasis = LineEmphasis.Normal,
+    onLabelHelp: (() -> Unit)? = null,
     value: @Composable () -> Unit
 ) {
     val minHeight = when {
@@ -62,8 +66,15 @@ fun LeaderLine(
     } else {
         Modifier.clickable(role = Role.Button, onClick = onClick)
     }
+    // The help button leaves the merged line, so the line names itself before its value.
+    val named = if (onLabelHelp == null) {
+        Modifier
+    } else {
+        Modifier.semantics { contentDescription = label }
+    }
     LeaderLayout(
-        modifier = modifier.fillMaxWidth().then(interaction).heightIn(min = minHeight),
+        modifier = modifier.fillMaxWidth().then(interaction).then(named)
+            .heightIn(min = minHeight),
         start = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (icon != null) {
@@ -77,15 +88,17 @@ fun LeaderLine(
                 Column {
                     val body = MaterialTheme.typography.bodyLarge
                     val soft = emphasis == LineEmphasis.Soft
-                    Text(
-                        label,
-                        style = if (emphasis == LineEmphasis.Strong) {
-                            body.copy(fontWeight = SelloTheme.type.weight.figure)
-                        } else {
-                            body
-                        },
-                        color = if (soft) SelloTheme.colors.inkSoft else Color.Unspecified
-                    )
+                    val style = if (emphasis == LineEmphasis.Strong) {
+                        body.copy(fontWeight = SelloTheme.type.weight.figure)
+                    } else {
+                        body
+                    }
+                    val color = if (soft) SelloTheme.colors.inkSoft else Color.Unspecified
+                    if (onLabelHelp == null) {
+                        Text(label, style = style, color = color)
+                    } else {
+                        HelpTerm(label, onLabelHelp, style = style, color = color)
+                    }
                     if (caption != null) {
                         Text(
                             caption,
