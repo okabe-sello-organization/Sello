@@ -214,9 +214,9 @@ class CategoryEditorViewModel(
     /** Whether leaving would lose something the person entered or chose. */
     private fun isDirty(state: CategoryEditorState) =
         (state.name.isNotBlank() && state.name != suggestedName) ||
-        (state.limitText.isNotBlank() && state.limitText != suggestedLimit) ||
-        state.unlimited ||
-        typed.iconChosen
+            (state.limitText.isNotBlank() && state.limitText != suggestedLimit) ||
+            state.unlimited ||
+            typed.iconChosen
 
     /**
      * Reads the generation a command must carry and which icons are taken, then, if a
