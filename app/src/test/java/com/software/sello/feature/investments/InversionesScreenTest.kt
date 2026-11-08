@@ -11,7 +11,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
@@ -501,5 +503,29 @@ class InversionesScreenTest {
         rule.onNodeWithText("Lo anotas tú", useUnmergedTree = true).assertExists()
         // The scrim closes it.
         rule.onNodeWithTag("$INVESTMENT_HELP_TAG.Value").performClick()
+    }
+
+    @Test
+    fun theTotalsQuestionMarkAndGananciaOpenTheirSheetsAndGananciaStillSaysItsAmount() {
+        destination(ReadState.Ready(page()))
+
+        // TalkBack: the line says "Ganancia" and its amount; the word is its own button.
+        rule.onNodeWithTag(INVERSIONES_GAIN_TAG).assert(
+            SemanticsMatcher.expectValue(
+                SemanticsProperties.ContentDescription,
+                listOf("Ganancia", "más 1.301.588 pesos")
+            )
+        )
+        rule.onNodeWithContentDescription("Ganancia. Qué significa").performClick()
+        rule.onNodeWithTag("$INVESTMENT_HELP_TAG.Gain").assertExists()
+        rule.onNodeWithText("Rendimiento (el %)", useUnmergedTree = true).assertExists()
+        rule.onNodeWithTag("$INVESTMENT_HELP_TAG.Gain").performClick()
+        rule.onNodeWithTag("$INVESTMENT_HELP_TAG.Gain").assertDoesNotExist()
+
+        // The answer is still said once, and its ? is reachable on its own.
+        rule.onNodeWithContentDescription("Tus inversiones valen, 28.601.838 pesos, Gana")
+            .assertExists()
+        rule.onNodeWithTag(INVERSIONES_VALUE_HELP_TAG).performClick()
+        rule.onNodeWithTag("$INVESTMENT_HELP_TAG.Value").assertExists()
     }
 }

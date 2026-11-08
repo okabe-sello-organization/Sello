@@ -15,6 +15,7 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -73,6 +74,7 @@ import com.software.sello.domain.port.GoalSummary
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.feature.expense.HandExpenseCommands
+import com.software.sello.feature.guide.GuidePage
 import com.software.sello.feature.income.HandIncomeCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.navigation.HandCategoryReads
@@ -197,7 +199,8 @@ class MetasScreenTest {
     private fun destination(
         board: GoalBoard,
         onCreate: (() -> Unit)? = null,
-        onContribute: (() -> Unit)? = null
+        onContribute: (() -> Unit)? = null,
+        onOpenGuide: (GuidePage) -> Unit = {}
     ) {
         val factory = viewModelFactory {
             initializer {
@@ -241,7 +244,8 @@ class MetasScreenTest {
                     ) {},
                     onOpenGoal = {},
                     onCreate = onCreate,
-                    onContribute = onContribute
+                    onContribute = onContribute,
+                    onOpenGuide = onOpenGuide
                 )
             }
         }
@@ -546,5 +550,23 @@ class MetasScreenTest {
 
         assertEquals(2, commands.sent.size)
         rule.onNodeWithTag(METAS_COMPLETION_PROBLEM_TAG).assertIsDisplayed()
+    }
+
+    @Test
+    fun guardadoEnMetasQuestionMarkOpensItsSheetAndVerMasOpensTheGuia() {
+        val guides = mutableListOf<GuidePage>()
+        destination(board, onOpenGuide = guides::add)
+
+        rule.onNodeWithTag(METAS_SAVED_HELP_TAG)
+            .assertContentDescriptionEquals("Qué es Guardado en metas")
+            .performClick()
+
+        rule.onNodeWithTag(METAS_HELP_TAG).assertExists()
+        rule.onNodeWithText("Aparte de tu presupuesto", useUnmergedTree = true).assertExists()
+        rule.onNode(hasText("Ver más en la Guía de Sello"), useUnmergedTree = true)
+            .performScrollTo()
+            .performClick()
+        assertEquals(listOf(GuidePage.Goals), guides)
+        rule.onNodeWithTag(METAS_HELP_TAG).assertDoesNotExist()
     }
 }

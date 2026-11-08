@@ -182,7 +182,11 @@ private fun Answer(
         LeaderLine(stringResource(R.string.investment_contributed)) { MoneyText(state.contributed) }
         LeaderLine(stringResource(R.string.investment_withdrawn)) { MoneyText(state.withdrawn) }
         LeaderLine(stringResource(R.string.investment_dividends)) { MoneyText(state.dividends) }
-        LeaderLine(stringResource(R.string.investment_gain)) {
+        LeaderLine(
+            stringResource(R.string.investment_gain),
+            Modifier.testTag(INVESTMENT_GAIN_TAG),
+            onLabelHelp = { onAction(InvestmentDetailAction.ShowHelp(InvestmentHelp.Gain)) }
+        ) {
             MoneyText(
                 state.gain,
                 color = when (gain) {
@@ -426,4 +430,5 @@ private const val SHORT_LIST = 4
 
 const val INVESTMENT_DETAIL_TAG = "investment.detail"
 const val INVESTMENT_RECORD_VALUE_TAG = "investment.recordValue"
+const val INVESTMENT_GAIN_TAG = "investment.gain"
 const val INVESTMENT_CHART_HELP_TAG = "investment.help.chart"

@@ -6,6 +6,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.hasContentDescription
@@ -260,6 +262,22 @@ class InvestmentDetailMovementsTest {
     }
 
     @Test
+    fun gananciaSaysItsAmountAndAsksForItsSheet() {
+        val actions = mutableListOf<InvestmentDetailAction>()
+        show(actions = actions)
+
+        rule.onNodeWithTag(INVESTMENT_GAIN_TAG).assert(
+            SemanticsMatcher.expectValue(
+                SemanticsProperties.ContentDescription,
+                listOf("Ganancia", "más 228.000 pesos")
+            )
+        )
+        rule.onNodeWithContentDescription("Ganancia. Qué significa").performClick()
+
+        assertEquals(listOf(InvestmentDetailAction.ShowHelp(InvestmentHelp.Gain)), actions)
+    }
+
+    @Test
     fun theChartAndListClaro() = still(dark = false, all = false)
 
     @Test
@@ -351,11 +369,14 @@ class InvestmentDetailMovementsTest {
         listOf(
             "Aportaste" to "USD\u00A030.000,00",
             "Retiraste" to "USD\u00A00,00",
-            "Dividendos y rentas" to "USD\u00A01.780,00",
-            "Ganancia" to "+USD\u00A02.280,00"
+            "Dividendos y rentas" to "USD\u00A01.780,00"
         ).forEach { (label, amount) ->
             rule.onNode(hasText(label) and hasText(amount)).assertExists()
         }
+        // Ganancia's word is its own button (SELLO-209); the line still names itself.
+        rule.onNodeWithTag(INVESTMENT_GAIN_TAG)
+            .assert(hasText("+USD\u00A02.280,00"))
+            .assert(hasContentDescription("Ganancia"))
         rule.onNodeWithTag("investment.chart.picked")
             .assert(hasText("USD\u00A030.500,00", substring = true))
     }

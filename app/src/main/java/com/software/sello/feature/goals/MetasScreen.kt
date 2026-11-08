@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import com.software.sello.R
 import com.software.sello.designsystem.component.AnswerSlip
 import com.software.sello.designsystem.component.ButtonTone
+import com.software.sello.designsystem.component.CardHelp
 import com.software.sello.designsystem.component.MilestoneRow
 import com.software.sello.designsystem.component.MilestoneSpec
 import com.software.sello.designsystem.component.MilestoneState
@@ -143,7 +144,11 @@ fun MetasScreen(
                 if (state.empty) {
                     item { EmptyMetas() }
                 } else {
-                    state.band?.let { band -> item(key = METAS_TOTAL_TAG) { MetasTotal(band) } }
+                    state.band?.let { band ->
+                        item(key = METAS_TOTAL_TAG) {
+                            MetasTotal(band) { onAction(MetasAction.ShowHelp) }
+                        }
+                    }
                 }
                 items(state.goals, key = { it.id }) { goal ->
                     Column {
@@ -232,7 +237,7 @@ private fun EmptyMetas() {
  * when anything did.
  */
 @Composable
-private fun MetasTotal(band: MetasBand) {
+private fun MetasTotal(band: MetasBand, onHelp: () -> Unit) {
     val months = monthNames()
     val contributed = band.contributed?.let {
         stringResource(R.string.metas_band_contributed, it.digits, months.inSentence(band.month))
@@ -243,6 +248,13 @@ private fun MetasTotal(band: MetasBand) {
         stamp = null,
         ink = StampInk.Good,
         modifier = Modifier.testTag(METAS_TOTAL_TAG),
+        labelHelp = {
+            CardHelp(
+                stringResource(R.string.metas_help_label),
+                onHelp,
+                Modifier.testTag(METAS_SAVED_HELP_TAG)
+            )
+        },
         description = listOfNotNull(
             stringResource(R.string.metas_band_label),
             band.saved.spoken,

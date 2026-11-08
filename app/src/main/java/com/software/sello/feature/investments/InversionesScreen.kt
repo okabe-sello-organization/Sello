@@ -172,6 +172,7 @@ private fun Total(
         stamp = stamp,
         ink = if (gain == GainDirection.Loss) StampInk.Over else StampInk.Good,
         modifier = Modifier.testTag("inversiones.total"),
+        labelHelp = { ValueHelp(onAction) },
         description = listOfNotNull(
             stringResource(R.string.inversiones_value_label),
             total.value.spoken,
@@ -190,7 +191,11 @@ private fun Total(
         LeaderLine(stringResource(R.string.investment_contributed)) { MoneyText(total.contributed) }
         LeaderLine(stringResource(R.string.investment_withdrawn)) { MoneyText(total.withdrawn) }
         LeaderLine(stringResource(R.string.investment_dividends)) { MoneyText(total.dividends) }
-        LeaderLine(stringResource(R.string.investment_gain)) {
+        LeaderLine(
+            stringResource(R.string.investment_gain),
+            Modifier.testTag(INVERSIONES_GAIN_TAG),
+            onLabelHelp = { onAction(InversionesAction.ShowHelp(InvestmentHelp.Gain)) }
+        ) {
             MoneyText(total.gain, color = gainInk(gain))
         }
         val from = dates.shortDay(total.valuedFrom, state.today)
@@ -466,4 +471,5 @@ private fun ValueHelp(onAction: (InversionesAction) -> Unit) {
 
 const val INVERSIONES_LIST_TAG = "inversiones.list"
 const val INVERSIONES_VALUE_HELP_TAG = "inversiones.help.value"
+const val INVERSIONES_GAIN_TAG = "inversiones.gain"
 const val INVERSIONES_RATE_TERM_TAG = "inversiones.help.rate"
