@@ -200,9 +200,13 @@ class HandSmallExpensePreferences(var value: SmallExpenseLine = SmallExpenseLine
     }
 }
 
-/** The guidance seen as a test sets it; [fail] refuses writes. Merges as the app's does. */
+/**
+ * The guidance seen as a test sets it; [fail] refuses writes. Merges as the app's does, and
+ * [merges] records each backup memory a restore asked to merge.
+ */
 class HandGuidancePreferences(var value: Guidance = Guidance()) : GuidancePreferences {
     var fail = false
+    val merges = mutableListOf<GuidanceMemory>()
 
     override fun observeGuidance(): Flow<PreferenceRead<Guidance>> =
         flowOf(PreferenceRead.Ready(value))
@@ -234,8 +238,10 @@ class HandGuidancePreferences(var value: Guidance = Guidance()) : GuidancePrefer
         }
     }
 
-    override suspend fun mergeRestored(memory: GuidanceMemory) =
-        saved { value.copy(memory = value.memory.mergedWith(memory)) }
+    override suspend fun mergeRestored(memory: GuidanceMemory): PreferenceWrite {
+        merges += memory
+        return saved { value.copy(memory = value.memory.mergedWith(memory)) }
+    }
 
     private fun saved(next: () -> Guidance): PreferenceWrite {
         if (fail) return PreferenceWrite.Failed(PreferenceFailure.Unavailable)

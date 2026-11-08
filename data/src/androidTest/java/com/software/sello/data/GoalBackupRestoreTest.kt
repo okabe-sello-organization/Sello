@@ -253,16 +253,17 @@ class GoalBackupRestoreTest {
     }
 
     /**
-     * [bytes] as version 6 wrote them: no ink hue, no Gastos hormiga line, and [chosen] as the
-     * one chosen goal.
+     * [bytes] as version 6 wrote them: no ink hue, no Gastos hormiga line, no guidance, and
+     * [chosen] as the one chosen goal.
      */
     private fun asVersion6(bytes: ByteArray, chosen: GoalId): ByteArray {
         val text = String(bytes)
         val stars = Regex("\"starredGoals\": \\[[^]]*]")
-        check(stars.findAll(text).count() == 1 && text.contains("\"version\": 10,"))
-        return text.replace("\"version\": 10,", "\"version\": 6,")
+        check(stars.findAll(text).count() == 1 && text.contains("\"version\": 11,"))
+        return text.replace("\"version\": 11,", "\"version\": 6,")
             .replace(Regex("\\s+\"inkHue\": null,"), "")
             .replace(Regex(",\\s+\"smallExpenseLine\": [0-9]+"), "")
+            .replace(Regex(",\\s+\"guidance\": (null|\\{[^{}]*\\})"), "")
             .replace(stars, "\"featuredGoal\": \"${chosen.value}\"")
             .toByteArray()
     }

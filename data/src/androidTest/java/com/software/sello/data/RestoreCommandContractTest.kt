@@ -17,13 +17,17 @@ import com.software.sello.domain.model.CategoryOrderingPreference
 import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.DefaultLimit
 import com.software.sello.domain.model.ExpenseId
+import com.software.sello.domain.model.Guidance
+import com.software.sello.domain.model.GuidanceMemory
 import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.InvestmentPreference
+import com.software.sello.domain.model.Nudge
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.ShownNudge
 import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.port.AppearancePreferences
@@ -52,6 +56,7 @@ import com.software.sello.domain.port.StagedLookup
 import com.software.sello.domain.port.StagedRestore
 import java.io.File
 import java.time.Instant
+import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -438,9 +443,9 @@ class RestoreCommandContractTest {
 
         val truncated = restores().stage(bytes.copyOf(bytes.size / 2))
         val text = String(bytes)
-        check(text.contains("\"version\": 10,"))
+        check(text.contains("\"version\": 11,"))
         val newer = restores().stage(
-            text.replaceFirst("\"version\": 10,", "\"version\": 11,").toByteArray()
+            text.replaceFirst("\"version\": 11,", "\"version\": 12,").toByteArray()
         )
 
         assertEquals(Outcome.Failure(StageFailure.Rejected(RestoreRejection.Damaged)), truncated)
@@ -836,6 +841,108 @@ class RestoreCommandContractTest {
         assertEquals(PendingPreferences(null, null), done?.preferences)
         assertEquals(line, smallExpenses.value)
         assertNull(restores().pending())
+    }
+
+    /** What the phone had seen before the restore (SELLO-205). */
+    private val phoneGuidance = Guidance(
+        GuidanceMemory(
+            seen = setOf(Nudge.GuideHint),
+            lastShown = ShownNudge(Nudge.Deleting, LocalDate.of(2026, 11, 3))
+        ),
+        existingUseChecked = true
+    )
+
+    /** What the backup says was seen. */
+    private val backupGuidance = GuidanceMemory(
+        seen = setOf(Nudge.Carry),
+        lastShown = ShownNudge(Nudge.Carry, LocalDate.of(2026, 11, 2)),
+        backupReminderShown = LocalDate.of(2026, 10, 30),
+        backupReminderOff = true
+    )
+
+    @Test
+    fun aRestoreMergesTheBackupsGuidanceIntoThePhonesOnce() = runBlocking {
+        currentHistory()
+        guidance.value = phoneGuidance
+
+        val outcome = restores().replace(stage(g01(wanted.copy(guidance = backupGuidance))))
+
+        assertEquals(
+            PendingPreferences(null, null),
+            (outcome as RestoreOutcome.Restored).preferences
+        )
+        assertEquals(
+            Guidance(
+                GuidanceMemory(
+                    seen = setOf(Nudge.GuideHint, Nudge.Carry),
+                    lastShown = ShownNudge(Nudge.Deleting, LocalDate.of(2026, 11, 3)),
+                    backupReminderShown = LocalDate.of(2026, 10, 30),
+                    backupReminderOff = true
+                ),
+                existingUseChecked = true
+            ),
+            guidance.value
+        )
+        assertEquals(listOf(backupGuidance), guidance.merges)
+        assertEquals(emptyList<String>(), stagingFiles())
+    }
+
+    /** A merge that cannot be saved never holds the restore up; the phone keeps its own. */
+    @Test
+    fun aGuidanceMergeThatFailsLeavesTheRestoreDoneAndThePhonesGuidanceAlone() = runBlocking {
+        currentHistory()
+        guidance.value = phoneGuidance
+        guidance.fail = true
+
+        val outcome = restores().replace(stage(g01(wanted.copy(guidance = backupGuidance))))
+
+        assertEquals(
+            RestoreOutcome.Restored(BackupSummary(2, 3, 1, 0, 0), PendingPreferences(null, null)),
+            outcome
+        )
+        assertEquals(phoneGuidance, guidance.value)
+        assertNull(restores().pending())
+        assertEquals(emptyList<String>(), stagingFiles())
+    }
+
+    /** While another group waits, the merge is tried again with it, and lands once. */
+    @Test
+    fun aGuidanceMergeIsRetriedWithAPendingGroupAndNeverTwice() = runBlocking {
+        currentHistory()
+        guidance.value = phoneGuidance
+        guidance.fail = true
+        smallExpenses.fail = true
+        val line = SmallExpenseLine.of(8_000)!!
+
+        restores().replace(
+            stage(g01(wanted.copy(smallExpenseLine = line, guidance = backupGuidance)))
+        )
+        assertEquals(phoneGuidance, guidance.value)
+
+        ledger.reopen()
+        guidance.fail = false
+        val partly = restores().applyPending()
+        assertEquals(PendingPreferences(null, null, null, line), partly?.preferences)
+        assertEquals(setOf(Nudge.GuideHint, Nudge.Carry), guidance.value.memory.seen)
+
+        smallExpenses.fail = false
+        restores().applyPending()
+
+        // Asked when it failed and when it landed; not again once applied.
+        assertEquals(listOf(backupGuidance, backupGuidance), guidance.merges)
+        assertNull(restores().pending())
+    }
+
+    /** A backup without guidance, as one from before version 11, keeps the phone's as it is. */
+    @Test
+    fun aBackupWithoutGuidanceKeepsThePhones() = runBlocking {
+        currentHistory()
+        guidance.value = phoneGuidance
+
+        restores().replace(stage(g01(wanted)))
+
+        assertEquals(phoneGuidance, guidance.value)
+        assertTrue(guidance.merges.isEmpty())
     }
 
     @Test
