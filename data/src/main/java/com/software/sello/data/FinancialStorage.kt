@@ -23,6 +23,7 @@ import com.software.sello.data.repository.RoomExpenseReads
 import com.software.sello.data.repository.RoomFinancialProfileStore
 import com.software.sello.data.repository.RoomGoalCommands
 import com.software.sello.data.repository.RoomGoalReads
+import com.software.sello.data.repository.RoomHistoryStartReads
 import com.software.sello.data.repository.RoomIncomeBatchCommands
 import com.software.sello.data.repository.RoomIncomeCommands
 import com.software.sello.data.repository.RoomIncomeReads
@@ -65,6 +66,7 @@ import com.software.sello.domain.port.FinancialProfileStore
 import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.GuidancePreferences
+import com.software.sello.domain.port.HistoryStartReads
 import com.software.sello.domain.port.IncomeBatchCommands
 import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.IncomeReads
@@ -151,6 +153,9 @@ class FinancialStorage internal constructor(
         RoomGoalCommands(database, audit, clock, ids, undoWindow(monotonic), monotonic)
 
     val goalReads: GoalReads = RoomGoalReads(database)
+
+    /** Where the history begins, for guidance (E38). */
+    val historyStartReads: HistoryStartReads = RoomHistoryStartReads(database)
 
     /**
      * Investments and the USD rate. A deleted movement shares the one offer to undo with

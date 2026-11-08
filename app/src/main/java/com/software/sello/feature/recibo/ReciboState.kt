@@ -16,7 +16,8 @@ sealed interface ReciboState {
     /**
      * A month that was read. With [stale] the latest read failed and this is the last
      * one that worked, shown as older data and never as current. [invitation] is the one
-     * line inviting a look at the month just closed, when there is one to offer.
+     * line inviting a look at the month just closed, when there is one to offer. [nudge]
+     * is the one quiet line of guidance under the month's answer, when one is due.
      */
     data class Month(
         val summary: ReciboSummary,
@@ -24,7 +25,8 @@ sealed interface ReciboState {
         val stale: Boolean,
         /** Why the latest read failed, when it is a carry figure that cannot be calculated. */
         val carryProblem: CarryProblem? = null,
-        val invitation: ReciboInvitation? = null
+        val invitation: ReciboInvitation? = null,
+        val nudge: ReciboNudge? = null
     ) : ReciboState
 
     /** The read failed and there is nothing earlier to show. */
@@ -44,6 +46,18 @@ sealed interface ReciboState {
  * [month], December, so December's line never follows it.
  */
 data class ReciboInvitation(val month: YearMonth, val closesYear: Boolean = false)
+
+/** Recibo's quiet line of guidance (SELLO-211): one at a time, at most one a day. */
+sealed interface ReciboNudge {
+    /** "¿Dudas? La Guía de Sello está en Configuración.", with a ✕. */
+    data object GuideHint : ReciboNudge
+
+    /**
+     * "Tu último respaldo fue hace [daysSinceBackup] días …", or, with null, that there is
+     * no backup yet. Ir a Respaldo and No volver a mostrar; no ✕.
+     */
+    data class BackupReminder(val daysSinceBackup: Long?) : ReciboNudge
+}
 
 /** Which sentence an amount completes. */
 enum class ReciboHeadline {
@@ -252,4 +266,16 @@ sealed interface ReciboAction {
 
     /** Open the category's form on [month], to give that month a limit. Navigation is the root's. */
     data class SetMonthLimit(val categoryId: String, val month: YearMonth) : ReciboAction
+
+    /** The Guía hint's text: opens the Guía de Sello and closes the hint for good. */
+    data object OpenGuide : ReciboAction
+
+    /** The Guía hint's ✕: closes it for good. */
+    data object CloseGuideHint : ReciboAction
+
+    /** Ir a Respaldo: opens Respaldo, never starts a backup. Navigation is the root's. */
+    data object OpenBackup : ReciboAction
+
+    /** The backup reminder's "No volver a mostrar". */
+    data object TurnOffBackupReminder : ReciboAction
 }

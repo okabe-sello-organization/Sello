@@ -36,20 +36,30 @@ data class GuidanceMemory(
     /**
      * This phone's memory with a restored backup's: a nudge counts as seen if either says
      * so, "No volver a mostrar" holds if either says so, and the later of each pair of days
-     * wins. On the same day the phone's last nudge stays. Merging never forgets anything.
+     * wins. On the same day the phone's last nudge stays. Merging never forgets anything:
+     * the last nudge not kept, unless it is the backup reminder, counts as seen when its day
+     * is earlier than the kept one's, since a nudge shows for one day, once.
      */
-    fun mergedWith(backup: GuidanceMemory): GuidanceMemory = GuidanceMemory(
-        seen = seen + backup.seen,
-        lastShown = when {
-            lastShown == null -> backup.lastShown
-            backup.lastShown == null -> lastShown
-            backup.lastShown.day > lastShown.day -> backup.lastShown
-            else -> lastShown
-        },
-        backupReminderShown = listOfNotNull(backupReminderShown, backup.backupReminderShown)
-            .maxOrNull(),
-        backupReminderOff = backupReminderOff || backup.backupReminderOff
-    )
+    fun mergedWith(backup: GuidanceMemory): GuidanceMemory {
+        val phone = lastShown
+        val other = backup.lastShown
+        val (kept, dropped) = when {
+            phone == null -> other to null
+            other == null -> phone to null
+            other.day > phone.day -> other to phone
+            else -> phone to other
+        }
+        val expired = dropped?.nudge?.takeIf {
+            it != Nudge.BackupReminder && dropped.day < kept!!.day
+        }
+        return GuidanceMemory(
+            seen = seen + backup.seen + listOfNotNull(expired),
+            lastShown = kept,
+            backupReminderShown = listOfNotNull(backupReminderShown, backup.backupReminderShown)
+                .maxOrNull(),
+            backupReminderOff = backupReminderOff || backup.backupReminderOff
+        )
+    }
 }
 
 /**

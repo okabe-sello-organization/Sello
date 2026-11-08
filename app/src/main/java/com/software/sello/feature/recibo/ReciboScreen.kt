@@ -159,6 +159,7 @@ fun ReciboScreen(
                     onAdjust = { onAction(ReciboAction.AdjustBudget) },
                     onReserved = { onAction(ReciboAction.OpenReserved) }
                 )
+                state.nudge?.let { ReciboNudgeRow(it, onAction) }
                 state.invitation?.let { invitation ->
                     val onDismiss = { onAction(ReciboAction.DismissInvitation(invitation.month)) }
                     if (invitation.closesYear) {

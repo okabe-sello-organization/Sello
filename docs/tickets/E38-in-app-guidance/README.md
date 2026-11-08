@@ -52,7 +52,7 @@ mocks; the approved pieces are collected in the [mock](attachments/guidance-mock
 - The pill says **"Ir a Respaldo"**: it opens Respaldo, it does not start a backup.
 - One nudge at a time on a screen and at most one nudge a day across the app; the
   backup reminder counts as one. A nudge closes for good when its action is done or
-  its ✕ is tapped.
+  its ✕ is tapped, or once the day it showed has passed.
 - The backup reminder shows when there is at least one recorded movement and 30 days
   have passed since the last backup (or since the first movement, with no backup). It
   stays for that day, then waits 30 days unless a backup is made. A backup clears it.

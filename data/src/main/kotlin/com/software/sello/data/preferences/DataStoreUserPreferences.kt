@@ -32,6 +32,7 @@ import com.software.sello.domain.model.ShownNudge
 import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.policy.EffectiveDates
+import com.software.sello.domain.policy.NudgePolicy
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.BackupRecord
 import com.software.sello.domain.port.BackupRecords
@@ -221,12 +222,19 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
     override suspend fun markSeen(nudge: Nudge): PreferenceWrite =
         write { this[seenKey(nudge)] = true }
 
-    override suspend fun markShown(nudge: Nudge, day: LocalDate): PreferenceWrite = write {
-        this[GUIDANCE_LAST_SHOWN] = "${EffectiveDates.storedText(day)}|${nudge.stored}"
-        if (nudge == Nudge.BackupReminder) {
-            this[GUIDANCE_BACKUP_REMINDER_SHOWN] = EffectiveDates.storedText(day)
+    /**
+     * Read and written in one edit: the nudge last shown, once its day has passed, is kept
+     * as seen in the same write that replaces it, so no screen ever writes over one that
+     * was not kept (NudgePolicy.expired).
+     */
+    override suspend fun markShown(nudge: Nudge, day: LocalDate): PreferenceWrite =
+        writeReading { current ->
+            NudgePolicy.expired(current.memory, day)?.let { this[seenKey(it)] = true }
+            this[GUIDANCE_LAST_SHOWN] = "${EffectiveDates.storedText(day)}|${nudge.stored}"
+            if (nudge == Nudge.BackupReminder) {
+                this[GUIDANCE_BACKUP_REMINDER_SHOWN] = EffectiveDates.storedText(day)
+            }
         }
-    }
 
     override suspend fun turnOffBackupReminder(): PreferenceWrite =
         write { this[GUIDANCE_BACKUP_REMINDER_OFF] = true }

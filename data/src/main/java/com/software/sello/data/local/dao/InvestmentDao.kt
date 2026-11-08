@@ -35,6 +35,10 @@ interface InvestmentDao {
     )
     suspend fun movements(investmentId: String): List<InvestmentMovementEntity>
 
+    /** The stored date of the earliest movement of any investment, or null when there is none. */
+    @Query("SELECT MIN(effective_date) FROM investment_movement")
+    suspend fun earliestMovementDate(): String?
+
     /** Every investment's movements, grouped by investment and in replay order. */
     @Query("SELECT * FROM investment_movement ORDER BY investment_id, effective_date, sequence")
     suspend fun allMovements(): List<InvestmentMovementEntity>

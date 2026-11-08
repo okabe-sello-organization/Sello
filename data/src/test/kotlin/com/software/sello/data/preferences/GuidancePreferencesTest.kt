@@ -262,6 +262,49 @@ class GuidancePreferencesTest {
     )
 
     @Test
+    fun `showing a nudge keeps the one before as seen once its day has passed, in one write`() =
+        runBlocking {
+            val first = process()
+            first.markShown(Nudge.GuideHint, nov8)
+            // The same day again: still its day, nothing seen yet.
+            first.markShown(Nudge.GuideHint, nov8)
+            val sameDay = stored()
+            // Past midnight, another screen's nudge: the hint is kept as seen with it.
+            first.markShown(Nudge.Carry, LocalDate.of(2026, 11, 9))
+            first.markShown(Nudge.BackupReminder, LocalDate.of(2026, 11, 10))
+            // The backup reminder keeps its own rule: never seen this way.
+            first.markShown(Nudge.Deleting, LocalDate.of(2026, 11, 11))
+
+            assertEquals(null, sameDay["guidance_seen_guide_hint_v1"])
+            assertEquals(
+                PreferenceRead.Ready(
+                    Guidance(
+                        GuidanceMemory(
+                            seen = setOf(Nudge.GuideHint, Nudge.Carry),
+                            lastShown = ShownNudge(Nudge.Deleting, LocalDate.of(2026, 11, 11)),
+                            backupReminderShown = LocalDate.of(2026, 11, 10)
+                        )
+                    )
+                ),
+                process().guidance()
+            )
+        }
+
+    @Test
+    fun `a zone change back to an earlier day keeps the nudge of the later day unseen`() =
+        runBlocking {
+            val preferences = process()
+            preferences.markShown(Nudge.GuideHint, LocalDate.of(2026, 11, 9))
+
+            preferences.markShown(Nudge.Carry, nov8)
+
+            assertEquals(
+                GuidanceMemory(lastShown = ShownNudge(Nudge.Carry, nov8)),
+                (preferences.guidance() as PreferenceRead.Ready).value.memory
+            )
+        }
+
+    @Test
     fun `a stored value that cannot be read fails the read, never read as seen or not`() =
         runBlocking {
             damages.forEachIndexed { index, damage ->
@@ -286,6 +329,12 @@ class GuidancePreferencesTest {
                     "damage $index",
                     PreferenceWrite.Failed(PreferenceFailure.InvalidValue),
                     preferences.rememberExistingUse(wasUsingSello = true)
+                )
+                // Showing reads what was shown before, to keep it as seen: it writes nothing.
+                assertEquals(
+                    "damage $index",
+                    PreferenceWrite.Failed(PreferenceFailure.InvalidValue),
+                    preferences.markShown(Nudge.GuideHint, nov8)
                 )
                 assertEquals("damage $index", before, stored())
             }
@@ -383,6 +432,32 @@ class GuidancePreferencesTest {
                 process().guidance()
             )
         }
+
+    @Test
+    fun `a restore keeps the nudge it drops as seen when its day was earlier`() = runBlocking {
+        val preferences = process()
+        // The hint showed on the phone on 5 November and was never closed.
+        preferences.markShown(Nudge.GuideHint, LocalDate.of(2026, 11, 5))
+
+        assertEquals(
+            PreferenceWrite.Saved,
+            preferences.mergeRestored(
+                GuidanceMemory(lastShown = ShownNudge(Nudge.Deleting, LocalDate.of(2026, 11, 6)))
+            )
+        )
+
+        assertEquals(
+            PreferenceRead.Ready(
+                Guidance(
+                    GuidanceMemory(
+                        seen = setOf(Nudge.GuideHint),
+                        lastShown = ShownNudge(Nudge.Deleting, LocalDate.of(2026, 11, 6))
+                    )
+                )
+            ),
+            process().guidance()
+        )
+    }
 
     @Test
     fun `a restore onto a new phone takes the backup's memory and leaves the check alone`() =
