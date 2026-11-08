@@ -72,7 +72,6 @@ import com.software.sello.domain.port.InvestmentSummary
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.ReadState
-import com.software.sello.feature.guide.GuidePage
 import com.software.sello.navigation.INVERSIONES_ADD_TAG
 import com.software.sello.navigation.InversionesDestination
 import com.software.sello.navigation.MONTH_SWITCHER_TAG
@@ -269,7 +268,7 @@ class InversionesScreenTest {
         state: InvestmentBoardState,
         onAdd: (() -> Unit)? = null,
         onOpenRate: (() -> Unit)? = null,
-        onOpenGuide: (GuidePage) -> Unit = {}
+        onOpenGuide: () -> Unit = {}
     ) {
         val factory = viewModelFactory {
             initializer {
@@ -474,8 +473,8 @@ class InversionesScreenTest {
     @Test
     fun tasaDelOpensItsSheetNotDolarAndVerMasOpensTheGuia() {
         var rates = 0
-        val guides = mutableListOf<GuidePage>()
-        destination(ReadState.Ready(page()), onOpenRate = { rates++ }, onOpenGuide = guides::add)
+        var guides = 0
+        destination(ReadState.Ready(page()), onOpenRate = { rates++ }, onOpenGuide = { guides++ })
 
         rule.onNodeWithTag(INVERSIONES_RATE_TERM_TAG).performClick()
 
@@ -483,7 +482,7 @@ class InversionesScreenTest {
         rule.onNodeWithTag("$INVESTMENT_HELP_TAG.Rate").assertExists()
         rule.onNodeWithText("Tasa del dólar", useUnmergedTree = true).assertExists()
         rule.onNodeWithText("Ver más en la Guía de Sello", useUnmergedTree = true).performClick()
-        assertEquals(listOf(GuidePage.Investments), guides)
+        assertEquals(1, guides)
         rule.onNodeWithTag("$INVESTMENT_HELP_TAG.Rate").assertDoesNotExist()
 
         // The rest of the line still opens Dólar.

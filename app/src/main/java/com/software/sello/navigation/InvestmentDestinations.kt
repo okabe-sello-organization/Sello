@@ -69,7 +69,7 @@ internal fun InversionesDestination(
     onAdd: (() -> Unit)? = null,
     onMove: (() -> Unit)? = null,
     notice: (@Composable () -> Unit)? = null,
-    onOpenGuide: (GuidePage) -> Unit = {}
+    onOpenGuide: () -> Unit = {}
 ) {
     val model: InversionesViewModel = viewModel(factory = viewModels)
     val inversiones by model.state.collectAsStateWithLifecycle()
@@ -124,9 +124,9 @@ internal fun InversionesDestination(
         InvestmentHelpSheet(
             help,
             onClose = { model.onAction(InversionesAction.CloseHelp) },
-            onGuide = { page ->
+            onGuide = {
                 model.onAction(InversionesAction.OpenGuide)
-                onOpenGuide(page)
+                onOpenGuide()
             }
         )
     }
@@ -148,7 +148,7 @@ internal fun InvestmentDestination(
     onMove: (kind: String?) -> Unit,
     onEditMovement: (String) -> Unit,
     notice: (@Composable () -> Unit)? = null,
-    onOpenGuide: (GuidePage) -> Unit = {}
+    onOpenGuide: () -> Unit = {}
 ) {
     val model: InvestmentDetailViewModel = viewModel(factory = viewModels)
     val detail by model.state.collectAsStateWithLifecycle()
@@ -195,9 +195,9 @@ internal fun InvestmentDestination(
         InvestmentHelpSheet(
             help,
             onClose = { model.onAction(InvestmentDetailAction.CloseHelp) },
-            onGuide = { page ->
+            onGuide = {
                 model.onAction(InvestmentDetailAction.OpenGuide)
-                onOpenGuide(page)
+                onOpenGuide()
             }
         )
     }
@@ -275,7 +275,7 @@ internal fun NavGraphBuilder.investmentDestinations(
                 navigation.navigate(InvestmentMovementRoute()) { launchSingleTop = true }
             },
             notice = notice?.let { { CorrectionNoticeBar(it, onUndo) } },
-            onOpenGuide = navigation::openGuide
+            onOpenGuide = { navigation.openGuide(GuidePage.Investments) }
         )
     }
     composable<InvestmentRoute> { entry ->
@@ -305,7 +305,7 @@ internal fun NavGraphBuilder.investmentDestinations(
                 }
             },
             notice = notice?.let { { CorrectionNoticeBar(it, onUndo) } },
-            onOpenGuide = navigation::openGuide
+            onOpenGuide = { navigation.openGuide(GuidePage.Investments) }
         )
     }
     composable<InvestmentEditorRoute> {

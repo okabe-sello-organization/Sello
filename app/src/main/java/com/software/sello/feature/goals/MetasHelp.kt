@@ -8,15 +8,14 @@ import androidx.compose.ui.res.stringResource
 import com.software.sello.R
 import com.software.sello.designsystem.component.HelpEntry
 import com.software.sello.designsystem.component.HelpSheet
-import com.software.sello.feature.guide.GuidePage
 
 /**
  * What "Guardado en metas" means (SELLO-209), as a sheet over the whole of Metas. Back and
- * the scrim call [onClose]; "Ver más en la Guía de Sello" calls [onGuide] with the Metas
- * page.
+ * the scrim call [onClose]; "Ver más en la Guía de Sello" calls [onGuide], which opens
+ * the Guía's Metas page.
  */
 @Composable
-fun MetasHelpSheet(onClose: () -> Unit, onGuide: (GuidePage) -> Unit) {
+fun MetasHelpSheet(onClose: () -> Unit, onGuide: () -> Unit) {
     BackHandler(onBack = onClose)
     HelpSheet(
         title = stringResource(R.string.metas_help_title),
@@ -37,7 +36,7 @@ fun MetasHelpSheet(onClose: () -> Unit, onGuide: (GuidePage) -> Unit) {
         onDismiss = onClose,
         modifier = Modifier.testTag(METAS_HELP_TAG),
         example = stringResource(R.string.metas_help_example),
-        onMore = { onGuide(GuidePage.Goals) }
+        onMore = onGuide
     )
 }
 

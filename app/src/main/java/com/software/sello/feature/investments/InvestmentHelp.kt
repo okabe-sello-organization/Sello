@@ -8,7 +8,6 @@ import androidx.compose.ui.res.stringResource
 import com.software.sello.R
 import com.software.sello.designsystem.component.HelpEntry
 import com.software.sello.designsystem.component.HelpSheet
-import com.software.sello.feature.guide.GuidePage
 
 /**
  * What a **?** or an underlined word explains on Inversiones and on an investment's page
@@ -20,10 +19,11 @@ enum class InvestmentHelp { Value, Chart, Gain, Rate }
 
 /**
  * The open [help] as a sheet over the whole screen. Back and the scrim call [onClose];
- * "Ver más en la Guía de Sello" calls [onGuide] with the Inversiones page.
+ * "Ver más en la Guía de Sello" calls [onGuide], which opens the
+ * Guía's Inversiones page.
  */
 @Composable
-fun InvestmentHelpSheet(help: InvestmentHelp, onClose: () -> Unit, onGuide: (GuidePage) -> Unit) {
+fun InvestmentHelpSheet(help: InvestmentHelp, onClose: () -> Unit, onGuide: () -> Unit) {
     BackHandler(onBack = onClose)
     val (title, entries, example) = when (help) {
         InvestmentHelp.Value -> Triple(
@@ -75,7 +75,7 @@ fun InvestmentHelpSheet(help: InvestmentHelp, onClose: () -> Unit, onGuide: (Gui
         onDismiss = onClose,
         modifier = Modifier.testTag("$INVESTMENT_HELP_TAG.${help.name}"),
         example = stringResource(example),
-        onMore = { onGuide(GuidePage.Investments) }
+        onMore = onGuide
     )
 }
 

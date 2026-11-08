@@ -75,7 +75,7 @@ internal fun MetasDestination(
     onCreate: (() -> Unit)? = null,
     onContribute: (() -> Unit)? = null,
     notice: (@Composable () -> Unit)? = null,
-    onOpenGuide: (GuidePage) -> Unit = {}
+    onOpenGuide: () -> Unit = {}
 ) {
     val model: MetasViewModel = viewModel(factory = viewModels)
     val metas by model.state.collectAsStateWithLifecycle()
@@ -136,9 +136,9 @@ internal fun MetasDestination(
     if (ready?.helpOpen == true) {
         MetasHelpSheet(
             onClose = { model.onAction(MetasAction.CloseHelp) },
-            onGuide = { page ->
+            onGuide = {
                 model.onAction(MetasAction.OpenGuide)
-                onOpenGuide(page)
+                onOpenGuide()
             }
         )
     }
@@ -266,7 +266,7 @@ internal fun NavGraphBuilder.goalDestinations(
             notice = notice?.let {
                 { StampNoticeBar(it, onUndo, lands) }
             },
-            onOpenGuide = navigation::openGuide
+            onOpenGuide = { navigation.openGuide(GuidePage.Goals) }
         )
     }
     composable<GoalRoute> { entry ->

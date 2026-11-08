@@ -74,7 +74,6 @@ import com.software.sello.domain.port.GoalSummary
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.feature.expense.HandExpenseCommands
-import com.software.sello.feature.guide.GuidePage
 import com.software.sello.feature.income.HandIncomeCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.navigation.HandCategoryReads
@@ -200,7 +199,7 @@ class MetasScreenTest {
         board: GoalBoard,
         onCreate: (() -> Unit)? = null,
         onContribute: (() -> Unit)? = null,
-        onOpenGuide: (GuidePage) -> Unit = {}
+        onOpenGuide: () -> Unit = {}
     ) {
         val factory = viewModelFactory {
             initializer {
@@ -554,8 +553,8 @@ class MetasScreenTest {
 
     @Test
     fun guardadoEnMetasQuestionMarkOpensItsSheetAndVerMasOpensTheGuia() {
-        val guides = mutableListOf<GuidePage>()
-        destination(board, onOpenGuide = guides::add)
+        var guides = 0
+        destination(board, onOpenGuide = { guides++ })
 
         rule.onNodeWithTag(METAS_SAVED_HELP_TAG)
             .assertContentDescriptionEquals("Qué es Guardado en metas")
@@ -566,7 +565,7 @@ class MetasScreenTest {
         rule.onNode(hasText("Ver más en la Guía de Sello"), useUnmergedTree = true)
             .performScrollTo()
             .performClick()
-        assertEquals(listOf(GuidePage.Goals), guides)
+        assertEquals(1, guides)
         rule.onNodeWithTag(METAS_HELP_TAG).assertDoesNotExist()
     }
 }
