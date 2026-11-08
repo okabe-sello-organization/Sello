@@ -52,8 +52,7 @@ class IncomeHistoryScreenshotTest {
         look: Look,
         name: String,
         assign: AssignSuggestion?,
-        stale: Boolean = false,
-        onRecordSeveral: (() -> Unit)? = null
+        stale: Boolean = false
     ) {
         rule.showSello(look) {
             IncomeHistoryScreen(
@@ -66,8 +65,7 @@ class IncomeHistoryScreenshotTest {
                 {},
                 {},
                 {},
-                PaddingValues(12.dp),
-                onRecordSeveral
+                PaddingValues(12.dp)
             )
         }
         rule.captureStill("src/test/screenshots/$name-${look.label}.png")
@@ -104,14 +102,6 @@ class IncomeHistoryScreenshotTest {
     @Test
     fun staleVioletaLight() =
         capture(Look(ink = SelloInk.Violeta), "income-history-stale", null, stale = true)
-
-    /** Anotar varios at the foot of the list. */
-    @Test
-    fun variosClaro() = capture(Look(), "income-history-varios", null, onRecordSeveral = {})
-
-    @Test
-    fun variosOscuro() =
-        capture(Look(dark = true), "income-history-varios", null, onRecordSeveral = {})
 
     private fun shot(
         name: String,

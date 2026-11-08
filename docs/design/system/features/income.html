@@ -37,7 +37,6 @@
           <code>EntryDestination</code> at <code>app/src/main/java/com/software/sello/navigation/ExpenseDestinations.kt:104</code>).</li>
         <li>Editar ingreso: a row of the history (<code>IncomeDestinations.kt:72</code>) and the catch-up list
           (<code>app/src/main/java/com/software/sello/navigation/RecurrenceDestinations.kt:69</code>).</li>
-        <li>From the history, "Anotar varios" opens <a href="bulk.html">Varios ingresos</a> (<code>IncomeDestinations.kt:74</code>).</li>
       </ul>
     </section>
 
@@ -181,8 +180,6 @@
               data-caption="With the suggestion to give the unassigned part a category"></figure>
       <figure data-shot="income-history-stale" data-module="app"
               data-caption="Stale: figures as last read under an Older StatusSlip"></figure>
-      <figure data-shot="income-history-varios" data-module="app"
-              data-caption="With Anotar varios under the total"></figure>
       <figure data-shot="income-history-loading" data-module="app" data-caption="Loading"></figure>
       <figure data-shot="income-history-failed" data-module="app" data-caption="Nothing could be read"></figure>
       <figure data-shot="income-history-empty" data-module="app" data-caption="No incomes this month"></figure>
@@ -197,22 +194,21 @@
       <p>Drawn inside the shell (<code>app/src/main/java/com/software/sello/navigation/IncomeDestinations.kt:45</code>): a back
         arrow, the title "Ingresos de octubre" (with the year when not the current one), the past-month ribbon over a past month, the dock
         "Anotar un ingreso" / "Anotar ingreso", and the correction notice bar. The content is a
-        <code>LazyColumn</code> spaced by <code>md</code> (<code>app/src/main/java/com/software/sello/feature/income/IncomeHistoryScreen.kt:73</code>):</p>
+        <code>LazyColumn</code> spaced by <code>md</code> (<code>app/src/main/java/com/software/sello/feature/income/IncomeHistoryScreen.kt:72</code>):</p>
       <ol>
-        <li>Stale notice, when a refresh failed (<code>:185</code>).</li>
+        <li>Stale notice, when a refresh failed (<code>:173</code>).</li>
         <li><a href="../components.html#c-AnswerSlip"><code>AnswerSlip</code></a> "Entró en octubre" with the month's
           income, neutral ink, no stamp; under a <a href="../components.html#c-TearLine"><code>TearLine</code></a> a
           <a href="../components.html#c-SplitBar"><code>SplitBar</code></a> (budgets solid, unassigned striped) and two
           <a href="../components.html#c-LeaderLine"><code>LeaderLine</code></a>s "En presupuestos de categorías" and
-          "Sin asignar" (red when negative), then the over-basis and carry notes (<code>:323</code>).</li>
+          "Sin asignar" (red when negative), then the over-basis and carry notes (<code>:311</code>).</li>
         <li>"Plan del mes", a <a href="../components.html#c-PlanSlip"><code>PlanSlip</code></a>: "Anotado", "Esperado",
           a <a href="../components.html#c-TotalLine"><code>TotalLine</code></a> "Planeado", "Sin asignar en el plan",
-          the <a href="../components.html#c-ExpectedChip"><code>ExpectedChip</code></a>s and the footnote (<code>:256</code>).</li>
+          the <a href="../components.html#c-ExpectedChip"><code>ExpectedChip</code></a>s and the footnote (<code>:244</code>).</li>
         <li>The suggestion, a <a href="../components.html#c-SuggestionNote"><code>SuggestionNote</code></a> "Una sugerencia"
-          (<code>:209</code>).</li>
+          (<code>:197</code>).</li>
         <li>"Lo que entró": a <a href="../components.html#c-Slip"><code>Slip</code></a> with a titleMedium heading, one
-          LeaderLine per income (source, then "date · note"), "Ver más ingresos", the TotalLine "Total" and a Text button
-          "Anotar varios" with a receipt icon (<code>:122</code>).</li>
+          LeaderLine per income (source, then "date · note") and "Ver más ingresos", then the TotalLine "Total" (<code>:121</code>).</li>
       </ol>
 
       <h3>States</h3>
@@ -221,25 +217,25 @@
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
             <tr><td>Loading</td><td>Two <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a>s.</td>
-              <td><code>app/src/main/java/com/software/sello/feature/income/IncomeHistoryScreen.kt:79</code></td><td><code>income-history-loading</code></td></tr>
+              <td><code>app/src/main/java/com/software/sello/feature/income/IncomeHistoryScreen.kt:78</code></td><td><code>income-history-loading</code></td></tr>
             <tr><td>Error (nothing ever read)</td><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> LoadFailed "No pudimos leer tus ingresos" / "Tus registros siguen guardados. Vuelve a intentarlo." with "Reintentar".</td>
-              <td><code>IncomeHistoryScreen.kt:86</code></td><td><code>income-history-failed</code></td></tr>
+              <td><code>IncomeHistoryScreen.kt:85</code></td><td><code>income-history-failed</code></td></tr>
             <tr><td>Empty</td><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> Empty "Aún no anotas ingresos en octubre", "Sello funciona sin ingresos…", action "Anotar ingreso"; the plan still shows below.</td>
-              <td><code>IncomeHistoryScreen.kt:96</code></td><td><code>income-history-empty</code></td></tr>
+              <td><code>IncomeHistoryScreen.kt:95</code></td><td><code>income-history-empty</code></td></tr>
             <tr><td>Ready</td><td>Hero, plan, suggestion, list.</td>
-              <td><code>IncomeHistoryScreen.kt:116</code></td><td>income-history</td></tr>
+              <td><code>IncomeHistoryScreen.kt:115</code></td><td>income-history</td></tr>
             <tr><td>Hero pending</td><td>A one-line skeleton in place of "Entró en …" for today's month while the summary is not read; a past month shows its list total.</td>
-              <td><code>IncomeHistoryScreen.kt:332</code></td><td><code>income-history-hero-pending</code></td></tr>
+              <td><code>IncomeHistoryScreen.kt:320</code></td><td><code>income-history-hero-pending</code></td></tr>
             <tr><td>Stale</td><td>A <a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> Older with "No pudimos leer tus ingresos de nuevo. Te mostramos los de la última lectura." and "Reintentar", above the figures as last read.</td>
-              <td><code>IncomeHistoryScreen.kt:185</code></td><td>income-history-stale</td></tr>
+              <td><code>IncomeHistoryScreen.kt:173</code></td><td>income-history-stale</td></tr>
             <tr><td>Busy (more)</td><td>"Ver más ingresos" shows its spinner.</td>
-              <td><code>IncomeHistoryScreen.kt:154</code></td><td><code>income-history-more-loading</code></td></tr>
+              <td><code>IncomeHistoryScreen.kt:153</code></td><td><code>income-history-more-loading</code></td></tr>
             <tr><td>Page failed</td><td>A <a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> LoadFailed "No pudimos leer los ingresos. Inténtalo de nuevo." inside the list, retrying the page.</td>
-              <td><code>IncomeHistoryScreen.kt:145</code></td><td><code>income-history-page-failed</code></td></tr>
+              <td><code>IncomeHistoryScreen.kt:144</code></td><td><code>income-history-page-failed</code></td></tr>
             <tr><td>Plan failed</td><td>A <a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> LoadFailed "No pudimos leer lo que esperas recibir. Tus registros siguen guardados." in the plan's place.</td>
-              <td><code>IncomeHistoryScreen.kt:235</code></td><td><code>income-history-plan-failed</code></td></tr>
+              <td><code>IncomeHistoryScreen.kt:223</code></td><td><code>income-history-plan-failed</code></td></tr>
             <tr><td>Over basis</td><td>"Sin asignar" signed and red, and "Tus presupuestos suman …; anotaste …".</td>
-              <td><code>IncomeHistoryScreen.kt:370</code></td><td><code>income-history-over</code></td></tr>
+              <td><code>IncomeHistoryScreen.kt:358</code></td><td><code>income-history-over</code></td></tr>
             <tr><td>Busy (write), unknown outcome, refused, restored draft</td><td>Do not exist: the screen only reads; writes happen in the form.</td><td>—</td><td>—</td></tr>
           </tbody>
         </table>
@@ -250,7 +246,7 @@
         <li>An income line: opens Editar ingreso; read as "Editar Salario: 150.000 pesos, Hoy, jue 22 oct".</li>
         <li>"Ver más ingresos": <code>More</code>. "Reintentar": <code>Retry</code> (or <code>More</code> for a failed page).</li>
         <li>The suggestion's "Asignar a una categoría ›" opens the category editor with the amount; its × (<code>DismissAssign</code>) hides it for the month.</li>
-        <li>"Anotar varios": <a href="bulk.html">Varios ingresos</a>. Dock and empty action: Anotar ingreso.</li>
+        <li>Dock and empty action: Anotar ingreso.</li>
       </ul>
 
       <h3>Key copy</h3>
@@ -258,7 +254,7 @@
         <li>"Ingresos de %1$s" (<code>income_history_title_month</code>), "Entró en %1$s" (<code>income_came_in</code>)</li>
         <li>"En presupuestos de categorías" (<code>income_in_budgets</code>), "Sin asignar" (<code>income_unassigned</code>)</li>
         <li>"Plan del mes" (<code>income_plan_tag</code>), "Incluye lo que esperas recibir", "Anotado", "Esperado", "Planeado", "Lo esperado se anota solo en su fecha."</li>
-        <li>"Lo que entró" (<code>income_list_title</code>), "Ver más ingresos" (<code>income_more</code>), "Total" (<code>income_list_total</code>), "Anotar varios" (<code>income_record_several</code>)</li>
+        <li>"Lo que entró" (<code>income_list_title</code>), "Ver más ingresos" (<code>income_more</code>), "Total" (<code>income_list_total</code>)</li>
         <li>"No pudimos leer tus ingresos de nuevo. Te mostramos los de la última lectura." (<code>income_stale</code>)</li>
       </ul>
     </section>
@@ -310,8 +306,8 @@
       <h2>Feature-local parts that look like shared ones</h2>
       <ul>
         <li>The form's pane, date picker, close button and note line are the shared <a href="../components.html#c-MovementPane"><code>MovementPane</code></a>, <a href="../components.html#c-MovementDatePicker"><code>MovementDatePicker</code></a>, <a href="../components.html#c-MovementCloseButton"><code>MovementCloseButton</code></a> and <a href="../components.html#c-MovementNoteLine"><code>MovementNoteLine</code></a>.</li>
-        <li>Raw <code>Text</code> hints (<code>IncomeFormScreen.kt:350</code>, <code>:357</code>; <code>IncomeHistoryScreen.kt:371</code>,
-          <code>:383</code>, <code>:304</code>) where the expense form uses
+        <li>Raw <code>Text</code> hints (<code>IncomeFormScreen.kt:350</code>, <code>:357</code>; <code>IncomeHistoryScreen.kt:359</code>,
+          <code>:371</code>, <code>:292</code>) where the expense form uses
           <a href="../components.html#c-FieldMessageText"><code>FieldMessageText</code></a> with the Hint tone.</li>
       </ul>
     </section>

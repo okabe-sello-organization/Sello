@@ -148,8 +148,7 @@ class GoalDetailMovementsTest {
                 dateLabels(),
                 monthNames(),
                 PaddingValues(16.dp),
-                onEditMovement = {},
-                onBulk = {}
+                onEditMovement = {}
             )
         }
     }
@@ -186,6 +185,14 @@ class GoalDetailMovementsTest {
         show()
 
         rule.onNodeWithTag("goal.movements.month.2026-10").assertDoesNotExist()
+    }
+
+    @Test
+    fun theFootOffersVerLosButNoAportarVarios() {
+        show()
+
+        rule.onNodeWithTag("goal.showAll").assertExists()
+        rule.onNodeWithText("Aportar varios").assertDoesNotExist()
     }
 
     @Test
@@ -229,7 +236,7 @@ class GoalDetailMovementsTest {
 
     private fun still(dark: Boolean, all: Boolean) {
         show(all, Look(dark = dark))
-        rule.onNodeWithTag(if (all) "goal.movement.${movementId(1)}" else GOAL_BULK_OPEN_TAG)
+        rule.onNodeWithTag(if (all) "goal.movement.${movementId(1)}" else "goal.showAll")
             .performScrollTo()
         rule.captureStill(
             "src/test/screenshots/goal-detail-movements${if (all) "-all" else ""}-" +
@@ -324,8 +331,7 @@ class GoalDetailMovementsTest {
                         months = monthNames(),
                         padding = padding,
                         onWithdraw = {},
-                        onEditMovement = { _: String -> }.takeIf { active },
-                        onBulk = {}.takeIf { active }
+                        onEditMovement = { _: String -> }.takeIf { active }
                     )
                 }
             }

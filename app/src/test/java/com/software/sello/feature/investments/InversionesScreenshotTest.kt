@@ -165,26 +165,25 @@ class InversionesScreenshotTest {
                 shown,
                 {},
                 dateLabels(),
-                PaddingValues(16.dp),
-                onRecordSeveral = {}
+                PaddingValues(16.dp)
             )
         }
         rule.captureStill("src/test/screenshots/inversiones-${look.label}.png")
     }
 
-    /** The list's foot: Anotar varios, under the last investment (SELLO-142). */
+    /** The list's foot: the last investment ends it. */
     private fun foot(look: Look) {
         rule.showSello(look) {
             InversionesScreen(
                 shown,
                 {},
                 dateLabels(),
-                PaddingValues(16.dp),
-                onRecordSeveral = {}
+                PaddingValues(16.dp)
             )
         }
+        val last = (shown as InversionesState.Ready).rows.last().id
         rule.onNodeWithTag(INVERSIONES_LIST_TAG)
-            .performScrollToNode(hasTestTag(INVERSIONES_RECORD_SEVERAL_TAG))
+            .performScrollToNode(hasTestTag("inversiones.row.$last"))
         rule.captureStill("src/test/screenshots/inversiones-foot-${look.label}.png")
     }
 

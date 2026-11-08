@@ -737,7 +737,6 @@
     <string name="income_past_month">Esta corrección afecta los ingresos de %1$s.</string>
     <string name="income_past_months">Esta corrección afecta los ingresos de %1$s y de %2$s.</string>
     <string name="income_history_title">Ingresos</string>
-    <string name="income_record_several">Anotar varios</string>
     <string name="income_history_title_month">Ingresos de %1$s</string>
     <string name="dock_income_label">Anotar un ingreso</string>
     <string name="income_came_in">Entró en %1$s</string>
@@ -1251,8 +1250,6 @@
     <string name="metas_title">Metas</string>
     <string name="metas_create">Nueva meta</string>
     <string name="metas_dock_contribute">Aportar a una meta</string>
-    <!-- Metas' foot: Aportar varios with no goal chosen, each line picking its own. -->
-    <string name="metas_record_several">Anotar varios</string>
     <string name="metas_dock_create">Crear una meta</string>
     <string name="metas_band_label">Guardado en metas</string>
     <string name="metas_band_contributed">%1$s en %2$s</string>
@@ -1815,7 +1812,6 @@
     <plurals name="investment_movements_missing_investments"><item quantity="one">Falta %d inversión</item><item quantity="other">Faltan %d inversiones</item></plurals>
     <string name="investment_movements_in_pesos">En pesos · dólar a %1$s, tasa del %2$s</string>
     <string name="investment_movements_no_rate">Sin tasa del dólar: cada moneda por su lado</string>
-    <string name="inversiones_record_several">Anotar varios</string>
     <plurals name="investment_movements_discard"><item quantity="one">¿Descartar %d renglón?</item><item quantity="other">¿Descartar %d renglones?</item></plurals>
     <string name="investment_movements_removed">Quitaste el renglón de %1$s</string>
     <string name="investment_movements_removed_plain">Quitaste un renglón</string>

@@ -197,8 +197,7 @@ class MetasScreenTest {
     private fun destination(
         board: GoalBoard,
         onCreate: (() -> Unit)? = null,
-        onContribute: (() -> Unit)? = null,
-        onBulk: (() -> Unit)? = null
+        onContribute: (() -> Unit)? = null
     ) {
         val factory = viewModelFactory {
             initializer {
@@ -242,8 +241,7 @@ class MetasScreenTest {
                     ) {},
                     onOpenGoal = {},
                     onCreate = onCreate,
-                    onContribute = onContribute,
-                    onBulk = onBulk
+                    onContribute = onContribute
                 )
             }
         }
@@ -291,32 +289,13 @@ class MetasScreenTest {
     }
 
     @Test
-    fun anotarVariosSitsAtTheFootOfTheActiveGoalsAndOpensTheReceipt() {
-        var opened = 0
-        destination(board, onBulk = { opened++ })
+    fun metasOffersNoAnotarVariosBetweenTheActiveAndCompletedGoals() {
+        destination(board)
 
-        rule.onNodeWithTag(METAS_LIST_TAG).performScrollToNode(hasTestTag(METAS_BULK_TAG))
-        rule.onNodeWithTag(METAS_BULK_TAG).assert(hasText("Anotar varios")).performClick()
-        assertEquals(1, opened)
-    }
-
-    @Test
-    fun withNoActiveGoalAnotarVariosIsNotOffered() {
-        destination(
-            GoalBoard(
-                1,
-                1,
-                listOf(
-                    goal(3, "Vacunas de Luna", 400_000, listOf(400_000), LocalDate.of(2026, 9, 30))
-                ),
-                emptySet(),
-                emptyList()
-            ),
-            onBulk = {}
-        )
-
-        rule.onNodeWithTag("metas.completed.${board.goals[2].history.goal.id.value}").assertExists()
-        rule.onNodeWithTag(METAS_BULK_TAG).assertDoesNotExist()
+        val completed = "metas.completed.${board.goals[2].history.goal.id.value}"
+        rule.onNodeWithTag(METAS_LIST_TAG).performScrollToNode(hasTestTag(completed))
+        rule.onNodeWithTag(completed).assertExists()
+        rule.onNodeWithText("Anotar varios").assertDoesNotExist()
     }
 
     @Test

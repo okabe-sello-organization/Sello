@@ -13,6 +13,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.dp
@@ -199,6 +200,14 @@ class InvestmentDetailMovementsTest {
     }
 
     @Test
+    fun theFootOffersVerLosButNoVariosMovimientos() {
+        show()
+
+        rule.onNodeWithTag("investment.showAll").assertExists()
+        rule.onNodeWithText("Varios movimientos").assertDoesNotExist()
+    }
+
+    @Test
     fun theFullListHasOneLineAMonthAndAnotherYearSaysItsYear() {
         show(all = true)
 
@@ -242,7 +251,7 @@ class InvestmentDetailMovementsTest {
     private fun still(dark: Boolean, all: Boolean) {
         show(all, Look(dark = dark))
         rule.onNodeWithTag(
-            if (all) "investment.movement.${movementId(1)}" else INVESTMENT_RECORD_SEVERAL_TAG
+            if (all) "investment.movement.${movementId(1)}" else "investment.showAll"
         ).performScrollTo()
         rule.captureStill(
             "src/test/screenshots/investment-detail-${if (all) "movements-all" else "chart"}-" +
