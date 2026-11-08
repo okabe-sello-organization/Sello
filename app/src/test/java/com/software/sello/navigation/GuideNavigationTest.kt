@@ -96,6 +96,19 @@ class GuideNavigationTest {
     }
 
     @Test
+    fun aPageOpenedFromTheListAnUnknownIdShowedReturnsToThatList() {
+        show()
+        rule.runOnIdle { navigation.navigate(GuidePageRoute("trucos")) }
+
+        rule.onNodeWithTag(guideRowTag(GuidePage.Goals)).revealed().performClick()
+        rule.onNodeWithTag(guidePageTag(GuidePage.Goals)).assertIsDisplayed()
+        back()
+        rule.onNodeWithTag(GUIDE_TAG).assertIsDisplayed()
+        back()
+        rule.onNodeWithText("Pantalla de antes").assertIsDisplayed()
+    }
+
+    @Test
     fun thePageAndItsScrollSurviveRecreation() {
         val restoration = StateRestorationTester(rule)
         show(restoration)

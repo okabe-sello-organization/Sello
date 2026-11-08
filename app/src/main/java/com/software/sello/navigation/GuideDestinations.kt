@@ -3,6 +3,7 @@ package com.software.sello.navigation
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
@@ -37,6 +38,16 @@ internal fun NavGraphBuilder.guideDestinations(
     }
     composable<GuidePageRoute> { entry ->
         val page = GuidePage.byId(entry.toRoute<GuidePageRoute>().page)
+        // An id this version does not know becomes the list itself, so that a page opened
+        // from it returns to it instead of replacing it.
+        if (page == null) {
+            LaunchedEffect(Unit) {
+                navigation.navigate(GuideRoute) {
+                    popUpTo<GuidePageRoute> { inclusive = true }
+                    launchSingleTop = true
+                }
+            }
+        }
         val title = stringResource(page?.title ?: R.string.guide_title)
         GuideFrame(navigation, shellState, onShell, title) { padding ->
             if (page == null) {

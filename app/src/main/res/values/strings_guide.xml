@@ -24,9 +24,9 @@
     <!-- Empieza aquí: Gestos que ahorran tiempo -->
     <string name="guide_gestures_title">Gestos que ahorran tiempo</string>
     <string name="guide_gestures_caption">Atajos para editar, borrar y limpiar</string>
-    <string name="guide_gestures_lede">Son atajos: lo mismo se hace con un toque.</string>
+    <string name="guide_gestures_lede">Son atajos: todo esto también se hace con toques normales.</string>
     <string name="guide_gestures_category">Mantén presionada una categoría</string>
-    <string name="guide_gestures_category_body">En Recibo, abre Editar categoría sin entrar a ella.</string>
+    <string name="guide_gestures_category_body">En Recibo, te ofrece Editar categoría sin entrar a ella.</string>
     <string name="guide_gestures_expense">Desliza un gasto hacia la izquierda</string>
     <string name="guide_gestures_expense_body">Dentro de una categoría, lo borra. Puedes deshacerlo durante unos segundos. Si lo mantienes presionado, te ofrece Editar y Borrar.</string>
     <string name="guide_gestures_keypad">Mantén presionada la tecla de borrar</string>
@@ -60,7 +60,7 @@
     <string name="guide_entry_ways">Dos formas de llegar</string>
     <string name="guide_entry_ways_body">Debajo del monto, toca Otro gasto: lo que ya escribiste pasa a ser el primer renglón. O dentro de una categoría, toca Anotar varios: cada renglón empieza en esa categoría.</string>
     <string name="guide_entry_others">Ingresos, metas e inversiones</string>
-    <string name="guide_entry_others_body">Funciona igual con Otro ingreso y Otro movimiento.</string>
+    <string name="guide_entry_others_body">Con Otro ingreso pasa igual, pero cada renglón lleva su origen. En Metas e Inversiones, Otro movimiento abre Aportar varios o Varios movimientos: cada renglón lleva su meta o inversión, su tipo y su propia fecha.</string>
 
     <!-- Por pantalla: Resumen y Tu año -->
     <string name="guide_summary_title">Resumen y Tu año</string>
