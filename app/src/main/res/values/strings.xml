@@ -636,6 +636,8 @@
     <string name="entry_more_expense">Otro gasto</string>
     <string name="entry_more_income">Otro ingreso</string>
     <string name="entry_more_movement">Otro movimiento</string>
+    <string name="entry_several_nudge">¿Anotas varios seguidos? Con %1$s los anotas todos de una vez.</string>
+    <string name="entry_several_nudge_close">Cerrar el aviso de Anotar varios</string>
     <string name="bulk_title">Anotar varios</string>
     <string name="bulk_title_expenses">Varios gastos</string>
     <string name="bulk_title_incomes">Varios ingresos</string>

@@ -36,9 +36,12 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.software.sello.designsystem.R
 import com.software.sello.designsystem.icon.SelloIcon
@@ -307,6 +310,26 @@ private fun NudgePill(action: NudgeAction) {
         )
     }
 }
+
+/**
+ * A [NudgeRow]'s text: [template]'s one `%1$s` filled with [part] in bold `ink`, such as
+ * the name of the thing it points at; the rest stays in the row's ink.
+ */
+@Composable
+fun nudgeText(template: String, part: String): AnnotatedString {
+    val ink = SelloTheme.colors.ink
+    val weight = SelloTheme.type.weight.emphasis
+    val (before, after) = template.split(NudgePlaceholder, limit = 2).let {
+        it[0] to it.getOrElse(1) { "" }
+    }
+    return buildAnnotatedString {
+        append(before)
+        withStyle(SpanStyle(color = ink, fontWeight = weight)) { append(part) }
+        append(after)
+    }
+}
+
+private const val NudgePlaceholder = "%1\$s"
 
 /** [NudgeRow] with plain [text]. */
 @Composable

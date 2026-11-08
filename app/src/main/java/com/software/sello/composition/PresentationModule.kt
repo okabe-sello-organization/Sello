@@ -66,6 +66,7 @@ import com.software.sello.navigation.ShellViewModel
 import com.software.sello.platform.SystemColor
 import com.software.sello.presentation.corrections.CorrectionAnnouncementsViewModel
 import com.software.sello.presentation.corrections.Corrections
+import com.software.sello.presentation.guidance.DoneNudges
 import com.software.sello.presentation.corrections.CorrectionsViewModel
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.income.IncomeSourceNames
@@ -112,6 +113,10 @@ fun presentationModule(generation: Long): Module = module {
     single { CatchUpSchedules(get(), get(), generation) }
     single(createdAtStart = true) { CatchUpRunner(get(), get(), get(), get<CoroutineScope>()) }
     single<CatchUpNow> { get<CatchUpRunner>() }
+    // A nudge's action done on any screen closes it for good (SELLO-212).
+    single(createdAtStart = true) {
+        DoneNudges(get<Corrections>().nudgesDone, get(), get<CoroutineScope>())
+    }
     // Run once the graph exists; it checks only on the first start with guidance (E38).
     single { RememberExistingUse(get(), get()) }
     viewModels()
@@ -162,7 +167,8 @@ private fun Module.viewModels() {
     factory {
         ExpenseEntryViewModel(
             get(), get(), get(), get(), get(), get(), get(), get(), get(), get(),
-            get<DispatcherProvider>().default
+            get<DispatcherProvider>().default,
+            get()
         )
     }
     factoryOf(::BulkEntryViewModel)

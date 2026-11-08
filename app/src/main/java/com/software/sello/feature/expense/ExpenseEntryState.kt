@@ -167,7 +167,12 @@ data class ExpenseEntryState(
     /** The sheet of [frequent] is open. */
     val frequentOpen: Boolean = false,
     /** While the note is written: past notes that start with what is typed. */
-    val noteSuggestions: List<EntryFrequent> = emptyList()
+    val noteSuggestions: List<EntryFrequent> = emptyList(),
+    /**
+     * The nudge under Otro gasto (SELLO-212): "¿Anotas varios seguidos? …", for a new
+     * expense once three were added by hand today. Closed for good by the slip or its ✕.
+     */
+    val severalNudge: Boolean = false
 ) {
     val canSubmit: Boolean
         get() = !loading && !loadFailed && !busy && missing == null && error !in Blocking &&
@@ -251,6 +256,9 @@ sealed interface ExpenseEntryAction {
 
     /** Varios: continue on Anotar varios, with what is typed as its line one. */
     data object Several : ExpenseEntryAction
+
+    /** The Anotar varios nudge's ✕: closes it for good. */
+    data object CloseSeveralNudge : ExpenseEntryAction
 
     data object Submit : ExpenseEntryAction
 

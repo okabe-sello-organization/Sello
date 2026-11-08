@@ -9,12 +9,10 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withStyle
 import com.software.sello.R
 import com.software.sello.designsystem.component.NudgeAction
 import com.software.sello.designsystem.component.NudgeRow
+import com.software.sello.designsystem.component.nudgeText
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
 
@@ -32,7 +30,7 @@ internal fun ReciboNudgeRow(
     when (nudge) {
         ReciboNudge.GuideHint -> NudgeRow(
             icon = SelloIcon.Settings,
-            text = withBold(
+            text = nudgeText(
                 stringResource(R.string.recibo_guide_hint),
                 stringResource(R.string.recibo_guide_hint_name)
             ),
@@ -50,7 +48,7 @@ internal fun ReciboNudgeRow(
         is ReciboNudge.BackupReminder -> NudgeRow(
             icon = SelloIcon.Backup,
             text = nudge.daysSinceBackup?.let { days ->
-                withBold(
+                nudgeText(
                     stringResource(R.string.recibo_backup_reminder),
                     pluralStringResource(
                         R.plurals.recibo_backup_reminder_days,
@@ -69,24 +67,6 @@ internal fun ReciboNudgeRow(
         )
     }
 }
-
-/** [template]'s one `%1$s` filled with [part] in bold `ink`; the rest stays in the row's ink. */
-@Composable
-private fun withBold(template: String, part: String): AnnotatedString {
-    val ink = SelloTheme.colors.ink
-    val weight = SelloTheme.type.weight.emphasis
-    val (before, after) = template.split(PLACEHOLDER, limit = 2).let {
-        it[0] to
-            it.getOrElse(1) { "" }
-    }
-    return buildAnnotatedString {
-        append(before)
-        withStyle(SpanStyle(color = ink, fontWeight = weight)) { append(part) }
-        append(after)
-    }
-}
-
-private const val PLACEHOLDER = "%1\$s"
 
 const val RECIBO_GUIDE_HINT_TAG = "recibo:nudge:guide"
 const val RECIBO_BACKUP_REMINDER_TAG = "recibo:nudge:backup"
