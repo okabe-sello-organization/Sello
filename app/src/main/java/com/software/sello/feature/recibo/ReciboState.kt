@@ -57,6 +57,12 @@ sealed interface ReciboNudge {
      * no backup yet. Ir a Respaldo and No volver a mostrar; no ✕.
      */
     data class BackupReminder(val daysSinceBackup: Long?) : ReciboNudge
+
+    /**
+     * Under the goal card, once it takes turns among two or more goals (SELLO-213): starred
+     * goals come first, from Destacar en Recibo in Metas. A ✕ only.
+     */
+    data object Goal : ReciboNudge
 }
 
 /** Which sentence an amount completes. */
@@ -275,6 +281,9 @@ sealed interface ReciboAction {
 
     /** Ir a Respaldo: opens Respaldo, never starts a backup. Navigation is the root's. */
     data object OpenBackup : ReciboAction
+
+    /** The goal card nudge's ✕: closes it for good. */
+    data object CloseGoalNudge : ReciboAction
 
     /** The backup reminder's "No volver a mostrar". */
     data object TurnOffBackupReminder : ReciboAction

@@ -427,6 +427,7 @@ private fun ReciboDestination(
                         ReciboAction.OpenBackup -> onOpenBackup()
 
                         ReciboAction.CloseGuideHint,
+                        ReciboAction.CloseGoalNudge,
                         ReciboAction.TurnOffBackupReminder -> Unit
                     }
                     recibo.onAction(action)

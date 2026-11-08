@@ -16,6 +16,7 @@ import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.CategoryReads
 import com.software.sello.domain.port.ClosedMonthInvitePreferences
 import com.software.sello.domain.port.FinancialClock
+import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.GuidancePreferences
 import com.software.sello.domain.port.HistoryStartReads
 import com.software.sello.domain.port.MonthlySnapshots
@@ -59,7 +60,8 @@ class ReciboViewModel(
     private val years: YearSnapshots,
     private val guidance: GuidancePreferences,
     backups: BackupRecords,
-    history: HistoryStartReads
+    history: HistoryStartReads,
+    goals: GoalReads
 ) : ViewModel() {
     private val render = ReciboRenderModel(money)
     private val attempt = MutableStateFlow(0)
@@ -140,18 +142,31 @@ class ReciboViewModel(
     private val closedHere = MutableStateFlow<Set<Nudge>>(emptySet())
 
     /**
+     * Whether the goal card takes turns among two or more goals (SELLO-213): it shows only
+     * on the current month, and a goal read that is loading or failed counts as no.
+     */
+    private val goalCarousel = combine(
+        goals.observeBoard(),
+        session.selectedMonth,
+        session.currentMonth
+    ) { board, selected, current ->
+        board is ReadState.Ready && selected == current &&
+            board.value.reciboGoals.size >= CAROUSEL_GOALS
+    }
+
+    /**
      * The one nudge due on Recibo: the backup reminder first, then the Guía hint once an
-     * expense exists. Only readings that worked count: while the guidance, the last backup
-     * or the history is loading or failed, no nudge shows, never one worked out from an
-     * older value.
+     * expense exists, then the goal card's once it takes turns among two or more goals. Only
+     * readings that worked count: while the guidance, the last backup or the history is
+     * loading or failed, no nudge shows, never one worked out from an older value.
      */
     private val nudge = combine(
         guidance.observeGuidance(),
         backups.observeBackups(),
-        history.observe(),
+        combine(history.observe(), goalCarousel, ::Pair),
         clock.today,
         closedHere
-    ) { guidanceRead, backupRead, historyRead, today, closed ->
+    ) { guidanceRead, backupRead, (historyRead, carousel), today, closed ->
         if (
             guidanceRead !is PreferenceRead.Ready ||
             backupRead !is PreferenceRead.Ready ||
@@ -165,12 +180,14 @@ class ReciboViewModel(
             BackupReminderPolicy.due(today, backupRead.value.last?.at, start.firstMovement, memory)
         val wanted = listOfNotNull(
             Nudge.BackupReminder.takeIf { reminder != null },
-            Nudge.GuideHint.takeIf { start.firstExpense != null }
+            Nudge.GuideHint.takeIf { start.firstExpense != null },
+            Nudge.ReciboGoal.takeIf { carousel }
         ) - closed
         val picked = NudgePolicy.pick(guidanceRead.value, today.date, wanted)
         val render = when (picked) {
             Nudge.BackupReminder -> ReciboNudge.BackupReminder(reminder!!.daysSinceBackup)
             Nudge.GuideHint -> ReciboNudge.GuideHint
+            Nudge.ReciboGoal -> ReciboNudge.Goal
             else -> null
         }
         val shown = if (picked != null && render != null) {
@@ -249,6 +266,8 @@ class ReciboViewModel(
             ReciboAction.OpenGuide,
             ReciboAction.CloseGuideHint -> close(Nudge.GuideHint) { guidance.markSeen(it) }
 
+            ReciboAction.CloseGoalNudge -> close(Nudge.ReciboGoal) { guidance.markSeen(it) }
+
             ReciboAction.TurnOffBackupReminder ->
                 close(Nudge.BackupReminder) { guidance.turnOffBackupReminder() }
 
@@ -297,5 +316,8 @@ class ReciboViewModel(
     private companion object {
         /** Long enough to outlast a rotation without reading again. */
         const val STOP_AFTER_MILLIS = 5_000L
+
+        /** Goals on the card from which it takes turns, and its nudge may show. */
+        const val CAROUSEL_GOALS = 2
     }
 }
