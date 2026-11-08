@@ -60,8 +60,8 @@ mocks; the approved pieces are collected in the [mock](attachments/guidance-mock
   says so, and "No volver a mostrar" holds if either says so. A backup without these
   (older, or made while they could not be read) whose data has any expense, income, goal
   or investment marks the six new-user nudges seen in the same merge; the Guía hint and
-  the backup reminder stay as the phone has them. Without such data it keeps what the
-  phone has.
+  the backup reminder stay as the phone has them. Without such data, or for a
+  FinanceTracker import, it keeps what the phone has.
 - "Already using Sello" means the phone has any expense, income, goal or investment the
   first time the new version starts.
 - Thresholds for the feature nudges are in SELLO-212 and SELLO-213.

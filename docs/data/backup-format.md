@@ -178,7 +178,9 @@ says so, and the later of each day wins (on the same day the phone's last nudge 
 file with no guidance, or `null`, whose history has any expense, income, goal or investment
 merges the six new-user nudges as seen (its person was already using Sello); the Guía hint
 and the backup reminder stay as the phone has them. Without such a history it keeps the
-phone's. Whether the person was already using Sello when guidance arrived stays on the phone.
+phone's. A FinanceTracker translation, written as a version 11 file, merges nothing: the
+phone's stays as it is. Whether the person was already using Sello when guidance arrived
+stays on the phone.
 
 Every key is required, even when its value is `null`, and no other key is allowed.
 
@@ -373,7 +375,8 @@ are applied in four groups: appearance, order, Inversiones' settings and Gastos 
 line. A group that fails stays pending alone, with the file, and is retried at start-up and
 on request. The guidance seen is a fifth group, merged rather than applied: a merge that
 fails stays pending alone like the others ("Guía: lo que ya viste"), and one applied is
-never merged again.
+never merged again. When the phone's own guidance cannot be read the merge can never land,
+so the group counts as applied instead of staying pending for good.
 
 From the start-up failure screen there is no store to stage into, so the file is
 checked whole with `BackupCodec.check` and held in memory for the preview. Confirming

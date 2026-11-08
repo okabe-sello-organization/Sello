@@ -24,8 +24,10 @@ backup onto a phone that has seen more.
   the later day wins. A file without it (older, or made while it could not be read) whose
   history has any expense, income, goal or investment merges the six new-user nudges as
   seen, since its person was already using Sello; without such a history it keeps the
-  phone's. The merge is a restore preference group: one that fails stays pending and is
-  retried like the others.
+  phone's. A FinanceTracker import is not a Sello backup: it leaves the phone's guidance
+  as it is. The merge is a restore preference group: one that fails stays pending and is
+  retried like the others, except when the phone's own guidance cannot be read, which no
+  retry fixes: that group counts as applied.
 - Nothing financial is involved: the merge applies to these values only, and the history,
   categories and every other preference are still replaced as D09 says.
 - People already using Sello when guidance arrives (any expense, income, goal or
