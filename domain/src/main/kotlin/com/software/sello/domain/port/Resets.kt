@@ -33,7 +33,8 @@ sealed interface ResetOutcome {
  * kept undo copy and operation receipt, leaving one receipt for the erase itself with
  * no amount, name or note, and a new generation in the device's zone. Private files
  * that would keep old data (a staged restore, the copy set aside at start-up) go
- * afterwards, then the preferences return to first-run values; until all of that is
+ * afterwards, then the preferences return to first-run values (the guidance seen stays
+ * while it reads, ADR 0027); until all of that is
  * done the erase stays pending and is finished at start-up, never repeated. A restore
  * that replaced the erased history before then takes those files and preferences over:
  * the erase leaves them alone and only the database's compaction is still owed.
@@ -55,7 +56,10 @@ interface Resets {
     suspend fun finishPending(): ResetOutcome.Erased?
 }
 
-/** Puts every stored preference back to its first-run value, in one write. */
+/**
+ * Puts every stored preference back to its first-run value, in one write, except the
+ * guidance seen, which stays while it can be read (ADR 0027).
+ */
 fun interface PreferenceReset {
     suspend fun resetAll(): PreferenceWrite
 }

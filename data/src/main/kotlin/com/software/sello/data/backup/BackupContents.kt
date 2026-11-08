@@ -83,7 +83,8 @@ data class PortablePreferences(
     val smallExpenseLine: SmallExpenseLine = SmallExpenseLine.DEFAULT,
     /**
      * The guidance seen, version 11 on (SELLO-205). Null for an older file, or when the
-     * phone's could not be read while backing up: a restore then keeps the phone's.
+     * phone's could not be read while backing up: a restore then marks the new-user nudges
+     * seen if the history was in use, and otherwise keeps the phone's.
      * Merged into the phone's on restore, never put in its place.
      */
     val guidance: GuidanceMemory? = null

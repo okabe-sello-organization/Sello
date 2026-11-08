@@ -32,8 +32,8 @@ reads as having no goals, versions 1 and 2 as having no schedules and no origins
 is off and no starting deficit or surplus is guessed**; versions 2 to 6 read with their
 `featuredGoal` as the one starred goal, or none when that goal is completed, and versions
 1 to 7 as having no hue: their ink is Cobalto or Violeta, versions 1 to 9 with the
-Gastos hormiga line at `20000`, and versions 1 to 10 with no guidance, so a restore keeps
-the phone's. A backup with none of them is still version 11, so an app that reads only
+Gastos hormiga line at `20000`, and versions 1 to 10 with no guidance (see `guidance`
+below for what a restore does then). A backup with none of them is still version 11, so an app that reads only
 version 10 cannot read it.
 
 ```json
@@ -175,8 +175,10 @@ Unlike the rest of `preferences`, guidance is **merged** into the phone's, not p
 place ([ADR 0027](../decisions/0027-guidance-memory-outlives-reset-and-restore.md)): a
 nudge counts as seen if the phone or the file says so, `backupReminderOff` holds if either
 says so, and the later of each day wins (on the same day the phone's last nudge stays). A
-file with no guidance, or `null`, keeps the phone's. Whether the person was already using
-Sello when guidance arrived stays on the phone.
+file with no guidance, or `null`, whose history has any expense, income, goal or investment
+merges the six new-user nudges as seen (its person was already using Sello); the Guía hint
+and the backup reminder stay as the phone has them. Without such a history it keeps the
+phone's. Whether the person was already using Sello when guidance arrived stays on the phone.
 
 Every key is required, even when its value is `null`, and no other key is allowed.
 
@@ -369,9 +371,9 @@ receipt for the same operation means it already happened, so asking again after 
 outcome or a crash replays instead of replacing twice. Afterwards the backup's preferences
 are applied in four groups: appearance, order, Inversiones' settings and Gastos hormiga's
 line. A group that fails stays pending alone, with the file, and is retried at start-up and
-on request. The guidance seen is merged once, beside them, like the catch-up notice's mark:
-a merge that fails is tried again only while another group is pending and is never shown as
-pending, since the worst case is a nudge shown once more.
+on request. The guidance seen is a fifth group, merged rather than applied: a merge that
+fails stays pending alone like the others ("Guía: lo que ya viste"), and one applied is
+never merged again.
 
 From the start-up failure screen there is no store to stage into, so the file is
 checked whole with `BackupCodec.check` and held in memory for the preview. Confirming

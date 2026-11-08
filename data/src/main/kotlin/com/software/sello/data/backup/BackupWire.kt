@@ -678,7 +678,8 @@ internal data class BackupFileV11(
 
 /**
  * `guidance` is null when the phone's guidance could not be read while backing up, and in
- * a file of version 10 or older read as version 11: either way a restore keeps the phone's.
+ * a file of version 10 or older read as version 11: either way a restore merges the new-user
+ * nudges as seen when the file's history was in use, and otherwise keeps the phone's.
  */
 @Serializable
 internal data class PreferencesV11(

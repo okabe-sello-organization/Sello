@@ -319,7 +319,9 @@ deferred beyond MVP. Remaining implementation inputs are listed in the
   and portable preferences, not system permissions. Reset clears finances and portable
   preferences to first-run defaults; retain only minimal nonfinancial fencing/recovery
   metadata and explicitly explain that external backups survive. See
-  [D09](docs/decisions/0001-mvp-contract.md#d09--restore-and-reset).
+  [D09](docs/decisions/0001-mvp-contract.md#d09--restore-and-reset). The one exception
+  is the guidance seen: a restore merges it into the phone's and a reset keeps it while
+  it reads ([ADR 0027](docs/decisions/0027-guidance-memory-outlives-reset-and-restore.md)).
 - **MUST** use the document picker; “Guardado” requires successful write/close.
   Analytical CSV/JSON exports are not backups; use canonical range/revision values
   and neutralize spreadsheet formula injection.

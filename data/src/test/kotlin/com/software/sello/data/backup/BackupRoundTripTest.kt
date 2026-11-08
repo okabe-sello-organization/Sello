@@ -496,7 +496,7 @@ class BackupRoundTripTest {
     }
 
     @Test
-    fun `every file before version 11 reads with no guidance, so a restore keeps the phone's`() {
+    fun `every file before version 11 reads with no guidance`() {
         for (name in listOf(
             "valid-g01.json",
             "valid-g01-v2.json",
