@@ -8,6 +8,7 @@ import com.software.sello.domain.port.CatchUpNoticePreferences
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.ClosedMonthInvitePreferences
 import com.software.sello.domain.port.CorrectionAnnouncementPreferences
+import com.software.sello.domain.port.GuidancePreferences
 import com.software.sello.domain.port.IncomeSuggestionPreferences
 import com.software.sello.domain.port.InvestmentPreferences
 import com.software.sello.domain.port.PreferenceReset
@@ -32,6 +33,7 @@ fun preferencesModule(fileName: String = StorageNames.Normal.preferences): Modul
     single<IncomeSuggestionPreferences> { get<DataStoreUserPreferences>() }
     single<ClosedMonthInvitePreferences> { get<DataStoreUserPreferences>() }
     single<CatchUpNoticePreferences> { get<DataStoreUserPreferences>() }
+    single<GuidancePreferences> { get<DataStoreUserPreferences>() }
     single<BackupRecords> { get<DataStoreUserPreferences>() }
     single<PreferenceReset> { get<DataStoreUserPreferences>() }
 }

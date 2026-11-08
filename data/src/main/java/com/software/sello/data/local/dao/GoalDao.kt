@@ -122,4 +122,15 @@ interface GoalDao {
     /** Returns the rows removed: one, or none when the goal was not starred. */
     @Query("DELETE FROM starred_goal WHERE goal_id = :goalId")
     suspend fun unstar(goalId: String): Int
+
+    /**
+     * The stored date of the earliest goal movement (an aporte or a retiro, never a target),
+     * or null when there is none. A movement stored without a date reads as an empty date,
+     * which is damage to the reader, never left out.
+     */
+    @Query(
+        "SELECT MIN(COALESCE(effective_date, '')) FROM goal_event " +
+            "WHERE kind IN ('contribution', 'withdrawal')"
+    )
+    suspend fun earliestMovementDate(): String?
 }

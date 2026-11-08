@@ -1,5 +1,6 @@
 package com.software.sello.feature.recibo
 
+import androidx.lifecycle.SavedStateHandle
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.domain.model.Category
@@ -22,10 +23,13 @@ import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.ReadState
+import com.software.sello.feature.backup.HandBackupRecords
 import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
+import com.software.sello.testing.HandGuidance
+import com.software.sello.testing.HandHistoryStart
 import com.software.sello.testing.HandSnapshots
 import com.software.sello.testing.HandYearSnapshots
 import com.software.sello.testing.NewObservationSnapshots
@@ -49,6 +53,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 
@@ -77,7 +82,8 @@ class ReciboViewModelTest {
     fun resetDispatcher() = Dispatchers.resetMain()
 
     private fun TestScope.started(
-        source: MonthlySnapshots = snapshots
+        source: MonthlySnapshots = snapshots,
+        saved: SavedStateHandle = SavedStateHandle()
     ): Pair<ReciboViewModel, Job> {
         val viewModel = ReciboViewModel(
             session,
@@ -87,7 +93,11 @@ class ReciboViewModelTest {
             HandInvitations(),
             clock,
             categoryReads,
-            HandYearSnapshots()
+            HandYearSnapshots(),
+            HandGuidance(),
+            HandBackupRecords(),
+            HandHistoryStart(),
+            saved
         )
         // Something has to be watching for the state to be kept up to date.
         val watching =
@@ -316,6 +326,50 @@ class ReciboViewModelTest {
             listOf("00000000-0000-4000-8000-000000000000", "00000000-0000-4000-8000-000000000001"),
             (viewModel.state.value as ReciboState.Month).categories.map { it.id }
         )
+    }
+
+    @Test
+    fun aHelpTopicOpensOverTheMonthAndClosesAgain() = runTest {
+        val (viewModel) = started()
+        snapshots.of(october).value = ReadState.Ready(snapshot(october, 0, categories = 1))
+
+        ReciboHelp.entries.forEach { topic ->
+            viewModel.onAction(ReciboAction.ShowHelp(topic))
+            assertEquals(topic, (viewModel.state.value as ReciboState.Month).help)
+        }
+        viewModel.onAction(ReciboAction.CloseHelp)
+
+        assertNull((viewModel.state.value as ReciboState.Month).help)
+    }
+
+    @Test
+    fun theOpenHelpSurvivesARestartAndTheGuideClosesIt() = runTest {
+        val saved = SavedStateHandle()
+        val (first, watching) = started(saved = saved)
+        snapshots.of(october).value = ReadState.Ready(snapshot(october, 0, categories = 1))
+        first.onAction(ReciboAction.ShowHelp(ReciboHelp.PerDay))
+        watching.cancel()
+
+        val (restarted) = started(saved = saved)
+        val reopened = (restarted.state.value as ReciboState.Month).help
+        restarted.onAction(ReciboAction.OpenHelpGuide)
+
+        assertEquals(ReciboHelp.PerDay, reopened)
+        assertNull((restarted.state.value as ReciboState.Month).help)
+    }
+
+    @Test
+    fun aFailedReadShowsNoHelpAndTheMonthBringsItBack() = runTest {
+        val (viewModel) = started()
+        val failure = SnapshotFailure.Storage(StorageFailure.Unavailable("SQLiteException"))
+        viewModel.onAction(ReciboAction.ShowHelp(ReciboHelp.Summary))
+
+        snapshots.of(october).value = ReadState.Failed(failure, lastGood = null)
+        val failed = viewModel.state.value
+        snapshots.of(october).value = ReadState.Ready(snapshot(october, 0, categories = 1))
+
+        assertEquals(ReciboState.Failed, failed)
+        assertEquals(ReciboHelp.Summary, (viewModel.state.value as ReciboState.Month).help)
     }
 }
 

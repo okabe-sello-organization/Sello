@@ -135,6 +135,7 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
             corrections::undo
         )
         settingsDestinations(navigation, viewModels, shellState, shell::onAction)
+        guideDestinations(navigation, shellState, shell::onAction)
         backupDestinations(navigation, viewModels, shellState, shell::onAction)
         resetDestinations(navigation, viewModels, shellState, shell::onAction)
         recurrenceDestinations(

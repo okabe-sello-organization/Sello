@@ -29,14 +29,16 @@ import com.software.sello.designsystem.theme.SelloTheme
 /**
  * One receipt line of a [CarryBreakdown]: [label], an amount already formatted with its
  * sign, and an optional [caption] in words under the label ("Te pasaste 20.000 en meses
- * anteriores"). A [MoneySign.Minus] amount is drawn in the loss ink.
+ * anteriores"). A [MoneySign.Minus] amount is drawn in the loss ink. With [onLabelHelp] the
+ * label is underlined and opens what it means.
  */
 @Immutable
 data class CarryLine(
     val label: String,
     val amount: MoneyTextValue,
     val caption: String? = null,
-    val emphasis: LineEmphasis = LineEmphasis.Normal
+    val emphasis: LineEmphasis = LineEmphasis.Normal,
+    val onLabelHelp: (() -> Unit)? = null
 )
 
 /**
@@ -53,7 +55,12 @@ fun CarryBreakdown(
 ) {
     Column(modifier.fillMaxWidth().padding(top = SelloTheme.spacing.xs)) {
         lines.forEach { line ->
-            LeaderLine(line.label, caption = line.caption, emphasis = line.emphasis) {
+            LeaderLine(
+                line.label,
+                caption = line.caption,
+                emphasis = line.emphasis,
+                onLabelHelp = line.onLabelHelp
+            ) {
                 MoneyText(
                     line.amount,
                     color = if (line.amount.sign == MoneySign.Minus) {

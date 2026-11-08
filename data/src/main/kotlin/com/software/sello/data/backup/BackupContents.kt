@@ -8,6 +8,7 @@ import com.software.sello.domain.model.DefaultLimit
 import com.software.sello.domain.model.Expense
 import com.software.sello.domain.model.GoalHistory
 import com.software.sello.domain.model.GoalId
+import com.software.sello.domain.model.GuidanceMemory
 import com.software.sello.domain.model.Income
 import com.software.sello.domain.model.InvestmentHistory
 import com.software.sello.domain.model.InvestmentPreference
@@ -79,7 +80,14 @@ data class PortablePreferences(
     /** Version 5 on; an older file brings the defaults (SELLO-120). */
     val investments: InvestmentPreference = InvestmentPreference(),
     /** Gastos hormiga's line, version 10 on; an older file brings 20.000 (SELLO-194). */
-    val smallExpenseLine: SmallExpenseLine = SmallExpenseLine.DEFAULT
+    val smallExpenseLine: SmallExpenseLine = SmallExpenseLine.DEFAULT,
+    /**
+     * The guidance seen, version 11 on (SELLO-205). Null for an older file, or when the
+     * phone's could not be read while backing up: a restore then marks the new-user nudges
+     * seen if the history was in use, and otherwise keeps the phone's.
+     * Merged into the phone's on restore, never put in its place.
+     */
+    val guidance: GuidanceMemory? = null
 )
 
 /**

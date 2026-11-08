@@ -71,6 +71,7 @@ fun SettingsRoot(
     onOpenSchedules: () -> Unit,
     onOpenRate: () -> Unit,
     onOpenSmallExpenses: () -> Unit,
+    onOpenGuide: () -> Unit,
     tusDatos: @Composable () -> Unit
 ) {
     val model: SettingsViewModel = viewModel(factory = viewModels)
@@ -82,6 +83,7 @@ fun SettingsRoot(
         onOpenSchedules = onOpenSchedules,
         onOpenRate = onOpenRate,
         onOpenSmallExpenses = onOpenSmallExpenses,
+        onOpenGuide = onOpenGuide,
         tusDatos = tusDatos
     )
 }
@@ -104,8 +106,10 @@ private enum class SettingsPicker { Order, Direction, NewInvestmentCurrency, Inv
 private val newInvestmentCurrencies = listOf(Currency.COP, Currency.USD)
 
 /**
- * Configuración: Tus datos and its backup card first, then Lo que se repite, Apariencia,
- * Recibo, Resumen and Inversiones. Every control is a real setting, never a placeholder.
+ * Configuración: the Guía de Sello first, then Tus datos and its backup card, Lo que se
+ * repite, Apariencia, Recibo, Resumen and Inversiones. Every control is a real setting,
+ * never a placeholder. The Guía reads nothing, so its row shows even while the settings
+ * load or fail.
  */
 @Composable
 fun SettingsScreen(
@@ -116,6 +120,7 @@ fun SettingsScreen(
     onOpenRate: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenSmallExpenses: () -> Unit = {},
+    onOpenGuide: () -> Unit = {},
     tusDatos: @Composable () -> Unit
 ) {
     var picking by rememberSaveable { mutableStateOf<SettingsPicker?>(null) }
@@ -127,6 +132,16 @@ fun SettingsScreen(
             .padding(contentPadding)
             .testTag(SETTINGS_TAG)
     ) {
+        Slip(Modifier.fillMaxWidth()) {
+            SettingRow(
+                title = stringResource(R.string.guide_title),
+                icon = SelloIcon.Info,
+                caption = stringResource(R.string.guide_settings_caption),
+                onClick = onOpenGuide,
+                divider = false,
+                modifier = Modifier.testTag(SETTINGS_GUIDE_TAG)
+            )
+        }
         if (state.loading) {
             SlipSkeleton(Modifier.testTag(SETTINGS_LOADING_TAG))
             return@Column
@@ -472,6 +487,7 @@ const val SETTINGS_ORDER_ROW_TAG = "settings:order:row"
 const val SETTINGS_DIRECTION_TAG = "settings:direction"
 const val SETTINGS_DIRECTION_ROW_TAG = "settings:direction:row"
 const val SETTINGS_DATA_TAG = "settings:data"
+const val SETTINGS_GUIDE_TAG = "settings:guide"
 
 const val SETTINGS_RECURRING_TAG = "settings:recurring"
 const val SETTINGS_SCHEDULES_TAG = "settings:schedules"

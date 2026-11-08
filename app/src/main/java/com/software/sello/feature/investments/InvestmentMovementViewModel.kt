@@ -14,6 +14,7 @@ import com.software.sello.domain.model.InvestmentMovementId
 import com.software.sello.domain.model.InvestmentMovementKind
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Note
+import com.software.sello.domain.model.Nudge
 import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.policy.AmountDraft
@@ -24,6 +25,7 @@ import com.software.sello.domain.port.CommittedInvestment
 import com.software.sello.domain.port.DeleteInvestmentMovement
 import com.software.sello.domain.port.EditInvestmentMovement
 import com.software.sello.domain.port.FinancialClock
+import com.software.sello.domain.port.GuidancePreferences
 import com.software.sello.domain.port.InvestmentBoard
 import com.software.sello.domain.port.InvestmentBoardState
 import com.software.sello.domain.port.InvestmentCommands
@@ -74,7 +76,8 @@ class InvestmentMovementViewModel(
     private val clock: FinancialClock,
     private val ids: RecordIdSource,
     private val money: MoneyFormatter,
-    private val corrections: Corrections
+    private val corrections: Corrections,
+    private val guidance: GuidancePreferences
 ) : ViewModel() {
     private data class Draft(
         val kind: InvestmentMovementKind,
@@ -702,7 +705,10 @@ class InvestmentMovementViewModel(
         }
     }
 
-    private fun settle(step: String, settled: Settled<CommittedInvestment, InvestmentRejection>?) {
+    private suspend fun settle(
+        step: String,
+        settled: Settled<CommittedInvestment, InvestmentRejection>?
+    ) {
         when (settled) {
             // Something is still in flight and will settle; or nothing was left to ask about.
             null -> if (!submission.pending) progress.update { it.copy(busy = false) }
@@ -799,7 +805,7 @@ class InvestmentMovementViewModel(
         settle(step, submission.recover(commands::find))
     }
 
-    private fun committed(step: String, receipt: OperationReceipt, announced: Boolean) {
+    private suspend fun committed(step: String, receipt: OperationReceipt, announced: Boolean) {
         when (step) {
             STEP_DELETE -> if (!announced) corrections.investmentMovementDeleted(receipt)
 
@@ -824,6 +830,9 @@ class InvestmentMovementViewModel(
         if (step != STEP_DELETE) {
             drafts.clear()
             saved.remove<Boolean>(DRAFTED)
+            // A movement recorded or a value updated closes the investments nudge for good,
+            // kept before the form closes so leaving never cancels it.
+            guidance.markSeen(Nudge.Investments)
         }
         progress.update { it.copy(busy = false, error = null, closed = true) }
     }

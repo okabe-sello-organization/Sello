@@ -113,6 +113,18 @@ data class GoalBulkRoute(
 @Serializable
 data object SettingsRoute
 
+/** The Guía de Sello's list of pages, reached from Configuración's first row. */
+@Serializable
+data object GuideRoute
+
+/**
+ * One page of the Guía, named by its [GuidePage.id][com.software.sello.feature.guide.GuidePage.id],
+ * from the Guía's list or from a help sheet's "Ver más en la Guía de Sello". An id this
+ * version does not know shows the list.
+ */
+@Serializable
+data class GuidePageRoute(val page: String)
+
 /** Making a backup file, reached from Configuración. */
 @Serializable
 data object BackupRoute

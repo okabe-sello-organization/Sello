@@ -30,6 +30,7 @@ import com.software.sello.domain.port.ExpenseReads
 import com.software.sello.domain.port.FinancialProfileStore
 import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.GoalReads
+import com.software.sello.domain.port.HistoryStartReads
 import com.software.sello.domain.port.IncomeBatchCommands
 import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.IncomeReads
@@ -139,16 +140,19 @@ fun storageModule(storage: FinancialStorage): Module = module {
     single<IncomeReads> { storage.incomeReads }
     single<GoalCommands> { storage.goalCommands(get(), get(), get(), get()) }
     single<GoalReads> { storage.goalReads }
+    single<HistoryStartReads> { storage.historyStartReads }
     single<InvestmentCommands> { storage.investmentCommands(get(), get(), get(), get()) }
     single<InvestmentReads> { storage.investmentReads }
     single<ScheduleCommands> { storage.scheduleCommands(get(), get(), get()) }
     single<ScheduleReads> { storage.scheduleReads }
     single<ScheduleRecordReads> { storage.scheduleRecordReads }
     single<ScheduleCatchUpStore> { storage.scheduleCatchUp(get(), get(), get()) }
-    single<BackupExports> { storage.backupExports(get(), get(), get(), get(), get(), get(), get()) }
+    single<BackupExports> {
+        storage.backupExports(get(), get(), get(), get(), get(), get(), get(), get())
+    }
     single<DataExports> { storage.dataExports(get(), get()) }
     single<Restores> {
-        storage.restores(get(), get(), get(), get(), get(), get(), get(), get(), get())
+        storage.restores(get(), get(), get(), get(), get(), get(), get(), get(), get(), get())
     }
     // A new history after an erase takes the device's zone, read when the erase commits.
     single<Resets> { storage.resets(get(), ::deviceZone, get(), get()) }
