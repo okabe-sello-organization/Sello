@@ -11,6 +11,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
@@ -27,9 +28,13 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
@@ -105,6 +110,52 @@ class GuidanceTest {
             node.performClick()
             assertEquals(scheme, 1, clicks)
         }
+    }
+
+    @Test
+    fun helpTermKeepsItsTextLayoutReadable() {
+        rule.setContent {
+            SelloTheme {
+                HelpTerm(
+                    "por día",
+                    {},
+                    Modifier.testTag("term"),
+                    style = TextStyle(fontSize = 12.5.sp)
+                )
+            }
+        }
+
+        val layouts = mutableListOf<TextLayoutResult>()
+        rule.onNodeWithTag("term")
+            .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+
+        assertEquals("por día", layouts.single().layoutInput.text.text)
+        assertEquals(12.5.sp, layouts.single().layoutInput.style.fontSize)
+    }
+
+    @Test
+    fun aLeaderLineWithAHelpLabelStillSaysItsLabelBeforeItsValue() {
+        var clicks = 0
+        rule.setContent {
+            SelloTheme {
+                LeaderLine(
+                    "Límite base",
+                    Modifier.testTag("line"),
+                    onLabelHelp = { clicks++ }
+                ) {
+                    MoneyText(MoneyTextValue(MoneySign.None, "", "150.000", "150.000 pesos"))
+                }
+            }
+        }
+
+        rule.onNodeWithTag("line").assert(
+            SemanticsMatcher.expectValue(
+                SemanticsProperties.ContentDescription,
+                listOf("Límite base", "150.000 pesos")
+            )
+        )
+        rule.onNodeWithContentDescription("Límite base. Qué significa").performClick()
+        assertEquals(1, clicks)
     }
 
     @Test
