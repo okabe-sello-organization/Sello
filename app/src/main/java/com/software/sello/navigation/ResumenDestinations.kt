@@ -25,6 +25,8 @@ import com.software.sello.feature.recibo.ShareMonthButton
 import com.software.sello.feature.recibo.ShareMonthRoot
 import com.software.sello.feature.recibo.ShareMonthViewModel
 import com.software.sello.feature.resumen.ResumenRoot
+import com.software.sello.feature.resumen.ResumenTabBack
+import com.software.sello.feature.resumen.ResumenViewModel
 import com.software.sello.feature.resumen.YearRoot
 import com.software.sello.presentation.corrections.CorrectionAnnouncementState
 import com.software.sello.presentation.corrections.CorrectionAnnouncementsViewModel
@@ -74,10 +76,16 @@ internal fun NavGraphBuilder.resumenDestinations(
                     navigation.navigate(CategoryEditRoute(id, state.selectedMonth.toString()))
                 },
                 onDayByDay = { navigation.openDayByDay() },
-                onYear = { year -> navigation.navigate(YearRoute(year)) { launchSingleTop = true } }
+                onYear = { year ->
+                    navigation.navigate(YearRoute(year)) { launchSingleTop = true }
+                },
+                onOpenGuide = { navigation.openGuide(GuidePage.Summary) }
             )
         }
-        BackHandler(enabled = !state.monthPickerOpen) { tabs.onSelect("recibo") }
+        // The same view model ResumenRoot shows: an open help sheet takes Back first.
+        val resumen: ResumenViewModel = viewModel(factory = viewModels)
+        val shown by resumen.state.collectAsStateWithLifecycle()
+        ResumenTabBack(shown, enabled = !state.monthPickerOpen) { tabs.onSelect("recibo") }
         // After the screen's own back, so that back closes the sheet first.
         ShareMonthRoot(viewModels)
     }

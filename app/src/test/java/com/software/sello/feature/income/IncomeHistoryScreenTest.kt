@@ -5,6 +5,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.filterToOne
@@ -42,6 +43,7 @@ class IncomeHistoryScreenTest {
     private val october = YearMonth.of(2026, 10)
     private val today = LocalDate.of(2026, 10, 22)
     private val actions = mutableListOf<IncomeHistoryAction>()
+    private var guides = 0
     private var created = 0
     private val edited = mutableListOf<String>()
     private val assigned = mutableListOf<String?>()
@@ -84,7 +86,8 @@ class IncomeHistoryScreenTest {
         state: IncomeHistoryState,
         split: IncomeSplit?,
         plan: IncomePlanState = IncomePlanState.None,
-        assign: AssignSuggestion? = null
+        assign: AssignSuggestion? = null,
+        help: IncomeHelp? = null
     ) {
         rule.showSello(Look()) {
             IncomeHistoryScreen(
@@ -97,9 +100,66 @@ class IncomeHistoryScreenTest {
                 { created++ },
                 { assigned += it },
                 { edited += it },
-                PaddingValues(12.dp)
+                PaddingValues(12.dp),
+                help,
+                { guides++ }
             )
         }
+    }
+
+    @Test
+    fun theQuestionMarkAndTheUnderlinedSinAsignarOpenTheirSheets() {
+        show(ready(), split)
+
+        rule.onNodeWithTag(INCOME_HERO_HELP_TAG)
+            .assertContentDescriptionEquals("Cómo se reparte lo que entró").performClick()
+        rule.onNodeWithContentDescription("Sin asignar. Qué significa").performClick()
+
+        assertEquals(
+            listOf(
+                IncomeHistoryAction.OpenHelp(IncomeHelp.CameIn),
+                IncomeHistoryAction.OpenHelp(IncomeHelp.Unassigned)
+            ),
+            actions
+        )
+    }
+
+    @Test
+    fun theUnderlinedSinAsignarLineStillSaysItsNameBeforeItsAmount() {
+        show(ready(), split)
+
+        rule.onNodeWithTag("income.unassigned").assert(
+            SemanticsMatcher.expectValue(
+                SemanticsProperties.ContentDescription,
+                listOf("Sin asignar", "50.000 pesos")
+            )
+        )
+    }
+
+    @Test
+    fun eachHelpSheetShowsItsRuleAndLeadsToTheGuide() {
+        show(ready(), split, help = IncomeHelp.CameIn)
+        rule.onNodeWithTag("$INCOME_HELP_TAG.CameIn").assertIsDisplayed()
+        rule.onNodeWithText("Cómo se reparte lo que entró").assertIsDisplayed()
+        rule.onNodeWithContentDescription("Plan del mes. Aparece cuando", substring = true)
+            .performScrollTo().assertIsDisplayed()
+
+        rule.onNodeWithText("Ver más en la Guía de Sello").performScrollTo().performClick()
+
+        assertEquals(listOf<IncomeHistoryAction>(IncomeHistoryAction.CloseHelp), actions)
+        assertEquals(1, guides)
+    }
+
+    @Test
+    fun theUnassignedSheetSaysWhatANegativeFigureMeans() {
+        show(ready(), split, help = IncomeHelp.Unassigned)
+
+        rule.onNodeWithTag("$INCOME_HELP_TAG.Unassigned").assertIsDisplayed()
+        rule.onNodeWithContentDescription("Si sale en rojo. Tus límites", substring = true)
+            .performScrollTo().assertIsDisplayed()
+        rule.onNodeWithText(
+            "Entraron 2.000.000 y tus límites suman 2.500.000: Sin asignar es −500.000."
+        ).performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -116,7 +176,7 @@ class IncomeHistoryScreenTest {
             )
         )
         rule.onNodeWithText("En presupuestos de categorías").assertIsDisplayed()
-        rule.onNodeWithText("Sin asignar").assertIsDisplayed()
+        rule.onNodeWithContentDescription("Sin asignar. Qué significa").assertIsDisplayed()
         rule.onNodeWithTag("income.overBasis").assertDoesNotExist()
         // Nothing is expected: no plan. And no suggestion here.
         rule.onNodeWithTag("income.plan").assertDoesNotExist()

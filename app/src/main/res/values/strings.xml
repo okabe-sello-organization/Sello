@@ -781,6 +781,22 @@
     <string name="income_plan_item_spoken">%1$s esperado el %2$s: %3$s</string>
     <string name="income_plan_footnote">Lo esperado se anota solo en su fecha.</string>
     <string name="income_plan_failed">No pudimos leer lo que esperas recibir. Tus registros siguen guardados.</string>
+    <!-- Ingresos explains itself (SELLO-208): each line is a rule the code applies today. -->
+    <string name="income_help_title">Cómo se reparte lo que entró</string>
+    <string name="income_help_came_in">Entró</string>
+    <string name="income_help_came_in_body">Los ingresos anotados en el mes, hasta hoy. Uno con una fecha posterior cuenta cuando llega su día.</string>
+    <string name="income_help_in_budgets">En presupuestos de categorías</string>
+    <string name="income_help_in_budgets_body">La suma de los límites base de tus categorías. Las que no tienen límite no suman, y lo que sobra o falta de meses anteriores no cuenta.</string>
+    <string name="income_help_unassigned">Sin asignar</string>
+    <string name="income_help_unassigned_body">Lo que entró menos lo que suman esos límites. Si tus límites suman más, sale en rojo y con signo menos.</string>
+    <string name="income_help_plan">Plan del mes</string>
+    <string name="income_help_plan_body">Aparece cuando esperas un ingreso fijo este mes: suma lo anotado y lo esperado, y te muestra cuánto quedaría sin asignar. Lo esperado se anota solo en su fecha.</string>
+    <string name="income_help_example">Entraron 2.000.000 y tus límites suman 1.500.000: quedan 500.000 sin asignar. Si esperas 1.000.000 más, el plan suma 3.000.000 y quedan 1.500.000 sin asignar en el plan.</string>
+    <string name="income_help_unassigned_title">Sin asignar</string>
+    <string name="income_help_unassigned_term_body">Lo que entró este mes y aún no tiene un presupuesto: lo que entró menos la suma de los límites base de tus categorías. Sello no mueve dinero; solo te lo muestra.</string>
+    <string name="income_help_unassigned_negative">Si sale en rojo</string>
+    <string name="income_help_unassigned_negative_body">Tus límites suman más de lo que entró, y la diferencia sale con signo menos.</string>
+    <string name="income_help_unassigned_example">Entraron 2.000.000 y tus límites suman 2.500.000: Sin asignar es −500.000.</string>
     <string name="tab_recibo">Recibo</string>
     <string name="tab_resumen">Resumen</string>
     <string name="navigation_back">Volver</string>
@@ -818,7 +834,6 @@
     <string name="resumen_hero_more">más que en %1$s</string>
     <string name="resumen_hero_less">menos que en %1$s</string>
     <string name="resumen_hero_same">lo mismo que en %1$s</string>
-    <string name="resumen_hero_trend_same_day">%1$s %% al mismo día del mes</string>
     <string name="resumen_hero_trend_whole">%1$s %% que %2$s completo</string>
     <string name="resumen_hero_same_days">Del 1 al %1$d de cada mes</string>
     <string name="resumen_hero_capped_days">Del 1 al %1$d de %2$s · Del 1 al %3$d de %4$s</string>
@@ -871,6 +886,43 @@
     <string name="resumen_and">" y "</string>
     <string name="resumen_insufficient_history">Con un mes más de datos verás aquí tu historia entre meses. Aún no hay promedios ni comparaciones.</string>
     <string name="resumen_see_year">Ver tu año</string>
+    <!-- Resumen explains itself (SELLO-208): each line is a rule the code applies today. -->
+    <string name="resumen_hero_trend_percent">%1$s %%</string>
+    <string name="resumen_hero_same_day_term">al mismo día del mes</string>
+    <string name="resumen_help_month_title">Cómo se compara tu mes</string>
+    <string name="resumen_help_month_same_days">Mismos días</string>
+    <string name="resumen_help_month_same_days_body">En el mes en curso, lo que gastaste del 1 a hoy se compara con los mismos días del mes anterior. Si ese mes es más corto, se cuenta hasta su último día.</string>
+    <string name="resumen_help_month_closed">Un mes que terminó</string>
+    <string name="resumen_help_month_closed_body">Se compara completo con el mes anterior completo.</string>
+    <string name="resumen_help_month_percent">El porcentaje</string>
+    <string name="resumen_help_month_percent_body">La diferencia frente a lo que gastaste el mes anterior en esos días.</string>
+    <string name="resumen_help_month_none">Sin comparación</string>
+    <string name="resumen_help_month_none_body">Si el mes anterior no tiene gastos anotados, ves solo lo que llevas gastado.</string>
+    <string name="resumen_help_month_example" formatted="false">Hoy es 10. Del 1 al 10 gastaste 300.000; del 1 al 10 del mes anterior, 250.000. Vas 50.000 más: un 20 % más.</string>
+    <string name="resumen_help_same_day_title">Al mismo día del mes</string>
+    <string name="resumen_help_same_day_body">Lo que gastaste del 1 a hoy frente a lo que gastaste del 1 al mismo día del mes anterior: igual con igual, aunque el mes no haya terminado. Si el mes anterior es más corto, se cuenta hasta su último día.</string>
+    <string name="resumen_help_same_day_example" formatted="false">Hoy es 15. Del 1 al 15 llevas 400.000; el mes anterior, del 1 al 15, llevabas 500.000. Vas 100.000 menos: un 20 % menos.</string>
+    <string name="resumen_help_small_title">Gastos hormiga</string>
+    <string name="resumen_help_small_label">Qué cuenta como gasto hormiga</string>
+    <string name="resumen_help_small_counts">Qué cuenta</string>
+    <string name="resumen_help_small_counts_body">Cada gasto de tu línea o menos, en todas tus categorías, también tus pagos fijos. Se suman del 1 a hoy, o el mes completo si ya terminó.</string>
+    <string name="resumen_help_small_line">Tu línea</string>
+    <string name="resumen_help_small_line_body">Empieza en 20.000. La cambias en Configuración, en Resumen, entre 1.000 y 100.000, y vale para todos los meses, también los pasados.</string>
+    <string name="resumen_help_small_shows">Cuándo aparece</string>
+    <string name="resumen_help_small_shows_body">Cuando hay 5 gastos pequeños o más en esos días.</string>
+    <string name="resumen_help_small_share">El porcentaje</string>
+    <string name="resumen_help_small_share_body">Lo que suman frente a todo lo que gastaste en esos días.</string>
+    <string name="resumen_help_small_example">Con tu línea en 20.000, un café de 5.000 y un almuerzo de 20.000 cuentan; un mercado de 80.000, no.</string>
+    <string name="resumen_help_weekdays_title">Cómo se saca el promedio por día</string>
+    <string name="resumen_help_weekdays_average">Promedio por día</string>
+    <string name="resumen_help_weekdays_average_body">Lo que gastaste en cada día de la semana, dividido entre las veces que ese día pasó, aunque en alguno no hayas gastado nada.</string>
+    <string name="resumen_help_weekdays_period">Qué días cuenta</string>
+    <string name="resumen_help_weekdays_period_body">Los 6 meses que terminan en el mes que ves, hasta hoy si es el mes en curso, o desde tu primer gasto anotado si es más reciente.</string>
+    <string name="resumen_help_weekdays_busiest">El día que más</string>
+    <string name="resumen_help_weekdays_busiest_body">Se nombra cuando un solo día tiene el promedio más alto.</string>
+    <string name="resumen_help_weekdays_shows">Cuándo aparece</string>
+    <string name="resumen_help_weekdays_shows_body">Cuando hay al menos una semana desde tu primer gasto anotado.</string>
+    <string name="resumen_help_weekdays_example">En 4 sábados gastaste 100.000, 0, 60.000 y 40.000: tu promedio del sábado es 200.000 entre 4, o sea 50.000.</string>
     <string name="year_title">Tu año</string>
     <string name="year_previous">Año anterior</string>
     <string name="year_next">Año siguiente</string>

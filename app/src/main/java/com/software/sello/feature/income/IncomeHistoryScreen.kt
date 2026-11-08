@@ -1,6 +1,7 @@
 package com.software.sello.feature.income
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
@@ -22,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.software.sello.R
 import com.software.sello.designsystem.component.AnswerSlip
 import com.software.sello.designsystem.component.ButtonKind
+import com.software.sello.designsystem.component.CardHelp
 import com.software.sello.designsystem.component.ExpectedChip
 import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.component.LineEmphasis
@@ -56,6 +58,50 @@ import java.time.YearMonth
  */
 @Composable
 fun IncomeHistoryScreen(
+    state: IncomeHistoryState,
+    split: IncomeSplit?,
+    plan: IncomePlanState,
+    assign: AssignSuggestion?,
+    today: LocalDate,
+    onAction: (IncomeHistoryAction) -> Unit,
+    onCreate: () -> Unit,
+    onAssign: (limit: String?) -> Unit,
+    onEdit: (String) -> Unit,
+    padding: PaddingValues,
+    help: IncomeHelp? = null,
+    onOpenGuide: () -> Unit = {}
+) {
+    // As big as the list, which fills the shell's content area: the sheet covers just that.
+    Box {
+        IncomeHistoryList(
+            state,
+            split,
+            plan,
+            assign,
+            today,
+            onAction,
+            onCreate,
+            onAssign,
+            onEdit,
+            padding
+        )
+        // Over the page, between the shell's bars, as the mock shows it.
+        help?.let {
+            IncomeHelpSheet(
+                it,
+                onAction,
+                onOpenGuide,
+                Modifier.padding(
+                    top = padding.calculateTopPadding(),
+                    bottom = padding.calculateBottomPadding()
+                )
+            )
+        }
+    }
+}
+
+@Composable
+private fun IncomeHistoryList(
     state: IncomeHistoryState,
     split: IncomeSplit?,
     plan: IncomePlanState,
@@ -114,7 +160,7 @@ fun IncomeHistoryScreen(
                 planItem(plan, today, onAction)
             } else {
                 staleItem(state, split, onAction)
-                item { CameIn(state, split, today, months.inSentence(state.month)) }
+                item { CameIn(state, split, today, months.inSentence(state.month), onAction) }
                 planItem(plan, today, onAction)
                 assign?.let { item { AssignNote(it, onAssign, onAction) } }
                 item {
@@ -312,7 +358,8 @@ private fun CameIn(
     state: IncomeHistoryState.Ready,
     split: IncomeSplit?,
     today: LocalDate,
-    month: String
+    month: String,
+    onAction: (IncomeHistoryAction) -> Unit
 ) {
     // What came in up to today, as Resumen counts it; the list's total has every income.
     val amount = split?.income ?: state.total.takeIf { state.month < YearMonth.from(today) }
@@ -324,7 +371,14 @@ private fun CameIn(
         amount = amount,
         stamp = null,
         ink = StampInk.Neutral,
-        modifier = Modifier.testTag("income.hero")
+        modifier = Modifier.testTag("income.hero"),
+        labelHelp = {
+            CardHelp(
+                incomeHelpLabel(),
+                { onAction(IncomeHistoryAction.OpenHelp(IncomeHelp.CameIn)) },
+                Modifier.testTag(INCOME_HERO_HELP_TAG)
+            )
+        }
     ) {
         if (split != null) {
             val colors = SelloTheme.colors
@@ -348,7 +402,8 @@ private fun CameIn(
             LeaderLine(stringResource(R.string.income_in_budgets)) { MoneyText(split.allocated) }
             LeaderLine(
                 stringResource(R.string.income_unassigned),
-                modifier = Modifier.testTag("income.unassigned")
+                modifier = Modifier.testTag("income.unassigned"),
+                onLabelHelp = { onAction(IncomeHistoryAction.OpenHelp(IncomeHelp.Unassigned)) }
             ) {
                 MoneyText(
                     split.unallocated,

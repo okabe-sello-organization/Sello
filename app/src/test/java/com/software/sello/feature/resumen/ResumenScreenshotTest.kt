@@ -91,6 +91,11 @@ class ResumenScreenshotTest {
 
     private val ready = state as ResumenState.Ready
 
+    // The top card's ? opened (SELLO-208): the sheet over the page, between the bars.
+    @Test fun helpLight() = shot("help", ready.copy(help = ResumenHelp.Month), Look())
+
+    @Test fun helpDark() = shot("help", ready.copy(help = ResumenHelp.Month), Look(dark = true))
+
     @Test fun loadingLight() = shot("loading", ResumenState.Loading, Look())
 
     @Test fun loadingDark() = shot("loading", ResumenState.Loading, Look(dark = true))

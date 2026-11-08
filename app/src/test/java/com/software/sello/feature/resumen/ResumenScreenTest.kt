@@ -1,5 +1,7 @@
 package com.software.sello.feature.resumen
 
+import androidx.activity.OnBackPressedDispatcher
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -55,6 +57,7 @@ class ResumenScreenTest {
     private var adjusted: String? = null
     private var schedulesClicks = 0
     private var year: Int? = null
+    private var guides = 0
 
     private fun show(
         ink: SelloInk = SelloInk.Cobalto,
@@ -80,7 +83,8 @@ class ResumenScreenTest {
                     PaddingValues(),
                     { adjusted = it },
                     { schedulesClicks++ },
-                    onYear = { year = it }
+                    onYear = { year = it },
+                    onOpenGuide = { guides++ }
                 )
             }
         }
@@ -412,6 +416,119 @@ class ResumenScreenTest {
             .assertContentDescriptionEquals("Ingresos, Ninguno en octubre")
     }
 
+    // --- Help sheets (SELLO-208) ---
+
+    @Test
+    fun theUnderlinedSameDayAndTheWeekdaysQuestionMarkOpenTheirSheets() {
+        show()
+
+        rule.onNodeWithTag(RESUMEN_HERO_HELP_TAG)
+            .assertContentDescriptionEquals("Cómo se compara tu mes").performClick()
+        rule.onNodeWithTag(RESUMEN_SAME_DAY_TERM_TAG).performClick()
+        rule.onNodeWithTag(RESUMEN_WEEKDAYS_HELP_TAG).performScrollTo()
+            .assertContentDescriptionEquals("Cómo se saca el promedio por día").performClick()
+
+        assertEquals(
+            listOf(
+                ResumenAction.OpenHelp(ResumenHelp.Month),
+                ResumenAction.OpenHelp(ResumenHelp.SameDay),
+                ResumenAction.OpenHelp(ResumenHelp.Weekdays)
+            ),
+            actions
+        )
+    }
+
+    @Test
+    fun theGastosHormigaQuestionMarkOpensItsOwnSheet() {
+        val small = ResumenSmallExpenses.Shown(
+            line = "20.000",
+            total = money.format(Money.cop(60_000)),
+            count = 6,
+            sharePercent = 20,
+            previousName = "septiembre",
+            bars = null,
+            throughDay = 3,
+            previousThroughDay = 3,
+            categories = emptyList()
+        )
+        state.value = example().copy(smallExpenses = small)
+        show()
+
+        rule.onNodeWithTag(RESUMEN_SMALL_HELP_TAG).performScrollTo()
+            .assertContentDescriptionEquals("Qué cuenta como gasto hormiga").performClick()
+
+        assertEquals(listOf(ResumenAction.OpenHelp(ResumenHelp.SmallExpenses)), actions)
+    }
+
+    /** Resumen with its tab's Back composed after it, as ResumenDestinations.kt does. */
+    private fun showWithTabBack(shown: ResumenState, onTab: () -> Unit): OnBackPressedDispatcher {
+        lateinit var dispatcher: OnBackPressedDispatcher
+        rule.showSello(Look()) {
+            dispatcher = LocalOnBackPressedDispatcherOwner.current!!.onBackPressedDispatcher
+            ResumenScreen(shown, { actions += it }, {}, {}, {}, PaddingValues())
+            ResumenTabBack(shown, enabled = true, onBack = onTab)
+        }
+        return dispatcher
+    }
+
+    @Test
+    fun backClosesAnOpenSheetEvenWhenItWasOpenFromTheStart() {
+        var tab = 0
+        // As after a restart: the sheet is open on the first frame, before the tab's Back.
+        val dispatcher = showWithTabBack(example().copy(help = ResumenHelp.Month)) { tab++ }
+
+        rule.runOnIdle { dispatcher.onBackPressed() }
+
+        assertEquals(listOf<ResumenAction>(ResumenAction.CloseHelp), actions)
+        assertEquals(0, tab)
+    }
+
+    @Test
+    fun withNoSheetOpenBackIsTheTabs() {
+        var tab = 0
+        val dispatcher = showWithTabBack(example()) { tab++ }
+
+        rule.runOnIdle { dispatcher.onBackPressed() }
+
+        assertEquals(1, tab)
+        assertTrue(actions.isEmpty())
+    }
+
+    @Test
+    fun aWholeMonthComparisonUnderlinesNothing() {
+        state.value = example().copy(
+            hero = example().hero.copy(
+                comparison = comparison().copy(throughDay = null, previousThroughDay = null)
+            )
+        )
+        show()
+
+        rule.onNodeWithText("↓ 14,3 % que septiembre completo").assertIsDisplayed()
+        rule.onNodeWithTag(RESUMEN_SAME_DAY_TERM_TAG).assertDoesNotExist()
+        // The card's ? stays: it explains whole months too.
+        rule.onNodeWithTag(RESUMEN_HERO_HELP_TAG).assertIsDisplayed()
+    }
+
+    @Test
+    fun eachSheetShowsItsRuleAndExampleAndLeadsToTheGuide() {
+        ResumenHelp.entries.forEach { help ->
+            state.value = example().copy(help = help)
+            if (help == ResumenHelp.entries.first()) show()
+            rule.onNodeWithTag("$RESUMEN_HELP_TAG.${help.name}").assertIsDisplayed()
+        }
+        state.value = example().copy(help = ResumenHelp.Weekdays)
+        rule.onNodeWithText("Cómo se saca el promedio por día").assertIsDisplayed()
+        rule.onNodeWithText(
+            "En 4 sábados gastaste 100.000, 0, 60.000 y 40.000: tu promedio del sábado es " +
+                "200.000 entre 4, o sea 50.000."
+        ).performScrollTo().assertIsDisplayed()
+
+        rule.onNodeWithText("Ver más en la Guía de Sello").performScrollTo().performClick()
+
+        assertEquals(listOf<ResumenAction>(ResumenAction.CloseHelp), actions)
+        assertEquals(1, guides)
+    }
+
     // --- The comparison, a normal month, weekdays and the suggestion ---
 
     private fun example() = resumenExample(money)
@@ -424,7 +541,9 @@ class ResumenScreenTest {
 
         rule.onNodeWithText("¿Cómo va este mes?").assertIsDisplayed()
         rule.onNodeWithText("menos que en septiembre").assertIsDisplayed()
-        rule.onNodeWithText("↓ 14,3 % al mismo día del mes").assertIsDisplayed()
+        rule.onNodeWithText("↓ 14,3 %").assertIsDisplayed()
+        rule.onNodeWithTag(RESUMEN_SAME_DAY_TERM_TAG)
+            .assertContentDescriptionEquals("al mismo día del mes. Qué significa")
         rule.onNodeWithText("Del 1 al 3 de cada mes").assertIsDisplayed()
         rule.onNodeWithText("Octubre").assertIsDisplayed()
         rule.onNodeWithText("Septiembre").assertIsDisplayed()

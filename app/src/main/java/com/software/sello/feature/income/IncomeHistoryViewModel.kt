@@ -1,5 +1,6 @@
 package com.software.sello.feature.income
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.software.sello.designsystem.component.MoneyTextValue
@@ -141,10 +142,24 @@ sealed interface IncomeHistoryAction {
 
     /** Hides the suggestion to assign income for the month in progress. */
     data object DismissAssign : IncomeHistoryAction
+
+    data class OpenHelp(val help: IncomeHelp) : IncomeHistoryAction
+
+    data object CloseHelp : IncomeHistoryAction
+}
+
+/** What an Ingresos help sheet explains (SELLO-208). */
+enum class IncomeHelp {
+    /** The **?** on "Entró en {mes}": how what came in is split, and the plan. */
+    CameIn,
+
+    /** The underlined "Sin asignar". */
+    Unassigned
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class IncomeHistoryViewModel(
+    private val saved: SavedStateHandle,
     private val reads: IncomeReads,
     private val session: MonthSession,
     snapshots: ResumenSnapshots,
@@ -158,6 +173,18 @@ class IncomeHistoryViewModel(
     }.stateIn(viewModelScope, SharingStarted.Eagerly, clock.today.value.date)
 
     private val attempts = MutableStateFlow(0)
+
+    /**
+     * The help sheet open over the screen, kept across a restart like the screen's reads
+     * are; a name this version lacks opens none.
+     */
+    val help: StateFlow<IncomeHelp?> = saved.getStateFlow<String?>(HELP, null)
+        .map { name -> IncomeHelp.entries.firstOrNull { it.name == name } }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            IncomeHelp.entries.firstOrNull { it.name == saved.get<String>(HELP) }
+        )
 
     /** The month's summary as last read, so a failed refresh or a Retry never blanks the split. */
     private val lastSummary = LastGoodRead<ResumenSnapshot, SnapshotFailure>()
@@ -383,6 +410,10 @@ class IncomeHistoryViewModel(
 
             IncomeHistoryAction.DismissAssign -> dismissAssign()
 
+            is IncomeHistoryAction.OpenHelp -> saved[HELP] = action.help.name
+
+            IncomeHistoryAction.CloseHelp -> saved[HELP] = null
+
             IncomeHistoryAction.More -> {
                 val current = shown.value as? IncomeHistoryState.Ready ?: return
                 val snapshot = snapshot ?: return
@@ -467,5 +498,6 @@ class IncomeHistoryViewModel(
 
     private companion object {
         const val PAGE_SIZE = 50
+        const val HELP = "income.help"
     }
 }

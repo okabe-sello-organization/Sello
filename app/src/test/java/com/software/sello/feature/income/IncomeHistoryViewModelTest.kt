@@ -1,5 +1,6 @@
 package com.software.sello.feature.income
 
+import androidx.lifecycle.SavedStateHandle
 import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Occurrence
@@ -135,14 +136,45 @@ class IncomeHistoryViewModelTest {
 
     private val suggestions = HandSuggestions()
 
-    private fun history() =
-        IncomeHistoryViewModel(gated, session, snapshots, schedules, suggestions, money, clock)
+    private fun history(saved: SavedStateHandle = SavedStateHandle()) = IncomeHistoryViewModel(
+        saved,
+        gated,
+        session,
+        snapshots,
+        schedules,
+        suggestions,
+        money,
+        clock
+    )
 
     @Before
     fun main() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
     @After
     fun reset() = Dispatchers.resetMain()
+
+    @Test
+    fun aHelpSheetOpensClosesAndSurvivesARestart() {
+        val saved = SavedStateHandle()
+        val model = history(saved)
+        assertNull(model.help.value)
+
+        model.onAction(IncomeHistoryAction.OpenHelp(IncomeHelp.Unassigned))
+        assertEquals(IncomeHelp.Unassigned, model.help.value)
+        model.onAction(IncomeHistoryAction.OpenHelp(IncomeHelp.CameIn))
+        assertEquals(IncomeHelp.CameIn, model.help.value)
+
+        // The process dies with the sheet open: the new screen opens it again.
+        assertEquals(
+            IncomeHelp.CameIn,
+            history(SavedStateHandle(mapOf("income.help" to "CameIn"))).help.value
+        )
+        assertNull(history(SavedStateHandle(mapOf("income.help" to "Trucos"))).help.value)
+
+        model.onAction(IncomeHistoryAction.CloseHelp)
+        assertNull(model.help.value)
+        assertNull(saved.get<String>("income.help"))
+    }
 
     @Test
     fun pagesAreBoundedAndTheTotalIsNotCalculatedFromTheFirstPage() {
@@ -874,6 +906,7 @@ class IncomeHistoryViewModelTest {
             }
         }
         val model = IncomeHistoryViewModel(
+            SavedStateHandle(),
             gated,
             session,
             flaky,

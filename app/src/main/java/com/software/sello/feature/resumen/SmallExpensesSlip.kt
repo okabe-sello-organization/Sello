@@ -18,6 +18,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
+import com.software.sello.designsystem.component.CardHelp
 import com.software.sello.designsystem.component.CategoryCircle
 import com.software.sello.designsystem.component.MoneyStyle
 import com.software.sello.designsystem.component.MoneyText
@@ -39,6 +40,7 @@ import com.software.sello.presentation.category.CategoryIcons
 internal fun SmallExpensesSlip(
     small: ResumenSmallExpenses,
     hero: ResumenHero,
+    onHelp: () -> Unit = {},
     onRetry: () -> Unit
 ) {
     when (small) {
@@ -65,20 +67,26 @@ internal fun SmallExpensesSlip(
                     action = StatusAction(StatusSlipDefaults.retryLabel, onClick = onRetry)
                 )
             }
-            Shown(small, hero)
+            Shown(small, hero, onHelp)
         }
     }
 }
 
 @Composable
-private fun Shown(small: ResumenSmallExpenses.Shown, hero: ResumenHero) {
+private fun Shown(small: ResumenSmallExpenses.Shown, hero: ResumenHero, onHelp: () -> Unit) {
     Slip(Modifier.fillMaxWidth().testTag(RESUMEN_SMALL_TAG)) {
         Row(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.Top
         ) {
-            ResumenHeading(stringResource(R.string.small_expense_title))
+            ResumenHeading(stringResource(R.string.small_expense_title)) {
+                CardHelp(
+                    resumenHelpLabel(ResumenHelp.SmallExpenses),
+                    onHelp,
+                    Modifier.testTag(RESUMEN_SMALL_HELP_TAG)
+                )
+            }
             val line = stringResource(R.string.resumen_small_line_spoken, small.line)
             ResumenNote(
                 stringResource(R.string.resumen_small_line, small.line),
@@ -173,6 +181,7 @@ private fun CategoryLine(category: ResumenSmallCategory) {
 }
 
 const val RESUMEN_SMALL_TAG = "resumen.small"
+const val RESUMEN_SMALL_HELP_TAG = "resumen.small.help"
 const val RESUMEN_SMALL_TOTAL_TAG = "resumen.small.total"
 const val RESUMEN_SMALL_BARS_TAG = "resumen.small.bars"
 const val RESUMEN_SMALL_CATEGORY_TAG = "resumen.small.category"

@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import com.software.sello.R
 import com.software.sello.designsystem.component.AnswerSlip
 import com.software.sello.designsystem.component.ButtonKind
+import com.software.sello.designsystem.component.CardHelp
 import com.software.sello.designsystem.component.ChartPeriod
 import com.software.sello.designsystem.component.ChartReference
 import com.software.sello.designsystem.component.ColumnsChart
@@ -77,7 +78,8 @@ fun ResumenScreen(
     onAdjustLimit: (String) -> Unit = {},
     onSchedules: () -> Unit = {},
     onDayByDay: () -> Unit = {},
-    onYear: (Int) -> Unit = {}
+    onYear: (Int) -> Unit = {},
+    onOpenGuide: () -> Unit = {}
 ) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val layout = selloWindowLayout(maxWidth, maxHeight)
@@ -126,6 +128,18 @@ fun ResumenScreen(
                         ChartSlips(state, onAction, onExpense, onAdjustLimit, onYear)
                     }
                 }
+                // Over the page, between the shell's bars, as the mock shows it.
+                state.help?.let { help ->
+                    ResumenHelpSheet(
+                        help,
+                        onAction,
+                        onOpenGuide,
+                        Modifier.padding(
+                            top = padding.calculateTopPadding(),
+                            bottom = padding.calculateBottomPadding()
+                        )
+                    )
+                }
             }
         }
     }
@@ -160,10 +174,14 @@ private fun SummarySlips(
             action = StatusAction(StatusSlipDefaults.retryLabel) { onAction(ResumenAction.Retry) }
         )
     }
-    Hero(state.hero, state.insufficientHistory)
+    Hero(state.hero, state.insufficientHistory, onAction)
     IncomeSlip(state, onIncome, onSchedules, onDayByDay, onCategory)
     state.smallExpenses?.let { small ->
-        SmallExpensesSlip(small, state.hero) { onAction(ResumenAction.Retry) }
+        SmallExpensesSlip(
+            small,
+            state.hero,
+            onHelp = { onAction(ResumenAction.OpenHelp(ResumenHelp.SmallExpenses)) }
+        ) { onAction(ResumenAction.Retry) }
     }
 }
 
@@ -530,11 +548,18 @@ private fun ChartSlips(
  * nothing to compare, what was spent alone.
  */
 @Composable
-private fun Hero(hero: ResumenHero, firstMonth: Boolean) {
+private fun Hero(hero: ResumenHero, firstMonth: Boolean, onAction: (ResumenAction) -> Unit) {
     val question = if (hero.inProgress) {
         stringResource(R.string.resumen_hero_question)
     } else {
         stringResource(R.string.resumen_hero_closed, hero.monthName)
+    }
+    val help = @Composable {
+        CardHelp(
+            resumenHelpLabel(ResumenHelp.Month),
+            { onAction(ResumenAction.OpenHelp(ResumenHelp.Month)) },
+            Modifier.testTag(RESUMEN_HERO_HELP_TAG)
+        )
     }
     val comparison = hero.comparison
     if (comparison == null) {
@@ -543,7 +568,8 @@ private fun Hero(hero: ResumenHero, firstMonth: Boolean) {
             amount = hero.spent,
             stamp = null,
             ink = StampInk.Neutral,
-            modifier = Modifier.testTag("resumen.hero")
+            modifier = Modifier.testTag("resumen.hero"),
+            labelHelp = help
         ) {
             ResumenNote(
                 if (hero.inProgress) {
@@ -572,9 +598,11 @@ private fun Hero(hero: ResumenHero, firstMonth: Boolean) {
         SpendingDirection.Less -> "↓ "
         SpendingDirection.Same -> ""
     }
+    // Over the same days, the rate is followed by "al mismo día del mes", underlined.
+    val sameDay = comparison.throughDay != null
     val trend = comparison.percent?.let { percent ->
-        arrow + if (comparison.throughDay != null) {
-            stringResource(R.string.resumen_hero_trend_same_day, percent)
+        arrow + if (sameDay) {
+            stringResource(R.string.resumen_hero_trend_percent, percent)
         } else {
             stringResource(R.string.resumen_hero_trend_whole, percent, previous)
         }
@@ -601,7 +629,10 @@ private fun Hero(hero: ResumenHero, firstMonth: Boolean) {
         trend = trend,
         basis = basis,
         bars = comparison.bars,
-        modifier = Modifier.testTag("resumen.hero")
+        modifier = Modifier.testTag("resumen.hero"),
+        trendTerm = stringResource(R.string.resumen_hero_same_day_term).takeIf { sameDay },
+        onTrendTerm = { onAction(ResumenAction.OpenHelp(ResumenHelp.SameDay)) },
+        labelHelp = help
     )
 }
 
@@ -613,7 +644,13 @@ private fun Weekdays(
     onAction: (ResumenAction) -> Unit
 ) {
     Slip(Modifier.fillMaxWidth().testTag("resumen.weekdays")) {
-        ResumenHeading(stringResource(R.string.resumen_weekdays_title))
+        ResumenHeading(stringResource(R.string.resumen_weekdays_title)) {
+            CardHelp(
+                resumenHelpLabel(ResumenHelp.Weekdays),
+                { onAction(ResumenAction.OpenHelp(ResumenHelp.Weekdays)) },
+                Modifier.testTag(RESUMEN_WEEKDAYS_HELP_TAG)
+            )
+        }
         val selected = weekdays.points.firstOrNull { it.chart.id == selectedId }
         val busiest = weekdays.busiest
         val average = weekdays.busiestAverage
@@ -676,18 +713,33 @@ internal fun ResumenNote(text: String, modifier: Modifier = Modifier) {
     )
 }
 
+/** A slip's small question; [help], a [CardHelp], sits `spacing.sm` after it. */
 @Composable
-internal fun ResumenHeading(text: String) {
+internal fun ResumenHeading(text: String, help: (@Composable () -> Unit)? = null) {
     // Resumen asks a small question over each slip's answer.
-    Text(
-        text,
-        style = MaterialTheme.typography.bodyLarge,
-        fontWeight = SelloTheme.type.weight.soft,
-        color = SelloTheme.colors.inkSoft,
-        modifier = Modifier.padding(bottom = 6.dp).semantics {
-            heading()
+    val question = @Composable { modifier: Modifier ->
+        Text(
+            text,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = SelloTheme.type.weight.soft,
+            color = SelloTheme.colors.inkSoft,
+            modifier = modifier.semantics {
+                heading()
+            }
+        )
+    }
+    if (help == null) {
+        question(Modifier.padding(bottom = 6.dp))
+    } else {
+        Row(
+            Modifier.padding(bottom = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
+        ) {
+            question(Modifier.weight(1f, fill = false))
+            help()
         }
-    )
+    }
 }
 
 @Composable
@@ -717,3 +769,9 @@ private fun carrySpoken(point: ResumenPoint): String {
 const val RESUMEN_DISMISS_FAILED_TAG = "resumen.suggestion.dismissFailed"
 
 const val RESUMEN_SEE_YEAR_TAG = "resumen.seeYear"
+
+const val RESUMEN_WEEKDAYS_HELP_TAG = "resumen.weekdays.help"
+
+const val RESUMEN_HERO_HELP_TAG = "resumen.hero.help"
+
+const val RESUMEN_SAME_DAY_TERM_TAG = "resumen.hero.sameDay"

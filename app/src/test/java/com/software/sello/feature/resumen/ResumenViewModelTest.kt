@@ -259,6 +259,41 @@ class ResumenViewModelTest {
     }
 
     @Test
+    fun aHelpSheetOpensClosesAndSurvivesARestart() = runTest {
+        val saved = SavedStateHandle()
+        val model = model(saved)
+        watch(model)
+        reads.of(october).value = ReadState.Ready(resumenSnapshot())
+
+        model.onAction(ResumenAction.OpenHelp(ResumenHelp.SmallExpenses))
+        assertEquals(ResumenHelp.SmallExpenses, (model.state.value as ResumenState.Ready).help)
+
+        // The process dies with the sheet open: the new screen opens it again.
+        val restored = model(SavedStateHandle(mapOf("resumen.help" to "SmallExpenses")))
+        watch(restored)
+        assertEquals(ResumenHelp.SmallExpenses, (restored.state.value as ResumenState.Ready).help)
+
+        model.onAction(ResumenAction.CloseHelp)
+        assertNull((model.state.value as ResumenState.Ready).help)
+        assertNull(saved.get<String>("resumen.help"))
+    }
+
+    @Test
+    fun eachHelpOpensItsOwnSheetAndAnUnknownOneOpensNone() = runTest {
+        val model = model()
+        watch(model)
+        reads.of(october).value = ReadState.Ready(resumenSnapshot())
+        ResumenHelp.entries.forEach { help ->
+            model.onAction(ResumenAction.OpenHelp(help))
+            assertEquals(help, (model.state.value as ResumenState.Ready).help)
+        }
+
+        val restored = model(SavedStateHandle(mapOf("resumen.help" to "Trucos")))
+        watch(restored)
+        assertNull((restored.state.value as ResumenState.Ready).help)
+    }
+
+    @Test
     fun restoredSelectionUsesSourceIdsAndDoesNotLeakIntoAnotherMonth() = runTest {
         val saved = SavedStateHandle(mapOf("resumen.history" to "2026-10|2026-10"))
         val model = model(saved)
