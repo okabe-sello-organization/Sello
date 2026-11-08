@@ -713,6 +713,53 @@ class InvestmentMovementViewModelTest {
         assertEquals(CorrectionNotice.InvestmentMovementRestored, corrections.notice.value)
     }
 
+    // ---------- The investments nudge closes once a movement is saved (SELLO-213) ----------
+
+    @Test
+    fun anAporteSavedClosesTheInvestmentsNudgeForGood() = runTest {
+        val model = model(investment = ecopetrol)
+        model.keys("5", "0", "0", "000")
+        model.onAction(InvestmentMovementAction.Submit)
+
+        assertTrue(model.now.closed)
+        assertEquals(listOf("seen Investments"), guidance.writes)
+    }
+
+    @Test
+    fun aValueUpdatedClosesItToo() = runTest {
+        val model = model(investment = ecopetrol, kind = InvestmentMovementViewModel.KIND_VALUATION)
+        model.keys("3", "1", "000", "000")
+        model.onAction(InvestmentMovementAction.Submit)
+
+        assertTrue(commands.sent.single() is RecordInvestmentMovement)
+        assertEquals(listOf("seen Investments"), guidance.writes)
+    }
+
+    @Test
+    fun aMovementCorrectedClosesItToo() = runTest {
+        val model = model(investment = ecopetrol, movement = movementId(23).value)
+        model.onAction(InvestmentMovementAction.ClearAmount)
+        model.keys("9", "0", "000")
+        model.onAction(InvestmentMovementAction.Submit)
+
+        assertTrue(commands.sent.single() is EditInvestmentMovement)
+        assertEquals(listOf("seen Investments"), guidance.writes)
+    }
+
+    @Test
+    fun aDeletionOrARefusedSaveLeavesItOpen() = runTest {
+        model(investment = prueba, movement = movementId(35).value)
+            .onAction(InvestmentMovementAction.Delete)
+        commands.answers += CommandOutcome.Rejected(Specific(InvestmentRejection.LastContribution))
+        val refused = model(investment = ecopetrol)
+        refused.keys("5", "000")
+        refused.onAction(InvestmentMovementAction.Submit)
+
+        assertTrue(commands.sent.first() is DeleteInvestmentMovement)
+        assertFalse(refused.now.closed)
+        assertEquals(emptyList<String>(), guidance.writes)
+    }
+
     @Test
     fun aFailedReadIsNotNoInvestments() = runTest {
         reads.board.value = ReadState.Failed(StorageFailure.Unavailable("x"), null)

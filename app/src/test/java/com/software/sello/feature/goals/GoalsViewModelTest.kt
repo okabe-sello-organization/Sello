@@ -297,6 +297,55 @@ class GoalsViewModelTest {
         assertNull(ready(model).replacing)
     }
 
+    // ---------- Recibo's goal nudge closes once the choice changes (SELLO-213) ----------
+
+    @Test
+    fun aStarSavedClosesRecibosGoalNudgeForGoodAndNotBefore() = runTest {
+        reads.board.value = board(summary(viajeId, 1_710_000, 3_000_000), featured = viajeId)
+        commands.pause = true
+        val model = detail()
+        watch(model)
+
+        model.onAction(GoalDetailAction.ToggleStar)
+        val waiting = guidance.writes.toList()
+        commands.release(committed())
+
+        assertEquals(emptyList<String>(), waiting)
+        assertEquals(listOf("seen ReciboGoal"), guidance.writes)
+    }
+
+    @Test
+    fun aStarTakenAwayClosesItToo() = runTest {
+        reads.board.value = board(
+            summary(viajeId, 1_710_000, 3_000_000),
+            recibo = listOf(viajeId),
+            starred = setOf(viajeId)
+        )
+        val model = detail()
+        watch(model)
+
+        model.onAction(GoalDetailAction.ToggleStar)
+
+        assertTrue(commands.sent.single() is UnstarGoal)
+        assertEquals(listOf("seen ReciboGoal"), guidance.writes)
+    }
+
+    @Test
+    fun aStarRefusedOrNotKnownLeavesItOpen() = runTest {
+        reads.board.value = board(summary(viajeId, 1_710_000, 3_000_000), featured = celularId)
+        val model = detail()
+        watch(model)
+        commands.next = CommandOutcome.Rejected(CommandRejection.StaleGeneration(4))
+        model.onAction(GoalDetailAction.ToggleStar)
+        commands.next = CommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
+        commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
+
+        model.onAction(GoalDetailAction.ToggleStar)
+
+        assertEquals(GoalDetailError.Unknown, ready(model).error)
+        assertEquals(emptyList<String>(), guidance.writes)
+    }
+
     // ---------- The sixth star (SELLO-144) ----------
 
     private val motoId = "00000000-0000-4000-9000-000000000003"
@@ -368,6 +417,7 @@ class GoalsViewModelTest {
         )
         assertNull(ready(model).replacing)
         assertNull(ready(model).error)
+        assertEquals(listOf("seen ReciboGoal"), guidance.writes)
     }
 
     @Test
