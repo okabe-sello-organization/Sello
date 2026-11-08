@@ -7,6 +7,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -14,6 +15,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.dp
@@ -49,6 +51,7 @@ import com.software.sello.showSello
 import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.LocalDate
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -131,7 +134,11 @@ class InvestmentDetailMovementsTest {
         )
     }
 
-    private fun show(all: Boolean = false, look: Look = Look()) {
+    private fun show(
+        all: Boolean = false,
+        look: Look = Look(),
+        actions: MutableList<InvestmentDetailAction> = mutableListOf()
+    ) {
         val summary = summary()
         val board = InvestmentBoard(
             1,
@@ -147,6 +154,7 @@ class InvestmentDetailMovementsTest {
             InvestmentDetailScreen(
                 state,
                 { action ->
+                    actions += action
                     if (action is InvestmentDetailAction.SelectValue) {
                         state = state.copy(selectedValue = action.id)
                     }
@@ -234,6 +242,21 @@ class InvestmentDetailMovementsTest {
                 hasContentDescription("3.010.000 pesos") and
                 hasContentDescription("3.000.000 pesos")
         ).assertExists()
+    }
+
+    @Test
+    fun theChartTitlesQuestionMarkAsksForItsSheet() {
+        val actions = mutableListOf<InvestmentDetailAction>()
+        show(actions = actions)
+
+        rule.onNodeWithTag(INVESTMENT_CHART_HELP_TAG)
+            .assertContentDescriptionEquals("Cómo leer Valor y lo que pusiste")
+            .performClick()
+
+        assertEquals(
+            listOf(InvestmentDetailAction.ShowHelp(InvestmentHelp.Chart)),
+            actions
+        )
     }
 
     @Test

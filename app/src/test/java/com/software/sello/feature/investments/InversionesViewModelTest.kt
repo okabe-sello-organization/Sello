@@ -165,4 +165,80 @@ class InversionesViewModelTest {
         assertTrue(seen.isNotEmpty())
         assertTrue(seen.all { it is InvestmentDetailState.Ready && !it.stale })
     }
+
+    @Test
+    fun eachInversionesHelpSheetOpensClosesAndComesBackAfterARestart() = runTest {
+        val saved = SavedStateHandle()
+        val model = InversionesViewModel(saved, reads, preferences, clock, testMoney())
+        backgroundScope.launch { model.state.collect {} }
+        runCurrent()
+        fun help(of: InversionesViewModel) = (of.state.value as InversionesState.Ready).help
+        assertEquals(null, help(model))
+
+        for (sheet in listOf(InvestmentHelp.Value, InvestmentHelp.Gain, InvestmentHelp.Rate)) {
+            model.onAction(InversionesAction.ShowHelp(sheet))
+            runCurrent()
+            assertEquals(sheet, help(model))
+        }
+
+        // A restart keeps the saved state, and with it the open sheet.
+        val restored = InversionesViewModel(
+            SavedStateHandle(saved.keys().associateWith { saved[it] }),
+            reads,
+            preferences,
+            clock,
+            testMoney()
+        )
+        backgroundScope.launch { restored.state.collect {} }
+        runCurrent()
+        assertEquals(InvestmentHelp.Rate, help(restored))
+
+        model.onAction(InversionesAction.CloseHelp)
+        runCurrent()
+        assertEquals(null, help(model))
+
+        // Ver más en la Guía closes it: coming back finds Inversiones.
+        model.onAction(InversionesAction.ShowHelp(InvestmentHelp.Value))
+        model.onAction(InversionesAction.OpenGuide)
+        runCurrent()
+        assertEquals(null, help(model))
+    }
+
+    @Test
+    fun eachInvestmentPageHelpSheetOpensClosesAndComesBackAfterARestart() = runTest {
+        val zeta = investments[0].history.investment.id.value
+        val saved = SavedStateHandle(mapOf(InvestmentDetailViewModel.KEY_INVESTMENT to zeta))
+        val model = InvestmentDetailViewModel(saved, reads, clock, testMoney())
+        backgroundScope.launch { model.state.collect {} }
+        runCurrent()
+        fun help(of: InvestmentDetailViewModel) =
+            (of.state.value as InvestmentDetailState.Ready).help
+        assertEquals(null, help(model))
+
+        model.onAction(InvestmentDetailAction.ShowHelp(InvestmentHelp.Gain))
+        runCurrent()
+        assertEquals(InvestmentHelp.Gain, help(model))
+        model.onAction(InvestmentDetailAction.ShowHelp(InvestmentHelp.Chart))
+        runCurrent()
+        assertEquals(InvestmentHelp.Chart, help(model))
+
+        val restored = InvestmentDetailViewModel(
+            SavedStateHandle(saved.keys().associateWith { saved[it] }),
+            reads,
+            clock,
+            testMoney()
+        )
+        backgroundScope.launch { restored.state.collect {} }
+        runCurrent()
+        assertEquals(InvestmentHelp.Chart, help(restored))
+
+        model.onAction(InvestmentDetailAction.CloseHelp)
+        runCurrent()
+        assertEquals(null, help(model))
+
+        model.onAction(InvestmentDetailAction.ShowHelp(InvestmentHelp.Gain))
+        model.onAction(InvestmentDetailAction.OpenGuide)
+        runCurrent()
+        assertEquals(null, help(model))
+    }
 }

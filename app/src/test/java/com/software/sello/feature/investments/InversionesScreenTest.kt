@@ -70,6 +70,7 @@ import com.software.sello.domain.port.InvestmentSummary
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.ReadState
+import com.software.sello.feature.guide.GuidePage
 import com.software.sello.navigation.INVERSIONES_ADD_TAG
 import com.software.sello.navigation.InversionesDestination
 import com.software.sello.navigation.MONTH_SWITCHER_TAG
@@ -262,7 +263,12 @@ class InversionesScreenTest {
     private val shell =
         ShellState(YearMonth.of(2026, 10), YearMonth.of(2026, 10), false, 2026, null)
 
-    private fun destination(state: InvestmentBoardState, onAdd: (() -> Unit)? = null) {
+    private fun destination(
+        state: InvestmentBoardState,
+        onAdd: (() -> Unit)? = null,
+        onOpenRate: (() -> Unit)? = null,
+        onOpenGuide: (GuidePage) -> Unit = {}
+    ) {
         val factory = viewModelFactory {
             initializer {
                 InversionesViewModel(SavedStateHandle(), Reads(state), Order(), clock, money)
@@ -287,7 +293,9 @@ class InversionesScreenTest {
                         ),
                         "inversiones"
                     ) {},
-                    onAdd = onAdd
+                    onOpenRate = onOpenRate,
+                    onAdd = onAdd,
+                    onOpenGuide = onOpenGuide
                 )
             }
         }
@@ -340,8 +348,10 @@ class InversionesScreenTest {
             "Valores anotados entre el 12 jun y el 16 oct",
             useUnmergedTree = true
         ).assertExists()
-        rule.onNodeWithText("Dólar a 4.150,25 · tasa del 20 oct", useUnmergedTree = true)
+        rule.onNodeWithText("Dólar a 4.150,25 ·", substring = true, useUnmergedTree = true)
             .assertExists()
+        rule.onNodeWithTag(INVERSIONES_RATE_TERM_TAG)
+            .assertContentDescriptionEquals("tasa del 20 oct. Qué significa")
     }
 
     @Test
@@ -457,5 +467,39 @@ class InversionesScreenTest {
             whole("USD\u00A09.999.999.999,99", "inversiones.rows")
             whole("999.999.999.998", "inversiones.rows")
         }
+    }
+
+    @Test
+    fun tasaDelOpensItsSheetNotDolarAndVerMasOpensTheGuia() {
+        var rates = 0
+        val guides = mutableListOf<GuidePage>()
+        destination(ReadState.Ready(page()), onOpenRate = { rates++ }, onOpenGuide = guides::add)
+
+        rule.onNodeWithTag(INVERSIONES_RATE_TERM_TAG).performClick()
+
+        assertEquals(0, rates)
+        rule.onNodeWithTag("$INVESTMENT_HELP_TAG.Rate").assertExists()
+        rule.onNodeWithText("Tasa del dólar", useUnmergedTree = true).assertExists()
+        rule.onNodeWithText("Ver más en la Guía de Sello", useUnmergedTree = true).performClick()
+        assertEquals(listOf(GuidePage.Investments), guides)
+        rule.onNodeWithTag("$INVESTMENT_HELP_TAG.Rate").assertDoesNotExist()
+
+        // The rest of the line still opens Dólar.
+        rule.onNodeWithTag("inversiones.rate").performClick()
+        assertEquals(1, rates)
+    }
+
+    @Test
+    fun withNoTotalYetTheCardsQuestionMarkStillExplainsIt() {
+        val cripto = investment("Cripto", null, listOf(Triple(aporte, 2_000_000, "2026-08-01")))
+        destination(ReadState.Ready(board(cripto)))
+
+        rule.onNodeWithContentDescription("Cómo se suma lo que valen tus inversiones")
+            .performClick()
+
+        rule.onNodeWithTag("$INVESTMENT_HELP_TAG.Value").assertExists()
+        rule.onNodeWithText("Lo anotas tú", useUnmergedTree = true).assertExists()
+        // The scrim closes it.
+        rule.onNodeWithTag("$INVESTMENT_HELP_TAG.Value").performClick()
     }
 }
