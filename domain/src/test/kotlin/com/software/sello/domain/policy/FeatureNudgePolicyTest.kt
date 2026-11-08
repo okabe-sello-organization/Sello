@@ -261,28 +261,27 @@ class FeatureNudgePolicyTest {
         carry: CarryBreakdown? = null,
         archived: Boolean = false,
         ownLimit: Boolean = false
-    ) =
-        CategoryMonth(
-            category = Category(
-                comida,
-                CategoryName.of("Comida").valueOrFail(),
-                IconKey.of("restaurant").valueOrFail(),
-                archived = archived,
-                version = 1,
-                createdAt = recorded,
-                updatedAt = recorded
-            ),
-            state = MonthBudgetState.Limited(
-                limit?.let { BudgetLimit.finite(Money.cop(it)).valueOrFail() }
-                    ?: BudgetLimit.Unlimited,
-                explicit = ownLimit
-            ),
-            spent = Money.cop(0),
-            budget = limit?.let {
-                LimitedBudget(Money.cop(it), Money.cop(0), Money.cop(it), current, carry)
-            },
-            expenseCount = 0
-        )
+    ) = CategoryMonth(
+        category = Category(
+            comida,
+            CategoryName.of("Comida").valueOrFail(),
+            IconKey.of("restaurant").valueOrFail(),
+            archived = archived,
+            version = 1,
+            createdAt = recorded,
+            updatedAt = recorded
+        ),
+        state = MonthBudgetState.Limited(
+            limit?.let { BudgetLimit.finite(Money.cop(it)).valueOrFail() }
+                ?: BudgetLimit.Unlimited,
+            explicit = ownLimit
+        ),
+        spent = Money.cop(0),
+        budget = limit?.let {
+            LimitedBudget(Money.cop(it), Money.cop(0), Money.cop(it), current, carry)
+        },
+        expenseCount = 0
+    )
 
     /** Comida's October as its history has it. */
     private fun october(limit: Long?, spent: Long) =
