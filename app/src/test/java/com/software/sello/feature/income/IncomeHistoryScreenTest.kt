@@ -123,6 +123,15 @@ class IncomeHistoryScreenTest {
         rule.onNodeWithText("Una sugerencia").assertDoesNotExist()
     }
 
+    @Test
+    fun theListsFootOffersNoAnotarVarios() {
+        show(ready(more = true), split)
+
+        rule.onNodeWithTag("income.more").performScrollTo()
+        rule.onNodeWithText("Total").assertExists()
+        rule.onNodeWithText("Anotar varios").assertDoesNotExist()
+    }
+
     // --- Asignar a una categoría (SELLO-083) ---
 
     private val offer = AssignSuggestion(pesos("50.000"), "50000")

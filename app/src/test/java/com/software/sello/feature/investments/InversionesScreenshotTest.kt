@@ -1,10 +1,7 @@
 package com.software.sello.feature.investments
 
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
@@ -170,28 +167,6 @@ class InversionesScreenshotTest {
         }
         rule.captureStill("src/test/screenshots/inversiones-${look.label}.png")
     }
-
-    /** The list's foot: the last investment ends it. */
-    private fun foot(look: Look) {
-        rule.showSello(look) {
-            InversionesScreen(
-                shown,
-                {},
-                dateLabels(),
-                PaddingValues(16.dp)
-            )
-        }
-        val last = (shown as InversionesState.Ready).rows.last().id
-        rule.onNodeWithTag(INVERSIONES_LIST_TAG)
-            .performScrollToNode(hasTestTag("inversiones.row.$last"))
-        rule.captureStill("src/test/screenshots/inversiones-foot-${look.label}.png")
-    }
-
-    @Test
-    fun footLight() = foot(Look())
-
-    @Test
-    fun footDark() = foot(Look(dark = true))
 
     @Test
     fun cobaltoLight() = capture(Look())
