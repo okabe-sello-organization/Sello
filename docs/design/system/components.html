@@ -1079,7 +1079,7 @@ fun ChoiceSlip(
 <article class="component" id="c-StatusSlip">
 <h3><code>StatusSlip</code> <span class="src"><code>component/Status.kt:117</code>, <code>component/Status.kt:132</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>A slip that says what kind of news it brings. Its required <code>kind</code> decides the icon, ink, layout and button and carries the title, so the compiler checks each kind gets the words it needs (Empty a title, Older none, the others an optional one). A caller adds the <code>message</code> and at most one <code>StatusAction</code> (label, <code>busy</code>, <code>enabled</code>, <code>onClick</code>); <code>StatusSlipDefaults</code> has the usual labels. A busy action shows a spinner, says "En curso" to TalkBack and ignores presses; an action that is not enabled is faded and ignores presses, as while something else on the screen runs; every action is at least 48 dp tall. It replaced <code>EmptySlip</code>, <code>ErrorSlip</code> and the app's <code>StaleSlip</code> (SELLO-184): every screen picks the kind that means its state. A <code>message</code> may be an <code>AnnotatedString</code> with styled parts, such as figures in bold; only their weight, style and other shape are kept: a part's own colour or brush is dropped, so the kind's ink colours the whole sentence (SELLO-191).</dd>
+<dt>Purpose</dt><dd>A slip that says what kind of news it brings. Its required <code>kind</code> decides the icon, ink, layout and button and carries the title, so the compiler checks each kind gets the words it needs (Empty a title, Older none, the others an optional one). A caller adds the <code>message</code> and at most one <code>StatusAction</code> (label, <code>busy</code>, <code>enabled</code>, <code>onClick</code>); <code>StatusSlipDefaults</code> has the usual labels. A busy action shows a spinner, says "En curso" to TalkBack and ignores presses; an action that is not enabled is faded and ignores presses, as while something else on the screen runs; every action is at least 48 dp tall. It replaced <code>EmptySlip</code>, <code>ErrorSlip</code> and the app's <code>StaleSlip</code> (SELLO-184): every screen picks the kind that means its state. A <code>message</code> may be an <code>AnnotatedString</code> with styled parts, such as figures in bold; only their weight, style and other shape are kept: a part's own colour or brush is dropped, so the kind's ink colours the whole sentence (SELLO-191). An optional <code>below</code> is drawn last inside the slip, such as the starter categories under the empty Recibo's action (SELLO-210).</dd>
 <dt>Kinds</dt><dd>
 <table>
 <thead><tr><th>Kind</th><th>When</th><th>Looks</th><th>Default words</th></tr></thead>
@@ -1098,14 +1098,16 @@ fun ChoiceSlip(
     kind: StatusKind,
     message: String,
     modifier: Modifier = Modifier,
-    action: StatusAction? = null
+    action: StatusAction? = null,
+    below: (@Composable () -> Unit)? = null
 )
 
 fun StatusSlip(
     kind: StatusKind,
     message: AnnotatedString,
     modifier: Modifier = Modifier,
-    action: StatusAction? = null
+    action: StatusAction? = null,
+    below: (@Composable () -> Unit)? = null
 )</code></pre>
 <figure data-shot="status-slip-empty" data-module="design-system" data-variants="claro,oscuro" data-caption="Empty"></figure>
 <figure data-shot="status-slip-load-failed" data-module="design-system" data-variants="claro,oscuro" data-caption="LoadFailed"></figure>
