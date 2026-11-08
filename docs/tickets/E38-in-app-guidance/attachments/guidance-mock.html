@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>E38 — Guía dentro de Sello: approved mock (2026-11-08)</title>
+<style>
+:root{--brand:#1F3BE0;--brand-soft:#DCE2FF;--on-brand-soft:#0B1C7A;--desk:#D9E1F7;--paper:#fff;--paper-alt:#EEF2FC;--paper-dim:#D3DCF3;--ink:#0E1630;--ink-soft:#434E72;--outline:#6975A0;--rule:#B9C5E6;--gain:#0A6B4A;--loss:#B81E2A}
+body{margin:0;padding:24px;background:#f4f5f8;font-family:Inter,system-ui,sans-serif;color:var(--ink)}
+h1{font-size:20px;margin:0 0 4px}.lead{color:#555;margin:0 0 24px;font-size:14px}
+.wrap{display:flex;flex-wrap:wrap;gap:28px 20px}
+.cell{width:300px}.cap{font-size:13px;line-height:1.4;margin-top:10px}.cap b{display:block}
+.phone{width:300px;height:620px;background:var(--desk);border-radius:28px;border:6px solid #1a1f33;overflow:hidden;position:relative;box-sizing:border-box;display:flex;flex-direction:column}
+.band{background:var(--brand);color:#fff;padding:26px 14px 14px;display:flex;align-items:center;gap:6px}
+.band b{font-size:22px;font-weight:900}.band span{opacity:.75;font-weight:700}.band .ico{margin-left:auto;font-size:16px}
+.body{flex:1;padding:10px 12px;overflow:hidden;position:relative}
+.paper{background:var(--paper);border-radius:14px;padding:12px 14px}
+.anotar{margin:0 10px 8px;background:var(--brand);color:#fff;text-align:center;font-weight:800;border-radius:13px;padding:12px;font-size:15px}
+.tabs{background:#fff;display:flex;justify-content:space-around;padding:8px 0 10px;font-size:11px;color:var(--ink-soft)}.tabs .on{color:var(--ink);font-weight:700}
+.lbl{font-size:12.5px;color:var(--ink-soft);display:inline-flex;align-items:center;gap:7px}
+.top{display:flex;justify-content:space-between;align-items:flex-start}
+.stamp{font-size:10px;font-weight:900;letter-spacing:.06em;color:var(--gain);border:2px solid var(--gain);border-radius:6px;padding:1px 6px;transform:rotate(-5deg);text-transform:uppercase}
+.big{font-size:38px;font-weight:900;letter-spacing:-.03em;line-height:1;margin:8px 0}
+.perf{border-top:2px dashed var(--rule);margin:8px -14px}
+.row{display:flex;align-items:baseline;font-size:12.5px;margin:6px 0}.row .dots{flex:1;border-bottom:1.5px dotted var(--rule);margin:0 6px}
+.sm{font-size:11px;color:var(--ink-soft)}
+.u{border-bottom:1.5px dotted var(--outline);padding-bottom:1px}
+.q{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--paper-dim);color:var(--ink);font-size:12px;font-weight:800}
+.g{color:var(--gain);font-weight:700}
+.hint{background:var(--paper);border-radius:12px;padding:10px 12px;margin-top:8px;font-size:12px;color:var(--ink-soft);line-height:1.4;display:flex;gap:9px;align-items:flex-start}
+.hint b{color:var(--ink);font-weight:600}.hint .x{margin-left:auto;color:var(--brand);font-weight:800}
+.links{margin-top:7px;display:flex;justify-content:space-between;align-items:center;font-size:12px}
+.no{color:var(--outline)}
+.pill{background:var(--brand-soft);color:var(--on-brand-soft);font-weight:800;border-radius:999px;padding:6px 12px;font-size:12px;display:inline-block}
+.chips{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin-top:10px}
+.chip{border:1.5px solid var(--rule);border-radius:20px;padding:6px 11px;font-size:12.5px;font-weight:600;background:#fff}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--paper);border-radius:20px 20px 0 0;padding:10px 16px 18px;box-shadow:0 -6px 18px rgba(14,22,48,.18)}
+.scrim{position:absolute;inset:0;background:rgba(14,22,48,.28)}
+.grab{width:36px;height:4px;border-radius:2px;background:var(--rule);margin:0 auto 12px}
+.sheet h3{margin:0 0 10px;font-size:17px}
+.def{font-size:12.5px;line-height:1.4;margin-bottom:9px;color:var(--ink-soft)}.def b{color:var(--ink);display:block}
+.lnk{color:var(--brand);font-weight:800;font-size:12.5px}
+.topbar{background:var(--paper);padding:26px 14px 12px;font-weight:800;font-size:18px;border-bottom:1px solid var(--rule)}
+.sec{font-size:10.5px;font-weight:800;letter-spacing:.08em;color:var(--ink-soft);text-transform:uppercase;margin:12px 2px 6px}
+.item{background:var(--paper);padding:10px 12px;font-size:13px;display:flex;justify-content:space-between;border-bottom:1px solid var(--paper-alt)}
+.item small{display:block;font-size:11px;color:var(--ink-soft)}
+.first{border-radius:12px 12px 0 0}.last{border-radius:0 0 12px 12px;border:0}.only{border-radius:12px;border:0}
+</style>
+</head>
+<body>
+<h1>E38 — Guía dentro de Sello</h1>
+<p class="lead">Approved pieces, 2026-11-08. Fonts and icons are placeholders: the build uses Sello's bundled type, icons and tokens.</p>
+<div class="wrap">
+
+<div class="cell"><div class="phone">
+ <div class="band"><b>Noviembre</b><span>2026 ▾</span><span class="ico">▦ ⚙</span></div>
+ <div class="body"><div class="paper" style="text-align:center;padding:18px 14px">
+  <div style="font-size:22px;color:var(--brand)">🧾</div>
+  <div style="font-size:17px;font-weight:800;margin:6px 0 4px">Dale forma a tu mes</div>
+  <div class="sm" style="font-size:12px;margin-bottom:10px">Crea una categoría para lo que importa.</div>
+  <span class="pill">+ Crear categoría</span>
+  <div class="sm" style="font-size:12px;margin-top:14px">O empieza con una de estas:</div>
+  <div class="chips"><span class="chip">🍴 Comida</span><span class="chip">🚌 Transporte</span><span class="chip">⌂ Casa</span><span class="chip">♪ Ocio</span><span class="chip">◎ Ahorro</span></div>
+ </div></div>
+ <div class="anotar">+ Anotar</div><div class="tabs"><span class="on">Recibo</span><span>Resumen</span><span>Metas</span></div>
+</div><div class="cap"><b>SELLO-210 · Starter categories</b>Inside the empty Recibo. A chip opens the editor with name and icon, no amount.</div></div>
+
+<div class="cell"><div class="phone">
+ <div class="band"><b>Noviembre</b><span>2026 ▾</span><span class="ico">▦ ⚙</span></div>
+ <div class="body">
+  <div class="paper">
+   <div class="top"><span class="lbl">Restante del presupuesto<span class="q">?</span></span><span class="stamp">Al día</span></div>
+   <div class="big">130.000</div><div class="perf"></div>
+   <div><span style="font-size:21px;font-weight:900">18.550</span> <span class="lbl u">por día</span></div>
+   <div class="sm">7 días, incluido hoy</div>
+   <div class="row"><b>Límite del mes</b><span class="dots"></span><b>230.000</b></div>
+   <div class="sm">150.000 <span class="u">base</span> + <span class="g">80.000</span> <span class="u">sobrante</span></div>
+   <div class="row"><span>Gastado</span><span class="dots"></span><span>100.000</span></div>
+  </div>
+  <div class="hint"><span>⚙</span><span>¿Dudas? La <b>Guía de Sello</b> está en Configuración.</span><span class="x">✕</span></div>
+ </div>
+ <div class="anotar">+ Anotar</div><div class="tabs"><span class="on">Recibo</span><span>Resumen</span><span>Metas</span></div>
+</div><div class="cap"><b>SELLO-204/207/211 · Card ?, underlined terms, Guía hint</b>The ? is a soft disc after the title (option B). Underlines are lighter. The hint is a quiet row with ✕.</div></div>
+
+<div class="cell"><div class="phone">
+ <div class="band"><b>Noviembre</b><span>2026 ▾</span><span class="ico">▦ ⚙</span></div>
+ <div class="body">
+  <div class="paper"><div class="top"><span class="lbl">Restante del presupuesto<span class="q">?</span></span><span class="stamp">Al día</span></div><div class="big">130.000</div></div>
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div><h3>Cómo leer tu mes</h3>
+   <div class="def"><b>Restante</b>Límite del mes menos lo gastado: lo que aún puedes gastar.</div>
+   <div class="def"><b>Por día</b>El restante repartido entre los días que faltan, incluido hoy.</div>
+   <div class="def"><b>Límite del mes</b>La suma de tus categorías: su base y lo que te sobró o faltó antes.</div>
+   <span class="lnk">Ver más en la Guía de Sello →</span></div>
+ </div>
+ <div class="tabs"><span class="on">Recibo</span><span>Resumen</span><span>Metas</span></div>
+</div><div class="cap"><b>SELLO-204/207 · Help sheet</b>Opened by a ?. Short entries; the wording in the build comes from the code's rules.</div></div>
+
+<div class="cell"><div class="phone">
+ <div class="band"><b>Noviembre</b><span>2026 ▾</span><span class="ico">▦ ⚙</span></div>
+ <div class="body">
+  <div class="paper"><div class="top"><span class="lbl">Restante del presupuesto<span class="q">?</span></span><span class="stamp">Al día</span></div><div class="big">130.000</div></div>
+  <div class="hint"><span>🗂</span><div style="flex:1">Tu último respaldo fue hace <b>34 días</b>. Tus datos viven solo en este teléfono.
+   <div class="links"><span class="no">No volver a mostrar</span><span class="pill">Ir a Respaldo</span></div></div></div>
+ </div>
+ <div class="anotar">+ Anotar</div><div class="tabs"><span class="on">Recibo</span><span>Resumen</span><span>Metas</span></div>
+</div><div class="cap"><b>SELLO-211 · Backup reminder</b>Same quiet row; tonal pill on the right (option B). About once a month.</div></div>
+
+<div class="cell"><div class="phone">
+ <div class="topbar">← Guía de Sello</div>
+ <div class="body">
+  <div class="sec">Empieza aquí</div>
+  <div class="item first"><span>Tu primer mes en 3 pasos<small>Categorías, límites y tu primer gasto</small></span></div>
+  <div class="item last"><span>Gestos que ahorran tiempo<small>Atajos para editar, borrar y limpiar</small></span></div>
+  <div class="sec">Por pantalla</div>
+  <div class="item first"><span>Recibo</span>›</div><div class="item"><span>Anotar y Anotar varios</span>›</div><div class="item"><span>Resumen y Tu año</span>›</div><div class="item"><span>Metas</span>›</div><div class="item last"><span>Inversiones y dólar</span>›</div>
+  <div class="sec">Tus datos</div>
+  <div class="item only"><span>Respaldo<small>Tus datos viven solo en este teléfono</small></span>›</div>
+ </div>
+</div><div class="cap"><b>SELLO-206 · Guía de Sello</b>First row in Configuración. No search in v1; room for pro tips and a full tutorial later.</div></div>
+
+</div>
+</body>
+</html>
