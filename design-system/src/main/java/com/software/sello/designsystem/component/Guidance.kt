@@ -319,7 +319,7 @@ private fun NudgePill(action: NudgeAction) {
 fun nudgeText(template: String, part: String): AnnotatedString {
     val ink = SelloTheme.colors.ink
     val weight = SelloTheme.type.weight.emphasis
-    val (before, after) = template.split(NudgePlaceholder, limit = 2).let {
+    val (before, after) = template.split(NUDGE_PLACEHOLDER, limit = 2).let {
         it[0] to it.getOrElse(1) { "" }
     }
     return buildAnnotatedString {
@@ -329,7 +329,7 @@ fun nudgeText(template: String, part: String): AnnotatedString {
     }
 }
 
-private const val NudgePlaceholder = "%1\$s"
+private const val NUDGE_PLACEHOLDER = "%1\$s"
 
 /** [NudgeRow] with plain [text]. */
 @Composable

@@ -66,9 +66,9 @@ import com.software.sello.navigation.ShellViewModel
 import com.software.sello.platform.SystemColor
 import com.software.sello.presentation.corrections.CorrectionAnnouncementsViewModel
 import com.software.sello.presentation.corrections.Corrections
-import com.software.sello.presentation.guidance.DoneNudges
 import com.software.sello.presentation.corrections.CorrectionsViewModel
 import com.software.sello.presentation.date.dateLabels
+import com.software.sello.presentation.guidance.DoneNudges
 import com.software.sello.presentation.income.IncomeSourceNames
 import com.software.sello.presentation.income.ResourceIncomeSourceNames
 import com.software.sello.presentation.money.MoneyFormatter

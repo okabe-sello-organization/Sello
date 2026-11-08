@@ -1,11 +1,10 @@
 package com.software.sello.feature.recibo
 
-import com.software.sello.testing.HandGuidance
-import com.software.sello.domain.model.Guidance
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.domain.model.CarryoverFailure
 import com.software.sello.domain.model.Currency
+import com.software.sello.domain.model.Guidance
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.policy.CategoryHistoryInput
@@ -33,6 +32,7 @@ import com.software.sello.presentation.carry.carryInput
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.testing.HandGuidance
 import com.software.sello.testing.HandSnapshots
 import com.software.sello.testing.TestMoneyLabels
 import com.software.sello.testing.testMoney

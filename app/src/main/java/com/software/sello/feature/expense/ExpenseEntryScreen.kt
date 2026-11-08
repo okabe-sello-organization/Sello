@@ -81,7 +81,6 @@ import com.software.sello.designsystem.component.SelloNotice
 import com.software.sello.designsystem.component.SelloScaffold
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
-import com.software.sello.designsystem.component.nudgeText
 import com.software.sello.designsystem.component.Stamp
 import com.software.sello.designsystem.component.StampInk
 import com.software.sello.designsystem.component.StatusAction
@@ -90,6 +89,7 @@ import com.software.sello.designsystem.component.StatusSlip
 import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.component.TotalLine
+import com.software.sello.designsystem.component.nudgeText
 import com.software.sello.designsystem.component.rememberSelectedFirst
 import com.software.sello.designsystem.component.selloWindowLayout
 import com.software.sello.designsystem.icon.SelloIcon
@@ -280,7 +280,9 @@ fun ExpenseEntryScreen(
                                 ),
                                 onClose = { onAction(ExpenseEntryAction.CloseSeveralNudge) },
                                 closeLabel = stringResource(R.string.entry_several_nudge_close),
-                                modifier = Modifier.testTag(ENTRY_SEVERAL_NUDGE_TAG)
+                                modifier = Modifier
+                                    .padding(top = SelloTheme.spacing.sm)
+                                    .testTag(ENTRY_SEVERAL_NUDGE_TAG)
                             )
                         }
                     }

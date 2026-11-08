@@ -178,7 +178,9 @@ class CategoryDetailViewModel(
             Shown(month, id).takeIf { month == YearMonth.from(today.date) }
         }
             .distinctUntilChanged()
-            .mapLatest { shown -> shown?.categoryId?.let { Repeats(shown, twoMonthsBefore(shown.month)) } }
+            .mapLatest { shown ->
+                shown?.categoryId?.let { Repeats(shown, twoMonthsBefore(shown.month)) }
+            }
             .onStart { emit(null) }
 
     private class Repeats(val shown: Shown, val expenses: List<Expense>?)

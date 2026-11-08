@@ -54,9 +54,8 @@ class ExpenseEntryNudgeTest {
     fun resetDispatcher() = Dispatchers.resetMain()
 
     /** An expense dated today, added today at 10:00 in Bogotá. */
-    private fun addedToday(number: Int, pesos: Long) =
-        storedExpense(number, 1, "2026-10-22", pesos)
-            .copy(createdAt = Instant.parse("2026-10-22T15:00:00Z"))
+    private fun addedToday(number: Int, pesos: Long) = storedExpense(number, 1, "2026-10-22", pesos)
+        .copy(createdAt = Instant.parse("2026-10-22T15:00:00Z"))
 
     private fun stored(vararg expenses: com.software.sello.domain.model.Expense) =
         expenses.forEach { reads.stored[it.id] = it }

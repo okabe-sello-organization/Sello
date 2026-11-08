@@ -23,8 +23,8 @@ import com.software.sello.domain.model.Schedule
 import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.Verdict
-import com.software.sello.domain.port.FinancialDay
 import com.software.sello.domain.pesos
+import com.software.sello.domain.port.FinancialDay
 import com.software.sello.domain.valueOrFail
 import java.math.BigInteger
 import java.time.Instant

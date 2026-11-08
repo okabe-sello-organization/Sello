@@ -298,7 +298,12 @@ class CategoryDetailNudgeTest {
         val snapshot = monthOf("2026-11-08", listOf(comida), listOf(oct), october)
         snapshots.ready(snapshot)
         insights.state.value = ReadState.Ready(
-            figures(snapshot, listOf(CategoryHistoryMonth(october.minusMonths(1), Money.cop(1), Money.cop(500_000))))
+            figures(
+                snapshot,
+                listOf(
+                    CategoryHistoryMonth(october.minusMonths(1), Money.cop(1), Money.cop(500_000))
+                )
+            )
         )
         schedules.state.value = ReadState.Ready(ScheduleBook(1, snapshot.revision, emptyList()))
         session.select(october)
@@ -331,7 +336,11 @@ class CategoryDetailNudgeTest {
     fun aPagoFijoForItAlreadyLeavesTheDeletingNudge() = runTest {
         publish(expenses = listOf(lunch, netflix(110, "2026-09-05"), netflix(111, "2026-10-05")))
         schedules.state.value = ReadState.Ready(
-            ScheduleBook(1, (snapshots.of(november).value as ReadState.Ready).value.revision, listOf(pagoFijo("Netflix", 44_900)))
+            ScheduleBook(
+                1,
+                (snapshots.of(november).value as ReadState.Ready).value.revision,
+                listOf(pagoFijo("Netflix", 44_900))
+            )
         )
         val viewModel = started()
 
@@ -379,7 +388,8 @@ class CategoryDetailNudgeTest {
     @Test
     fun schedulesThatCannotBeReadNeverPointAtAPagoFijo() = runTest {
         publish(expenses = listOf(lunch, netflix(110, "2026-09-05"), netflix(111, "2026-10-05")))
-        schedules.state.value = ReadState.Failed(StorageFailure.Unavailable("SQLiteException"), null)
+        schedules.state.value =
+            ReadState.Failed(StorageFailure.Unavailable("SQLiteException"), null)
         val viewModel = started()
 
         assertEquals(DetailNudge.Deleting(6), viewModel.nudge)

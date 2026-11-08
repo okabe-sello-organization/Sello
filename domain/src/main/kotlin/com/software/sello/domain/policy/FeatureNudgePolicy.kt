@@ -26,11 +26,10 @@ object FeatureNudgePolicy {
      * Storage does not keep whether an expense was saved alone or with Anotar varios, so
      * both count. [expenses] must hold every expense dated [today].
      */
-    fun bulkEntryDue(expenses: List<Expense>, today: FinancialDay): Boolean =
-        expenses.count {
-            it.origin == null && it.date == today.date &&
-                it.createdAt.atZone(today.zone).toLocalDate() == today.date
-        } >= BULK_ENTRY_AFTER
+    fun bulkEntryDue(expenses: List<Expense>, today: FinancialDay): Boolean = expenses.count {
+        it.origin == null && it.date == today.date &&
+            it.createdAt.atZone(today.zone).toLocalDate() == today.date
+    } >= BULK_ENTRY_AFTER
 
     /**
      * Pagos fijos: [categoryId] had, in each of the two months before [month], an expense

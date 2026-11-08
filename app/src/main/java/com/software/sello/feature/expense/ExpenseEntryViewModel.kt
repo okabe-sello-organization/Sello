@@ -294,7 +294,12 @@ class ExpenseEntryViewModel(
      * expenses are loading or failed, or the read held more than it may, none shows.
      */
     private val severalNudge: Flow<ScreenNudge?> =
-        combine(guidance.observeGuidance(), clock.today, recent, closedHere) { read, today, expenses, closed ->
+        combine(guidance.observeGuidance(), clock.today, recent, closedHere) {
+                read,
+                today,
+                expenses,
+                closed
+            ->
             val due = !editing && expenses != null &&
                 FeatureNudgePolicy.bulkEntryDue(expenses, today)
             val wanted = listOfNotNull(Nudge.BulkEntry.takeIf { due }) - closed
@@ -327,16 +332,16 @@ class ExpenseEntryViewModel(
                 state.copy(severalNudge = shown?.nudge == Nudge.BulkEntry)
             }
             .stateIn(
-            viewModelScope,
-            SharingStarted.Eagerly,
-            render(
-                draft.value,
-                progress.value,
-                month.value,
-                clock.today.value.date,
-                Aside(noteDraft.value, groups.value, frequentOpen.value)
+                viewModelScope,
+                SharingStarted.Eagerly,
+                render(
+                    draft.value,
+                    progress.value,
+                    month.value,
+                    clock.today.value.date,
+                    Aside(noteDraft.value, groups.value, frequentOpen.value)
+                )
             )
-        )
 
     /** What is rendered beside the draft: the note being written and the frequent expenses. */
     private data class Aside(

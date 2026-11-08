@@ -1,13 +1,12 @@
 package com.software.sello.feature.recibo
 
-import com.software.sello.testing.HandGuidance
-import com.software.sello.domain.model.Guidance
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.domain.model.CategoryInsights
 import com.software.sello.domain.model.Expense
+import com.software.sello.domain.model.Guidance
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.MonthlySnapshot
 import com.software.sello.domain.model.OperationId
@@ -41,6 +40,7 @@ import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
+import com.software.sello.testing.HandGuidance
 import com.software.sello.testing.HandSnapshots
 import com.software.sello.testing.NewObservationSnapshots
 import com.software.sello.testing.testMoney
