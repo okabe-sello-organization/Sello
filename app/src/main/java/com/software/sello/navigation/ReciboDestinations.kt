@@ -141,6 +141,9 @@ internal fun NavGraphBuilder.reciboDestinations(
                 navigation.navigate(CategoryEditRoute(id, month.toString())) {
                     launchSingleTop = true
                 }
+            },
+            onStartCategory = { name, icon ->
+                navigation.navigate(CategoryEditorRoute(name = name, icon = icon))
             }
         ) { navigation.navigate(CategoryEditorRoute()) }
     }
@@ -317,6 +320,7 @@ private fun ReciboDestination(
     onOpenClosedMonth: (YearMonth) -> Unit,
     onOpenYear: (Int) -> Unit,
     onSetMonthLimit: (String, YearMonth) -> Unit,
+    onStartCategory: (name: String, iconKey: String) -> Unit,
     onCreateCategory: () -> Unit
 ) {
     val recibo: ReciboViewModel = viewModel(factory = viewModels)
@@ -396,6 +400,9 @@ private fun ReciboDestination(
                 onAction = { action ->
                     when (action) {
                         ReciboAction.CreateCategory -> onCreateCategory()
+
+                        is ReciboAction.StartCategory ->
+                            onStartCategory(action.name, action.iconKey)
 
                         is ReciboAction.OpenCategory -> onShell(ShellAction.OpenCategory(action.id))
 

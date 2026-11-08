@@ -172,10 +172,16 @@ data class IncomeEditRoute(val incomeId: String)
  * The new-category form. [forEntry] says it was opened because recording an expense
  * needs a category first, so the form explains that. [limit] is a limit in pesos to start
  * the form with, such as the income not yet assigned; the form ignores it unless it is a
- * limit it can hold.
+ * limit it can hold. [name] and [icon] (an icon key) start the form from a starter
+ * category; the form ignores either unless it would accept it.
  */
 @Serializable
-data class CategoryEditorRoute(val forEntry: Boolean = false, val limit: String? = null)
+data class CategoryEditorRoute(
+    val forEntry: Boolean = false,
+    val limit: String? = null,
+    val name: String? = null,
+    val icon: String? = null
+)
 
 /**
  * The entry form for one expense. The arguments are hints for the draft that came

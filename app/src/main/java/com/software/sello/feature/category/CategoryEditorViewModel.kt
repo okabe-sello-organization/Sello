@@ -61,7 +61,19 @@ class CategoryEditorViewModel(
      * new draft and never replaces one the person already changed.
      */
     private val suggestedLimit = saved.get<String>(KEY_LIMIT)?.takeIf(SuggestedLimit::accepts)
-    private var typed = drafts.read() ?: Draft(limit = suggestedLimit.orEmpty())
+
+    /**
+     * A name and icon to start from, such as a starter category on the empty Recibo. Each is
+     * kept only when the form would accept it; like the limit, they start a new draft only.
+     */
+    private val suggestedName = saved.get<String>(KEY_NAME)
+        ?.takeIf { CategoryName.fromInput(it) is Outcome.Success }
+    private val suggestedIcon = saved.get<String>(KEY_ICON)?.takeIf { it in CategoryIcons.keys }
+    private var typed = drafts.read() ?: Draft(
+        name = suggestedName.orEmpty(),
+        icon = suggestedIcon.orEmpty(),
+        limit = suggestedLimit.orEmpty()
+    )
     private val submission = Submission(saved, KEY_OPERATION, ids)
     private var generation: Long? = null
     private val figures = LimitFigures(money)
@@ -200,7 +212,8 @@ class CategoryEditorViewModel(
     }
 
     /** Whether leaving would lose something the person entered or chose. */
-    private fun isDirty(state: CategoryEditorState) = state.name.isNotBlank() ||
+    private fun isDirty(state: CategoryEditorState) =
+        (state.name.isNotBlank() && state.name != suggestedName) ||
         (state.limitText.isNotBlank() && state.limitText != suggestedLimit) ||
         state.unlimited ||
         typed.iconChosen
@@ -330,6 +343,12 @@ class CategoryEditorViewModel(
 
         /** The route's argument: a limit to start the form with, in pesos. */
         const val KEY_LIMIT = "limit"
+
+        /** The route's argument: a name to start the form with. */
+        const val KEY_NAME = "name"
+
+        /** The route's argument: the key of an icon to start the form with. */
+        const val KEY_ICON = "icon"
 
         private const val KEY_DRAFT = "category.draft"
         private const val KEY_OPERATION = "category.operation"

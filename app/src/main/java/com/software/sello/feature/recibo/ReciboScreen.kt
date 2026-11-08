@@ -126,6 +126,12 @@ fun ReciboScreen(
                     modifier = Modifier.testTag(RECIBO_FIRST_RUN_TAG),
                     action = StatusAction(stringResource(R.string.recibo_create_category)) {
                         onAction(ReciboAction.CreateCategory)
+                    },
+                    // Only while there is no category: a name and an icon, never an amount.
+                    below = {
+                        StarterCategories { name, icon ->
+                            onAction(ReciboAction.StartCategory(name, icon))
+                        }
                     }
                 )
                 // A goal needs no category: Recibo shows it here too (rule 12).

@@ -266,9 +266,7 @@ class ReciboScreenTest {
         show(ReciboState.FirstRun)
 
         rule.onNodeWithText("Dale forma a tu mes").assertIsDisplayed()
-        rule.onNodeWithText(
-            "Crea una categoría para lo que importa: la casa, la comida, el ocio o tu ahorro."
-        ).assertIsDisplayed()
+        rule.onNodeWithText("Crea una categoría para lo que importa.").assertIsDisplayed()
         rule.onNodeWithTag(RECIBO_FAILED_TAG).assertDoesNotExist()
         rule.onNodeWithText("Crear categoría").performClick()
 
@@ -276,6 +274,55 @@ class ReciboScreenTest {
         // No backup or entry action before those exist.
         rule.onNodeWithText("Traer mis datos de un respaldo").assertDoesNotExist()
         rule.onNodeWithTag(RECIBO_SUMMARY_TAG).assertDoesNotExist()
+    }
+
+    @Test
+    fun theFirstRunOffersStarterCategoriesThatOpenTheFormWithANameAndAnIconOnly() {
+        show(ReciboState.FirstRun)
+
+        rule.onNodeWithText("O empieza con una de estas:").assertIsDisplayed()
+        listOf("Comida", "Transporte", "Casa", "Ocio", "Ahorro").forEach { name ->
+            rule.onNodeWithContentDescription("Empezar con $name")
+                .assertHasClickAction()
+                .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+        }
+        rule.onNodeWithContentDescription("Empezar con Comida").performClick()
+        rule.onNodeWithContentDescription("Empezar con Ahorro").performClick()
+
+        assertEquals(
+            listOf<ReciboAction>(
+                ReciboAction.StartCategory("Comida", "restaurant"),
+                ReciboAction.StartCategory("Ahorro", "savings")
+            ),
+            actions
+        )
+    }
+
+    @Test
+    fun theStarterCategoriesSitInsideTheEmptyCardAboveTheGoal() {
+        rule.showSello {
+            ReciboScreen(
+                ReciboState.FirstRun,
+                { actions += it },
+                PaddingValues(12.dp),
+                goal = { Text("Meta en Recibo", Modifier.testTag("goal")) }
+            )
+        }
+
+        val card = rule.onNodeWithTag(RECIBO_FIRST_RUN_TAG).getUnclippedBoundsInRoot()
+        val starters = rule.onNodeWithTag(RECIBO_STARTERS_TAG, useUnmergedTree = true)
+            .getUnclippedBoundsInRoot()
+        val goal = rule.onNodeWithTag("goal").getUnclippedBoundsInRoot()
+        assertTrue("$starters in $card", starters.top >= card.top && starters.bottom <= card.bottom)
+        assertTrue("$goal under $card", goal.top >= card.bottom)
+    }
+
+    @Test
+    fun onceACategoryExistsTheStartersAreGone() {
+        show(month(plain("937.200"), ReciboStamp.OnTrack, days = 9, perDay = "99.100"))
+
+        rule.onNodeWithTag(RECIBO_STARTERS_TAG, useUnmergedTree = true).assertDoesNotExist()
+        rule.onNodeWithContentDescription("Empezar con Comida").assertDoesNotExist()
     }
 
     @Test

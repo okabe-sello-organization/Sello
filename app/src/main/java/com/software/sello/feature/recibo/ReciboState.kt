@@ -226,6 +226,12 @@ sealed interface ReciboAction {
     /** Open the new-category form. Navigation is the root's, not the view model's. */
     data object CreateCategory : ReciboAction
 
+    /**
+     * Open the new-category form started from a starter: its [name] and [iconKey], never
+     * an amount. Navigation is the root's.
+     */
+    data class StartCategory(val name: String, val iconKey: String) : ReciboAction
+
     /** Show one category's detail. Which one is shown is the frame's to remember. */
     data class OpenCategory(val id: String) : ReciboAction
 
