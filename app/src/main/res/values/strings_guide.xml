@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Guía de Sello (SELLO-206). Each line says what the code does today; the owner reviews
+  the copy. Round, made-up figures only. Where each rule comes from is listed in the pull
+  request.
+-->
+<resources>
+    <string name="guide_title">Guía de Sello</string>
+    <string name="guide_settings_caption">Cómo funciona cada parte de Sello</string>
+    <string name="guide_section_start">Empieza aquí</string>
+    <string name="guide_section_screens">Por pantalla</string>
+    <string name="guide_section_data">Tus datos</string>
+
+    <!-- Empieza aquí: Tu primer mes en 3 pasos -->
+    <string name="guide_first_month_title">Tu primer mes en 3 pasos</string>
+    <string name="guide_first_month_caption">Categorías, límites y tu primer gasto</string>
+    <string name="guide_first_month_categories">1. Crea tus categorías</string>
+    <string name="guide_first_month_categories_body">En Recibo, toca Crear categoría y ponle un nombre y un ícono: la casa, la comida, el transporte. Para agregar más, usa Nueva categoría.</string>
+    <string name="guide_first_month_limits">2. Ponle un límite a cada una</string>
+    <string name="guide_first_month_limits_body">El límite mensual es lo máximo que quieres gastar ahí en el mes. Si no quieres uno, activa Sin límite. Vale desde este mes: cambiarlo después no altera los meses anteriores.</string>
+    <string name="guide_first_month_expense">3. Anota tu primer gasto</string>
+    <string name="guide_first_month_expense_body">Toca Anotar, escribe el monto, elige la categoría y toca Anotar gasto. Recibo te muestra cuánto te queda.</string>
+
+    <!-- Empieza aquí: Gestos que ahorran tiempo -->
+    <string name="guide_gestures_title">Gestos que ahorran tiempo</string>
+    <string name="guide_gestures_caption">Atajos para editar, borrar y limpiar</string>
+    <string name="guide_gestures_lede">Son atajos: lo mismo se hace con un toque.</string>
+    <string name="guide_gestures_category">Mantén presionada una categoría</string>
+    <string name="guide_gestures_category_body">En Recibo, abre Editar categoría sin entrar a ella.</string>
+    <string name="guide_gestures_expense">Desliza un gasto hacia la izquierda</string>
+    <string name="guide_gestures_expense_body">Dentro de una categoría, lo borra. Puedes deshacerlo durante unos segundos. Si lo mantienes presionado, te ofrece Editar y Borrar.</string>
+    <string name="guide_gestures_keypad">Mantén presionada la tecla de borrar</string>
+    <string name="guide_gestures_keypad_body">En el teclado de montos, borra todo el monto de una vez.</string>
+
+    <!-- Por pantalla: Recibo -->
+    <string name="guide_recibo_title">Recibo</string>
+    <string name="guide_recibo_remaining">Restante del presupuesto</string>
+    <string name="guide_recibo_remaining_body">Tu límite del mes menos lo que llevas gastado y lo separado para tus pagos fijos: lo que aún puedes gastar este mes.</string>
+    <string name="guide_recibo_per_day">Por día</string>
+    <string name="guide_recibo_per_day_body">El restante repartido entre los días que faltan, incluido hoy, redondeado hacia abajo. Con 300.000 y 10 días, son 30.000 por día.</string>
+    <string name="guide_recibo_limit">Límite del mes</string>
+    <string name="guide_recibo_limit_body">La suma de los límites de tus categorías, con lo que les sobró o faltó si lo pasan al mes siguiente. Las que no tienen límite no suman.</string>
+    <string name="guide_recibo_carry">Sobrante y faltante</string>
+    <string name="guide_recibo_carry_body">Si en una categoría activas Pasar lo que sobre al mes siguiente, lo que te sobró se suma a su límite del mes siguiente y lo que te pasaste se resta. Viene apagado.</string>
+    <string name="guide_recibo_reserved">Separado</string>
+    <string name="guide_recibo_reserved_body">Lo que necesitan tus pagos fijos que aún no llegan este mes. En su fecha, Sello anota el pago cuando abres la app.</string>
+    <string name="guide_recibo_stamp">El sello</string>
+    <string name="guide_recibo_stamp_body">Al día si has gastado menos que el límite, Al límite si llegaste justo y Excedido si lo pasaste. Sin margen si tus pagos fijos usan justo lo que queda, y Revisar si no alcanza para ellos.</string>
+    <string name="guide_recibo_categories">Tus categorías</string>
+    <string name="guide_recibo_categories_body">Toca una para ver sus gastos y cómo vas en ella. Toca el mes, arriba, para ver otro mes.</string>
+
+    <!-- Por pantalla: Anotar y Anotar varios -->
+    <string name="guide_entry_title">Anotar y Anotar varios</string>
+    <string name="guide_entry_one">Anotar</string>
+    <string name="guide_entry_one_body">Toca Anotar, escribe el monto y elige la categoría. Arriba eliges si es un Gasto o un Ingreso. La tecla 000 agrega tres ceros.</string>
+    <string name="guide_entry_details">Nota y fecha</string>
+    <string name="guide_entry_details_body">La nota es opcional. La fecha puede ser hoy o un día anterior, nunca uno que no ha llegado.</string>
+    <string name="guide_entry_several">Anotar varios</string>
+    <string name="guide_entry_several_body">Para un recibo con varias cosas: hasta 30 renglones con una sola fecha, cada uno con su categoría. Se anotan todos juntos.</string>
+    <string name="guide_entry_ways">Dos formas de llegar</string>
+    <string name="guide_entry_ways_body">Debajo del monto, toca Otro gasto: lo que ya escribiste pasa a ser el primer renglón. O dentro de una categoría, toca Anotar varios: cada renglón empieza en esa categoría.</string>
+    <string name="guide_entry_others">Ingresos, metas e inversiones</string>
+    <string name="guide_entry_others_body">Funciona igual con Otro ingreso y Otro movimiento.</string>
+
+    <!-- Por pantalla: Resumen y Tu año -->
+    <string name="guide_summary_title">Resumen y Tu año</string>
+    <string name="guide_summary_month">¿Cómo va este mes?</string>
+    <string name="guide_summary_month_body">Compara lo que gastaste del 1 a hoy con los mismos días del mes anterior, para comparar igual con igual.</string>
+    <string name="guide_summary_months">Mes a mes</string>
+    <string name="guide_summary_months_body">Lo gastado cada mes frente a su límite. El mes en curso cuenta hasta hoy.</string>
+    <string name="guide_summary_small">Gastos hormiga</string>
+    <string name="guide_summary_small_body">Los gastos pequeños que se juntan: de 20.000 o menos, salvo que cambies esa línea en Configuración.</string>
+    <string name="guide_summary_weekdays">¿Qué días gastas más?</string>
+    <string name="guide_summary_weekdays_body">Lo que gastas en promedio cada día de la semana en los últimos 6 meses, o desde tu primer día anotado si es más reciente.</string>
+    <string name="guide_summary_income">Ingresos</string>
+    <string name="guide_summary_income_body">Sello funciona sin ingresos. Si los anotas, Resumen te muestra a dónde se fueron.</string>
+    <string name="guide_summary_year">Tu año</string>
+    <string name="guide_summary_year_body">Desde Resumen, toca Ver tu año: cada mes con ✓ si quedó dentro del límite y ✗ si lo pasó, en qué se fue y tus récords.</string>
+
+    <!-- Por pantalla: Metas -->
+    <string name="guide_goals_title">Metas</string>
+    <string name="guide_goals_goal">Una meta</string>
+    <string name="guide_goals_goal_body">Algo para lo que guardas: un nombre, cuánto necesitas y, si quieres, para cuándo. Con fecha, Sello te dice cuánto aportar cada mes.</string>
+    <string name="guide_goals_moves">Aportar y retirar</string>
+    <string name="guide_goals_moves_body">Anotas lo que guardas y lo que sacas. Sello no mueve dinero: solo lleva la cuenta.</string>
+    <string name="guide_goals_apart">Aparte de tu presupuesto</string>
+    <string name="guide_goals_apart_body">Lo que aportas a una meta no cuenta como gasto ni pasa a tus inversiones.</string>
+    <string name="guide_goals_done">Lograda</string>
+    <string name="guide_goals_done_body" formatted="false">Al llegar al 100 %, márcala como lograda. Lo que guardaste sigue ahí.</string>
+
+    <!-- Por pantalla: Inversiones y dólar -->
+    <string name="guide_investments_title">Inversiones y dólar</string>
+    <string name="guide_investments_moves">Lo que anotas</string>
+    <string name="guide_investments_moves_body">Aporte: lo que pones. Valor de hoy: cuánto vale. Retiro: lo que sacas. Dividendo: lo que te paga. Sello no se conecta a ningún banco: los valores los anotas tú.</string>
+    <string name="guide_investments_gain">Ganancia</string>
+    <string name="guide_investments_gain_body">Lo que vale hoy, más retiros y dividendos, menos lo que pusiste. Si pusiste 1.000.000 y hoy vale 1.100.000, ganaste 100.000.</string>
+    <string name="guide_investments_rate">Dólar</string>
+    <string name="guide_investments_rate_body">Sello no busca la tasa: la anotas tú, con su fecha, en Configuración o en Inversiones. Solo convierte el total de Inversiones; cada inversión en dólares sigue en dólares.</string>
+
+    <!-- Tus datos: Respaldo -->
+    <string name="guide_backup_title">Respaldo</string>
+    <string name="guide_backup_caption">Tus datos viven solo en este teléfono</string>
+    <string name="guide_backup_phone">Solo en este teléfono</string>
+    <string name="guide_backup_phone_body">Sello no tiene cuenta ni nube. Si pierdes el teléfono o desinstalas Sello, solo un respaldo te permite recuperar tus datos.</string>
+    <string name="guide_backup_make">Hacer un respaldo</string>
+    <string name="guide_backup_make_body">En Configuración, en Tus datos, toca Crear, o Respaldar si ya hiciste uno, y elige dónde guardar el archivo.</string>
+    <string name="guide_backup_file">Cuida el archivo</string>
+    <string name="guide_backup_file_body">Quien lo abra puede leer tus montos, categorías y notas: no tiene contraseña. Si lo guardas en la nube, ese servicio guarda su copia.</string>
+    <string name="guide_backup_restore">Restaurar</string>
+    <string name="guide_backup_restore_body">En Tus datos, toca Restaurar y elige el archivo. Antes de confirmar ves qué trae. Reemplaza todo lo que hay en el teléfono; no se mezcla.</string>
+</resources>
