@@ -45,7 +45,8 @@ internal fun NavGraphBuilder.settingsDestinations(
                 onOpenRate = { navigation.navigate(UsdRateRoute) { launchSingleTop = true } },
                 onOpenSmallExpenses = {
                     navigation.navigate(SmallExpenseLineRoute) { launchSingleTop = true }
-                }
+                },
+                onOpenGuide = { navigation.navigate(GuideRoute) { launchSingleTop = true } }
             ) {
                 TusDatosRoot(
                     viewModels,
