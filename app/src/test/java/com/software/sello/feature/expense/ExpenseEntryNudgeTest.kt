@@ -210,4 +210,19 @@ class ExpenseEntryNudgeTest {
         assertFalse(ready().nudge)
         assertEquals(emptyList<String>(), guidance.writes)
     }
+
+    @Test
+    fun itHidesWhileTheSlipItPointsAtIsDisabled() {
+        stored(addedToday(100, 4_500), addedToday(101, 12_000), addedToday(102, 8_000))
+        val form = ready()
+
+        // A pasted amount that is refused disables Otro gasto: it would be lost on the way.
+        form.onAction(ExpenseEntryAction.Paste("12a"))
+        assertFalse(form.state.value.canOpenSeveral)
+        assertFalse(form.nudge)
+
+        form.onAction(ExpenseEntryAction.ClearAmount)
+        assertTrue(form.nudge)
+        assertEquals(listOf("shown BulkEntry 2026-10-22"), guidance.writes)
+    }
 }

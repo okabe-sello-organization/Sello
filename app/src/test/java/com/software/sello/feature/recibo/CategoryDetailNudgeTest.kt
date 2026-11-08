@@ -398,6 +398,28 @@ class CategoryDetailNudgeTest {
     // The shared rules
 
     @Test
+    fun noNudgeIsPickedWhileTheFiguresArrastreNeedsAreStillRead() = runTest {
+        publish()
+        insights.state.value = ReadState.Loading
+        val viewModel = started()
+
+        assertNull(viewModel.nudge)
+        assertEquals(emptyList<String>(), guidance.writes)
+    }
+
+    @Test
+    fun figuresThatCannotBeReadLeaveTheDeletingNudge() = runTest {
+        publish()
+        insights.state.value = ReadState.Failed(
+            SnapshotFailure.Storage(StorageFailure.Unavailable("SQLiteException")),
+            null
+        )
+        val viewModel = started()
+
+        assertEquals(DetailNudge.Deleting(6), viewModel.nudge)
+    }
+
+    @Test
     fun olderFiguresCarryNoNudge() = runTest {
         publish()
         val viewModel = started()

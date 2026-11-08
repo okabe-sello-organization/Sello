@@ -323,10 +323,11 @@ class ExpenseEntryViewModel(
             render(draft, progress, month, today.date, aside)
         }
             // Only over a form that is ready and current, never while it loads, failed, shows
-            // older categories or has saved: then nothing is kept as shown either.
+            // older categories or has saved, nor while the slip it points at is disabled:
+            // then nothing is kept as shown either.
             .combine(severalNudge) { state, nudge ->
                 val ready = !state.loading && !state.loadFailed && !state.stale &&
-                    state.recorded == null && state.several == null
+                    state.recorded == null && state.several == null && state.canOpenSeveral
                 val shown = nudge.takeIf { ready }
                 nudgeDays.showing(shown)
                 state.copy(severalNudge = shown?.nudge == Nudge.BulkEntry)

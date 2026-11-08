@@ -1,9 +1,11 @@
 package com.software.sello.domain.policy
 
+import com.software.sello.domain.model.BudgetLimit
 import com.software.sello.domain.model.CategoryHistoryMonth
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.CategoryMonth
 import com.software.sello.domain.model.Expense
+import com.software.sello.domain.model.MAX_CHAIN_BASE
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.Schedule
@@ -61,12 +63,21 @@ object FeatureNudgePolicy {
     /**
      * Arrastre: what [previous], the category's month before as its history has it, ended
      * with left (positive) or missing (negative), when [current], the same category in the
-     * month in progress, has a limit, is not archived and does not carry, and [previous] had
-     * a limit and did not end exactly on it. Null otherwise.
+     * month in progress, could turn carry on (ADR 0020 CP3, CP25) and does not carry, and
+     * [previous] had a limit and did not end exactly on it. Null otherwise.
+     *
+     * Turning on needs a finite default in force after this month. [current] says so only
+     * when its limit comes from the default ([MonthBudgetState.Limited.explicit] false):
+     * later months take that default, as no month after this one can have its own limit
+     * yet. A month with its own limit says nothing about the default, so it is not pointed
+     * at carry, even when the default is finite.
      */
     fun carryDue(current: CategoryMonth, previous: CategoryHistoryMonth?): Money? {
         val budget = current.budget ?: return null
         if (current.category.archived || budget.carry != null) return null
+        val state = current.state as? MonthBudgetState.Limited ?: return null
+        val base = (state.limit as? BudgetLimit.Finite)?.amount ?: return null
+        if (state.explicit || base.minorUnits > MAX_CHAIN_BASE) return null
         val limit = previous?.limit ?: return null
         val left = (limit - previous.spent) as? Outcome.Success ?: return null
         return left.value.takeIf { it.minorUnits != 0L }

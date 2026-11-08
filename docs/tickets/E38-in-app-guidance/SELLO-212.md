@@ -26,9 +26,10 @@ it is, once.
   payment for it. Text says it can become a pago fijo. Creating any fixed payment
   closes it.
 - **Arrastre**: in category detail, when the previous month ended over or under that
-  category's limit and the category's arrastre is off. Text says what was left or
-  missing can carry to this month and where to switch it on. Turning arrastre on in any
-  category closes it.
+  category's limit and the category's arrastre is off. Text says switching arrastre on
+  makes later months carry what is left or missing (it starts at 0 the month it is turned
+  on, ADR 0020). Turning arrastre on in any category closes it. *Corrected to match the
+  owner's ADR 0020 on the orchestrator's ruling (2026-11-08).*
 - Each text is checked against the code (where the action lives, how long undo lasts)
   and stays one or two lines.
 - ViewModel tests for each trigger and its "closes" rule with controlled clocks; one
@@ -40,9 +41,3 @@ it is, once.
   repeated-expense work from E34) where they fit.
 - Since #452, several entries are reached only from category detail and the slip under
   the amount; point there.
-- **Arrastre text, proposed change (pending a ruling):** ADR 0020 CP2 says carry starts
-  at 0 in the month it is turned on, so last month's balance can never carry into this
-  month. The text says instead what last month left or missed and that, from this month,
-  what is left or missing can pass to the next month (Editar categoría). Proposed
-  criterion: "Text says whether the month before left or missed something and that,
-  switched on in Editar categoría, what is left or missing passes to the next month."

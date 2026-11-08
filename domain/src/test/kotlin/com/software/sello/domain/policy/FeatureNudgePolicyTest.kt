@@ -256,7 +256,12 @@ class FeatureNudgePolicyTest {
     )
 
     /** Comida in November, the month in progress. */
-    private fun now(limit: Long?, carry: CarryBreakdown? = null, archived: Boolean = false) =
+    private fun now(
+        limit: Long?,
+        carry: CarryBreakdown? = null,
+        archived: Boolean = false,
+        ownLimit: Boolean = false
+    ) =
         CategoryMonth(
             category = Category(
                 comida,
@@ -270,7 +275,7 @@ class FeatureNudgePolicyTest {
             state = MonthBudgetState.Limited(
                 limit?.let { BudgetLimit.finite(Money.cop(it)).valueOrFail() }
                     ?: BudgetLimit.Unlimited,
-                explicit = false
+                explicit = ownLimit
             ),
             spent = Money.cop(0),
             budget = limit?.let {
@@ -337,5 +342,25 @@ class FeatureNudgePolicyTest {
     @Test
     fun withoutLastMonthInItsHistoryItIsNotDue() {
         assertNull(FeatureNudgePolicy.carryDue(now(500_000), null))
+    }
+
+    @Test
+    fun aMonthWithItsOwnLimitSaysNothingOfTheDefaultSoItIsNotPointedAtCarry() {
+        // Carry needs a finite default after this month (CP3); this read cannot show it.
+        assertNull(
+            FeatureNudgePolicy.carryDue(now(500_000, ownLimit = true), october(500_000, 420_000))
+        )
+    }
+
+    @Test
+    fun aBaseAboveTheChainMaximumCannotCarry() {
+        // CP25: at most 999.999.999.999; one peso more is refused.
+        assertNull(
+            FeatureNudgePolicy.carryDue(now(1_000_000_000_000), october(500_000, 420_000))
+        )
+        assertEquals(
+            Money.cop(80_000),
+            FeatureNudgePolicy.carryDue(now(999_999_999_999), october(500_000, 420_000))
+        )
     }
 }
