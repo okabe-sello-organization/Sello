@@ -55,6 +55,22 @@ class GuidanceMemoryTest {
     }
 
     @Test
+    fun `the last nudge not kept counts as seen when its day is earlier, never the reminder`() {
+        val phone = GuidanceMemory(lastShown = ShownNudge(Nudge.GuideHint, day(11, 5)))
+        val backupLater = GuidanceMemory(lastShown = ShownNudge(Nudge.Deleting, day(11, 6)))
+        val backupEarlier = GuidanceMemory(lastShown = ShownNudge(Nudge.Deleting, day(11, 4)))
+        val backupSameDay = GuidanceMemory(lastShown = ShownNudge(Nudge.Deleting, day(11, 5)))
+        val reminderEarlier =
+            GuidanceMemory(lastShown = ShownNudge(Nudge.BackupReminder, day(11, 4)))
+
+        assertEquals(setOf(Nudge.GuideHint), phone.mergedWith(backupLater).seen)
+        assertEquals(setOf(Nudge.Deleting), phone.mergedWith(backupEarlier).seen)
+        assertEquals(emptySet<Nudge>(), phone.mergedWith(backupSameDay).seen)
+        assertEquals(emptySet<Nudge>(), phone.mergedWith(reminderEarlier).seen)
+        assertEquals(emptySet<Nudge>(), phone.mergedWith(GuidanceMemory()).seen)
+    }
+
+    @Test
     fun `a backup with nothing seen changes nothing on the phone`() {
         val phone = GuidanceMemory(
             seen = setOf(Nudge.Investments),

@@ -434,6 +434,32 @@ class GuidancePreferencesTest {
         }
 
     @Test
+    fun `a restore keeps the nudge it drops as seen when its day was earlier`() = runBlocking {
+        val preferences = process()
+        // The hint showed on the phone on 5 November and was never closed.
+        preferences.markShown(Nudge.GuideHint, LocalDate.of(2026, 11, 5))
+
+        assertEquals(
+            PreferenceWrite.Saved,
+            preferences.mergeRestored(
+                GuidanceMemory(lastShown = ShownNudge(Nudge.Deleting, LocalDate.of(2026, 11, 6)))
+            )
+        )
+
+        assertEquals(
+            PreferenceRead.Ready(
+                Guidance(
+                    GuidanceMemory(
+                        seen = setOf(Nudge.GuideHint),
+                        lastShown = ShownNudge(Nudge.Deleting, LocalDate.of(2026, 11, 6))
+                    )
+                )
+            ),
+            process().guidance()
+        )
+    }
+
+    @Test
     fun `a restore onto a new phone takes the backup's memory and leaves the check alone`() =
         runBlocking {
             val backup = GuidanceMemory(
