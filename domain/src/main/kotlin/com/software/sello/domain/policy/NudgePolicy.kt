@@ -66,7 +66,9 @@ object BackupReminderPolicy {
         val since = ChronoUnit.DAYS.between(backupDay ?: firstMovement, date)
         if (since < INTERVAL_DAYS) return null
         val shown = memory.backupReminderShown
-        if (shown != null && shown != date && ChronoUnit.DAYS.between(shown, date) < INTERVAL_DAYS) {
+        if (shown != null && shown != date &&
+            ChronoUnit.DAYS.between(shown, date) < INTERVAL_DAYS
+        ) {
             return null
         }
         return BackupReminder(daysSinceBackup = since.takeIf { backupDay != null })

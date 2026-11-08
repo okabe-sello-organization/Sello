@@ -81,7 +81,10 @@ class NudgePolicyTest {
     fun `after midnight another nudge may show`() {
         val guidance = checked(GuidanceMemory(lastShown = ShownNudge(Nudge.Carry, day(11, 8))))
 
-        assertEquals(Nudge.GuideHint, NudgePolicy.pick(guidance, day(11, 9), listOf(Nudge.GuideHint)))
+        assertEquals(
+            Nudge.GuideHint,
+            NudgePolicy.pick(guidance, day(11, 9), listOf(Nudge.GuideHint))
+        )
     }
 
     @Test
@@ -91,7 +94,10 @@ class NudgePolicyTest {
 
         assertNull(NudgePolicy.pick(guidance, day(11, 8), listOf(Nudge.GuideHint)))
         assertEquals(Nudge.Carry, NudgePolicy.pick(guidance, day(11, 8), listOf(Nudge.Carry)))
-        assertEquals(Nudge.GuideHint, NudgePolicy.pick(guidance, day(11, 10), listOf(Nudge.GuideHint)))
+        assertEquals(
+            Nudge.GuideHint,
+            NudgePolicy.pick(guidance, day(11, 10), listOf(Nudge.GuideHint))
+        )
     }
 
     @Test

@@ -36,6 +36,7 @@ class RoomHistoryStartReads(private val database: SelloDatabase) : HistoryStartR
         if (text == null) return Outcome.Success(null)
         return when (val date = EffectiveDates.parseDate(text)) {
             is Outcome.Success -> date
+
             is Outcome.Failure ->
                 Outcome.Failure(StorageFailure.Integrity(record, null, "effective_date"))
         }

@@ -75,7 +75,10 @@ internal fun ReciboNudgeRow(
 private fun withBold(template: String, part: String): AnnotatedString {
     val ink = SelloTheme.colors.ink
     val weight = SelloTheme.type.weight.emphasis
-    val (before, after) = template.split(PLACEHOLDER, limit = 2).let { it[0] to it.getOrElse(1) { "" } }
+    val (before, after) = template.split(PLACEHOLDER, limit = 2).let {
+        it[0] to
+            it.getOrElse(1) { "" }
+    }
     return buildAnnotatedString {
         append(before)
         withStyle(SpanStyle(color = ink, fontWeight = weight)) { append(part) }

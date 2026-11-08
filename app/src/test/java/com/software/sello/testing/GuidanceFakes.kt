@@ -52,7 +52,7 @@ class HandGuidance(initial: Guidance = Guidance(existingUseChecked = true)) : Gu
             it.copy(
                 lastShown = ShownNudge(nudge, day),
                 backupReminderShown =
-                if (nudge == Nudge.BackupReminder) day else it.backupReminderShown
+                    if (nudge == Nudge.BackupReminder) day else it.backupReminderShown
             )
         }
 
@@ -62,8 +62,19 @@ class HandGuidance(initial: Guidance = Guidance(existingUseChecked = true)) : Gu
     override suspend fun rememberExistingUse(wasUsingSello: Boolean): PreferenceWrite {
         writes += "existing"
         if (failWrites) return PreferenceWrite.Failed(PreferenceFailure.Unavailable)
-        val seen = if (wasUsingSello) Nudge.entries.filter { it.forNewUsers }.toSet() else emptySet()
-        keep(Guidance(stored.memory.copy(seen = stored.memory.seen + seen), existingUseChecked = true))
+        val seen = if (wasUsingSello) {
+            Nudge.entries.filter {
+                it.forNewUsers
+            }.toSet()
+        } else {
+            emptySet()
+        }
+        keep(
+            Guidance(
+                stored.memory.copy(seen = stored.memory.seen + seen),
+                existingUseChecked = true
+            )
+        )
         return PreferenceWrite.Saved
     }
 
@@ -87,9 +98,8 @@ class HandGuidance(initial: Guidance = Guidance(existingUseChecked = true)) : Gu
 }
 
 /** Where the history begins, as a test sets it; it starts with no history. */
-class HandHistoryStart(
-    initial: HistoryStartState = ReadState.Ready(HistoryStart(null, null))
-) : HistoryStartReads {
+class HandHistoryStart(initial: HistoryStartState = ReadState.Ready(HistoryStart(null, null))) :
+    HistoryStartReads {
     val state = MutableStateFlow(initial)
 
     fun starts(firstExpense: String?, firstMovement: String?) {

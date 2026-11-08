@@ -52,7 +52,11 @@ class ReciboNudgeScreenTest {
                 name = "Alimentación",
                 iconKey = "restaurant",
                 archived = false,
-                figure = BudgetFigure(ReciboHeadline.Remaining, plain("130.000"), ReciboStamp.OnTrack),
+                figure = BudgetFigure(
+                    ReciboHeadline.Remaining,
+                    plain("130.000"),
+                    ReciboStamp.OnTrack
+                ),
                 cellAmount = plain("130.000"),
                 spent = plain("100.000"),
                 limit = plain("230.000"),

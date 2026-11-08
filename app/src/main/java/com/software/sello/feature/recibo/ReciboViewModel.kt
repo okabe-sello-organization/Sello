@@ -3,10 +3,10 @@ package com.software.sello.feature.recibo
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.software.sello.domain.model.CategoryOrderingPreference
-import com.software.sello.domain.model.Nudge
-import com.software.sello.domain.model.ShownNudge
 import com.software.sello.domain.model.MonthlySnapshot
+import com.software.sello.domain.model.Nudge
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.ShownNudge
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.policy.BackupReminderPolicy
 import com.software.sello.domain.policy.ClosedMonthInvitePolicy

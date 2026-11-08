@@ -151,7 +151,10 @@ class ReciboNudgeViewModelTest {
 
         assertEquals(ReciboNudge.GuideHint, nudgeOf(viewModel))
         assertEquals(listOf("shown GuideHint 2026-11-08"), guidance.writes)
-        assertEquals(ShownNudge(Nudge.GuideHint, LocalDate.of(2026, 11, 8)), guidance.stored.memory.lastShown)
+        assertEquals(
+            ShownNudge(Nudge.GuideHint, LocalDate.of(2026, 11, 8)),
+            guidance.stored.memory.lastShown
+        )
     }
 
     @Test
