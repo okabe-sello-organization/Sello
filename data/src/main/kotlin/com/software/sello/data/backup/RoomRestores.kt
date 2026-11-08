@@ -17,7 +17,9 @@ import com.software.sello.data.repository.runCommand
 import com.software.sello.domain.model.GoalHistory
 import com.software.sello.domain.model.GoalMovement
 import com.software.sello.domain.model.GoalTargetChange
+import com.software.sello.domain.model.GuidanceMemory
 import com.software.sello.domain.model.InvestmentHistory
+import com.software.sello.domain.model.Nudge
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.Outcome
@@ -592,9 +594,32 @@ class RoomRestores(
                 ordering = preferences?.ordering?.takeUnless { applied(ORDERING) },
                 investments = preferences?.investments?.takeUnless { applied(INVESTMENTS) },
                 smallExpenseLine = preferences?.smallExpenseLine
-                    ?.takeUnless { applied(SMALL_EXPENSES) }
+                    ?.takeUnless { applied(SMALL_EXPENSES) },
+                guidance = guidanceFrom(contents)?.takeUnless { applied(GUIDANCE) }
             )
         )
+    }
+
+    /**
+     * What a restore of [contents] merges into the phone's guidance seen (ADR 0027): the
+     * file's own, or for a file without it (older than version 11, or made while it could
+     * not be read) whose history has any expense, income, goal or investment, the new-user
+     * nudges, since its person was already using Sello. Null when there is nothing to merge.
+     */
+    private fun guidanceFrom(contents: BackupContents): GuidanceMemory? {
+        contents.preferences?.guidance?.let { return it }
+        val financial = contents.financial
+        val used = financial.expenses.isNotEmpty() || financial.incomes.isNotEmpty() ||
+            financial.goals.isNotEmpty() || financial.investments.isNotEmpty()
+        return if (used) {
+            GuidanceMemory(
+                seen = Nudge.entries.filter {
+                    it.forNewUsers
+                }.toSet()
+            )
+        } else {
+            null
+        }
     }
 
     /**
@@ -626,6 +651,7 @@ class RoomRestores(
         var orderingLeft = pending.preferences.ordering
         var investmentsLeft = pending.preferences.investments
         var lineLeft = pending.preferences.smallExpenseLine
+        var guidanceLeft = pending.preferences.guidance
         appearanceLeft?.let { wanted ->
             val saved = appearance.setTheme(wanted.theme).saved() &&
                 appearance.restoreInk(wanted.ink, wanted.tuyaHue).saved()
@@ -645,9 +671,19 @@ class RoomRestores(
             val saved = smallExpenses.setSmallExpenseLine(wanted).saved()
             if (saved && markApplied(SMALL_EXPENSES)) lineLeft = null
         }
+        // Merged, never put in place of the phone's, so nothing seen is forgotten (ADR 0027).
+        guidanceLeft?.let { wanted ->
+            val saved = guidance.mergeRestored(wanted).saved()
+            if (saved && markApplied(GUIDANCE)) guidanceLeft = null
+        }
         reviewRestoredEntries()
-        mergeGuidance(contents)
-        val left = PendingPreferences(appearanceLeft, orderingLeft, investmentsLeft, lineLeft)
+        val left = PendingPreferences(
+            appearanceLeft,
+            orderingLeft,
+            investmentsLeft,
+            lineLeft,
+            guidanceLeft
+        )
         if (left.done) {
             // The manifest first and `applied` last: a death between them leaves either this
             // replacement with every group applied, finished again quietly, or a list with no
@@ -680,19 +716,6 @@ class RoomRestores(
         if (notice.markCatchUpNoticeSeen(Instant.ofEpochMilli(restoredAt)).saved()) {
             markApplied(NOTICE)
         }
-    }
-
-    /**
-     * The backup's guidance seen is merged into the phone's (SELLO-205): nothing the phone
-     * has seen is forgotten. Done once; merging again would change nothing anyway. Like
-     * [reviewRestoredEntries] it is not kept pending if it cannot be saved: it is tried
-     * again only while another group is, and the worst case is a nudge shown once more.
-     */
-    private suspend fun mergeGuidance(contents: BackupContents) {
-        val memory = contents.preferences?.guidance ?: return
-        val done = appliedGroups() ?: return
-        if (GUIDANCE in done) return
-        if (guidance.mergeRestored(memory).saved()) markApplied(GUIDANCE)
     }
 
     private sealed interface Replacement {

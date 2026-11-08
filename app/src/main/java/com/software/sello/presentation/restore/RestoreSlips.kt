@@ -118,7 +118,8 @@ private fun pendingItems(preferences: PendingPreferences, phone: PhoneColor): Li
                 R.string.restore_pending_small_expenses,
                 DigitGrouping().shown(it.pesos.toString())
             )
-        }
+        },
+        preferences.guidance?.let { stringResource(R.string.restore_pending_guidance) }
     )
 
 internal fun RestoreRejection.message() = when (this) {
@@ -138,10 +139,12 @@ private fun applyLabel(preferences: PendingPreferences): Int {
     val ordering = preferences.ordering != null
     val investments = preferences.investments != null
     val line = preferences.smallExpenseLine != null
+    val guidance = preferences.guidance != null
     return when {
-        appearance && ordering && !investments && !line -> R.string.restore_apply_both
+        appearance && ordering && !investments && !line && !guidance ->
+            R.string.restore_apply_both
 
-        listOf(appearance, ordering, investments, line).count { it } > 1 ->
+        listOf(appearance, ordering, investments, line, guidance).count { it } > 1 ->
             R.string.restore_apply_all
 
         appearance -> R.string.restore_apply_appearance
@@ -150,7 +153,9 @@ private fun applyLabel(preferences: PendingPreferences): Int {
 
         investments -> R.string.restore_apply_investments
 
-        else -> R.string.restore_apply_small_expenses
+        line -> R.string.restore_apply_small_expenses
+
+        else -> R.string.restore_apply_guidance
     }
 }
 

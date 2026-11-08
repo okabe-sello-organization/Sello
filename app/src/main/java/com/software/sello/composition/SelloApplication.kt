@@ -72,9 +72,12 @@ class SelloApplication : Application() {
                 // Exports left for sharing by an earlier run go now (SELLO-121).
                 val koin = application.koin
                 koin.get<CoroutineScope>().launch { koin.get<ExportShares>().clear() }
-                // Whether the person was already using Sello, asked once (SELLO-205).
-                koin.get<CoroutineScope>().launch { koin.get<RememberExistingUse>().run() }
-                Outcome.Success(Started(viewModels(koin), koin.get()))
+                Outcome.Success(
+                    Started(viewModels(koin), koin.get()) {
+                        // Whether the person was already using Sello, asked once (SELLO-205).
+                        koin.get<RememberExistingUse>().run()
+                    }
+                )
             }
         }
     }

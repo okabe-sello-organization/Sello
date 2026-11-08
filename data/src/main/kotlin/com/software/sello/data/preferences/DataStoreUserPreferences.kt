@@ -258,10 +258,12 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
 
     /**
      * Every key but the guidance's goes in one edit, so each reads its first-run default
-     * again; what guidance was seen stays (E38: Restablecer does not clear it).
+     * again; what guidance was seen stays (ADR 0027: Restablecer does not clear it). Guidance
+     * that cannot be read goes with the rest, so a reset still starts it over cleanly.
      */
     override suspend fun resetAll(): PreferenceWrite = write {
-        asMap().keys.filterNot { it in GUIDANCE_KEYS }.forEach { remove(it) }
+        val keep = guidance(this) is Decoded.Value
+        asMap().keys.filterNot { keep && it in GUIDANCE_KEYS }.forEach { remove(it) }
     }
 
     /**

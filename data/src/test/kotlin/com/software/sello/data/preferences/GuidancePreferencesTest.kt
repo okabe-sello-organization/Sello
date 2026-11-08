@@ -18,8 +18,11 @@ import com.software.sello.domain.model.Guidance
 import com.software.sello.domain.model.GuidanceMemory
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.Nudge
+import com.software.sello.domain.model.OperationId
+import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ShownNudge
 import com.software.sello.domain.model.SmallExpenseLine
+import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.port.BackupRecord
 import com.software.sello.domain.port.BackupSummary
@@ -27,6 +30,10 @@ import com.software.sello.domain.port.LastBackup
 import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
+import com.software.sello.domain.port.ResetOutcome
+import com.software.sello.domain.port.ResetPreview
+import com.software.sello.domain.port.Resets
+import com.software.sello.domain.usecase.RememberExistingUse
 import java.io.IOException
 import java.time.Instant
 import java.time.LocalDate
@@ -234,28 +241,29 @@ class GuidancePreferencesTest {
 
     // --- Values that cannot be read ---
 
+    /** Each a guidance value that cannot be read, beside a good one. */
+    private val damages: List<suspend (MutablePreferences) -> Unit> = listOf(
+        { it[stringPreferencesKey("guidance_seen_carry_v1")] = "true" },
+        { it[intPreferencesKey("guidance_seen_guide_hint_v1")] = 1 },
+        { it[stringPreferencesKey("guidance_last_shown_v1")] = "2026-11-08" },
+        {
+            it[
+                stringPreferencesKey(
+                    "guidance_last_shown_v1"
+                )
+            ] = "2026-11-08|walkthrough"
+        },
+        { it[stringPreferencesKey("guidance_last_shown_v1")] = "2026-02-30|carry" },
+        { it[stringPreferencesKey("guidance_last_shown_v1")] = "2026-11-08|carry|x" },
+        { it[longPreferencesKey("guidance_last_shown_v1")] = 20_261_108L },
+        { it[stringPreferencesKey("guidance_backup_reminder_shown_v1")] = "8/11/2026" },
+        { it[stringPreferencesKey("guidance_backup_reminder_off_v1")] = "no" },
+        { it[intPreferencesKey("guidance_existing_use_checked_v1")] = 0 }
+    )
+
     @Test
     fun `a stored value that cannot be read fails the read, never read as seen or not`() =
         runBlocking {
-            val damages: List<suspend (MutablePreferences) -> Unit> =
-                listOf(
-                    { it[stringPreferencesKey("guidance_seen_carry_v1")] = "true" },
-                    { it[intPreferencesKey("guidance_seen_guide_hint_v1")] = 1 },
-                    { it[stringPreferencesKey("guidance_last_shown_v1")] = "2026-11-08" },
-                    {
-                        it[
-                            stringPreferencesKey(
-                                "guidance_last_shown_v1"
-                            )
-                        ] = "2026-11-08|walkthrough"
-                    },
-                    { it[stringPreferencesKey("guidance_last_shown_v1")] = "2026-02-30|carry" },
-                    { it[stringPreferencesKey("guidance_last_shown_v1")] = "2026-11-08|carry|x" },
-                    { it[longPreferencesKey("guidance_last_shown_v1")] = 20_261_108L },
-                    { it[stringPreferencesKey("guidance_backup_reminder_shown_v1")] = "8/11/2026" },
-                    { it[stringPreferencesKey("guidance_backup_reminder_off_v1")] = "no" },
-                    { it[intPreferencesKey("guidance_existing_use_checked_v1")] = 0 }
-                )
             damages.forEachIndexed { index, damage ->
                 val preferences = process()
                 raw { it.clear() }
@@ -443,22 +451,60 @@ class GuidancePreferencesTest {
         }
 
     @Test
-    fun `a check whose write failed is asked again in the next process`() = runBlocking {
-        // The first process dies before its one write lands: nothing of it is on the file.
-        assertEquals(
-            PreferenceWrite.Failed(PreferenceFailure.Unavailable),
-            DataStoreUserPreferences(UnwritableDataStore()).rememberExistingUse(true)
-        )
-        val next = process()
-        assertEquals(PreferenceRead.Ready(Guidance()), next.guidance())
+    fun `a death between the check's read and its write leaves the file to check again`() =
+        runBlocking {
+            val dying = process()
+            // The check reads its answer and the history, then the process ends before its
+            // one write: the real file holds nothing of it.
+            val counts = object : Resets {
+                override suspend fun preview(): Outcome<ResetPreview, StorageFailure> {
+                    job!!.cancelAndJoin()
+                    return Outcome.Success(ResetPreview(BackupSummary(0, 4, 0, 0, 0), 1, 1))
+                }
 
-        assertEquals(PreferenceWrite.Saved, next.rememberExistingUse(true))
+                override suspend fun reset(preview: ResetPreview, operationId: OperationId) =
+                    throw AssertionError("never erases")
 
-        assertEquals(
-            PreferenceRead.Ready(Guidance(GuidanceMemory(seen = newUserNudges), true)),
-            process().guidance()
-        )
-    }
+                override suspend fun pending() = false
+
+                override suspend fun finishPending(): ResetOutcome.Erased? = null
+            }
+            runCatching { RememberExistingUse(counts, dying).run() }
+
+            val next = process()
+            assertEquals(PreferenceRead.Ready(Guidance()), next.guidance())
+            assertEquals(emptyMap<String, Any>(), stored())
+
+            assertEquals(PreferenceWrite.Saved, next.rememberExistingUse(true))
+
+            // Its one write lands whole: every new-user nudge and the check, read back after
+            // that process ends too.
+            assertEquals(
+                PreferenceRead.Ready(Guidance(GuidanceMemory(seen = newUserNudges), true)),
+                process().guidance()
+            )
+        }
+
+    @Test
+    fun `reset clears guidance that cannot be read with the rest, so it starts over`() =
+        runBlocking {
+            damages.forEachIndexed { index, damage ->
+                val preferences = process()
+                raw { it.clear() }
+                preferences.setTheme(ThemePreference.Dark)
+                preferences.markSeen(Nudge.Deleting)
+                raw(damage)
+
+                assertEquals("damage $index", PreferenceWrite.Saved, preferences.resetAll())
+
+                assertEquals("damage $index", emptyMap<String, Any>(), stored())
+                assertEquals(
+                    "damage $index",
+                    PreferenceRead.Ready(Guidance()),
+                    process().guidance()
+                )
+            }
+        }
 
     @Test
     fun `a stored false reads as not seen, not as damage`() = runBlocking {
