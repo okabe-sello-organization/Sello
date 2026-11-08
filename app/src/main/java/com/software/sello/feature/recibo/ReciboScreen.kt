@@ -116,7 +116,7 @@ fun ReciboScreen(
                 SlipSkeleton()
             }
 
-            ReciboState.FirstRun -> {
+            is ReciboState.FirstRun -> {
                 StatusSlip(
                     kind = StatusKind.Empty(
                         SelloIcon.ReceiptLong,
@@ -128,9 +128,11 @@ fun ReciboScreen(
                         onAction(ReciboAction.CreateCategory)
                     },
                     // Only while there is no category: a name and an icon, never an amount.
-                    below = {
-                        StarterCategories { name, icon ->
-                            onAction(ReciboAction.StartCategory(name, icon))
+                    below = state.takenNames?.let { taken ->
+                        {
+                            StarterCategories(taken) { name, icon ->
+                                onAction(ReciboAction.StartCategory(name, icon))
+                            }
                         }
                     }
                 )

@@ -340,7 +340,7 @@ class ReciboRenderModelTest {
     fun nothingReadYetIsLoadingAndAMonthWithoutCategoriesIsTheFirstRun() {
         assertEquals(ReciboState.Loading, render.recibo(ReadState.Loading))
         assertEquals(
-            ReciboState.FirstRun,
+            ReciboState.FirstRun(takenNames = null),
             render.recibo(ReadState.Ready(monthOf("2026-10-23", emptyList())))
         )
     }

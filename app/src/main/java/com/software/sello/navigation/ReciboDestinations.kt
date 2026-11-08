@@ -143,7 +143,9 @@ internal fun NavGraphBuilder.reciboDestinations(
                 }
             },
             onStartCategory = { name, icon ->
-                navigation.navigate(CategoryEditorRoute(name = name, icon = icon))
+                navigation.navigate(CategoryEditorRoute(name = name, icon = icon)) {
+                    launchSingleTop = true
+                }
             }
         ) { navigation.navigate(CategoryEditorRoute()) }
     }

@@ -10,8 +10,13 @@ import java.time.YearMonth
 sealed interface ReciboState {
     data object Loading : ReciboState
 
-    /** Read successfully and there are no categories yet. */
-    data object FirstRun : ReciboState
+    /**
+     * Read successfully and there are no categories to show. [takenNames] are the
+     * [com.software.sello.domain.model.CategoryName.uniquenessKey]s already used, archived
+     * categories' too, so no starter offers a name the form would refuse; null while they
+     * are not known, when no starter is offered.
+     */
+    data class FirstRun(val takenNames: Set<String>? = emptySet()) : ReciboState
 
     /**
      * A month that was read. With [stale] the latest read failed and this is the last

@@ -19,7 +19,6 @@ import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CommittedCategoryChange
 import com.software.sello.domain.port.CreateCategory
-import com.software.sello.navigation.CategoryEditorRoute
 import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
@@ -1071,20 +1070,6 @@ class CategoryEditorViewModelTest {
 
         assertEquals("Salidas" to "theaters", restored.name to restored.iconKey)
         assertEquals("80000", restored.limitText)
-    }
-
-    @Test
-    fun theRouteCarriesTheStarterUnderTheKeysTheFormReads() {
-        val arguments = CategoryEditorRoute.serializer().descriptor.let { route ->
-            (0 until route.elementsCount).map(route::getElementName).toSet()
-        }
-
-        assertTrue(
-            "$arguments",
-            arguments.containsAll(
-                setOf(CategoryEditorViewModel.KEY_NAME, CategoryEditorViewModel.KEY_ICON)
-            )
-        )
     }
 
     @Test

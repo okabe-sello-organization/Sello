@@ -57,7 +57,8 @@ class ReciboRenderModel(private val money: MoneyFormatter) {
         stale: Boolean,
         ordering: CategoryOrderingPreference
     ): ReciboState = if (snapshot.categories.isEmpty()) {
-        ReciboState.FirstRun
+        // Archived categories are not in the month; the view model reads their names.
+        ReciboState.FirstRun(takenNames = null)
     } else {
         ReciboState.Month(summary(snapshot), categories(snapshot, ordering), stale)
     }

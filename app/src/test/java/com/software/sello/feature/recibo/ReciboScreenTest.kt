@@ -50,6 +50,8 @@ import com.software.sello.designsystem.component.CATEGORY_UNLIMITED_TAG
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.component.SCAFFOLD_SECONDARY_TAG
+import com.software.sello.domain.model.CategoryName
+import com.software.sello.domain.model.Outcome
 import com.software.sello.navigation.ShellDetail
 import com.software.sello.navigation.ShellScreen
 import com.software.sello.navigation.ShellState
@@ -248,7 +250,7 @@ class ReciboScreenTest {
     fun theFirstRunStillShowsTheGoalUnderItsCard() {
         rule.showSello {
             ReciboScreen(
-                ReciboState.FirstRun,
+                ReciboState.FirstRun(),
                 { actions += it },
                 PaddingValues(12.dp),
                 goal = { Text("Meta en Recibo", Modifier.testTag("goal")) }
@@ -263,7 +265,7 @@ class ReciboScreenTest {
 
     @Test
     fun theFirstRunOffersToCreateCategoriesAndNothingThatDoesNotExistYet() {
-        show(ReciboState.FirstRun)
+        show(ReciboState.FirstRun())
 
         rule.onNodeWithText("Dale forma a tu mes").assertIsDisplayed()
         rule.onNodeWithText("Crea una categoría para lo que importa.").assertIsDisplayed()
@@ -278,7 +280,7 @@ class ReciboScreenTest {
 
     @Test
     fun theFirstRunOffersStarterCategoriesThatOpenTheFormWithANameAndAnIconOnly() {
-        show(ReciboState.FirstRun)
+        show(ReciboState.FirstRun())
 
         rule.onNodeWithText("O empieza con una de estas:").assertIsDisplayed()
         listOf("Comida", "Transporte", "Casa", "Ocio", "Ahorro").forEach { name ->
@@ -302,7 +304,7 @@ class ReciboScreenTest {
     fun theStarterCategoriesSitInsideTheEmptyCardAboveTheGoal() {
         rule.showSello {
             ReciboScreen(
-                ReciboState.FirstRun,
+                ReciboState.FirstRun(),
                 { actions += it },
                 PaddingValues(12.dp),
                 goal = { Text("Meta en Recibo", Modifier.testTag("goal")) }
@@ -315,6 +317,36 @@ class ReciboScreenTest {
         val goal = rule.onNodeWithTag("goal").getUnclippedBoundsInRoot()
         assertTrue("$starters in $card", starters.top >= card.top && starters.bottom <= card.bottom)
         assertTrue("$goal under $card", goal.top >= card.bottom)
+    }
+
+    @Test
+    fun aStarterWhoseNameACategoryUsesIsNotOffered() {
+        // An archived "COMIDA " and "ocio": the form compares names this way and would refuse them.
+        val taken = setOf(" COMIDA ", "ocio").map {
+            (CategoryName.fromInput(it) as Outcome.Success).value.uniquenessKey
+        }.toSet()
+        show(ReciboState.FirstRun(taken))
+
+        rule.onNodeWithContentDescription("Empezar con Comida").assertDoesNotExist()
+        rule.onNodeWithContentDescription("Empezar con Ocio").assertDoesNotExist()
+        listOf("Transporte", "Casa", "Ahorro").forEach { name ->
+            rule.onNodeWithContentDescription("Empezar con $name").assertIsDisplayed()
+        }
+    }
+
+    @Test
+    fun withEveryStarterNameTakenOrUnknownOnlyCrearCategoriaIsOffered() {
+        val all = listOf("Comida", "Transporte", "Casa", "Ocio", "Ahorro")
+            .map(CategoryName::keyOf).toSet()
+        var shown by mutableStateOf<ReciboState>(ReciboState.FirstRun(all))
+        rule.showSello { ReciboScreen(shown, { actions += it }, PaddingValues(12.dp)) }
+
+        listOf(ReciboState.FirstRun(all), ReciboState.FirstRun(takenNames = null)).forEach {
+            shown = it
+            rule.onNodeWithText("Crear categoría").assertIsDisplayed()
+            rule.onNodeWithTag(RECIBO_STARTERS_TAG, useUnmergedTree = true).assertDoesNotExist()
+            rule.onNodeWithText("O empieza con una de estas:").assertDoesNotExist()
+        }
     }
 
     @Test

@@ -107,7 +107,8 @@ object StatusSlipDefaults {
  * figures, a failed action, an unknown outcome or something gone. [kind] decides the
  * icon, ink, layout and button and carries the title; [message] is the sentence and
  * [action] at most one thing to do. [below] is drawn last, inside the slip, such as the
- * starter categories under an empty Recibo's action.
+ * starter categories under an empty Recibo's action; only the centred kinds (Empty,
+ * LoadFailed, Gone) draw it.
  *
  * [StatusKind.Empty], [StatusKind.LoadFailed] and [StatusKind.Gone] are centred under a
  * large decorative icon and stand in for content. [StatusKind.Older],
@@ -143,7 +144,7 @@ fun StatusSlip(
     val inKindsInk = message.withoutInk()
     when (look.layout) {
         StatusLayout.Centred -> CentredStatus(look, title, inKindsInk, action, below, modifier)
-        StatusLayout.Inline -> InlineStatus(look, title, inKindsInk, action, below, modifier)
+        StatusLayout.Inline -> InlineStatus(look, title, inKindsInk, action, modifier)
     }
 }
 
@@ -339,7 +340,6 @@ private fun InlineStatus(
     title: String?,
     message: AnnotatedString,
     action: StatusAction?,
-    below: (@Composable () -> Unit)?,
     modifier: Modifier
 ) {
     Slip(modifier = modifier.fillMaxWidth(), pinked = false) {
@@ -368,10 +368,6 @@ private fun InlineStatus(
             // The button lines up with the words, not the icon beside them.
             val indent = if (look.icon == null) 0.dp else INLINE_ICON + SelloTheme.spacing.md
             StatusButton(action, look.button, Modifier.padding(start = indent))
-        }
-        if (below != null) {
-            Spacer(Modifier.height(SelloTheme.spacing.md))
-            below()
         }
     }
 }

@@ -30,6 +30,8 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
+import com.software.sello.domain.model.CategoryName
+import com.software.sello.domain.model.Outcome
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.category.CategoryIcons
@@ -50,11 +52,20 @@ enum class StarterCategory(@StringRes val label: Int, val iconKey: String) {
 const val RECIBO_STARTERS_TAG = "recibo:starters"
 
 /**
- * "O empieza con una de estas:" and a chip for each [StarterCategory]. A chip opens the
- * category form with its name and icon; nothing is saved from here.
+ * "O empieza con una de estas:" and a chip for each [StarterCategory] whose name no
+ * category uses yet ([takenNames], compared as the category form compares names). A chip
+ * opens the category form with its name and icon; nothing is saved from here. With every
+ * name taken, nothing is shown.
  */
 @Composable
-internal fun StarterCategories(onStart: (name: String, iconKey: String) -> Unit) {
+internal fun StarterCategories(
+    takenNames: Set<String>,
+    onStart: (name: String, iconKey: String) -> Unit
+) {
+    val offered = StarterCategory.entries
+        .map { it to stringResource(it.label) }
+        .filterNot { (_, name) -> isTaken(name, takenNames) }
+    if (offered.isEmpty()) return
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm),
@@ -73,13 +84,16 @@ internal fun StarterCategories(onStart: (name: String, iconKey: String) -> Unit)
             ),
             modifier = Modifier.fillMaxWidth()
         ) {
-            StarterCategory.entries.forEach { starter ->
-                val name = stringResource(starter.label)
+            offered.forEach { (starter, name) ->
                 StarterChip(starter, name) { onStart(name, starter.iconKey) }
             }
         }
     }
 }
+
+/** Whether a category already has [name], by the rule the category form refuses it with. */
+internal fun isTaken(name: String, takenNames: Set<String>): Boolean =
+    (CategoryName.fromInput(name) as? Outcome.Success)?.value?.uniquenessKey in takenNames
 
 /**
  * A starter as a button, drawn as an unchosen chip: a choice chip would be read as one
@@ -89,6 +103,7 @@ internal fun StarterCategories(onStart: (name: String, iconKey: String) -> Unit)
 private fun StarterChip(starter: StarterCategory, name: String, onClick: () -> Unit) {
     val colors = SelloTheme.colors
     val spoken = stringResource(R.string.recibo_starter_description, name)
+    // Sizes, border and gap are SelloChip's (design-system Chips.kt), so it looks the same.
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
