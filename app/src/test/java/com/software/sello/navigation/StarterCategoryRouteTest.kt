@@ -45,7 +45,7 @@ class StarterCategoryRouteTest {
     }
 
     private lateinit var navigation: NavHostController
-    private var form: CategoryEditorState? = null
+    private var editor: CategoryEditorViewModel? = null
 
     private fun open(route: CategoryEditorRoute) {
         val session = MonthSession(HandFinancialClock("2026-10-09"), HandMonotonicClock())
@@ -54,7 +54,7 @@ class StarterCategoryRouteTest {
             NavHost(navigation, startDestination = ReciboRoute) {
                 composable<ReciboRoute> { Text("Recibo") }
                 composable<CategoryEditorRoute> {
-                    val editor = viewModel {
+                    editor = viewModel {
                         CategoryEditorViewModel(
                             createSavedStateHandle(),
                             NoCommands,
@@ -64,7 +64,6 @@ class StarterCategoryRouteTest {
                             testMoney()
                         )
                     }
-                    form = editor.state.value
                     Text("Nueva categoría")
                 }
             }
@@ -77,7 +76,7 @@ class StarterCategoryRouteTest {
     fun aStarterRouteOpensTheFormWithItsNameAndIconAndNoLimit() {
         open(CategoryEditorRoute(name = "Transporte", icon = "directions_bus"))
 
-        val opened = form!!
+        val opened: CategoryEditorState = editor!!.state.value
         assertEquals("Transporte" to "directions_bus", opened.name to opened.iconKey)
         assertEquals("", opened.limitText)
         assertFalse(opened.unlimited)

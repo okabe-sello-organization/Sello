@@ -30,10 +30,10 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
-import com.software.sello.domain.model.CategoryName
-import com.software.sello.domain.model.Outcome
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.domain.model.CategoryName
+import com.software.sello.domain.model.Outcome
 import com.software.sello.presentation.category.CategoryIcons
 
 /**

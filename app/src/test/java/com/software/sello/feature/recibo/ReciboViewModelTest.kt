@@ -236,7 +236,8 @@ class ReciboViewModelTest {
 
         snapshots.of(october).value = ReadState.Ready(snapshot(october, 0, categories = 0))
 
-        assertEquals(ReciboState.FirstRun(setOf(CategoryName.keyOf("Comida"))), viewModel.state.value)
+        val taken = setOf(CategoryName.keyOf("Comida"))
+        assertEquals(ReciboState.FirstRun(taken), viewModel.state.value)
     }
 
     @Test
