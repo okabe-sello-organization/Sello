@@ -72,7 +72,10 @@ class GuidanceScreenshotTest {
     @Test
     fun cardHelpAndTerms() = capture("card-help-and-terms") {
         Slip(pinked = false) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
+            ) {
                 Text(
                     "Restante del presupuesto",
                     style = MaterialTheme.typography.labelMedium,

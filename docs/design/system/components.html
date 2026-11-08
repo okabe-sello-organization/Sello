@@ -406,10 +406,10 @@ fun LeaderLine(
 <div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
 </article>
 <article class="component" id="c-BandChip">
-<h3><code>BandChip</code> <span class="src"><code>component/Controls.kt:189</code></span></h3>
+<h3><code>BandChip</code> <span class="src"><code>component/Controls.kt:188</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>A secondary action on the band, as Metas' **+ Nueva meta** beside its title: a paper pill with a plus, the same paper on band as the past-month ribbon's way back, so it stands out without competing with the dock. Its touch target is 48dp; the pill itself is 36dp. With <code>onPaper</code> the same pill sits on a slip, as Recibo's **+ Nueva categoría**: the soft brand fill instead of paper, which would not show on paper. <code>compact</code> is the round + alone, for a band whose title would not fit beside the label. Without <code>plus</code> it is the label alone, as a <a href="#c-NudgeRow"><code>NudgeRow</code></a>'s pill that leads somewhere rather than adds.</dd>
-<dt>Variants</dt><dd>On a band (default: <code>paper</code> pill), <code>onPaper</code> (<code>brandSoft</code> fill), <code>compact</code> (the round + alone), <code>plus = false</code> (the label alone).</dd>
+<dt>Purpose</dt><dd>A secondary action on the band, as Metas' **+ Nueva meta** beside its title: a paper pill with a plus, the same paper on band as the past-month ribbon's way back, so it stands out without competing with the dock. Its touch target is 48dp; the pill itself is 36dp. With <code>onPaper</code> the same pill sits on a slip, as Recibo's **+ Nueva categoría**: the soft brand fill instead of paper, which would not show on paper. <code>compact</code> is the round + alone, for a band whose title would not fit beside the label.</dd>
+<dt>Variants</dt><dd>On a band (default: <code>paper</code> pill), <code>onPaper</code> (<code>brandSoft</code> fill), <code>compact</code> (the round + alone).</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/shell.html">shell · 2</a> <a class="tag" href="features/recibo.html">recibo · 1</a></dd>
 </dl>
 <pre><code>fun BandChip(
@@ -417,10 +417,9 @@ fun LeaderLine(
     onClick: () -&gt; Unit,
     modifier: Modifier = Modifier,
     onPaper: Boolean = false,
-    compact: Boolean = false,
-    plus: Boolean = true
+    compact: Boolean = false
 )</code></pre>
-<p class="muted">Also visible in screen baselines: <code>recibo</code>. Without its plus, in <a href="#c-NudgeRow"><code>NudgeRow</code></a>'s capture.</p>
+<p class="muted">Also visible in screen baselines: <code>recibo</code>.</p>
 <figure data-shot="recibo" data-module="app" data-caption="Seen in the recibo screen"></figure>
 <div class="gaps"><p>No component capture.</p></div>
 </article>
@@ -1792,18 +1791,18 @@ fun StatusSlip(
 <h2>Guidance</h2>
 <p>How a screen explains itself (E38, SELLO-204), as the <a href="../../tickets/E38-in-app-guidance/attachments/guidance-mock.html">approved mock</a> draws them. The <strong>?</strong> explains a whole card; an underline explains one word, and a card title takes the <strong>?</strong> only. A nudge is one quiet line in the page, never floating. All four are stateless: the screen owns whether a nudge shows, what a sheet says, and whether the sheet is open (kept in its State, with Back handled by the screen, as every Sello sheet).</p>
 <article class="component" id="c-CardHelp">
-<h3><code>CardHelp</code> <span class="src"><code>component/Guidance.kt:56</code></span></h3>
+<h3><code>CardHelp</code> <span class="src"><code>component/Guidance.kt:57</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>The <strong>?</strong> right after a card's title, which opens that card's <a href="#c-HelpSheet"><code>HelpSheet</code></a>: a solid soft disc in <code>paperDim</code> with a dark (<code>ink</code>) glyph and no ring, quieter than anything brand-coloured. The disc is 20 dp and its glyph 12 dp at every font size; its touch target is at least 48 dp (<code>minimumInteractiveComponentSize</code>). <code>contentDescription</code> names what it explains, such as "Cómo leer este resumen", and TalkBack reads it as a button.</dd>
+<dt>Purpose</dt><dd>The <strong>?</strong> right after a card's title, which opens that card's <a href="#c-HelpSheet"><code>HelpSheet</code></a>: a solid soft disc in <code>paperDim</code> with a dark (<code>ink</code>) glyph and no ring, quieter than anything brand-coloured. The disc is 20 dp and its glyph 12 dp at every font size, and it takes only those 20 dp beside the title (placed <code>spacing.sm</code> after it); Compose widens its touch area to 48 dp around it, so a title row does not grow. <code>contentDescription</code> names what it explains, such as "Cómo leer este resumen", and TalkBack reads it as a button.</dd>
 <dt>Used by</dt><dd>None yet: SELLO-207 to SELLO-209 place it.</dd>
 </dl>
 <pre><code>fun CardHelp(contentDescription: String, onClick: () -&gt; Unit, modifier: Modifier = Modifier)</code></pre>
 <figure data-shot="guidance-card-help-and-terms" data-module="design-system" data-variants="claro,oscuro" data-caption="A card title with its ?, and underlined terms in its lines"></figure>
 </article>
 <article class="component" id="c-HelpTerm">
-<h3><code>HelpTerm</code> <span class="src"><code>component/Guidance.kt:94</code></span></h3>
+<h3><code>HelpTerm</code> <span class="src"><code>component/Guidance.kt:96</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>A word whose meaning is one tap away, such as "sobrante" in a line of figures: the text with a 1.5 dp dotted underline in <code>outline</code>, lighter than the <strong>?</strong>; a wrapped term underlines each of its lines. A tap calls <code>onClick</code>, which opens its explanation (usually a <a href="#c-HelpSheet"><code>HelpSheet</code></a>). TalkBack reads the word, then "Qué significa", as one button. <code>style</code> and <code>color</code> default to the text around it. Its drawn height is the text's; Compose widens its touch area to 48 dp.</dd>
+<dt>Purpose</dt><dd>A word whose meaning is one tap away, such as "sobrante" in a line of figures: the text with a 1.5 dp dotted underline in <code>outline</code>, lighter than the <strong>?</strong>; a wrapped term underlines each of its lines. A tap calls <code>onClick</code>, which opens its explanation (usually a <a href="#c-HelpSheet"><code>HelpSheet</code></a>). TalkBack reads the word, then "Qué significa", as one button. <code>style</code> and <code>color</code> default to the text around it. It is the text's height plus 1 dp for the underline; Compose widens its touch area to 48 dp. It is its own piece of text, so it suits a short label in a row, such as "por día" beside a figure, not a word mid-sentence: it cannot flow with the words around it, and a row of several pieces wraps by piece.</dd>
 <dt>Used by</dt><dd>None yet: SELLO-207 to SELLO-209 place it.</dd>
 </dl>
 <pre><code>fun HelpTerm(
@@ -1816,7 +1815,7 @@ fun StatusSlip(
 <p class="muted">Shown in <code>CardHelp</code>'s capture: "por día", "base" and "sobrante".</p>
 </article>
 <article class="component" id="c-HelpSheet">
-<h3><code>HelpSheet</code> <span class="src"><code>component/Guidance.kt:145</code></span></h3>
+<h3><code>HelpSheet</code> <span class="src"><code>component/Guidance.kt:147</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The explanation a <strong>?</strong> or an underlined term opens: a <a href="#c-SelloSheet"><code>SelloSheet</code></a> with the title, each <code>HelpEntry</code> as a bold term over its plain explanation in <code>inkSoft</code> (read together, "term. explanation"), an optional worked <code>example</code> on <code>paperAlt</code> in an inset, and, with <code>onMore</code>, the brand text link "Ver más en la Guía de Sello ›". The scrim calls <code>onDismiss</code>; the screen keeps it open in its State and owns Back. The words translate the rules the code applies today (epic decision).</dd>
 <dt>Used by</dt><dd>None yet: SELLO-207 to SELLO-209 fill it.</dd>
@@ -1834,9 +1833,9 @@ fun HelpSheet(
 <figure data-shot="guidance-help-sheet" data-module="design-system" data-variants="claro,oscuro" data-caption="Three entries, a worked example and the link to the Guía"></figure>
 </article>
 <article class="component" id="c-NudgeRow">
-<h3><code>NudgeRow</code> <span class="src"><code>component/Guidance.kt:218</code>, <code>component/Guidance.kt:292</code></span></h3>
+<h3><code>NudgeRow</code> <span class="src"><code>component/Guidance.kt:220</code>, <code>component/Guidance.kt:313</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>A quiet line in the page that points at something useful: plain <code>paper</code> in an inset shape with an 18 dp <code>inkSoft</code> icon and one or two lines of <code>bodySmall</code> text in <code>inkSoft</code> (a caller may set bold parts in <code>ink</code>). Any of: <code>onClose</code>, a brand ✕ (48 dp target, named "Cerrar" unless <code>closeLabel</code> says otherwise); <code>link</code>, a quiet text link in <code>outline</code> on the left, such as "No volver a mostrar"; and <code>pill</code>, a small tonal pill on the right (<a href="#c-BandChip"><code>BandChip</code></a> <code>onPaper</code> without its plus: <code>brandSoft</code> / <code>onBrandSoft</code>). With only the ✕ it is the "¿Dudas?" row; with a link and a pill, the backup reminder (option B). Text never clips: a longer sentence wraps.</dd>
+<dt>Purpose</dt><dd>A quiet line in the page that points at something useful: plain <code>paper</code> in an inset shape with an 18 dp <code>inkSoft</code> icon and one or two lines of <code>bodySmall</code> text in <code>inkSoft</code> (a caller may set bold parts in <code>ink</code>). Any of: <code>onClose</code>, a brand ✕ (48 dp target, named "Cerrar" unless <code>closeLabel</code> says otherwise); <code>link</code>, a quiet text link in <code>outline</code> on the left, such as "No volver a mostrar"; and <code>pill</code>, a small tonal pill on the right (<code>brandSoft</code> with its label in <code>onBrandSoft</code>, bold <code>labelMedium</code>, 12 × 6 dp padding: smaller than <a href="#c-BandChip"><code>BandChip</code></a>, as the mock; Compose widens its touch area to 48 dp). With only the ✕ it is the "¿Dudas?" row; with a link and a pill, the backup reminder (option B). Text never clips: a longer sentence wraps.</dd>
 <dt>Variants</dt><dd>Plain or <code>AnnotatedString</code> text; any mix of <code>onClose</code>, <code>link</code> and <code>pill</code> (each a <code>NudgeAction(label, onClick)</code>).</dd>
 <dt>Used by</dt><dd>None yet: SELLO-211 to SELLO-213 place it.</dd>
 </dl>

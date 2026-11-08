@@ -38,6 +38,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /** The guidance parts: what TalkBack hears, what a tap does and how big they are. */
@@ -73,7 +74,8 @@ class GuidanceTest {
     }
 
     @Test
-    fun cardHelpKeepsItsSizeAtEveryFontSize() {
+    @Config(qualifiers = "mdpi")
+    fun cardHelpIsDrawnTheSameAtEveryFontSize() {
         var fontScale by mutableFloatStateOf(1f)
         rule.setContent {
             val density = LocalDensity.current
@@ -81,10 +83,12 @@ class GuidanceTest {
                 SelloTheme { CardHelp("Cómo leer este resumen", {}, Modifier.testTag("help")) }
             }
         }
-        val normal = rule.onNodeWithTag("help").fetchSemanticsNode().size
+        val normal = rule.onNodeWithTag("help").drawnBitmap()
+        assertEquals(20, normal.width)
         fontScale = 2f
         rule.waitForIdle()
-        assertEquals(normal, rule.onNodeWithTag("help").fetchSemanticsNode().size)
+        // The disc and its glyph are drawn the same, pixel for pixel, at twice the font size.
+        assertTrue(normal.sameAs(rule.onNodeWithTag("help").drawnBitmap()))
     }
 
     @Test
