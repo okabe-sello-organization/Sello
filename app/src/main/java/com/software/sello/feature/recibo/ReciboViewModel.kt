@@ -140,18 +140,25 @@ class ReciboViewModel(
     private val closedHere = MutableStateFlow<Set<Nudge>>(emptySet())
 
     /**
+     * Whether the goal card is shown taking turns among two or more goals, with current
+     * figures (SELLO-213), as the root reports it from the card itself: Hidden, loading,
+     * failed or older goals count as no, so the nudge never shows without its card.
+     */
+    private val goalCarousel = MutableStateFlow(false)
+
+    /**
      * The one nudge due on Recibo: the backup reminder first, then the Guía hint once an
-     * expense exists. Only readings that worked count: while the guidance, the last backup
-     * or the history is loading or failed, no nudge shows, never one worked out from an
-     * older value.
+     * expense exists, then the goal card's once it takes turns among two or more goals. Only
+     * readings that worked count: while the guidance, the last backup or the history is
+     * loading or failed, no nudge shows, never one worked out from an older value.
      */
     private val nudge = combine(
         guidance.observeGuidance(),
         backups.observeBackups(),
-        history.observe(),
+        combine(history.observe(), goalCarousel, ::Pair),
         clock.today,
         closedHere
-    ) { guidanceRead, backupRead, historyRead, today, closed ->
+    ) { guidanceRead, backupRead, (historyRead, carousel), today, closed ->
         if (
             guidanceRead !is PreferenceRead.Ready ||
             backupRead !is PreferenceRead.Ready ||
@@ -165,12 +172,14 @@ class ReciboViewModel(
             BackupReminderPolicy.due(today, backupRead.value.last?.at, start.firstMovement, memory)
         val wanted = listOfNotNull(
             Nudge.BackupReminder.takeIf { reminder != null },
-            Nudge.GuideHint.takeIf { start.firstExpense != null }
+            Nudge.GuideHint.takeIf { start.firstExpense != null },
+            Nudge.ReciboGoal.takeIf { carousel }
         ) - closed
         val picked = NudgePolicy.pick(guidanceRead.value, today.date, wanted)
         val render = when (picked) {
             Nudge.BackupReminder -> ReciboNudge.BackupReminder(reminder!!.daysSinceBackup)
             Nudge.GuideHint -> ReciboNudge.GuideHint
+            Nudge.ReciboGoal -> ReciboNudge.Goal
             else -> null
         }
         val shown = if (picked != null && render != null) {
@@ -248,6 +257,10 @@ class ReciboViewModel(
             // Closed for good; opening the Guía is the root's.
             ReciboAction.OpenGuide,
             ReciboAction.CloseGuideHint -> close(Nudge.GuideHint) { guidance.markSeen(it) }
+
+            ReciboAction.CloseGoalNudge -> close(Nudge.ReciboGoal) { guidance.markSeen(it) }
+
+            is ReciboAction.GoalCard -> goalCarousel.value = action.takesTurns
 
             ReciboAction.TurnOffBackupReminder ->
                 close(Nudge.BackupReminder) { guidance.turnOffBackupReminder() }

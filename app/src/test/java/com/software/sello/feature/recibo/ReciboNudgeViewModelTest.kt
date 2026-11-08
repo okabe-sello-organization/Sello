@@ -51,7 +51,10 @@ import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 
-/** Recibo's Guía hint and backup reminder, one at a time and one a day (SELLO-211). */
+/**
+ * Recibo's Guía hint and backup reminder (SELLO-211) and its goal card nudge (SELLO-213):
+ * one at a time and one a day.
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ReciboNudgeViewModelTest {
     private val bogota = ZoneId.of("America/Bogota")
@@ -80,7 +83,7 @@ class ReciboNudgeViewModelTest {
     @After
     fun resetDispatcher() = Dispatchers.resetMain()
 
-    private fun TestScope.started(): ReciboViewModel {
+    private fun TestScope.started(kept: HandGuidance = guidance): ReciboViewModel {
         val viewModel = ReciboViewModel(
             session,
             snapshots,
@@ -90,7 +93,7 @@ class ReciboNudgeViewModelTest {
             clock,
             HandCategoryReads(),
             HandYearSnapshots(),
-            guidance,
+            kept,
             backups,
             history
         )
@@ -571,5 +574,129 @@ class ReciboNudgeViewModelTest {
         }
 
         assertEquals(ReciboNudge.GuideHint, nudgeOf(viewModel))
+    }
+
+    // The goal card's nudge (SELLO-213).
+
+    /** The Guía hint and the backup reminder are done with, so only the goal nudge is left. */
+    private fun onlyTheGoalNudgeLeft() {
+        guidance.set(GuidanceMemory(seen = setOf(Nudge.GuideHint, Nudge.BackupReminder)))
+    }
+
+    /** The goal card as the root reports it: two or more goals taking turns, or not. */
+    private fun ReciboViewModel.card(takesTurns: Boolean) =
+        onAction(ReciboAction.GoalCard(takesTurns))
+
+    @Test
+    fun aCardTakingTurnsBringsTheGoalNudgeAndKeepsTheDay() = runTest {
+        publish()
+        onlyTheGoalNudgeLeft()
+        val viewModel = started()
+
+        viewModel.card(takesTurns = true)
+
+        assertEquals(ReciboNudge.Goal, nudgeOf(viewModel))
+        assertEquals(listOf("shown ReciboGoal 2026-11-08"), guidance.writes)
+    }
+
+    @Test
+    fun whileTheCardIsHiddenOrShowsOneGoalTheNudgeNeitherShowsNorSpendsTheDay() = runTest {
+        publish()
+        onlyTheGoalNudgeLeft()
+        val viewModel = started()
+        val hidden = nudgeOf(viewModel)
+
+        viewModel.card(takesTurns = false)
+
+        assertNull(hidden)
+        assertNull(nudgeOf(viewModel))
+        assertEquals(emptyList<String>(), guidance.writes)
+    }
+
+    @Test
+    fun whenTheCardHidesAgainTheNudgeGoesWithIt() = runTest {
+        publish()
+        onlyTheGoalNudgeLeft()
+        val viewModel = started()
+        viewModel.card(takesTurns = true)
+        val shown = nudgeOf(viewModel)
+
+        viewModel.card(takesTurns = false)
+
+        assertEquals(ReciboNudge.Goal, shown)
+        assertNull(nudgeOf(viewModel))
+    }
+
+    @Test
+    fun theBackupReminderTakesTheDayBeforeTheGoalNudge() = runTest {
+        publish()
+        guidance.set(GuidanceMemory(seen = setOf(Nudge.GuideHint)))
+        history.starts(firstExpense = null, firstMovement = "2026-01-05")
+        val viewModel = started()
+
+        viewModel.card(takesTurns = true)
+
+        assertEquals(ReciboNudge.BackupReminder(daysSinceBackup = null), nudgeOf(viewModel))
+        assertEquals(listOf("shown BackupReminder 2026-11-08"), guidance.writes)
+    }
+
+    @Test
+    fun theGuideHintTakesTheDayAndTheGoalNudgeTheNextSoRecibosShowsOneAtATime() = runTest {
+        publish()
+        guidance.set(GuidanceMemory(seen = setOf(Nudge.BackupReminder)))
+        history.starts("2026-11-08", "2026-11-08")
+        val viewModel = started()
+        viewModel.card(takesTurns = true)
+        val first = nudgeOf(viewModel)
+
+        goTo("2026-11-09")
+
+        assertEquals(ReciboNudge.GuideHint, first)
+        assertEquals(ReciboNudge.Goal, nudgeOf(viewModel))
+        assertEquals(setOf(Nudge.BackupReminder, Nudge.GuideHint), guidance.stored.memory.seen)
+    }
+
+    @Test
+    fun theGoalNudgesCrossClosesItForGood() = runTest {
+        publish()
+        onlyTheGoalNudgeLeft()
+        val viewModel = started()
+        viewModel.card(takesTurns = true)
+
+        viewModel.onAction(ReciboAction.CloseGoalNudge)
+
+        assertNull(nudgeOf(viewModel))
+        assertEquals(true, Nudge.ReciboGoal in guidance.stored.memory.seen)
+        val again = started()
+        again.card(takesTurns = true)
+        assertNull(nudgeOf(again))
+    }
+
+    @Test
+    fun peopleAlreadyUsingSelloNeverSeeTheGoalNudge() = runTest {
+        val existing = HandGuidance(Guidance(existingUseChecked = false))
+        existing.set(GuidanceMemory(seen = setOf(Nudge.GuideHint, Nudge.BackupReminder)))
+        existing.rememberExistingUse(wasUsingSello = true)
+        publish()
+        val viewModel = started(existing)
+
+        viewModel.card(takesTurns = true)
+
+        assertNull(nudgeOf(viewModel))
+    }
+
+    @Test
+    fun theGoalNudgeWaitsUntilExistingUseIsChecked() = runTest {
+        val unchecked = HandGuidance(Guidance(existingUseChecked = false))
+        unchecked.set(GuidanceMemory(seen = setOf(Nudge.GuideHint, Nudge.BackupReminder)))
+        publish()
+        val viewModel = started(unchecked)
+        viewModel.card(takesTurns = true)
+        val waiting = nudgeOf(viewModel)
+
+        unchecked.rememberExistingUse(wasUsingSello = false)
+
+        assertNull(waiting)
+        assertEquals(ReciboNudge.Goal, nudgeOf(viewModel))
     }
 }

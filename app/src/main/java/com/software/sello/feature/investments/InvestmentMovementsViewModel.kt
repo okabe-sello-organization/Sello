@@ -13,6 +13,7 @@ import com.software.sello.domain.model.InvestmentMovementId
 import com.software.sello.domain.model.InvestmentMovementKind
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Note
+import com.software.sello.domain.model.Nudge
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.UsdRateEntry
 import com.software.sello.domain.policy.AmountDraft
@@ -21,6 +22,7 @@ import com.software.sello.domain.policy.InvestmentPolicy
 import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommittedInvestment
 import com.software.sello.domain.port.FinancialClock
+import com.software.sello.domain.port.GuidancePreferences
 import com.software.sello.domain.port.InvestmentBoard
 import com.software.sello.domain.port.InvestmentBoardState
 import com.software.sello.domain.port.InvestmentCommands
@@ -73,7 +75,8 @@ class InvestmentMovementsViewModel(
     private val clock: FinancialClock,
     private val ids: RecordIdSource,
     private val money: MoneyFormatter,
-    private val corrections: Corrections
+    private val corrections: Corrections,
+    private val guidance: GuidancePreferences
 ) : ViewModel() {
     /**
      * [usd] is the currency the line is typed in: its investment's as last read, kept so a
@@ -724,7 +727,7 @@ class InvestmentMovementsViewModel(
     }
 
     /** [keys] are the lines sent, in order, and [histories] each one's investment as read. */
-    private fun settle(
+    private suspend fun settle(
         settled: Settled<CommittedInvestment, InvestmentRejection>?,
         keys: List<String>,
         histories: List<InvestmentHistory>
@@ -817,7 +820,7 @@ class InvestmentMovementsViewModel(
      * receipt), so the lines sent are counted by what was typed, in either currency. The
      * confirmation names the investment when every line was of one.
      */
-    private fun committed() {
+    private suspend fun committed() {
         val sent = draft.value.lines.filter { it.pesos != AmountDraft.Empty || !it.dollars.empty }
         val only = sent.map { it.investment }.distinct().singleOrNull()
         corrections.investmentMovementsRecorded(
@@ -825,6 +828,9 @@ class InvestmentMovementsViewModel(
             investmentName = summary(readable(board.value), only)?.history?.investment?.name?.value
         )
         drafts.clear()
+        // Movements recorded close the investments nudge for good, kept before the receipt
+        // closes so leaving never cancels it.
+        guidance.markSeen(Nudge.Investments)
         progress.update { it.copy(busy = false, error = null, closed = true) }
     }
 
