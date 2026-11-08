@@ -156,6 +156,8 @@ interface GuidancePreferences {
      * Merges a restored backup's [memory] into the phone's, in one write, as
      * [GuidanceMemory.mergedWith] says. Refused, writing nothing, while the phone's own
      * guidance cannot be read.
+     * Refused with `PreferenceFailure.InvalidValue` only while the phone's own guidance cannot
+     * be read; an I/O failure is `Unavailable`.
      */
     suspend fun mergeRestored(memory: GuidanceMemory): PreferenceWrite
 }
