@@ -133,8 +133,8 @@ fun SlipStub(parts: List&lt;@Composable () -&gt; Unit&gt;, modifier: Modifier = 
 <article class="component" id="c-AnswerSlip">
 <h3><code>AnswerSlip</code> <span class="src"><code>component/Paper.kt:545</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>A screen's answer: a label with its stamp, if it has one, then one large amount, in loss ink when <code>lossAmount</code> (by default when <code>ink</code> is <code>StampInk.Over</code>). Inversiones' Pierde keeps the value in ink: a value is not an overrun. With <code>description</code>, the label, stamp and amount are read as that one sentence; <code>detail</code> is read on its own. <code>heading</code>, such as a category's name, comes first; <code>leading</code>, such as the category's circle, stands beside the amount, or above it when the slip is too narrow.</dd>
-<dt>Variants</dt><dd><code>ink</code> (<code>StampInk</code>), optional <code>stamp</code>, <code>lossAmount</code>, <code>heading</code>, <code>leading</code>, <code>detail</code>.</dd>
+<dt>Purpose</dt><dd>A screen's answer: a label with its stamp, if it has one, then one large amount, in loss ink when <code>lossAmount</code> (by default when <code>ink</code> is <code>StampInk.Over</code>). Inversiones' Pierde keeps the value in ink: a value is not an overrun. With <code>description</code>, the label, stamp and amount are read as that one sentence; <code>detail</code> is read on its own. <code>heading</code>, such as a category's name, comes first; <code>leading</code>, such as the category's circle, stands beside the amount, or above it when the slip is too narrow. <code>labelHelp</code>, such as a <a href="#c-CardHelp"><code>CardHelp</code></a>, sits <code>spacing.sm</code> after the label and stays its own button for a screen reader, apart from <code>description</code>.</dd>
+<dt>Variants</dt><dd><code>ink</code> (<code>StampInk</code>), optional <code>stamp</code>, <code>lossAmount</code>, <code>heading</code>, <code>leading</code>, <code>labelHelp</code>, <code>detail</code>.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 2</a> <a class="tag" href="features/recibo.html">recibo · 4</a> <a class="tag" href="features/resumen.html">resumen · 2</a></dd>
 </dl>
 <pre><code>fun AnswerSlip(
@@ -147,6 +147,7 @@ fun SlipStub(parts: List&lt;@Composable () -&gt; Unit&gt;, modifier: Modifier = 
     lossAmount: Boolean = ink == StampInk.Over,
     heading: @Composable () -&gt; Unit = {},
     leading: (@Composable () -&gt; Unit)? = null,
+    labelHelp: (@Composable () -&gt; Unit)? = null,
     detail: @Composable () -&gt; Unit = {}
 )</code></pre>
 <p class="muted">Also visible in screen baselines: <code>recibo</code>, <code>income-history-suggestion</code>, <code>category-detail</code> (with <code>heading</code> and <code>leading</code>), <code>resumen</code> (the comparison).</p>
@@ -263,8 +264,8 @@ fun FactLine(text: String, bold: String, modifier: Modifier = Modifier)</code></
 <article class="component" id="c-LeaderLine">
 <h3><code>LeaderLine</code> <span class="src"><code>component/Lines.kt:46</code>, <code>component/Lines.kt:114</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>A receipt line: label, dotted leader, value. For two to six facts. Read as one node, "label, value". Put a <code>MoneyText</code> in <code>value</code> for amounts. A <code>LineEmphasis.Soft</code> line draws its label and, by default, its value in the soft ink; a <code>LineEmphasis.Strong</code> one sets its label in black weight, and the value should match.<br>A <code>LeaderLine</code> whose value is plain text, such as a date or a count.</dd>
-<dt>Variants</dt><dd>Two overloads: a composable <code>value</code> (put a <code>MoneyText</code> there) or a plain <code>String</code> value. <code>emphasis</code>: <code>LineEmphasis.Normal</code>, <code>Soft</code>, <code>Strong</code>; optional <code>icon</code>, <code>caption</code>, <code>onClick</code>.</dd>
+<dt>Purpose</dt><dd>A receipt line: label, dotted leader, value. For two to six facts. Read as one node, "label, value". Put a <code>MoneyText</code> in <code>value</code> for amounts. A <code>LineEmphasis.Soft</code> line draws its label and, by default, its value in the soft ink; a <code>LineEmphasis.Strong</code> one sets its label in black weight, and the value should match. With <code>onLabelHelp</code> the label is a <a href="#c-HelpTerm"><code>HelpTerm</code></a> that opens what it means, its own button beside the line.<br>A <code>LeaderLine</code> whose value is plain text, such as a date or a count.</dd>
+<dt>Variants</dt><dd>Two overloads: a composable <code>value</code> (put a <code>MoneyText</code> there) or a plain <code>String</code> value. <code>emphasis</code>: <code>LineEmphasis.Normal</code>, <code>Soft</code>, <code>Strong</code>; optional <code>icon</code>, <code>caption</code>, <code>onClick</code>, <code>onLabelHelp</code>.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 8</a> <a class="tag" href="features/goals.html">goals · 3</a> <a class="tag" href="features/income.html">income · 6</a> <a class="tag" href="features/investments.html">investments · 10</a> <a class="tag" href="features/recibo.html">recibo · 12</a> <a class="tag" href="features/resumen.html">resumen · 3</a> <span class="muted">Inside the design system: <code>Carry.kt</code>, <code>Lines.kt</code>.</span></dd>
 </dl>
 <pre><code>fun LeaderLine(
@@ -274,6 +275,7 @@ fun FactLine(text: String, bold: String, modifier: Modifier = Modifier)</code></
     caption: String? = null,
     onClick: (() -&gt; Unit)? = null,
     emphasis: LineEmphasis = LineEmphasis.Normal,
+    onLabelHelp: (() -&gt; Unit)? = null,
     value: @Composable () -&gt; Unit
 )
 
@@ -1348,7 +1350,7 @@ fun StatusSlip(
 <article class="component" id="c-CarryBreakdown">
 <h3><code>CarryBreakdown</code> <span class="src"><code>component/Carry.kt:49</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>Base, signed carry, capacity and what was spent, as receipt lines (ADR 0020 CP27): the capacity is never shown without the base and the carry beside it. <code>footnote</code> says where the carry comes from and when it was read. Every line is read on its own, "label, amount, caption"; amounts are exact and drawn whole, wrapping under their label at large text.</dd>
+<dt>Purpose</dt><dd>Base, signed carry, capacity and what was spent, as receipt lines (ADR 0020 CP27): the capacity is never shown without the base and the carry beside it. <code>footnote</code> says where the carry comes from and when it was read. Every line is read on its own, "label, amount, caption"; amounts are exact and drawn whole, wrapping under their label at large text. A <code>CarryLine</code> with <code>onLabelHelp</code> underlines its label as a <a href="#c-HelpTerm"><code>HelpTerm</code></a>.</dd>
 <dt>Used by</dt><dd><a class="tag" href="features/recibo.html">recibo · 2</a> <a class="tag" href="features/resumen.html">resumen · 1</a> <span class="muted">Through the app's <code>CarryBreakdownSection</code> (<code>presentation/carry/Carry.kt</code>), which words the lines; category detail's history selection uses it too.</span></dd>
 </dl>
 <pre><code>fun CarryBreakdown(
@@ -1793,7 +1795,7 @@ fun StatusSlip(
 <article class="component" id="c-CardHelp">
 <h3><code>CardHelp</code> <span class="src"><code>component/Guidance.kt:57</code></span></h3>
 <dl>
-<dt>Purpose</dt><dd>The <strong>?</strong> right after a card's title, which opens that card's <a href="#c-HelpSheet"><code>HelpSheet</code></a>: a solid soft disc in <code>paperDim</code> with a dark (<code>ink</code>) glyph and no ring, quieter than anything brand-coloured. The disc is 20 dp and its glyph 12 dp at every font size, and it takes only those 20 dp beside the title (placed <code>spacing.sm</code> after it); Compose widens its touch area to 48 dp around it, so a title row does not grow. <code>contentDescription</code> names what it explains, such as "Cómo leer este resumen", and TalkBack reads it as a button.</dd>
+<dt>Purpose</dt><dd>The <strong>?</strong> right after a card's title, which opens that card's <a href="#c-HelpSheet"><code>HelpSheet</code></a>: a solid soft disc in <code>paperDim</code> with a dark (<code>ink</code>) glyph and no ring, quieter than anything brand-coloured. The disc is 20 dp and its glyph 12 dp at every font size, and it takes only those 20 dp beside the title. Place it <code>spacing.sm</code> after the title; Compose widens its touch area to 48 dp around it, so a title row does not grow. <code>contentDescription</code> names what it explains, such as "Cómo leer este resumen", and TalkBack reads it as a button.</dd>
 <dt>Used by</dt><dd>None yet: SELLO-207 to SELLO-209 place it.</dd>
 </dl>
 <pre><code>fun CardHelp(contentDescription: String, onClick: () -&gt; Unit, modifier: Modifier = Modifier)</code></pre>

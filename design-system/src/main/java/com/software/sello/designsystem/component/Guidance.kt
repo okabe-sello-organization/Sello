@@ -49,7 +49,7 @@ import com.software.sello.designsystem.theme.SelloTheme
  * The **?** right after a card's title, which opens that card's [HelpSheet]: a solid soft
  * disc in `paperDim` with a dark glyph and no ring, quieter than anything brand-coloured.
  * The disc is 20 dp at every font size and takes only that room beside the title;
- * Compose widens its touch area to 48 dp around it. It sits `spacing.sm` after the title.
+ * Compose widens its touch area to 48 dp around it. Place it `spacing.sm` after the title.
  * [contentDescription] names what it explains, such as "Cómo leer este resumen", and
  * TalkBack reads it as a button. A card title takes this and never a [HelpTerm].
  */
