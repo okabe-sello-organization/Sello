@@ -6,7 +6,9 @@ import kotlinx.coroutines.flow.Flow
 
 /**
  * When the history began, as stored now: the date of the earliest expense, and of the
- * earliest expense or income. Each is null while there is none.
+ * earliest movement of any kind (expense, income, goal aporte or retiro, investment
+ * movement), as ADR 0027 counts "using Sello". Deleted ones do not count. Each is null
+ * while there is none.
  */
 data class HistoryStart(val firstExpense: LocalDate?, val firstMovement: LocalDate?)
 

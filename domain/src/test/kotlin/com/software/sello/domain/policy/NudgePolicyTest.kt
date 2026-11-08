@@ -111,6 +111,69 @@ class NudgePolicyTest {
         )
     }
 
+    @Test
+    fun `a nudge shows for one day, once - past midnight it counts as seen`() {
+        val memory = GuidanceMemory(lastShown = ShownNudge(Nudge.GuideHint, day(11, 8)))
+
+        assertNull(NudgePolicy.expired(memory, day(11, 8)))
+        assertEquals(Nudge.GuideHint, NudgePolicy.expired(memory, day(11, 9)))
+        assertEquals(
+            Nudge.GuideHint,
+            NudgePolicy.pick(checked(memory), day(11, 8), listOf(Nudge.GuideHint))
+        )
+        assertNull(NudgePolicy.pick(checked(memory), day(11, 9), listOf(Nudge.GuideHint)))
+        assertEquals(
+            Nudge.BackupReminder,
+            NudgePolicy.pick(
+                checked(memory),
+                day(11, 9),
+                listOf(Nudge.GuideHint, Nudge.BackupReminder)
+            )
+        )
+    }
+
+    @Test
+    fun `the backup reminder never expires this way, and a seen nudge is not expired again`() {
+        val reminder = GuidanceMemory(lastShown = ShownNudge(Nudge.BackupReminder, day(11, 8)))
+        val seen = GuidanceMemory(
+            seen = setOf(Nudge.GuideHint),
+            lastShown = ShownNudge(Nudge.GuideHint, day(11, 8))
+        )
+
+        assertNull(NudgePolicy.expired(reminder, day(11, 9)))
+        assertNull(NudgePolicy.expired(seen, day(11, 9)))
+    }
+
+    @Test
+    fun `a day after today, left by a zone change, has not passed`() {
+        val memory = GuidanceMemory(lastShown = ShownNudge(Nudge.GuideHint, day(11, 9)))
+
+        assertNull(NudgePolicy.expired(memory, day(11, 8)))
+    }
+
+    @Test
+    fun `a showing is kept for its day or a later one, never written back to an earlier day`() {
+        val hint = GuidanceMemory(lastShown = ShownNudge(Nudge.GuideHint, day(11, 9)))
+        val reminder = GuidanceMemory(
+            lastShown = ShownNudge(Nudge.BackupReminder, day(11, 8)),
+            backupReminderShown = day(11, 8)
+        )
+
+        assertEquals(true, NudgePolicy.keptFor(hint, Nudge.GuideHint, day(11, 9)))
+        assertEquals(true, NudgePolicy.keptFor(hint, Nudge.GuideHint, day(11, 8)))
+        assertEquals(false, NudgePolicy.keptFor(hint, Nudge.GuideHint, day(11, 10)))
+        assertEquals(false, NudgePolicy.keptFor(hint, Nudge.Carry, day(11, 9)))
+        assertEquals(true, NudgePolicy.keptFor(reminder, Nudge.BackupReminder, day(11, 8)))
+        assertEquals(
+            false,
+            NudgePolicy.keptFor(
+                reminder.copy(backupReminderShown = null),
+                Nudge.BackupReminder,
+                day(11, 8)
+            )
+        )
+    }
+
     // The backup reminder.
 
     private fun today(month: Int, dayOfMonth: Int, zone: ZoneId = bogota) =

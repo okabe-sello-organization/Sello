@@ -294,6 +294,116 @@ class ReciboNudgeViewModelTest {
         assertEquals(ReciboNudge.GuideHint, nudgeOf(viewModel))
     }
 
+    @Test
+    fun overOlderFiguresNoNudgeShowsAndTheDayIsNotSpent() = runTest {
+        publish()
+        history.starts("2026-11-01", "2026-11-01")
+        val good = (snapshots.of(november).value as ReadState.Ready).value
+        snapshots.of(november).value = ReadState.Failed(
+            SnapshotFailure.Storage(StorageFailure.Unavailable("SQLiteException")),
+            lastGood = good
+        )
+        val viewModel = started()
+        val stale = viewModel.state.value as ReciboState.Month
+
+        snapshots.of(november).value = ReadState.Ready(good)
+
+        assertEquals(true, stale.stale)
+        assertNull(stale.nudge)
+        // Kept only once it really showed, over current figures.
+        assertEquals(ReciboNudge.GuideHint, nudgeOf(viewModel))
+        assertEquals(listOf("shown GuideHint 2026-11-08"), guidance.writes)
+    }
+
+    @Test
+    fun theHintShowsForOneDayOnceAndPastMidnightCountsAsSeen() = runTest {
+        publish()
+        history.starts("2026-11-05", "2026-11-05")
+        val viewModel = started()
+        val today = nudgeOf(viewModel)
+
+        goTo("2026-11-09")
+
+        assertEquals(ReciboNudge.GuideHint, today)
+        assertNull(nudgeOf(viewModel))
+        assertEquals(
+            listOf("shown GuideHint 2026-11-08", "seen GuideHint"),
+            guidance.writes
+        )
+        assertEquals(setOf(Nudge.GuideHint), guidance.stored.memory.seen)
+        assertNull(nudgeOf(started()))
+    }
+
+    @Test
+    fun theExpiredHintIsKeptAsSeenBeforeTheNextNudgeTakesTheDay() = runTest {
+        guidance.set(
+            GuidanceMemory(lastShown = ShownNudge(Nudge.GuideHint, LocalDate.of(2026, 11, 7)))
+        )
+        publish()
+        // No backup since 9 October: the reminder is due on the 8th.
+        history.starts("2026-10-09", "2026-10-09")
+
+        val viewModel = started()
+
+        assertEquals(ReciboNudge.BackupReminder(null), nudgeOf(viewModel))
+        assertEquals(
+            listOf("seen GuideHint", "shown BackupReminder 2026-11-08"),
+            guidance.writes
+        )
+        assertEquals(setOf(Nudge.GuideHint), guidance.stored.memory.seen)
+    }
+
+    @Test
+    fun whenTheExpiredHintCannotBeKeptAsSeenNoOtherDayIsWrittenOverIt() = runTest {
+        guidance.set(
+            GuidanceMemory(lastShown = ShownNudge(Nudge.GuideHint, LocalDate.of(2026, 11, 7)))
+        )
+        publish()
+        history.starts("2026-10-09", "2026-10-09")
+        guidance.failWrites = true
+
+        val viewModel = started()
+
+        assertEquals(ReciboNudge.BackupReminder(null), nudgeOf(viewModel))
+        assertEquals(listOf("seen GuideHint"), guidance.writes)
+        assertEquals(
+            ShownNudge(Nudge.GuideHint, LocalDate.of(2026, 11, 7)),
+            guidance.stored.memory.lastShown
+        )
+    }
+
+    @Test
+    fun aShowingThatCannotBeKeptStillShowsAndIsAskedOnce() = runTest {
+        publish()
+        history.starts("2026-11-05", "2026-11-05")
+        guidance.failWrites = true
+        val viewModel = started()
+
+        snapshots.of(november).value = snapshots.of(november).value
+
+        assertEquals(ReciboNudge.GuideHint, nudgeOf(viewModel))
+        assertEquals(listOf("shown GuideHint 2026-11-08"), guidance.writes)
+        assertNull(guidance.stored.memory.lastShown)
+    }
+
+    @Test
+    fun aZoneChangeBackNeverWritesTheShowingOverWithAnEarlierDay() = runTest {
+        guidance.set(
+            GuidanceMemory(lastShown = ShownNudge(Nudge.GuideHint, LocalDate.of(2026, 11, 9)))
+        )
+        publish()
+        history.starts("2026-11-05", "2026-11-05")
+
+        val viewModel = started()
+
+        assertEquals(ReciboNudge.GuideHint, nudgeOf(viewModel))
+        assertEquals(emptyList<String>(), guidance.writes)
+        assertEquals(
+            ShownNudge(Nudge.GuideHint, LocalDate.of(2026, 11, 9)),
+            guidance.stored.memory.lastShown
+        )
+    }
+
     // The backup reminder.
 
     @Test

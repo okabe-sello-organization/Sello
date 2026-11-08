@@ -15,20 +15,47 @@ import java.time.temporal.ChronoUnit
 object NudgePolicy {
     /**
      * The one of [wanted] to show on [today], or null. [wanted] are the screen's nudges
-     * whose trigger holds now, the most important first. A nudge seen (done or closed with
-     * its ✕) never shows again, and a new-user nudge waits until Sello has checked whether
-     * the person was already using it. Once a nudge showed on a day, that day belongs to it:
-     * it may show again, and no other one does. A last day after [today], which a time-zone
-     * change or a clock set back can leave, still belongs to its nudge until it has passed.
+     * whose trigger holds now, the most important first. A nudge seen (done, closed with
+     * its ✕, or [expired]) never shows again, and a new-user nudge waits until Sello has
+     * checked whether the person was already using it. Once a nudge showed on a day, that
+     * day belongs to it: it may show again that day, and no other one does. A last day
+     * after [today], which a time-zone change or a clock set back can leave, still belongs
+     * to its nudge until it has passed.
      */
     fun pick(guidance: Guidance, today: LocalDate, wanted: List<Nudge>): Nudge? {
+        val seen = guidance.memory.seen + listOfNotNull(expired(guidance.memory, today))
         val open = wanted.filter { nudge ->
-            nudge !in guidance.memory.seen &&
-                (!nudge.forNewUsers || guidance.existingUseChecked)
+            nudge !in seen && (!nudge.forNewUsers || guidance.existingUseChecked)
         }
         val last = guidance.memory.lastShown
         if (last != null && last.day >= today) return last.nudge.takeIf { it in open }
         return open.firstOrNull()
+    }
+
+    /**
+     * The nudge whose one day has passed, to keep as seen, or null: a nudge shows for one
+     * day, once, so the last one shown counts as seen once [today] is past its day. The
+     * backup reminder keeps its own rule ([BackupReminderPolicy]) and never expires here.
+     * The caller keeps it as seen before it keeps another nudge as shown, so the next one
+     * never writes over it.
+     */
+    fun expired(memory: GuidanceMemory, today: LocalDate): Nudge? {
+        val last = memory.lastShown ?: return null
+        return last.nudge.takeIf {
+            it != Nudge.BackupReminder && last.day < today && it !in memory.seen
+        }
+    }
+
+    /**
+     * Whether [nudge] showing on [today] is already kept as that day's: its day is today or,
+     * after a time-zone change back, later. Keeping it again would write an earlier day.
+     */
+    fun keptFor(memory: GuidanceMemory, nudge: Nudge, today: LocalDate): Boolean {
+        val last = memory.lastShown ?: return false
+        if (last.nudge != nudge || last.day < today) return false
+        if (nudge != Nudge.BackupReminder) return true
+        val shown = memory.backupReminderShown
+        return shown != null && shown >= today
     }
 }
 
@@ -48,7 +75,7 @@ object BackupReminderPolicy {
 
     /**
      * The reminder for [today], or null when it is not due. It needs a movement, so
-     * [firstMovement] is the earliest expense or income. It is due once [INTERVAL_DAYS]
+     * [firstMovement] is the earliest movement of any kind. It is due once [INTERVAL_DAYS]
      * passed since the last backup, [lastBackupAt] read as a day in [today]'s zone, or,
      * with no backup ever, since [firstMovement]. Once shown it stays for that day, then
      * waits [INTERVAL_DAYS] days; a backup made since clears it at once, and "No volver a

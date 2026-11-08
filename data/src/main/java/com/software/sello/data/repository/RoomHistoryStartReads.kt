@@ -12,23 +12,29 @@ import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
 
 /**
- * The earliest expense and income dates, read together in one transaction. A stored date
- * that cannot be read fails the read: it is never taken as no history.
+ * The earliest expense date and the earliest date of any movement (expense, income, goal
+ * aporte or retiro, investment movement), read together in one transaction. Deleted ones
+ * live in their own tables and do not count. A stored date that cannot be read fails the
+ * read: it is never taken as no history.
  */
 class RoomHistoryStartReads(private val database: SelloDatabase) : HistoryStartReads {
     override fun observe(): Flow<HistoryStartState> = database.observeOnRevision { read() }
 
     private suspend fun read(): Outcome<HistoryStart, StorageFailure> = reading {
         database.withTransaction {
-            val expense = when (val date = date("expense", database.expenseDao().earliestDate())) {
-                is Outcome.Success -> date.value
-                is Outcome.Failure -> return@withTransaction date
+            val stored = listOf(
+                "expense" to database.expenseDao().earliestDate(),
+                "income" to database.incomeDao().earliestDate(),
+                "goal_event" to database.goalDao().earliestMovementDate(),
+                "investment_movement" to database.investmentDao().earliestMovementDate()
+            )
+            val dates = stored.map { (record, text) ->
+                when (val date = date(record, text)) {
+                    is Outcome.Success -> date.value
+                    is Outcome.Failure -> return@withTransaction date
+                }
             }
-            val income = when (val date = date("income", database.incomeDao().earliestDate())) {
-                is Outcome.Success -> date.value
-                is Outcome.Failure -> return@withTransaction date
-            }
-            Outcome.Success(HistoryStart(expense, listOfNotNull(expense, income).minOrNull()))
+            Outcome.Success(HistoryStart(dates.first(), dates.filterNotNull().minOrNull()))
         }
     }
 
