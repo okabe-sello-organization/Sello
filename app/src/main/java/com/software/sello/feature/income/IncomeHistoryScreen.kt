@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -73,7 +72,8 @@ fun IncomeHistoryScreen(
     help: IncomeHelp? = null,
     onGuide: (GuidePage) -> Unit = {}
 ) {
-    Box(Modifier.fillMaxSize()) {
+    // As big as the list, which fills the shell's content area: the sheet covers just that.
+    Box {
         IncomeHistoryList(
             state,
             split,
