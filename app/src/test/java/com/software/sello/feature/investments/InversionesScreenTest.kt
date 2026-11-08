@@ -353,6 +353,9 @@ class InversionesScreenTest {
             .assertExists()
         rule.onNodeWithTag(INVERSIONES_RATE_TERM_TAG)
             .assertContentDescriptionEquals("tasa del 20 oct. Qué significa")
+        // The Dólar button still says the rate's date (SELLO-209 review R4).
+        rule.onNodeWithTag("inversiones.rate")
+            .assertContentDescriptionEquals("Dólar a 4.150,25 · tasa del 20 oct")
     }
 
     @Test

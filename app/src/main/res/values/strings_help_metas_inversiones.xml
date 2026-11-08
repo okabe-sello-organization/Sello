@@ -39,7 +39,7 @@
     <string name="investment_help_rate_date">La fecha</string>
     <string name="investment_help_rate_date_body">La que le pusiste a la tasa al anotarla. Sello usa la de fecha más reciente; no la busca en internet.</string>
     <string name="investment_help_rate_use">Para qué sirve</string>
-    <string name="investment_help_rate_use_body">Solo convierte a pesos el total de Inversiones. Cada inversión en dólares sigue en dólares.</string>
+    <string name="investment_help_rate_use_body">Convierte tus dólares a pesos solo para sumar: el total de Inversiones, cuánto pesa cada una en Dónde está y el total de Varios movimientos. Cada inversión en dólares sigue en dólares.</string>
     <string name="investment_help_rate_example">Con la tasa en 4.000, 250 dólares suman 1.000.000 al total. Si anotas una tasa de 4.200, suman 1.050.000.</string>
 
     <!-- Valor y lo que pusiste (InvestmentsRenderModel.chart, InvestmentPolicy.ledger) -->

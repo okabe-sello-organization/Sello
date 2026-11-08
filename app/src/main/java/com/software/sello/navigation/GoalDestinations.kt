@@ -131,7 +131,11 @@ internal fun MetasDestination(
             plate?.goalId?.takeIf { it.isNotEmpty() }?.let(onOpenGoal)
         }
     )
-    BackHandler(enabled = !state.monthPickerOpen) { tabs.onSelect(ShellTab.Recibo.id) }
+    BackHandler(enabled = !state.monthPickerOpen) {
+        // A sheet saved open but not shown yet (still loading) does not outlive the screen.
+        model.onAction(MetasAction.CloseHelp)
+        tabs.onSelect(ShellTab.Recibo.id)
+    }
     // After the screen's own back, so that back closes the sheet first.
     if (ready?.helpOpen == true) {
         MetasHelpSheet(

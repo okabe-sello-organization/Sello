@@ -26,6 +26,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
@@ -239,6 +240,8 @@ private fun RateLine(
 ) {
     val colors = SelloTheme.colors
     val style = MaterialTheme.typography.bodySmall
+    val lead = stringResource(R.string.inversiones_rate_lead, rate)
+    val term = stringResource(R.string.inversiones_rate_term, day)
     val target = if (onOpen == null) {
         Modifier
     } else {
@@ -246,13 +249,13 @@ private fun RateLine(
             .clickable(role = Role.Button, onClick = onOpen)
     }
     Row(
-        modifier.fillMaxWidth().then(target),
+        // The line still says the rate's date; the underlined word is its own button too.
+        modifier.fillMaxWidth().then(target).semantics { contentDescription = "$lead $term" },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
     ) {
         Icon(SelloIcon.Autorenew.painter(), null, Modifier.size(18.dp), colors.brand)
         Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-            val lead = stringResource(R.string.inversiones_rate_lead, rate)
             Text(
                 bold("$lead ", rate),
                 Modifier.weight(1f, fill = false),
@@ -260,7 +263,7 @@ private fun RateLine(
                 color = colors.inkSoft
             )
             HelpTerm(
-                stringResource(R.string.inversiones_rate_term, day),
+                term,
                 onHelp,
                 Modifier.testTag(INVERSIONES_RATE_TERM_TAG),
                 style = style,

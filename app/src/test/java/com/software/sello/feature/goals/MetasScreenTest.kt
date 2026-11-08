@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
 import com.software.sello.SweepLook
@@ -199,7 +200,10 @@ class MetasScreenTest {
         board: GoalBoard,
         onCreate: (() -> Unit)? = null,
         onContribute: (() -> Unit)? = null,
-        onOpenGuide: () -> Unit = {}
+        onOpenGuide: () -> Unit = {},
+        saved: SavedStateHandle = SavedStateHandle(),
+        read: GoalBoardState = ReadState.Ready(board),
+        onTab: (String) -> Unit = {}
     ) {
         val factory = viewModelFactory {
             initializer {
@@ -207,8 +211,8 @@ class MetasScreenTest {
                 val ids = RecordIdSource { "00000000-0000-4000-a000-000000000001" }
                 val commands = HandGoalCommands()
                 MetasViewModel(
-                    SavedStateHandle(),
-                    Reads(ReadState.Ready(board)),
+                    saved,
+                    Reads(read),
                     commands,
                     clock,
                     money,
@@ -239,8 +243,9 @@ class MetasScreenTest {
                             SelloDestination("resumen", "Resumen", SelloIcon.Insights),
                             SelloDestination("metas", "Metas", SelloIcon.Flag)
                         ),
-                        "metas"
-                    ) {},
+                        "metas",
+                        onTab
+                    ),
                     onOpenGoal = {},
                     onCreate = onCreate,
                     onContribute = onContribute,
@@ -567,5 +572,18 @@ class MetasScreenTest {
             .performClick()
         assertEquals(1, guides)
         rule.onNodeWithTag(METAS_HELP_TAG).assertDoesNotExist()
+    }
+
+    @Test
+    fun backWhileLoadingClosesASheetSavedOpenBeforeARestart() {
+        val saved = SavedStateHandle(mapOf("metas.help" to true))
+        val tabs = mutableListOf<String>()
+        destination(board, saved = saved, read = ReadState.Loading, onTab = tabs::add)
+
+        Espresso.pressBack()
+        rule.waitForIdle()
+
+        assertEquals(listOf("recibo"), tabs)
+        assertEquals(false, saved.get<Boolean>("metas.help"))
     }
 }

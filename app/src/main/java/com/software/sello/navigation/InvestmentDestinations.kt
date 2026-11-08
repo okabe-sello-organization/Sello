@@ -118,7 +118,11 @@ internal fun InversionesDestination(
             openRows = onOpen != null
         )
     }
-    BackHandler(enabled = !state.monthPickerOpen) { tabs.onSelect(ShellTab.Recibo.id) }
+    BackHandler(enabled = !state.monthPickerOpen) {
+        // A sheet saved open but not shown yet (still loading) does not outlive the screen.
+        model.onAction(InversionesAction.CloseHelp)
+        tabs.onSelect(ShellTab.Recibo.id)
+    }
     // After the screen's own back, so that back closes the sheet first.
     ready?.help?.let { help ->
         InvestmentHelpSheet(
@@ -189,7 +193,11 @@ internal fun InvestmentDestination(
             padding = padding
         )
     }
-    BackHandler(enabled = !state.monthPickerOpen) { onBack() }
+    BackHandler(enabled = !state.monthPickerOpen) {
+        // A sheet saved open but not shown yet (still loading) does not outlive the page.
+        model.onAction(InvestmentDetailAction.CloseHelp)
+        onBack()
+    }
     // After the screen's own back, so that back closes the sheet first.
     ready?.help?.let { help ->
         InvestmentHelpSheet(

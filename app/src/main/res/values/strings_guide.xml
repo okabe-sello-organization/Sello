@@ -93,9 +93,9 @@
     <string name="guide_investments_moves">Lo que anotas</string>
     <string name="guide_investments_moves_body">Aporte: lo que pones. Valor de hoy: cuánto vale. Retiro: lo que sacas. Dividendo: lo que te paga. Sello no se conecta a ningún banco: los valores los anotas tú.</string>
     <string name="guide_investments_gain">Ganancia</string>
-    <string name="guide_investments_gain_body">Lo que vale hoy, más retiros y dividendos, menos lo que pusiste. Si pusiste 1.000.000 y hoy vale 1.100.000, ganaste 100.000.</string>
+    <string name="guide_investments_gain_body">Lo que vale hoy, más retiros y dividendos, menos lo que aportaste. Si pusiste 1.000.000 y hoy vale 1.100.000, ganaste 100.000.</string>
     <string name="guide_investments_rate">Dólar</string>
-    <string name="guide_investments_rate_body">Sello no busca la tasa: la anotas tú, con su fecha, en Configuración o en Inversiones. Solo convierte el total de Inversiones; cada inversión en dólares sigue en dólares.</string>
+    <string name="guide_investments_rate_body">Sello no busca la tasa: la anotas tú, con su fecha, en Configuración o en Inversiones. Convierte tus dólares a pesos solo para sumar: el total de Inversiones, cuánto pesa cada una en Dónde está y el total de Varios movimientos. Cada inversión en dólares sigue en dólares.</string>
 
     <!-- Tus datos: Respaldo -->
     <string name="guide_backup_title">Respaldo</string>
