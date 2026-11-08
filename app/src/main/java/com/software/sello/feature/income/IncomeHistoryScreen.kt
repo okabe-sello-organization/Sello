@@ -1,9 +1,11 @@
 package com.software.sello.feature.income
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -44,6 +46,7 @@ import com.software.sello.designsystem.component.TotalLine
 import com.software.sello.designsystem.component.TotalRule
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.feature.guide.GuidePage
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.income.incomeSourceLabel
 import com.software.sello.presentation.month.monthNames
@@ -56,6 +59,49 @@ import java.time.YearMonth
  */
 @Composable
 fun IncomeHistoryScreen(
+    state: IncomeHistoryState,
+    split: IncomeSplit?,
+    plan: IncomePlanState,
+    assign: AssignSuggestion?,
+    today: LocalDate,
+    onAction: (IncomeHistoryAction) -> Unit,
+    onCreate: () -> Unit,
+    onAssign: (limit: String?) -> Unit,
+    onEdit: (String) -> Unit,
+    padding: PaddingValues,
+    help: IncomeHelp? = null,
+    onGuide: (GuidePage) -> Unit = {}
+) {
+    Box(Modifier.fillMaxSize()) {
+        IncomeHistoryList(
+            state,
+            split,
+            plan,
+            assign,
+            today,
+            onAction,
+            onCreate,
+            onAssign,
+            onEdit,
+            padding
+        )
+        // Over the page, between the shell's bars, as the mock shows it.
+        help?.let {
+            IncomeHelpSheet(
+                it,
+                onAction,
+                onGuide,
+                Modifier.padding(
+                    top = padding.calculateTopPadding(),
+                    bottom = padding.calculateBottomPadding()
+                )
+            )
+        }
+    }
+}
+
+@Composable
+private fun IncomeHistoryList(
     state: IncomeHistoryState,
     split: IncomeSplit?,
     plan: IncomePlanState,

@@ -45,8 +45,25 @@ sealed interface ResumenState {
         /** How dismissing [suggestion] went: being saved, or not saved and said (#377). */
         val dismissal: SuggestionDismissal = SuggestionDismissal.Idle,
         /** Gastos hormiga after the income slip; null when there is no slip (SELLO-194). */
-        val smallExpenses: ResumenSmallExpenses? = null
+        val smallExpenses: ResumenSmallExpenses? = null,
+        /** The help sheet open over the screen, if any (SELLO-208). */
+        val help: ResumenHelp? = null
     ) : ResumenState
+}
+
+/** What a Resumen help sheet explains: a card's **?** or an underlined term (SELLO-208). */
+enum class ResumenHelp {
+    /** The **?** on "¿Cómo va este mes?" (or how a month closed). */
+    Month,
+
+    /** The underlined "al mismo día del mes". */
+    SameDay,
+
+    /** The **?** on Gastos hormiga. */
+    SmallExpenses,
+
+    /** The **?** on "¿Qué días gastas más?". */
+    Weekdays
 }
 
 /** Gastos hormiga's slip: its figures, or a notice that they cannot be worked out. */
@@ -211,4 +228,8 @@ sealed interface ResumenAction {
     data class SelectWeekday(val id: String) : ResumenAction
 
     data object DismissSuggestion : ResumenAction
+
+    data class OpenHelp(val help: ResumenHelp) : ResumenAction
+
+    data object CloseHelp : ResumenAction
 }

@@ -21,12 +21,14 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import com.software.sello.designsystem.component.AnswerSlip
 import com.software.sello.designsystem.component.CategoryCircle
 import com.software.sello.designsystem.component.FittedMoneyText
+import com.software.sello.designsystem.component.HelpTerm
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.component.Slip
@@ -58,7 +60,9 @@ internal fun ComparisonSlip(
     trend: String?,
     basis: String,
     bars: List<ComparisonBar>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    trendTerm: String? = null,
+    onTrendTerm: () -> Unit = {}
 ) {
     val colors = SelloTheme.colors
     val typography = MaterialTheme.typography
@@ -77,13 +81,24 @@ internal fun ComparisonSlip(
             modifier = Modifier.padding(top = SelloTheme.spacing.xs)
         )
         if (trend != null) {
-            Text(
-                trend,
-                style = typography.bodyMedium,
-                fontWeight = SelloTheme.type.weight.strong,
-                color = colors.inkSoft,
-                modifier = Modifier.padding(top = SelloTheme.spacing.sm)
-            )
+            val style = typography.bodyMedium.copy(fontWeight = SelloTheme.type.weight.strong)
+            Row(
+                Modifier.padding(top = SelloTheme.spacing.sm),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.xs)
+            ) {
+                Text(trend, style = style, color = colors.inkSoft)
+                // [trendTerm] names the rate's days and opens what they mean.
+                if (trendTerm != null) {
+                    HelpTerm(
+                        trendTerm,
+                        onTrendTerm,
+                        Modifier.testTag(RESUMEN_SAME_DAY_TERM_TAG),
+                        style = style,
+                        color = colors.inkSoft
+                    )
+                }
+            }
         }
         TearLine()
         Text(

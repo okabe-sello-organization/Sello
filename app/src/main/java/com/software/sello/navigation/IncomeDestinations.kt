@@ -42,6 +42,7 @@ internal fun NavGraphBuilder.incomeDestinations(
         val split by model.split.collectAsStateWithLifecycle()
         val plan by model.plan.collectAsStateWithLifecycle()
         val assign by model.assign.collectAsStateWithLifecycle()
+        val help by model.help.collectAsStateWithLifecycle()
         ShellScreen(
             state,
             monthNames(),
@@ -70,7 +71,9 @@ internal fun NavGraphBuilder.incomeDestinations(
                     navigation.navigate(CategoryEditorRoute(limit = it)) { launchSingleTop = true }
                 },
                 { navigation.navigate(IncomeEditRoute(it)) },
-                padding
+                padding,
+                help,
+                navigation::openGuide
             )
         }
     }

@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.software.sello.feature.guide.GuidePage
 
 @Composable
 fun ResumenRoot(
@@ -17,7 +18,8 @@ fun ResumenRoot(
     onSchedules: () -> Unit,
     onAdjustLimit: (String) -> Unit,
     onDayByDay: () -> Unit,
-    onYear: (Int) -> Unit
+    onYear: (Int) -> Unit,
+    onGuide: (GuidePage) -> Unit
 ) {
     val model: ResumenViewModel = viewModel(factory = factory)
     val state by model.state.collectAsStateWithLifecycle()
@@ -31,7 +33,8 @@ fun ResumenRoot(
         onAdjustLimit,
         onSchedules,
         onDayByDay,
-        onYear
+        onYear,
+        onGuide
     )
 }
 

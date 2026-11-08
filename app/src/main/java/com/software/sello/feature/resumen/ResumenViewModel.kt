@@ -119,19 +119,25 @@ class ResumenViewModel(
         }
     }
 
+    /** The help sheet open, kept across a restart; a name this version lacks opens none. */
+    private val help = saved.getStateFlow<String?>(HELP, null).map { name ->
+        ResumenHelp.entries.firstOrNull { it.name == name }
+    }
+
     val state = combine(
-        snapshot,
+        combine(snapshot, help) { state, help -> state to help },
         saved.getStateFlow<String?>(HISTORY, null),
         saved.getStateFlow<String?>(WEEKDAY, null),
         dismissing,
         nextFixed
-    ) { state, history, weekday, (dismissed, asked), next ->
+    ) { (state, help), history, weekday, (dismissed, asked), next ->
         if (state is ResumenState.Ready) {
             val shown = state.suggestion?.takeUnless {
                 dismissed?.month?.toString() == state.month &&
                     dismissed.categoryId.value == it.categoryId
             }
             state.copy(
+                help = help,
                 nextFixed = next,
                 selectedHistory = selection(history, state.month, state.history),
                 selectedWeekday = selection(
@@ -164,6 +170,8 @@ class ResumenViewModel(
             is ResumenAction.SelectHistory -> select(HISTORY, action.id)
             is ResumenAction.SelectWeekday -> select(WEEKDAY, action.id)
             ResumenAction.DismissSuggestion -> dismiss()
+            is ResumenAction.OpenHelp -> saved[HELP] = action.help.name
+            ResumenAction.CloseHelp -> saved[HELP] = null
         }
     }
 
@@ -213,5 +221,6 @@ class ResumenViewModel(
     private companion object {
         const val HISTORY = "resumen.history"
         const val WEEKDAY = "resumen.weekday"
+        const val HELP = "resumen.help"
     }
 }

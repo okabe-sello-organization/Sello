@@ -1,5 +1,6 @@
 package com.software.sello.feature.income
 
+import androidx.lifecycle.SavedStateHandle
 import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Occurrence
@@ -135,8 +136,17 @@ class IncomeHistoryViewModelTest {
 
     private val suggestions = HandSuggestions()
 
-    private fun history() =
-        IncomeHistoryViewModel(gated, session, snapshots, schedules, suggestions, money, clock)
+    private fun history(saved: SavedStateHandle = SavedStateHandle()) =
+        IncomeHistoryViewModel(
+            saved,
+            gated,
+            session,
+            snapshots,
+            schedules,
+            suggestions,
+            money,
+            clock
+        )
 
     @Before
     fun main() = Dispatchers.setMain(UnconfinedTestDispatcher())
@@ -874,6 +884,7 @@ class IncomeHistoryViewModelTest {
             }
         }
         val model = IncomeHistoryViewModel(
+            SavedStateHandle(),
             gated,
             session,
             flaky,
