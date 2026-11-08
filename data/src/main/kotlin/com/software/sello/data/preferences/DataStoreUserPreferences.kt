@@ -2,8 +2,8 @@ package com.software.sello.data.preferences
 
 import android.content.Context
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.MutablePreferences
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -31,6 +31,7 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ShownNudge
 import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.ThemePreference
+import com.software.sello.domain.policy.EffectiveDates
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.BackupRecord
 import com.software.sello.domain.port.BackupRecords
@@ -49,7 +50,6 @@ import com.software.sello.domain.port.PreferenceReset
 import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.SmallExpensePreferences
 import com.software.sello.domain.port.SuggestionPreferences
-import com.software.sello.domain.policy.EffectiveDates
 import java.io.IOException
 import java.time.Instant
 import java.time.LocalDate
@@ -348,7 +348,8 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
             is Boolean -> value
             else -> null
         }
-        fun day(text: String): LocalDate? = (EffectiveDates.parseDate(text) as? Outcome.Success)?.value
+        fun day(text: String): LocalDate? =
+            (EffectiveDates.parseDate(text) as? Outcome.Success)?.value
         val seen = Nudge.entries.filter { nudge ->
             flag(seenKey(nudge)) ?: return Decoded.Invalid
         }.toSet()

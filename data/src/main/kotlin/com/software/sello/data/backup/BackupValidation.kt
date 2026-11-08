@@ -123,6 +123,7 @@ internal object WireNames {
 
     /** The currencies a new investment may start in, written as amounts write theirs. */
     val newCurrencies = mapOf(Currency.COP to "COP", Currency.USD to "USD")
+
     /** Stable names per nudge, as the file writes them. */
     val nudges = mapOf(
         Nudge.GuideHint to "guide_hint",

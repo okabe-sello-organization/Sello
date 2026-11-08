@@ -1,8 +1,8 @@
 package com.software.sello.data.preferences
 
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.MutablePreferences
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -127,102 +127,100 @@ class GuidancePreferencesTest {
     }
 
     @Test
-    fun `each value is kept under a stable name, never an ordinal or a class name`() =
-        runBlocking {
-            val preferences = process()
-            Nudge.entries.forEach { preferences.markSeen(it) }
-            preferences.markShown(Nudge.BackupReminder, nov8)
-            preferences.turnOffBackupReminder()
-            preferences.rememberExistingUse(wasUsingSello = false)
+    fun `each value is kept under a stable name, never an ordinal or a class name`() = runBlocking {
+        val preferences = process()
+        Nudge.entries.forEach { preferences.markSeen(it) }
+        preferences.markShown(Nudge.BackupReminder, nov8)
+        preferences.turnOffBackupReminder()
+        preferences.rememberExistingUse(wasUsingSello = false)
 
-            assertEquals(
-                mapOf(
-                    "guidance_seen_guide_hint_v1" to true,
-                    "guidance_seen_backup_reminder_v1" to true,
-                    "guidance_seen_bulk_entry_v1" to true,
-                    "guidance_seen_fixed_payment_v1" to true,
-                    "guidance_seen_carry_v1" to true,
-                    "guidance_seen_deleting_v1" to true,
-                    "guidance_seen_investments_v1" to true,
-                    "guidance_seen_recibo_goal_v1" to true,
-                    "guidance_last_shown_v1" to "2026-11-08|backup_reminder",
-                    "guidance_backup_reminder_shown_v1" to "2026-11-08",
-                    "guidance_backup_reminder_off_v1" to true,
-                    "guidance_existing_use_checked_v1" to true
-                ),
-                stored()
-            )
-        }
+        assertEquals(
+            mapOf(
+                "guidance_seen_guide_hint_v1" to true,
+                "guidance_seen_backup_reminder_v1" to true,
+                "guidance_seen_bulk_entry_v1" to true,
+                "guidance_seen_fixed_payment_v1" to true,
+                "guidance_seen_carry_v1" to true,
+                "guidance_seen_deleting_v1" to true,
+                "guidance_seen_investments_v1" to true,
+                "guidance_seen_recibo_goal_v1" to true,
+                "guidance_last_shown_v1" to "2026-11-08|backup_reminder",
+                "guidance_backup_reminder_shown_v1" to "2026-11-08",
+                "guidance_backup_reminder_off_v1" to true,
+                "guidance_existing_use_checked_v1" to true
+            ),
+            stored()
+        )
+    }
 
     // --- Restablecer ---
 
     @Test
-    fun `reset keeps every guidance value and clears everything else as before`() =
-        runBlocking {
-            val preferences = process()
-            preferences.setTheme(ThemePreference.Dark)
-            preferences.setInk(InkPreference.Violeta)
-            preferences.setCategoryOrder(CategoryOrder.Alphabetical)
-            preferences.setSmallExpenseLine(SmallExpenseLine.of(15_000)!!)
-            preferences.dismissPastExpenseAnnouncement()
-            preferences.markCatchUpNoticeSeen(Instant.parse("2026-11-01T10:00:00Z"))
-            preferences.backupCompleted(
-                LastBackup(
-                    Instant.parse("2026-11-02T10:00:00Z"),
-                    "sello-respaldo.json",
-                    1_234,
-                    BackupSummary(1, 2, 3, 0, 0)
-                )
+    fun `reset keeps every guidance value and clears everything else as before`() = runBlocking {
+        val preferences = process()
+        preferences.setTheme(ThemePreference.Dark)
+        preferences.setInk(InkPreference.Violeta)
+        preferences.setCategoryOrder(CategoryOrder.Alphabetical)
+        preferences.setSmallExpenseLine(SmallExpenseLine.of(15_000)!!)
+        preferences.dismissPastExpenseAnnouncement()
+        preferences.markCatchUpNoticeSeen(Instant.parse("2026-11-01T10:00:00Z"))
+        preferences.backupCompleted(
+            LastBackup(
+                Instant.parse("2026-11-02T10:00:00Z"),
+                "sello-respaldo.json",
+                1_234,
+                BackupSummary(1, 2, 3, 0, 0)
             )
-            // A key this version no longer knows goes too, as clear() took it before.
-            raw { it[stringPreferencesKey("retired_setting_v1")] = "x" }
-            preferences.markSeen(Nudge.Investments)
-            preferences.markShown(Nudge.BackupReminder, nov8)
-            preferences.turnOffBackupReminder()
-            preferences.rememberExistingUse(wasUsingSello = true)
-            val guidanceBefore = preferences.guidance()
+        )
+        // A key this version no longer knows goes too, as clear() took it before.
+        raw { it[stringPreferencesKey("retired_setting_v1")] = "x" }
+        preferences.markSeen(Nudge.Investments)
+        preferences.markShown(Nudge.BackupReminder, nov8)
+        preferences.turnOffBackupReminder()
+        preferences.rememberExistingUse(wasUsingSello = true)
+        val guidanceBefore = preferences.guidance()
 
-            assertEquals(PreferenceWrite.Saved, preferences.resetAll())
+        assertEquals(PreferenceWrite.Saved, preferences.resetAll())
 
-            val after = process()
-            assertEquals(guidanceBefore, after.guidance())
-            assertEquals(
-                setOf(
-                    "guidance_seen_investments_v1",
-                    "guidance_seen_bulk_entry_v1",
-                    "guidance_seen_fixed_payment_v1",
-                    "guidance_seen_carry_v1",
-                    "guidance_seen_deleting_v1",
-                    "guidance_seen_recibo_goal_v1",
-                    "guidance_last_shown_v1",
-                    "guidance_backup_reminder_shown_v1",
-                    "guidance_backup_reminder_off_v1",
-                    "guidance_existing_use_checked_v1"
-                ),
-                stored().keys
-            )
-            assertEquals(
-                PreferenceRead.Ready(AppearancePreference()),
-                after.observeAppearance().first()
-            )
-            assertEquals(
-                PreferenceRead.Ready(CategoryOrderingPreference()),
-                after.observeCategoryOrdering().first()
-            )
-            assertEquals(
-                PreferenceRead.Ready(SmallExpenseLine.DEFAULT),
-                after.observeSmallExpenseLine().first()
-            )
-            assertEquals(
-                PreferenceRead.Ready(CorrectionAnnouncementPreference(false, false)),
-                after.observeCorrectionAnnouncements().first()
-            )
-            assertEquals(PreferenceRead.Ready(null), after.observeCatchUpNoticeSeen().first())
-            assertEquals(
-                PreferenceRead.Ready(BackupRecord(null, false)),
-                after.observeBackups().first()
-            )
-        }
+        val after = process()
+        assertEquals(guidanceBefore, after.guidance())
+        assertEquals(
+            setOf(
+                "guidance_seen_investments_v1",
+                "guidance_seen_bulk_entry_v1",
+                "guidance_seen_fixed_payment_v1",
+                "guidance_seen_carry_v1",
+                "guidance_seen_deleting_v1",
+                "guidance_seen_recibo_goal_v1",
+                "guidance_last_shown_v1",
+                "guidance_backup_reminder_shown_v1",
+                "guidance_backup_reminder_off_v1",
+                "guidance_existing_use_checked_v1"
+            ),
+            stored().keys
+        )
+        assertEquals(
+            PreferenceRead.Ready(AppearancePreference()),
+            after.observeAppearance().first()
+        )
+        assertEquals(
+            PreferenceRead.Ready(CategoryOrderingPreference()),
+            after.observeCategoryOrdering().first()
+        )
+        assertEquals(
+            PreferenceRead.Ready(SmallExpenseLine.DEFAULT),
+            after.observeSmallExpenseLine().first()
+        )
+        assertEquals(
+            PreferenceRead.Ready(CorrectionAnnouncementPreference(false, false)),
+            after.observeCorrectionAnnouncements().first()
+        )
+        assertEquals(PreferenceRead.Ready(null), after.observeCatchUpNoticeSeen().first())
+        assertEquals(
+            PreferenceRead.Ready(BackupRecord(null, false)),
+            after.observeBackups().first()
+        )
+    }
 
     @Test
     fun `reset with no guidance stored leaves an empty file`() = runBlocking {
@@ -244,7 +242,13 @@ class GuidancePreferencesTest {
                     { it[stringPreferencesKey("guidance_seen_carry_v1")] = "true" },
                     { it[intPreferencesKey("guidance_seen_guide_hint_v1")] = 1 },
                     { it[stringPreferencesKey("guidance_last_shown_v1")] = "2026-11-08" },
-                    { it[stringPreferencesKey("guidance_last_shown_v1")] = "2026-11-08|walkthrough" },
+                    {
+                        it[
+                            stringPreferencesKey(
+                                "guidance_last_shown_v1"
+                            )
+                        ] = "2026-11-08|walkthrough"
+                    },
                     { it[stringPreferencesKey("guidance_last_shown_v1")] = "2026-02-30|carry" },
                     { it[stringPreferencesKey("guidance_last_shown_v1")] = "2026-11-08|carry|x" },
                     { it[longPreferencesKey("guidance_last_shown_v1")] = 20_261_108L },
@@ -457,15 +461,14 @@ class GuidancePreferencesTest {
     }
 
     @Test
-    fun `a stored false reads as not seen, not as damage`() =
-        runBlocking {
-            val preferences = process()
-            preferences.markSeen(Nudge.Carry)
-            raw { it[booleanPreferencesKey("guidance_seen_deleting_v1")] = false }
+    fun `a stored false reads as not seen, not as damage`() = runBlocking {
+        val preferences = process()
+        preferences.markSeen(Nudge.Carry)
+        raw { it[booleanPreferencesKey("guidance_seen_deleting_v1")] = false }
 
-            assertEquals(
-                PreferenceRead.Ready(Guidance(GuidanceMemory(seen = setOf(Nudge.Carry)))),
-                preferences.guidance()
-            )
-        }
+        assertEquals(
+            PreferenceRead.Ready(Guidance(GuidanceMemory(seen = setOf(Nudge.Carry)))),
+            preferences.guidance()
+        )
+    }
 }

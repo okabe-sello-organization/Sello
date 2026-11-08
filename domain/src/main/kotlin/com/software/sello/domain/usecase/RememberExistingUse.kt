@@ -29,10 +29,7 @@ enum class ExistingUseCheck {
  * transaction. Run at every start; it does its work once. A death at any point leaves
  * either nothing written, so the next start checks again, or the whole answer.
  */
-class RememberExistingUse(
-    private val resets: Resets,
-    private val guidance: GuidancePreferences
-) {
+class RememberExistingUse(private val resets: Resets, private val guidance: GuidancePreferences) {
     suspend fun run(): ExistingUseCheck {
         val read = guidance.observeGuidance().first()
         if (read !is PreferenceRead.Ready) return ExistingUseCheck.NotNow
