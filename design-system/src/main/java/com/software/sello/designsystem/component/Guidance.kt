@@ -53,11 +53,7 @@ import com.software.sello.designsystem.theme.SelloTheme
  * TalkBack reads it as a button. A card title takes this and never a [HelpTerm].
  */
 @Composable
-fun CardHelp(
-    contentDescription: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
+fun CardHelp(contentDescription: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val colors = SelloTheme.colors
     // The glyph is part of the disc, like an icon: it keeps its size at every font size.
     val glyph = with(LocalDensity.current) { HelpGlyphSize.toSp() }
@@ -162,9 +158,11 @@ fun HelpSheet(
         ) {
             entries.forEach { entry ->
                 // Term and explanation are read together.
-                Column(Modifier.clearAndSetSemantics {
-                    contentDescription = "${entry.term}. ${entry.explanation}"
-                }) {
+                Column(
+                    Modifier.clearAndSetSemantics {
+                        contentDescription = "${entry.term}. ${entry.explanation}"
+                    }
+                ) {
                     Text(
                         entry.term,
                         style = MaterialTheme.typography.bodyMedium,

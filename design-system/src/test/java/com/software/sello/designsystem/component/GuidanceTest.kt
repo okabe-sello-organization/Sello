@@ -107,7 +107,10 @@ class GuidanceTest {
     fun helpSheetReadsEachTermWithItsExplanationAndOffersTheGuia() {
         var more = 0
         var dismissed = 0
-        rule.inEveryScheme(reset = { more = 0; dismissed = 0 }, content = {
+        rule.inEveryScheme(reset = {
+            more = 0
+            dismissed = 0
+        }, content = {
             Box(Modifier.height(700.dp)) {
                 HelpSheet(
                     title = "Cómo leer tu mes",
@@ -155,7 +158,11 @@ class GuidanceTest {
         var closed = 0
         var never = 0
         var go = 0
-        rule.inEveryScheme(reset = { closed = 0; never = 0; go = 0 }, content = {
+        rule.inEveryScheme(reset = {
+            closed = 0
+            never = 0
+            go = 0
+        }, content = {
             NudgeRow(
                 icon = SelloIcon.Backup,
                 text = "Tu último respaldo fue hace 34 días.",
