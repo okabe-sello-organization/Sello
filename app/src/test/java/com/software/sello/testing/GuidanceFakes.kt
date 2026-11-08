@@ -5,6 +5,7 @@ import com.software.sello.domain.model.GuidanceMemory
 import com.software.sello.domain.model.Nudge
 import com.software.sello.domain.model.ShownNudge
 import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.policy.NudgePolicy
 import com.software.sello.domain.port.GuidancePreferences
 import com.software.sello.domain.port.HistoryStart
 import com.software.sello.domain.port.HistoryStartReads
@@ -47,9 +48,11 @@ class HandGuidance(initial: Guidance = Guidance(existingUseChecked = true)) : Gu
         it.copy(seen = it.seen + nudge)
     }
 
+    /** As the DataStore port: the expired nudge is kept as seen in the same write. */
     override suspend fun markShown(nudge: Nudge, day: LocalDate): PreferenceWrite =
         write("shown $nudge $day") {
             it.copy(
+                seen = it.seen + listOfNotNull(NudgePolicy.expired(it, day)),
                 lastShown = ShownNudge(nudge, day),
                 backupReminderShown =
                     if (nudge == Nudge.BackupReminder) day else it.backupReminderShown

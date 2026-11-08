@@ -326,16 +326,13 @@ class ReciboNudgeViewModelTest {
 
         assertEquals(ReciboNudge.GuideHint, today)
         assertNull(nudgeOf(viewModel))
-        assertEquals(
-            listOf("shown GuideHint 2026-11-08", "seen GuideHint"),
-            guidance.writes
-        )
-        assertEquals(setOf(Nudge.GuideHint), guidance.stored.memory.seen)
+        // Nothing else showed, so nothing was written: the next showing keeps it as seen.
+        assertEquals(listOf("shown GuideHint 2026-11-08"), guidance.writes)
         assertNull(nudgeOf(started()))
     }
 
     @Test
-    fun theExpiredHintIsKeptAsSeenBeforeTheNextNudgeTakesTheDay() = runTest {
+    fun theNextNudgesShowingKeepsTheExpiredHintAsSeenInTheSameWrite() = runTest {
         guidance.set(
             GuidanceMemory(lastShown = ShownNudge(Nudge.GuideHint, LocalDate.of(2026, 11, 7)))
         )
@@ -346,15 +343,13 @@ class ReciboNudgeViewModelTest {
         val viewModel = started()
 
         assertEquals(ReciboNudge.BackupReminder(null), nudgeOf(viewModel))
-        assertEquals(
-            listOf("seen GuideHint", "shown BackupReminder 2026-11-08"),
-            guidance.writes
-        )
+        // One write keeps the reminder's day and the hint as seen.
+        assertEquals(listOf("shown BackupReminder 2026-11-08"), guidance.writes)
         assertEquals(setOf(Nudge.GuideHint), guidance.stored.memory.seen)
     }
 
     @Test
-    fun whenTheExpiredHintCannotBeKeptAsSeenNoOtherDayIsWrittenOverIt() = runTest {
+    fun aShowingThatFailsWritesNeitherHalfSoTheExpiredHintIsNeverLost() = runTest {
         guidance.set(
             GuidanceMemory(lastShown = ShownNudge(Nudge.GuideHint, LocalDate.of(2026, 11, 7)))
         )
@@ -365,7 +360,8 @@ class ReciboNudgeViewModelTest {
         val viewModel = started()
 
         assertEquals(ReciboNudge.BackupReminder(null), nudgeOf(viewModel))
-        assertEquals(listOf("seen GuideHint"), guidance.writes)
+        assertEquals(listOf("shown BackupReminder 2026-11-08"), guidance.writes)
+        assertEquals(emptySet<Nudge>(), guidance.stored.memory.seen)
         assertEquals(
             ShownNudge(Nudge.GuideHint, LocalDate.of(2026, 11, 7)),
             guidance.stored.memory.lastShown

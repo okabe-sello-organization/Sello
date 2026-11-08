@@ -20,7 +20,6 @@ import com.software.sello.domain.port.GuidancePreferences
 import com.software.sello.domain.port.HistoryStartReads
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.PreferenceRead
-import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.YearSnapshots
 import com.software.sello.navigation.MonthSession
@@ -144,8 +143,7 @@ class ReciboViewModel(
      * The one nudge due on Recibo: the backup reminder first, then the Guía hint once an
      * expense exists. Only readings that worked count: while the guidance, the last backup
      * or the history is loading or failed, no nudge shows, never one worked out from an
-     * older value. A nudge whose one day has passed is kept as seen whenever the guidance
-     * reads.
+     * older value.
      */
     private val nudge = combine(
         guidance.observeGuidance(),
@@ -154,12 +152,14 @@ class ReciboViewModel(
         clock.today,
         closedHere
     ) { guidanceRead, backupRead, historyRead, today, closed ->
-        if (guidanceRead !is PreferenceRead.Ready) return@combine NudgeDecision()
-        val memory = guidanceRead.value.memory
-        val expired = NudgePolicy.expired(memory, today.date)
-        if (backupRead !is PreferenceRead.Ready || historyRead !is ReadState.Ready) {
-            return@combine NudgeDecision(expired)
+        if (
+            guidanceRead !is PreferenceRead.Ready ||
+            backupRead !is PreferenceRead.Ready ||
+            historyRead !is ReadState.Ready
+        ) {
+            return@combine null
         }
+        val memory = guidanceRead.value.memory
         val start = historyRead.value
         val reminder =
             BackupReminderPolicy.due(today, backupRead.value.last?.at, start.firstMovement, memory)
@@ -182,14 +182,14 @@ class ReciboViewModel(
         } else {
             null
         }
-        NudgeDecision(expired, shown)
+        shown
     }
         // Recibo's first state never waits on these reads: no nudge until they are known.
-        .onStart { emit(NudgeDecision()) }
+        .onStart { emit(null) }
         .distinctUntilChanged()
 
-    /** The writes last asked for, so one decision is written once. */
-    private var keeping: Pair<Nudge?, ShownNudge?>? = null
+    /** The nudge last asked to be kept as shown, so one showing is written once. */
+    private var keeping: ShownNudge? = null
 
     val state: StateFlow<ReciboState> =
         combine(session.selectedMonth, attempt) { month, _ -> month }
@@ -205,10 +205,10 @@ class ReciboViewModel(
             }
             // Only a month's current figures carry a nudge: never while loading, failed or
             // empty, nor over older figures or a carry problem, whose notice comes first.
-            .combine(nudge) { state, decision ->
+            .combine(nudge) { state, nudge ->
                 val fresh = state is ReciboState.Month && !state.stale && state.carryProblem == null
-                val shown = decision.shown.takeIf { fresh }
-                keep(decision.expired, shown)
+                val shown = nudge.takeIf { fresh }
+                keepShown(shown)
                 if (state is ReciboState.Month) state.copy(nudge = shown?.render) else state
             }
             .stateIn(
@@ -276,27 +276,16 @@ class ReciboViewModel(
     }
 
     /**
-     * Keeps [expired] as seen, then the day [shown] showed on, for the one-a-day rule, unless
-     * it is kept already. When the first write fails the second waits, so a new day never
-     * writes over a nudge not yet kept as seen. A failed write is not retried until
+     * Keeps the day [shown] showed on, for the one-a-day rule, unless it is kept already. The
+     * same write keeps an expired nudge as seen. A failed write is not retried until
      * something changes: the nudge still shows.
      */
-    private fun keep(expired: Nudge?, shown: ShownOnRecibo?) {
-        val showing = shown?.takeUnless { it.kept }?.nudge
-        if (expired == null && showing == null) return
-        val writes = expired to showing
-        if (keeping == writes) return
-        keeping = writes
-        viewModelScope.launch {
-            if (expired != null && guidance.markSeen(expired) !is PreferenceWrite.Saved) {
-                return@launch
-            }
-            if (showing != null) guidance.markShown(showing.nudge, showing.day)
-        }
+    private fun keepShown(shown: ShownOnRecibo?) {
+        val showing = shown?.takeUnless { it.kept }?.nudge ?: return
+        if (keeping == showing) return
+        keeping = showing
+        viewModelScope.launch { guidance.markShown(showing.nudge, showing.day) }
     }
-
-    /** What the guidance asks of Recibo: a nudge to keep as seen, and the one to show. */
-    private data class NudgeDecision(val expired: Nudge? = null, val shown: ShownOnRecibo? = null)
 
     /** A nudge Recibo shows: what it is and its day, what to draw, and if that day is kept. */
     private data class ShownOnRecibo(

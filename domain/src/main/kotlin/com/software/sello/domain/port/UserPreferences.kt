@@ -137,7 +137,10 @@ interface GuidancePreferences {
 
     /**
      * [nudge] showed on [day], for the one-a-day rule. The backup reminder also records
-     * [day] as the day it last showed, in the same write.
+     * [day] as the day it last showed, in the same write. In that same write the nudge last
+     * shown before is kept as seen when its day has passed (`NudgePolicy.expired`: never the
+     * backup reminder). Refused with [PreferenceFailure.InvalidValue], writing nothing, while
+     * the guidance cannot be read.
      */
     suspend fun markShown(nudge: Nudge, day: LocalDate): PreferenceWrite
 

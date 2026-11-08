@@ -36,8 +36,8 @@ object NudgePolicy {
      * The nudge whose one day has passed, to keep as seen, or null: a nudge shows for one
      * day, once, so the last one shown counts as seen once [today] is past its day. The
      * backup reminder keeps its own rule ([BackupReminderPolicy]) and never expires here.
-     * The caller keeps it as seen before it keeps another nudge as shown, so the next one
-     * never writes over it.
+     * `GuidancePreferences.markShown` keeps it as seen in the same write that keeps the
+     * next one as shown, so no screen ever writes over it.
      */
     fun expired(memory: GuidanceMemory, today: LocalDate): Nudge? {
         val last = memory.lastShown ?: return null
