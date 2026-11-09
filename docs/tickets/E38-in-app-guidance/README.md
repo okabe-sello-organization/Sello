@@ -1,6 +1,6 @@
 # SELLO-E38 — Guía dentro de Sello
 
-- **Status:** In Progress
+- **Status:** Done
 - **Increment:** Post-MVP
 - **Goal:** A new person finds their way around Sello from the real screens: quiet one-line nudges when a feature becomes useful, a **?** on cards and underlined terms that explain what the app's rules mean, and a Guía de Sello in Configuración for everything else.
 - **Exit:** SELLO-204 to SELLO-213 are Done: the guidance parts live in `:design-system`; the Guía de Sello opens from Configuración; Recibo, category screens, Resumen, Ingresos, Metas and Inversiones carry their **?** and underlined terms; the empty Recibo offers starter categories; the Guía hint, the monthly backup reminder and the feature nudges show as decided; backups carry what was seen; the design pages show the new parts.

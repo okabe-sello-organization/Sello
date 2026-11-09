@@ -21,7 +21,7 @@ underlined term explains one word, in plain Spanish that matches what the app co
 - **Underlined terms**, each opening a sheet for that word: **por día** (Recibo),
   **Al día** (category detail's per-day figure), **base** and **sobrante / faltante**
   (Recibo summary and category history). Recibo's summary sheet has a **Separado** entry.
-  *Changed on the orchestrator's ruling (2026-11-08), pending the owner's OK:* no
+  *Changed on the orchestrator's ruling (2026-11-08), approved by the owner (#466):* no
   underline on **arrastre** (the editor switch never shows that word; its own help line
   explains it) or on **Separado** (it appears only mid-sentence in a tappable footnote;
   the **?** on "Separado en…" and on Pagos fijos explain it).
