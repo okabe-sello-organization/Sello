@@ -831,7 +831,7 @@
     <string name="resumen_income_none">Aún no anotas ingresos en %1$s.</string>
     <string name="resumen_income_none_body">Sello funciona sin ingresos. Si los anotas, verás aquí a dónde se fueron.</string>
     <string name="resumen_stub_incomes">Ingresos</string>
-    <string name="resumen_stub_incomes_none">Ninguno en %1$s</string>
+    <string name="resumen_stub_incomes_none">Nada en %1$s</string>
     <string name="resumen_stub_fixed">Fijos</string>
     <string name="resumen_stub_next">Próximo: %1$s</string>
     <string name="resumen_stub_next_today">Próximo: hoy</string>
