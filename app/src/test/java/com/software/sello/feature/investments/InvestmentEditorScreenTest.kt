@@ -9,11 +9,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
@@ -28,7 +32,9 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -110,6 +116,67 @@ class InvestmentEditorScreenTest {
         rule.showSello {
             InvestmentEditorScreen(state) { actions += it }
         }
+    }
+
+    // While the keyboard is up it covers the pad and the button: the next move puts it away.
+
+    private val fresh = InvestmentEditorState(
+        loading = false,
+        date = today,
+        today = today,
+        rateDate = today,
+        padField = InvestmentField.First
+    )
+    private val name get() = rule.onNodeWithContentDescription("Nombre")
+    private val description get() = rule.onNodeWithContentDescription("Descripción (opcional)")
+    private val siguiente =
+        SemanticsMatcher.expectValue(SemanticsProperties.ImeAction, ImeAction.Next)
+
+    @Test
+    fun siguienteGoesFromTheNameToTheDescriptionThenPutsTheKeyboardAway() {
+        show(fresh)
+        rule.waitForIdle()
+
+        name.assert(siguiente).performImeAction()
+        description.assertIsFocused()
+        description.assert(siguiente).performImeAction()
+
+        description.assertIsNotFocused()
+        name.assertIsNotFocused()
+    }
+
+    @Test
+    fun tappingTheFigureOrDolaresWhileTypingPutsTheKeyboardAway() {
+        show(fresh)
+        rule.waitForIdle()
+
+        rule.onNodeWithText("Primer aporte").performClick()
+        name.assertIsNotFocused()
+        assertEquals(emptyList<InvestmentEditorAction>(), actions)
+
+        name.performClick()
+        name.assertIsFocused()
+        rule.onNodeWithText("Dólares").performClick()
+        name.assertIsNotFocused()
+        assertEquals(
+            listOf<InvestmentEditorAction>(InvestmentEditorAction.CurrencyPicked(Currency.USD)),
+            actions
+        )
+    }
+
+    @Test
+    fun tappingAnotherFigureWhileTypingPutsTheKeyboardAwayAndGivesItThePad() {
+        show(dollarsNoRate.copy(padField = InvestmentField.First))
+        rule.onNodeWithContentDescription("Nombre").performClick()
+        name.assertIsFocused()
+
+        rule.onNodeWithTag(INVESTMENT_EDITOR_RATE_SLIP_TAG).performScrollTo().performClick()
+
+        name.assertIsNotFocused()
+        assertEquals(
+            listOf<InvestmentEditorAction>(InvestmentEditorAction.TypeInto(InvestmentField.Rate)),
+            actions
+        )
     }
 
     /** As on Anotar: the message above, the check in the button's place, never "No se pudo cargar". */

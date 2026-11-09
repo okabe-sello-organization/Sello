@@ -14,6 +14,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
@@ -33,9 +34,11 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.input.ImeAction
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
 import com.software.sello.designsystem.component.MORE_MENU_TAG
@@ -153,6 +156,52 @@ class CategoryEditorScreenTest {
 
         rule.waitForIdle()
         name.assertIsFocused()
+    }
+
+    // While the keyboard is up it covers the pad and the button: the next move puts it away.
+
+    @Test
+    fun theNamesKeyIsSiguienteAndPutsTheKeyboardAway() {
+        show(ready)
+        rule.waitForIdle()
+
+        name.assert(SemanticsMatcher.expectValue(SemanticsProperties.ImeAction, ImeAction.Next))
+            .performImeAction()
+
+        name.assertIsNotFocused()
+    }
+
+    @Test
+    fun tappingTheLimitWhileTypingPutsTheKeyboardAway() {
+        show(ready)
+        rule.waitForIdle()
+
+        rule.onNodeWithText("Límite mensual").performClick()
+
+        name.assertIsNotFocused()
+        assertEquals(emptyList<CategoryEditorAction>(), actions)
+    }
+
+    @Test
+    fun aSuggestionOrSinLimiteWhileTypingPutsTheKeyboardAwayAndStillCounts() {
+        show(ready)
+        rule.waitForIdle()
+
+        rule.onNodeWithContentDescription("300.000 pesos").performClick()
+        name.assertIsNotFocused()
+
+        name.performClick()
+        name.assertIsFocused()
+        rule.onNodeWithTag(EDITOR_UNLIMITED_TAG).performClick()
+        name.assertIsNotFocused()
+
+        assertEquals(
+            listOf(
+                CategoryEditorAction.SuggestionPicked(300_000),
+                CategoryEditorAction.UnlimitedChanged(true)
+            ),
+            actions
+        )
     }
 
     @Test

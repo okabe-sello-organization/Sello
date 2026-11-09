@@ -1,6 +1,7 @@
 package com.software.sello.feature.investments
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DatePicker
@@ -33,6 +35,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -134,8 +138,15 @@ fun InvestmentEditorScreen(
     var choosingIcon by rememberSaveable { mutableStateOf(false) }
     // Kept here, not in the form: reading the form again must not take focus again.
     var nameFocused by rememberSaveable { mutableStateOf(false) }
+    // While a text is typed the keyboard covers the pad: anything else puts it away.
+    val focus = LocalFocusManager.current
+    val elsewhere: (InvestmentEditorAction) -> Unit = {
+        focus.clearFocus()
+        onAction(it)
+    }
     val identity: @Composable () -> Unit = {
-        Identity(state, onAction, focusName = !nameFocused, { nameFocused = true }) {
+        Identity(state, onAction, elsewhere, focusName = !nameFocused, { nameFocused = true }) {
+            focus.clearFocus()
             choosingIcon = true
         }
     }
@@ -205,11 +216,11 @@ fun InvestmentEditorScreen(
                 amount = {},
                 choices = {
                     identity()
-                    FirstContribution(state, onAction, dates)
-                    if (!state.sameValue) OtherValue(state, onAction)
-                    Rate(state, onAction, dates)
+                    FirstContribution(state, elsewhere, dates)
+                    if (!state.sameValue) OtherValue(state, elsewhere)
+                    Rate(state, elsewhere, dates)
                 },
-                action = { Action(state, onAction) },
+                action = { Action(state, elsewhere) },
                 keypad = {
                     val decimal = state.padField == InvestmentField.Rate ||
                         state.currency == Currency.USD
@@ -375,18 +386,21 @@ private fun textMessage(error: InvestmentTextError?, hint: String, empty: Boolea
 
 /**
  * The identity slip: the icon circle beside Nombre, the optional description and, when
- * creating, Pesos | Dólares. A new investment opens on the name with the keyboard up.
+ * creating, Pesos | Dólares. A new investment opens on the name with the keyboard up;
+ * Siguiente goes on to the description, then puts the keyboard away for the pad.
  */
 @Composable
 private fun Identity(
     state: InvestmentEditorState,
     onAction: (InvestmentEditorAction) -> Unit,
+    elsewhere: (InvestmentEditorAction) -> Unit,
     focusName: Boolean,
     onNameFocused: () -> Unit,
     onChooseIcon: () -> Unit
 ) {
     val nameFocus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
+    val focus = LocalFocusManager.current
     LaunchedEffect(Unit) {
         if (!state.editing && focusName) {
             nameFocus.requestFocus()
@@ -456,10 +470,12 @@ private fun Identity(
                 state.descriptionLength,
                 InvestmentEditorState.MAX_DESCRIPTION
             ),
+            // The pad comes next, so the key says Siguiente and puts the keyboard away.
             keyboardOptions = KeyboardOptions(
                 capitalization = KeyboardCapitalization.Sentences,
-                imeAction = ImeAction.Done
-            )
+                imeAction = ImeAction.Next
+            ),
+            keyboardActions = KeyboardActions(onNext = { focus.clearFocus() })
         )
         if (!state.editing) {
             SegmentedSwitch(
@@ -469,7 +485,7 @@ private fun Identity(
                 ),
                 if (state.currency == Currency.USD) 1 else 0,
                 {
-                    onAction(
+                    elsewhere(
                         InvestmentEditorAction.CurrencyPicked(
                             if (it == 1) Currency.USD else Currency.COP
                         )
@@ -532,10 +548,15 @@ private fun FigureSlip(
     val typing = stringResource(R.string.investment_editor_typing)
     val typeHere = stringResource(R.string.investment_editor_type_here)
     val choose = { onAction(InvestmentEditorAction.TypeInto(field)) }
+    val focus = LocalFocusManager.current
     EntryAmountSlip(
         label = label,
         amount = amount,
-        modifier = modifier.bringIntoViewRequester(requester).semantics {
+        // A tap on the figure the pad already has puts the keyboard away; it listens without
+        // becoming a button, so a screen reader reads it as before.
+        modifier = modifier.bringIntoViewRequester(requester).pointerInput(Unit) {
+            detectTapGestures { focus.clearFocus() }
+        }.semantics {
             if (active) stateDescription = typing
             onClick(label = typeHere) {
                 choose()
