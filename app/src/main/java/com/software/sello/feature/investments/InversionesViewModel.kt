@@ -1,5 +1,6 @@
 package com.software.sello.feature.investments
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.software.sello.domain.model.InvestmentOrder
@@ -23,10 +24,12 @@ import kotlinx.coroutines.flow.update
 
 /**
  * Inversiones from the investment board as it changes, in the order chosen in
- * Configuración. It is not tied to a month.
+ * Configuración. It is not tied to a month. The open help sheet lives in [saved], so it
+ * comes back after a restart.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class InversionesViewModel(
+    private val saved: SavedStateHandle,
     reads: InvestmentReads,
     preferences: InvestmentPreferences,
     clock: FinancialClock,
@@ -48,8 +51,16 @@ class InversionesViewModel(
     }
 
     val state: StateFlow<InversionesState> =
-        combine(board, order, clock.today) { board, order, today ->
-            render.overview(board, today.date, order)
+        combine(
+            board,
+            order,
+            clock.today,
+            saved.getStateFlow<String?>(KEY_HELP, null)
+        ) { board, order, today, help ->
+            when (val overview = render.overview(board, today.date, order)) {
+                is InversionesState.Ready -> overview.copy(help = investmentHelp(help))
+                else -> overview
+            }
         }
             .stateIn(
                 viewModelScope,
@@ -64,10 +75,18 @@ class InversionesViewModel(
 
             // Handled by the root, which owns navigation.
             is InversionesAction.Open -> Unit
+
+            is InversionesAction.ShowHelp -> saved[KEY_HELP] = action.help.name
+
+            // The root opens the Guía; coming back finds the screen, not the sheet.
+            InversionesAction.CloseHelp, InversionesAction.OpenGuide ->
+                saved[KEY_HELP] = null
         }
     }
 
     private companion object {
+        const val KEY_HELP = "inversiones.help"
+
         /** Long enough to outlast a rotation without reading again. */
         const val STOP_AFTER_MILLIS = 5_000L
     }

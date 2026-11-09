@@ -1,9 +1,11 @@
 package com.software.sello.feature.investments
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -22,6 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
@@ -31,7 +36,9 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
 import com.software.sello.designsystem.component.AnswerSlip
+import com.software.sello.designsystem.component.CardHelp
 import com.software.sello.designsystem.component.Footnote
+import com.software.sello.designsystem.component.HelpTerm
 import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyText
@@ -132,9 +139,9 @@ fun InversionesScreen(
                         item {
                             val total = state.total
                             if (total == null) {
-                                NoTotal(state.missingRate)
+                                NoTotal(state.missingRate, onAction)
                             } else {
-                                Total(total, state.rate, state, dates, onOpenRate)
+                                Total(total, state.rate, state, dates, onOpenRate, onAction)
                             }
                         }
                         item { Rows(state, dates, onAction, openRows) }
@@ -151,7 +158,8 @@ private fun Total(
     rate: RateLineModel?,
     state: InversionesState.Ready,
     dates: DateLabels,
-    onOpenRate: (() -> Unit)?
+    onOpenRate: (() -> Unit)?,
+    onAction: (InversionesAction) -> Unit
 ) {
     val gain = total.`return`.direction
     val stamp = when (gain) {
@@ -165,6 +173,7 @@ private fun Total(
         stamp = stamp,
         ink = if (gain == GainDirection.Loss) StampInk.Over else StampInk.Good,
         modifier = Modifier.testTag("inversiones.total"),
+        labelHelp = { ValueHelp(onAction) },
         description = listOfNotNull(
             stringResource(R.string.inversiones_value_label),
             total.value.spoken,
@@ -183,7 +192,11 @@ private fun Total(
         LeaderLine(stringResource(R.string.investment_contributed)) { MoneyText(total.contributed) }
         LeaderLine(stringResource(R.string.investment_withdrawn)) { MoneyText(total.withdrawn) }
         LeaderLine(stringResource(R.string.investment_dividends)) { MoneyText(total.dividends) }
-        LeaderLine(stringResource(R.string.investment_gain)) {
+        LeaderLine(
+            stringResource(R.string.investment_gain),
+            Modifier.testTag(INVERSIONES_GAIN_TAG),
+            onLabelHelp = { onAction(InversionesAction.ShowHelp(InvestmentHelp.Gain)) }
+        ) {
             MoneyText(total.gain, color = gainInk(gain))
         }
         val from = dates.shortDay(total.valuedFrom, state.today)
@@ -200,22 +213,81 @@ private fun Total(
             modifier = quiet.testTag("inversiones.valued")
         )
         rate?.let {
-            val day = dates.shortDay(it.date, state.today)
-            Footnote(
-                bold(stringResource(R.string.inversiones_rate_line, it.rate, day), it.rate),
+            RateLine(
+                it.rate,
+                dates.shortDay(it.date, state.today),
                 onOpenRate,
-                (if (onOpenRate == null) quiet else Modifier).testTag("inversiones.rate"),
-                SelloIcon.Autorenew
+                onHelp = { onAction(InversionesAction.ShowHelp(InvestmentHelp.Rate)) },
+                modifier = (if (onOpenRate == null) quiet else Modifier)
+                    .testTag("inversiones.rate")
             )
+        }
+    }
+}
+
+/**
+ * "Dólar a 4.150 · tasa del 20 oct" at the total's foot, laid out as a [Footnote]: the line
+ * opens Dólar ([onOpen]), and "tasa del…" is its own underlined word that opens its help
+ * sheet ([onHelp]).
+ */
+@Composable
+private fun RateLine(
+    rate: String,
+    day: String,
+    onOpen: (() -> Unit)?,
+    onHelp: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val colors = SelloTheme.colors
+    val style = MaterialTheme.typography.bodySmall
+    val lead = stringResource(R.string.inversiones_rate_lead, rate)
+    val term = stringResource(R.string.inversiones_rate_term, day)
+    val target = if (onOpen == null) {
+        Modifier
+    } else {
+        Modifier.heightIn(min = SelloTheme.spacing.minTouchTarget)
+            .clickable(role = Role.Button, onClick = onOpen)
+    }
+    Row(
+        // The line still says the rate's date; the underlined word is its own button too.
+        modifier.fillMaxWidth().then(target).semantics { contentDescription = "$lead $term" },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
+    ) {
+        Icon(SelloIcon.Autorenew.painter(), null, Modifier.size(18.dp), colors.brand)
+        Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                bold("$lead ", rate),
+                Modifier.weight(1f, fill = false),
+                style = style,
+                color = colors.inkSoft
+            )
+            HelpTerm(
+                term,
+                onHelp,
+                Modifier.testTag(INVERSIONES_RATE_TERM_TAG),
+                style = style,
+                color = colors.inkSoft
+            )
+        }
+        if (onOpen != null) {
+            Icon(SelloIcon.ChevronRight.painter(), null, tint = colors.outline)
         }
     }
 }
 
 /** Investments exist but the total cannot be shown: none has a value, or a rate is missing. */
 @Composable
-private fun NoTotal(missingRate: Boolean) {
+private fun NoTotal(missingRate: Boolean, onAction: (InversionesAction) -> Unit) {
     Slip(Modifier.fillMaxWidth().testTag("inversiones.noTotal")) {
-        Text(stringResource(R.string.inversiones_value_label), color = SelloTheme.colors.inkSoft)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                stringResource(R.string.inversiones_value_label),
+                color = SelloTheme.colors.inkSoft
+            )
+            Spacer(Modifier.width(SelloTheme.spacing.sm))
+            ValueHelp(onAction)
+        }
         Text(
             stringResource(
                 if (missingRate) {
@@ -390,4 +462,17 @@ private val QuietLineHeight = 32.dp
 /** The gap above a foot line's words, inside [QuietLineHeight]. */
 private val QuietLineGap = 6.dp
 
+/** The total card's **?**. */
+@Composable
+private fun ValueHelp(onAction: (InversionesAction) -> Unit) {
+    CardHelp(
+        stringResource(R.string.investment_help_value_label),
+        { onAction(InversionesAction.ShowHelp(InvestmentHelp.Value)) },
+        Modifier.testTag(INVERSIONES_VALUE_HELP_TAG)
+    )
+}
+
 const val INVERSIONES_LIST_TAG = "inversiones.list"
+const val INVERSIONES_VALUE_HELP_TAG = "inversiones.help.value"
+const val INVERSIONES_GAIN_TAG = "inversiones.gain"
+const val INVERSIONES_RATE_TERM_TAG = "inversiones.help.rate"

@@ -15,6 +15,7 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -37,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
 import com.software.sello.SweepLook
@@ -197,7 +199,11 @@ class MetasScreenTest {
     private fun destination(
         board: GoalBoard,
         onCreate: (() -> Unit)? = null,
-        onContribute: (() -> Unit)? = null
+        onContribute: (() -> Unit)? = null,
+        onOpenGuide: () -> Unit = {},
+        saved: SavedStateHandle = SavedStateHandle(),
+        read: GoalBoardState = ReadState.Ready(board),
+        onTab: (String) -> Unit = {}
     ) {
         val factory = viewModelFactory {
             initializer {
@@ -205,8 +211,8 @@ class MetasScreenTest {
                 val ids = RecordIdSource { "00000000-0000-4000-a000-000000000001" }
                 val commands = HandGoalCommands()
                 MetasViewModel(
-                    SavedStateHandle(),
-                    Reads(ReadState.Ready(board)),
+                    saved,
+                    Reads(read),
                     commands,
                     clock,
                     money,
@@ -237,11 +243,13 @@ class MetasScreenTest {
                             SelloDestination("resumen", "Resumen", SelloIcon.Insights),
                             SelloDestination("metas", "Metas", SelloIcon.Flag)
                         ),
-                        "metas"
-                    ) {},
+                        "metas",
+                        onTab
+                    ),
                     onOpenGoal = {},
                     onCreate = onCreate,
-                    onContribute = onContribute
+                    onContribute = onContribute,
+                    onOpenGuide = onOpenGuide
                 )
             }
         }
@@ -546,5 +554,36 @@ class MetasScreenTest {
 
         assertEquals(2, commands.sent.size)
         rule.onNodeWithTag(METAS_COMPLETION_PROBLEM_TAG).assertIsDisplayed()
+    }
+
+    @Test
+    fun guardadoEnMetasQuestionMarkOpensItsSheetAndVerMasOpensTheGuia() {
+        var guides = 0
+        destination(board, onOpenGuide = { guides++ })
+
+        rule.onNodeWithTag(METAS_SAVED_HELP_TAG)
+            .assertContentDescriptionEquals("Qué es Guardado en metas")
+            .performClick()
+
+        rule.onNodeWithTag(METAS_HELP_TAG).assertExists()
+        rule.onNodeWithText("Aparte de tu presupuesto", useUnmergedTree = true).assertExists()
+        rule.onNode(hasText("Ver más en la Guía de Sello"), useUnmergedTree = true)
+            .performScrollTo()
+            .performClick()
+        assertEquals(1, guides)
+        rule.onNodeWithTag(METAS_HELP_TAG).assertDoesNotExist()
+    }
+
+    @Test
+    fun backWhileLoadingClosesASheetSavedOpenBeforeARestart() {
+        val saved = SavedStateHandle(mapOf("metas.help" to true))
+        val tabs = mutableListOf<String>()
+        destination(board, saved = saved, read = ReadState.Loading, onTab = tabs::add)
+
+        Espresso.pressBack()
+        rule.waitForIdle()
+
+        assertEquals(listOf("recibo"), tabs)
+        assertEquals(false, saved.get<Boolean>("metas.help"))
     }
 }

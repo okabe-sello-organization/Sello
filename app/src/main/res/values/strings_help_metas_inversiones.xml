@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Help sheets on Metas, Inversiones and an investment's page (SELLO-209). Each says the
+     rule the code applies today; the Guía (strings_guide.xml) says the same in its pages. -->
+<resources>
+    <!-- Metas: Guardado en metas (GoalPolicy.overview) -->
+    <string name="metas_help_label">Qué es Guardado en metas</string>
+    <string name="metas_help_title">Guardado en metas</string>
+    <string name="metas_help_saved">Lo que guardan tus metas</string>
+    <string name="metas_help_saved_body">Lo que aportaste a tus metas activas menos lo que retiraste. Una meta lograda ya no suma aquí.</string>
+    <string name="metas_help_month">Lo aportado en el mes</string>
+    <string name="metas_help_month_body">La línea de abajo suma los aportes con fecha de este mes. Los retiros no se restan.</string>
+    <string name="metas_help_apart">Aparte de tu presupuesto</string>
+    <string name="metas_help_apart_body">Aportar a una meta no cuenta como gasto ni cambia tu Restante, y no pasa a tus inversiones. Sello no mueve dinero: solo lleva la cuenta.</string>
+    <string name="metas_help_example">Este mes aportas 300.000 a una meta y retiras 100.000. Guardado en metas sube 200.000, la línea del mes dice 300.000 y tu Restante no cambia.</string>
+
+    <!-- Inversiones: Tus inversiones valen (InvestmentPolicy.figures, .overview) -->
+    <string name="investment_help_value_label">Cómo se suma lo que valen tus inversiones</string>
+    <string name="investment_help_value_title">Tus inversiones valen</string>
+    <string name="investment_help_value_yours">Lo anotas tú</string>
+    <string name="investment_help_value_yours_body">Cada inversión vale el último valor que anotaste, más los aportes y menos los retiros de después. Sello no se conecta a ningún banco ni busca precios: nada cambia solo.</string>
+    <string name="investment_help_value_counted">Qué entra en el total</string>
+    <string name="investment_help_value_counted_body">Solo las inversiones que ya tienen un valor anotado.</string>
+    <string name="investment_help_value_dollars">Dólares</string>
+    <string name="investment_help_value_dollars_body">Se suman en pesos a la tasa que anotaste, la de fecha más reciente. Cada inversión en dólares sigue en dólares en su página.</string>
+    <string name="investment_help_value_example">Un CDT que vale 1.000.000 y una inversión de 100 dólares, con la tasa en 4.000: tus inversiones valen 1.400.000.</string>
+
+    <!-- Ganancia and Rendimiento (InvestmentPolicy.figures, .returnOf) -->
+    <string name="investment_help_gain_title">Ganancia</string>
+    <string name="investment_help_gain">Ganancia</string>
+    <string name="investment_help_gain_body">Lo que vale hoy, más lo que retiraste y los dividendos, menos lo que aportaste. Un aporte no es ganancia: suma lo mismo al valor y a lo aportado.</string>
+    <string name="investment_help_return">Rendimiento (el %)</string>
+    <string name="investment_help_return_body">La ganancia dividida por lo que aportaste, con un decimal. Cuenta desde tu primer aporte, no por año.</string>
+    <string name="investment_help_gain_example">Aportas 1.000.000, recibes 50.000 de dividendos y hoy vale 1.100.000: ganaste 150.000, un 15,0 %.</string>
+
+    <!-- tasa del… (InvestmentPolicy.currentRate, .overview) -->
+    <string name="inversiones_rate_lead">Dólar a %1$s ·</string>
+    <string name="inversiones_rate_term">tasa del %1$s</string>
+    <string name="investment_help_rate_title">Tasa del dólar</string>
+    <string name="investment_help_rate_date">La fecha</string>
+    <string name="investment_help_rate_date_body">La que le pusiste a la tasa al anotarla. Sello usa la de fecha más reciente; no la busca en internet.</string>
+    <string name="investment_help_rate_use">Para qué sirve</string>
+    <string name="investment_help_rate_use_body">Convierte tus dólares a pesos solo para sumar: el total de Inversiones, cuánto pesa cada una en Dónde está y el total de Varios movimientos. Cada inversión en dólares sigue en dólares.</string>
+    <string name="investment_help_rate_example">Con la tasa en 4.000, 250 dólares suman 1.000.000 al total. Si anotas una tasa de 4.200, suman 1.050.000.</string>
+
+    <!-- Valor y lo que pusiste (InvestmentsRenderModel.chart, InvestmentPolicy.ledger) -->
+    <string name="investment_help_chart_label">Cómo leer Valor y lo que pusiste</string>
+    <string name="investment_help_chart_title">Valor y lo que pusiste</string>
+    <string name="investment_help_chart_values">Valor anotado</string>
+    <string name="investment_help_chart_values_body">Cada punto es un valor que anotaste, en su fecha.</string>
+    <string name="investment_help_chart_put">Lo que pusiste</string>
+    <string name="investment_help_chart_put_body">Lo que aportaste menos lo que retiraste hasta ese día. Sube con cada aporte y baja con cada retiro.</string>
+    <string name="investment_help_chart_gain">Aportar no es ganar</string>
+    <string name="investment_help_chart_gain_body">Un aporte sube lo que pusiste. Lo que ganas es lo que el valor queda por encima, más los dividendos.</string>
+    <string name="investment_help_chart_example">Pusiste 1.000.000 y aportas 500.000 más: lo que pusiste sube a 1.500.000. Si luego anotas que vale 1.600.000, ganaste 100.000.</string>
+</resources>

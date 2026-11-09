@@ -11,7 +11,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
@@ -26,6 +28,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -261,9 +264,16 @@ class InversionesScreenTest {
     private val shell =
         ShellState(YearMonth.of(2026, 10), YearMonth.of(2026, 10), false, 2026, null)
 
-    private fun destination(state: InvestmentBoardState, onAdd: (() -> Unit)? = null) {
+    private fun destination(
+        state: InvestmentBoardState,
+        onAdd: (() -> Unit)? = null,
+        onOpenRate: (() -> Unit)? = null,
+        onOpenGuide: () -> Unit = {}
+    ) {
         val factory = viewModelFactory {
-            initializer { InversionesViewModel(Reads(state), Order(), clock, money) }
+            initializer {
+                InversionesViewModel(SavedStateHandle(), Reads(state), Order(), clock, money)
+            }
         }
         rule.showSello(Look(density = 1f)) {
             Box(Modifier.requiredSize(360.dp, 2000.dp)) {
@@ -284,7 +294,9 @@ class InversionesScreenTest {
                         ),
                         "inversiones"
                     ) {},
-                    onAdd = onAdd
+                    onOpenRate = onOpenRate,
+                    onAdd = onAdd,
+                    onOpenGuide = onOpenGuide
                 )
             }
         }
@@ -337,8 +349,13 @@ class InversionesScreenTest {
             "Valores anotados entre el 12 jun y el 16 oct",
             useUnmergedTree = true
         ).assertExists()
-        rule.onNodeWithText("Dólar a 4.150,25 · tasa del 20 oct", useUnmergedTree = true)
+        rule.onNodeWithText("Dólar a 4.150,25 ·", substring = true, useUnmergedTree = true)
             .assertExists()
+        rule.onNodeWithTag(INVERSIONES_RATE_TERM_TAG)
+            .assertContentDescriptionEquals("tasa del 20 oct. Qué significa")
+        // The Dólar button still says the rate's date (SELLO-209 review R4).
+        rule.onNodeWithTag("inversiones.rate")
+            .assertContentDescriptionEquals("Dólar a 4.150,25 · tasa del 20 oct")
     }
 
     @Test
@@ -454,5 +471,63 @@ class InversionesScreenTest {
             whole("USD\u00A09.999.999.999,99", "inversiones.rows")
             whole("999.999.999.998", "inversiones.rows")
         }
+    }
+
+    @Test
+    fun tasaDelOpensItsSheetNotDolarAndVerMasOpensTheGuia() {
+        var rates = 0
+        var guides = 0
+        destination(ReadState.Ready(page()), onOpenRate = { rates++ }, onOpenGuide = { guides++ })
+
+        rule.onNodeWithTag(INVERSIONES_RATE_TERM_TAG).performClick()
+
+        assertEquals(0, rates)
+        rule.onNodeWithTag("$INVESTMENT_HELP_TAG.Rate").assertExists()
+        rule.onNodeWithText("Tasa del dólar", useUnmergedTree = true).assertExists()
+        rule.onNodeWithText("Ver más en la Guía de Sello", useUnmergedTree = true).performClick()
+        assertEquals(1, guides)
+        rule.onNodeWithTag("$INVESTMENT_HELP_TAG.Rate").assertDoesNotExist()
+
+        // The rest of the line still opens Dólar.
+        rule.onNodeWithTag("inversiones.rate").performClick()
+        assertEquals(1, rates)
+    }
+
+    @Test
+    fun withNoTotalYetTheCardsQuestionMarkStillExplainsIt() {
+        val cripto = investment("Cripto", null, listOf(Triple(aporte, 2_000_000, "2026-08-01")))
+        destination(ReadState.Ready(board(cripto)))
+
+        rule.onNodeWithContentDescription("Cómo se suma lo que valen tus inversiones")
+            .performClick()
+
+        rule.onNodeWithTag("$INVESTMENT_HELP_TAG.Value").assertExists()
+        rule.onNodeWithText("Lo anotas tú", useUnmergedTree = true).assertExists()
+        // The scrim closes it.
+        rule.onNodeWithTag("$INVESTMENT_HELP_TAG.Value").performClick()
+    }
+
+    @Test
+    fun theTotalsQuestionMarkAndGananciaOpenTheirSheetsAndGananciaStillSaysItsAmount() {
+        destination(ReadState.Ready(page()))
+
+        // TalkBack: the line says "Ganancia" and its amount; the word is its own button.
+        rule.onNodeWithTag(INVERSIONES_GAIN_TAG).assert(
+            SemanticsMatcher.expectValue(
+                SemanticsProperties.ContentDescription,
+                listOf("Ganancia", "más 1.301.588 pesos")
+            )
+        )
+        rule.onNodeWithContentDescription("Ganancia. Qué significa").performClick()
+        rule.onNodeWithTag("$INVESTMENT_HELP_TAG.Gain").assertExists()
+        rule.onNodeWithText("Rendimiento (el %)", useUnmergedTree = true).assertExists()
+        rule.onNodeWithTag("$INVESTMENT_HELP_TAG.Gain").performClick()
+        rule.onNodeWithTag("$INVESTMENT_HELP_TAG.Gain").assertDoesNotExist()
+
+        // The answer is still said once, and its ? is reachable on its own.
+        rule.onNodeWithContentDescription("Tus inversiones valen, 28.601.838 pesos, Gana")
+            .assertExists()
+        rule.onNodeWithTag(INVERSIONES_VALUE_HELP_TAG).performClick()
+        rule.onNodeWithTag("$INVESTMENT_HELP_TAG.Value").assertExists()
     }
 }

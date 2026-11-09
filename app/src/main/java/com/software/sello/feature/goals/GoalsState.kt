@@ -32,7 +32,9 @@ sealed interface MetasState {
          * How many completions ended in [CompletionState.Failed] so far, so a refusal that
          * repeats the one on screen is still brought into view.
          */
-        val completionFailures: Int = 0
+        val completionFailures: Int = 0,
+        /** "Guardado en metas"'s help sheet is open (SELLO-209). */
+        val helpOpen: Boolean = false
     ) : MetasState {
         val empty: Boolean get() = goals.isEmpty() && completed.isEmpty()
     }
@@ -90,6 +92,15 @@ sealed interface MetasAction {
 
     /** The big moment is closed. */
     data object CelebrationDone : MetasAction
+
+    /** The **?** on "Guardado en metas" was tapped: its sheet opens. */
+    data object ShowHelp : MetasAction
+
+    /** Back or the scrim closed the sheet. */
+    data object CloseHelp : MetasAction
+
+    /** "Ver más en la Guía de Sello": the sheet closes and the root opens the Guía. */
+    data object OpenGuide : MetasAction
 }
 
 /** One goal: progress, stamps, facts, aportes by month and its movements. */

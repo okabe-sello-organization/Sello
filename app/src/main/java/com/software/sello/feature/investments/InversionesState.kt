@@ -29,7 +29,9 @@ sealed interface InversionesState {
         val rate: RateLineModel?,
         val today: LocalDate,
         val missingRate: Boolean = false,
-        val stale: Boolean = false
+        val stale: Boolean = false,
+        /** The help sheet open over the screen, if any (SELLO-209). */
+        val help: InvestmentHelp? = null
     ) : InversionesState {
         val empty: Boolean get() = rows.isEmpty()
     }
@@ -86,4 +88,13 @@ sealed interface InversionesAction {
     data object Retry : InversionesAction
 
     data class Open(val id: String) : InversionesAction
+
+    /** A **?** or an underlined word was tapped: its sheet opens. */
+    data class ShowHelp(val help: InvestmentHelp) : InversionesAction
+
+    /** Back or the scrim closed the sheet. */
+    data object CloseHelp : InversionesAction
+
+    /** "Ver más en la Guía de Sello": the sheet closes and the root opens the Guía. */
+    data object OpenGuide : InversionesAction
 }

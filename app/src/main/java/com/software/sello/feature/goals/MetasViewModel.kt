@@ -26,11 +26,12 @@ import kotlinx.coroutines.flow.update
 
 /**
  * Metas from the goal board as it changes. The band's month is the financial day's,
- * never the month chosen on Recibo: goals are not tied to a month.
+ * never the month chosen on Recibo: goals are not tied to a month. Whether the help sheet
+ * is open lives in the saved state, so it comes back after a restart.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class MetasViewModel(
-    saved: SavedStateHandle,
+    private val saved: SavedStateHandle,
     reads: GoalReads,
     commands: GoalCommands,
     clock: FinancialClock,
@@ -58,11 +59,15 @@ class MetasViewModel(
             board,
             clock.today,
             completer.state,
-            completer.failures
-        ) { board, today, completion, failures ->
+            completer.failures,
+            saved.getStateFlow(KEY_HELP, false)
+        ) { board, today, completion, failures, help ->
             when (val metas = render.metas(board, today.date)) {
-                is MetasState.Ready ->
-                    metas.copy(completion = completion, completionFailures = failures)
+                is MetasState.Ready -> metas.copy(
+                    completion = completion,
+                    completionFailures = failures,
+                    helpOpen = help
+                )
 
                 else -> metas
             }
@@ -100,6 +105,11 @@ class MetasViewModel(
             }
 
             MetasAction.CelebrationDone -> completer.done()
+
+            MetasAction.ShowHelp -> saved[KEY_HELP] = true
+
+            // The root opens the Guía; coming back finds Metas, not the sheet.
+            MetasAction.CloseHelp, MetasAction.OpenGuide -> saved[KEY_HELP] = false
         }
     }
 
@@ -111,6 +121,8 @@ class MetasViewModel(
     }
 
     private companion object {
+        const val KEY_HELP = "metas.help"
+
         /** Long enough to outlast a rotation without reading again. */
         const val STOP_AFTER_MILLIS = 5_000L
     }

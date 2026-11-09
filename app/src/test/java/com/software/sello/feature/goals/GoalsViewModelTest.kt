@@ -1022,4 +1022,29 @@ class GoalsViewModelTest {
         ),
         replayed = false
     )
+
+    @Test
+    fun guardadoEnMetasHelpOpensClosesAndComesBackAfterARestart() = runTest {
+        reads.board.value = board(summary(viajeId, 1_710_000, 3_000_000))
+        val saved = SavedStateHandle()
+        val model = metas(saved = saved)
+        watch(model)
+        assertEquals(false, (model.state.value as MetasState.Ready).helpOpen)
+
+        model.onAction(MetasAction.ShowHelp)
+        assertEquals(true, (model.state.value as MetasState.Ready).helpOpen)
+
+        // A restart keeps the saved state, and with it the open sheet.
+        val restored = metas(saved = SavedStateHandle(saved.keys().associateWith { saved[it] }))
+        watch(restored)
+        assertEquals(true, (restored.state.value as MetasState.Ready).helpOpen)
+
+        model.onAction(MetasAction.CloseHelp)
+        assertEquals(false, (model.state.value as MetasState.Ready).helpOpen)
+
+        // Ver más en la Guía closes it: coming back finds Metas.
+        model.onAction(MetasAction.ShowHelp)
+        model.onAction(MetasAction.OpenGuide)
+        assertEquals(false, (model.state.value as MetasState.Ready).helpOpen)
+    }
 }

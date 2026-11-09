@@ -1,5 +1,6 @@
 package com.software.sello.feature.investments
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.dp
@@ -224,4 +225,19 @@ class InversionesScreenshotTest {
     @Test fun noTotalLight() = shot("no-total", noTotal, Look())
 
     @Test fun noTotalDark() = shot("no-total", noTotal, Look(dark = true))
+
+    /** The total card's sheet over the screen, as the destination draws it (SELLO-209). */
+    private fun helpShot(look: Look) {
+        rule.showSello(look) {
+            Box {
+                InversionesScreen(shown, {}, dateLabels(), PaddingValues(16.dp))
+                InvestmentHelpSheet(InvestmentHelp.Value, onClose = {}, onGuide = {})
+            }
+        }
+        rule.captureStill("src/test/screenshots/inversiones-help-value-${look.label}.png")
+    }
+
+    @Test fun helpValueLight() = helpShot(Look())
+
+    @Test fun helpValueDark() = helpShot(Look(dark = true))
 }

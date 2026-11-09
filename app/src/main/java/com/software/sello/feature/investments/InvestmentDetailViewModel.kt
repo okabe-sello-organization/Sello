@@ -28,7 +28,7 @@ import kotlinx.coroutines.launch
 
 /**
  * One investment from the board as it changes. Whether every movement is shown and the
- * chart's chosen value live in [saved], so they come back after a restart.
+ * chart's chosen value and the open help sheet live in [saved], so they come back after a restart.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class InvestmentDetailViewModel(
@@ -78,12 +78,14 @@ class InvestmentDetailViewModel(
         attempts.flatMapLatest { lastGood.keep(Unit, reads.observeBoard()) },
         clock.today,
         saved.getStateFlow(KEY_ALL, false),
-        saved.getStateFlow<String?>(KEY_SELECTED, null)
-    ) { board, today, all, selected ->
+        saved.getStateFlow<String?>(KEY_SELECTED, null),
+        saved.getStateFlow<String?>(KEY_HELP, null)
+    ) { board, today, all, selected, help ->
         when (val detail = render.detail(board, id, today.date)) {
             is InvestmentDetailState.Ready -> detail.copy(
                 allMovements = all,
-                selectedValue = selected
+                selectedValue = selected,
+                help = investmentHelp(help)
             )
 
             else -> detail
@@ -115,6 +117,12 @@ class InvestmentDetailViewModel(
 
             is InvestmentDetailAction.SelectValue -> saved[KEY_SELECTED] = action.id
 
+            is InvestmentDetailAction.ShowHelp -> saved[KEY_HELP] = action.help.name
+
+            // The root opens the Guía; coming back finds the page, not the sheet.
+            InvestmentDetailAction.CloseHelp, InvestmentDetailAction.OpenGuide ->
+                saved[KEY_HELP] = null
+
             // Handled by the root, which owns navigation.
             InvestmentDetailAction.Edit,
             InvestmentDetailAction.RecordValue,
@@ -142,6 +150,7 @@ class InvestmentDetailViewModel(
 
         private const val KEY_ALL = "investment.detail.all"
         private const val KEY_SELECTED = "investment.detail.selected"
+        private const val KEY_HELP = "investment.detail.help"
         private const val STOP_AFTER_MILLIS = 5_000L
     }
 }

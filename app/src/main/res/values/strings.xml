@@ -1733,7 +1733,6 @@
     <string name="investment_gain">Ganancia</string>
     <string name="inversiones_valued_between">Valores anotados entre el %1$s y el %2$s</string>
     <string name="inversiones_valued_on">Valores anotados el %1$s</string>
-    <string name="inversiones_rate_line">Dólar a %1$s · tasa del %2$s</string>
     <string name="inversiones_where">Dónde está, de mayor a menor</string>
     <string name="inversiones_list">Tus inversiones</string>
     <string name="investment_share">%1$d %%</string>
