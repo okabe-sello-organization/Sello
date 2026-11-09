@@ -363,6 +363,14 @@
     <string name="category_detail_expense_edit">Editar</string>
     <string name="category_detail_expense_delete">Borrar</string>
     <string name="category_detail_hint">Toca un gasto para corregirlo. Para borrarlo, deslízalo o mantenlo presionado.</string>
+    <plurals name="category_detail_nudge_deleting">
+        <item quantity="one">Si borras un gasto por error, puedes deshacerlo durante %1$d segundo.</item>
+        <item quantity="other">Si borras un gasto por error, puedes deshacerlo durante %1$d segundos.</item>
+    </plurals>
+    <string name="category_detail_nudge_fixed">Anotas el mismo gasto cada mes: puede ser un pago fijo. Al anotarlo, toca %1$s.</string>
+    <string name="category_detail_nudge_carry_surplus">En %1$s te sobró. En %2$s puedes hacer que lo que sobre pase al mes siguiente.</string>
+    <string name="category_detail_nudge_carry_deficit">En %1$s te pasaste. En %2$s puedes hacer que lo que falte se descuente del mes siguiente.</string>
+    <string name="category_detail_nudge_close">Cerrar el aviso</string>
     <string name="category_detail_delete_gone">Ese gasto ya estaba borrado.</string>
     <string name="category_detail_delete_changed">Ese gasto cambió mientras tanto. No se borró; revísalo.</string>
     <string name="category_detail_delete_data_changed">Tus datos cambiaron mientras tanto. No se borró nada.</string>
@@ -645,6 +653,8 @@
     <string name="entry_more_expense">Otro gasto</string>
     <string name="entry_more_income">Otro ingreso</string>
     <string name="entry_more_movement">Otro movimiento</string>
+    <string name="entry_several_nudge">¿Anotas varios seguidos? Con %1$s los anotas todos de una vez.</string>
+    <string name="entry_several_nudge_close">Cerrar el aviso de Anotar varios</string>
     <string name="bulk_title">Anotar varios</string>
     <string name="bulk_title_expenses">Varios gastos</string>
     <string name="bulk_title_incomes">Varios ingresos</string>

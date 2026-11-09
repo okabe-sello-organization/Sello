@@ -2,7 +2,7 @@
 
 - **Type:** Story
 - **Priority:** P2
-- **Status:** Backlog
+- **Status:** Done
 - **Depends on:** SELLO-211
 - **Gate:** G2
 
@@ -18,16 +18,18 @@ it is, once.
   when the person opens Anotar after saving three single expenses the same day. Text
   says the slip records several at once. Using the slip closes it.
 - **Deleting**: in a category's expense list, the first time it shows an expense. Text
-  says where Borrar is and that a deleted expense can be undone for a few seconds.
-  Deleting an expense closes it.
+  says a deleted expense can be undone for a few seconds; where Borrar is already shows
+  on screen (`category_detail_hint`). Deleting an expense closes it. *Changed on the
+  orchestrator's ruling (2026-11-08), pending the owner's OK.*
 - **Pagos fijos**: in category detail, when the same amount with the same note was
   recorded in that category in each of the two previous months and there is no fixed
   payment for it. Text says it can become a pago fijo. Creating any fixed payment
   closes it.
 - **Arrastre**: in category detail, when the previous month ended over or under that
-  category's limit and the category's arrastre is off. Text says what was left or
-  missing can carry to this month and where to switch it on. Turning arrastre on in any
-  category closes it.
+  category's limit and the category's arrastre is off. Text says switching arrastre on
+  makes later months carry what is left or missing (it starts at 0 the month it is turned
+  on, ADR 0020). Turning arrastre on in any category closes it. *Corrected to match the
+  owner's ADR 0020 on the orchestrator's ruling (2026-11-08).*
 - Each text is checked against the code (where the action lives, how long undo lasts)
   and stays one or two lines.
 - ViewModel tests for each trigger and its "closes" rule with controlled clocks; one

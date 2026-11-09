@@ -32,6 +32,7 @@ import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.recurrence.RepeatAction
 import com.software.sello.presentation.recurrence.RepeatKind
+import com.software.sello.testing.HandGuidance
 import com.software.sello.testing.HandSnapshots
 import com.software.sello.testing.NewObservationSnapshots
 import com.software.sello.testing.TestMoneyLabels
@@ -64,6 +65,7 @@ class ExpenseFormViewModelTest {
     private val scheduleBook = HandScheduleReads()
     private val schedules = HandScheduleCommands(scheduleBook)
     private val clock = HandFinancialClock("2026-10-22")
+    private val guidance = HandGuidance()
     private var nextId = 500
     private val money = testMoney()
 
@@ -121,7 +123,8 @@ class ExpenseFormViewModelTest {
         corrections,
         schedules,
         scheduleBook,
-        Dispatchers.Main
+        Dispatchers.Main,
+        guidance
     )
 
     /** A form over a month with the given categories, already read. */

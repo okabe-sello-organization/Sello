@@ -5,6 +5,7 @@ import com.software.sello.domain.model.ExpenseId
 import com.software.sello.domain.model.GoalPlace
 import com.software.sello.domain.model.IncomeId
 import com.software.sello.domain.model.InvestmentMovementKind
+import com.software.sello.domain.model.Nudge
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
@@ -52,6 +53,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** What is said, for a moment, about the last correction of an expense. */
@@ -395,6 +397,15 @@ class Corrections(
      */
     val confirmedDeletion: StateFlow<ConfirmedDeletion?> = confirmedDeleted
 
+    private val done = MutableStateFlow<Set<Nudge>>(emptySet())
+
+    /**
+     * The nudges whose action storage confirmed in this process, wherever it was done
+     * (SELLO-212): an expense deleted, a pago fijo created, carry turned on. It only grows,
+     * so a reader never misses one; each closes its nudge for good.
+     */
+    val nudgesDone: StateFlow<Set<Nudge>> = done
+
     /**
      * The deletion on offer. [undoOperation] names every attempt to undo it, so an
      * attempt whose outcome was not known is asked again and never done twice.
@@ -611,6 +622,7 @@ class Corrections(
         months: Int?,
         found: Boolean = false
     ): DeleteResult {
+        done.update { it + Nudge.Deleting }
         asked = null
         asking.value = null
         if (command.confirmation != null) {
@@ -1194,7 +1206,10 @@ class Corrections(
     fun incomesRecorded(notice: CorrectionNotice.IncomesRecorded) = said(notice)
 
     /** A screen reports a new schedule its receipt confirmed, read back from storage. */
-    fun scheduleSaved(notice: CorrectionNotice.ScheduleSaved) = said(notice)
+    fun scheduleSaved(notice: CorrectionNotice.ScheduleSaved) {
+        if (!notice.income) done.update { it + Nudge.FixedPayment }
+        said(notice)
+    }
 
     /** A screen reports a schedule change its receipt confirmed. */
     fun scheduleChanged(notice: CorrectionNotice.ScheduleChanged) = said(notice)
@@ -1207,6 +1222,9 @@ class Corrections(
                 notice !is CorrectionNotice.InvestmentMovementDeleted
         ) {
             "An offer to undo is not a statement"
+        }
+        if ((notice as? CorrectionNotice.CategorySaved)?.carry?.on == true) {
+            done.update { it + Nudge.Carry }
         }
         said(notice)
     }

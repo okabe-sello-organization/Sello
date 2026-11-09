@@ -3,6 +3,7 @@ package com.software.sello.feature.recibo
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.domain.model.Expense
+import com.software.sello.domain.model.Guidance
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.Occurrence
@@ -37,6 +38,7 @@ import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.corrections.Corrections
+import com.software.sello.testing.HandGuidance
 import com.software.sello.testing.HandSnapshots
 import com.software.sello.testing.testMoney
 import java.time.Instant
@@ -194,7 +196,9 @@ class CategoryDetailFixedTest {
             { testScheduler.currentTime.milliseconds },
             HandExpenseCommands(),
             { uuid(901) },
-            androidx.lifecycle.SavedStateHandle()
+            androidx.lifecycle.SavedStateHandle(),
+            HandGuidance(Guidance()),
+            HandFinancialClock("2026-10-22")
         )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.state.collect {}

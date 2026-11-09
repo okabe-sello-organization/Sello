@@ -47,6 +47,7 @@ import com.software.sello.presentation.corrections.CorrectionKind
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.ScheduleChange
+import com.software.sello.testing.HandGuidance
 import com.software.sello.testing.HandSnapshots
 import com.software.sello.testing.TestMoneyLabels
 import com.software.sello.testing.pesos
@@ -129,7 +130,7 @@ class ExpenseEditViewModelTest {
     private fun form(saved: SavedStateHandle = editing()) =
         ExpenseEntryViewModel(saved, commands, reads, snapshots, clock, {
             uuid(nextId++)
-        }, money, corrections, schedules, scheduleBook, Dispatchers.Main)
+        }, money, corrections, schedules, scheduleBook, Dispatchers.Main, HandGuidance())
 
     /** The form opened on [expense], with it in storage and its months read. */
     private fun opened(

@@ -254,6 +254,7 @@ private fun CategoryDetailContent(
                         )
                     }
                 }
+                state.nudge?.let { CategoryDetailNudgeRow(it, months, onAction, onEditCategory) }
                 CategoryFixedPayments(
                     state,
                     months,

@@ -9,6 +9,7 @@ import com.software.sello.domain.model.ExpenseId
 import com.software.sello.domain.model.FrequentExpense
 import com.software.sello.domain.model.MonthlySnapshot
 import com.software.sello.domain.model.Note
+import com.software.sello.domain.model.Nudge
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.model.ScheduledEntry
@@ -17,6 +18,7 @@ import com.software.sello.domain.model.TextError
 import com.software.sello.domain.model.TransactionAmountError
 import com.software.sello.domain.policy.AmountDraft
 import com.software.sello.domain.policy.AmountDraftError
+import com.software.sello.domain.policy.FeatureNudgePolicy
 import com.software.sello.domain.policy.FrequentExpensesPolicy
 import com.software.sello.domain.port.ChangeSchedule
 import com.software.sello.domain.port.CommandRejection
@@ -31,6 +33,7 @@ import com.software.sello.domain.port.ExpenseCommands
 import com.software.sello.domain.port.ExpenseReads
 import com.software.sello.domain.port.ExpenseRejection
 import com.software.sello.domain.port.FinancialClock
+import com.software.sello.domain.port.GuidancePreferences
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
@@ -43,6 +46,8 @@ import com.software.sello.presentation.carry.CarryCorrectionText
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.ScheduleChange
+import com.software.sello.presentation.guidance.NudgeDays
+import com.software.sello.presentation.guidance.ScreenNudge
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.read.LastGoodRead
 import com.software.sello.presentation.recurrence.FollowingSchedule
@@ -58,6 +63,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -67,6 +73,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -110,7 +117,8 @@ class ExpenseEntryViewModel(
     private val schedules: ScheduleCommands,
     private val scheduleReads: ScheduleReads,
     /** Where the frequent expenses are grouped, off the main thread. */
-    private val computation: CoroutineDispatcher
+    private val computation: CoroutineDispatcher,
+    private val guidance: GuidancePreferences
 ) : ViewModel() {
     private val correctionText = CarryCorrectionText(money)
 
@@ -276,6 +284,31 @@ class ExpenseEntryViewModel(
             }
         }.flowOn(computation).stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
+    /** Nudges closed in this form, so they go even when keeping that fails. */
+    private val closedHere = MutableStateFlow<Set<Nudge>>(emptySet())
+    private val nudgeDays = NudgeDays(guidance, viewModelScope)
+
+    /**
+     * The Anotar varios nudge, for a new expense once [recent] shows three added by hand
+     * today (SELLO-212). Only readings that worked count: while the guidance or the
+     * expenses are loading or failed, or the read held more than it may, none shows.
+     */
+    private val severalNudge: Flow<ScreenNudge?> =
+        combine(guidance.observeGuidance(), clock.today, recent, closedHere) {
+                read,
+                today,
+                expenses,
+                closed
+            ->
+            val due = !editing && expenses != null &&
+                FeatureNudgePolicy.bulkEntryDue(expenses, today)
+            val wanted = listOfNotNull(Nudge.BulkEntry.takeIf { due }) - closed
+            ScreenNudge.pick(read, today.date, wanted)
+        }
+            // The form never waits on these reads: no nudge until they are known.
+            .onStart { emit(null) }
+            .distinctUntilChanged()
+
     val state: StateFlow<ExpenseEntryState> =
         combine(
             draft,
@@ -288,17 +321,28 @@ class ExpenseEntryViewModel(
             }
         ) { draft, progress, month, today, aside ->
             render(draft, progress, month, today.date, aside)
-        }.stateIn(
-            viewModelScope,
-            SharingStarted.Eagerly,
-            render(
-                draft.value,
-                progress.value,
-                month.value,
-                clock.today.value.date,
-                Aside(noteDraft.value, groups.value, frequentOpen.value)
+        }
+            // Only over a form that is ready and current, never while it loads, failed, shows
+            // older categories or has saved, nor while the slip it points at is disabled:
+            // then nothing is kept as shown either.
+            .combine(severalNudge) { state, nudge ->
+                val ready = !state.loading && !state.loadFailed && !state.stale &&
+                    state.recorded == null && state.several == null && state.canOpenSeveral
+                val shown = nudge.takeIf { ready }
+                nudgeDays.showing(shown)
+                state.copy(severalNudge = shown?.nudge == Nudge.BulkEntry)
+            }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.Eagerly,
+                render(
+                    draft.value,
+                    progress.value,
+                    month.value,
+                    clock.today.value.date,
+                    Aside(noteDraft.value, groups.value, frequentOpen.value)
+                )
             )
-        )
 
     /** What is rendered beside the draft: the note being written and the frequent expenses. */
     private data class Aside(
@@ -529,6 +573,8 @@ class ExpenseEntryViewModel(
             }
 
             ExpenseEntryAction.Several -> if (now.canOpenSeveral && !now.loading) {
+                // Using the slip closes its nudge for good, shown or not.
+                closeNudge(Nudge.BulkEntry)
                 val typed = draft.value
                 progress.update {
                     it.copy(
@@ -541,6 +587,8 @@ class ExpenseEntryViewModel(
                     )
                 }
             }
+
+            ExpenseEntryAction.CloseSeveralNudge -> closeNudge(Nudge.BulkEntry)
 
             ExpenseEntryAction.Submit -> if (now.canSubmit && now.editable) submit()
 
@@ -1077,6 +1125,12 @@ class ExpenseEntryViewModel(
             )
         )
         progress.update { it.copy(busy = false, closed = true) }
+    }
+
+    /** Gone at once, and for good when it can be kept; a failed write lets it come back later. */
+    private fun closeNudge(nudge: Nudge) {
+        closedHere.update { it + nudge }
+        viewModelScope.launch { guidance.markSeen(nudge) }
     }
 
     private fun render(

@@ -6,6 +6,7 @@ import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.domain.model.CategoryInsights
 import com.software.sello.domain.model.Expense
+import com.software.sello.domain.model.Guidance
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.MonthlySnapshot
 import com.software.sello.domain.model.OperationId
@@ -39,6 +40,7 @@ import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
+import com.software.sello.testing.HandGuidance
 import com.software.sello.testing.HandSnapshots
 import com.software.sello.testing.NewObservationSnapshots
 import com.software.sello.testing.testMoney
@@ -116,7 +118,9 @@ class CategoryDetailViewModelTest {
                 { testScheduler.currentTime.milliseconds },
                 commands,
                 { uuid(nextOperation++) },
-                saved
+                saved,
+                HandGuidance(Guidance()),
+                HandFinancialClock("2026-10-23")
             )
         // Something has to be watching for the state to be kept up to date.
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
@@ -606,7 +610,9 @@ class CategoryDetailViewModelTest {
             { testScheduler.currentTime.milliseconds },
             commands,
             { uuid(nextOperation++) },
-            SavedStateHandle()
+            SavedStateHandle(),
+            HandGuidance(Guidance()),
+            HandFinancialClock("2026-10-23")
         )
         val first = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.state.collect {}

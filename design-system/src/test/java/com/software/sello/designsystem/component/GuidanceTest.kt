@@ -249,4 +249,21 @@ class GuidanceTest {
         rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.Role))
             .assertCountEquals(0)
     }
+
+    @Test
+    fun nudgeTextPutsTheNameInBoldInkAndKeepsTheRest() {
+        var text: androidx.compose.ui.text.AnnotatedString? = null
+        var ink: androidx.compose.ui.graphics.Color? = null
+        rule.setContent {
+            SelloTheme {
+                ink = SelloTheme.colors.ink
+                text = nudgeText("¿Dudas? La %1\$s está en Configuración.", "Guía de Sello")
+            }
+        }
+        val shown = checkNotNull(text)
+        assertEquals("¿Dudas? La Guía de Sello está en Configuración.", shown.text)
+        val bold = shown.spanStyles.single()
+        assertEquals("Guía de Sello", shown.text.substring(bold.start, bold.end))
+        assertEquals(ink, bold.item.color)
+    }
 }

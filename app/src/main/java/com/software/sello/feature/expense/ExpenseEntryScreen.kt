@@ -73,6 +73,7 @@ import com.software.sello.designsystem.component.MoreSlip
 import com.software.sello.designsystem.component.MovementDiscardSlip
 import com.software.sello.designsystem.component.MovementPane
 import com.software.sello.designsystem.component.NoteComposer
+import com.software.sello.designsystem.component.NudgeRow
 import com.software.sello.designsystem.component.SegmentedSwitch
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloChip
@@ -88,6 +89,7 @@ import com.software.sello.designsystem.component.StatusSlip
 import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.component.TotalLine
+import com.software.sello.designsystem.component.nudgeText
 import com.software.sello.designsystem.component.rememberSelectedFirst
 import com.software.sello.designsystem.component.selloWindowLayout
 import com.software.sello.designsystem.icon.SelloIcon
@@ -268,6 +270,21 @@ fun ExpenseEntryScreen(
                             modifier = Modifier.testTag(ENTRY_SEVERAL_TAG),
                             enabled = state.canOpenSeveral
                         )
+                        // Right under the slip it points at (SELLO-212).
+                        if (state.severalNudge) {
+                            NudgeRow(
+                                icon = SelloIcon.Add,
+                                text = nudgeText(
+                                    stringResource(R.string.entry_several_nudge),
+                                    stringResource(R.string.entry_more_expense)
+                                ),
+                                onClose = { onAction(ExpenseEntryAction.CloseSeveralNudge) },
+                                closeLabel = stringResource(R.string.entry_several_nudge_close),
+                                modifier = Modifier
+                                    .padding(top = SelloTheme.spacing.sm)
+                                    .testTag(ENTRY_SEVERAL_NUDGE_TAG)
+                            )
+                        }
                     }
                 } else {
                     null
@@ -777,5 +794,6 @@ const val ENTRY_ERROR_TAG = "expense-entry:error"
 const val ENTRY_SUBMIT_TAG = "expense-entry:submit"
 const val ENTRY_DELETE_TAG = "expense-entry:delete"
 const val ENTRY_SEVERAL_TAG = "expense-entry:several"
+const val ENTRY_SEVERAL_NUDGE_TAG = "expense-entry:nudge:several"
 const val ENTRY_PAST_MONTHS_TAG = "expense-entry:past-months"
 const val ENTRY_PAST_EXPENSE_ANNOUNCEMENT_TAG = "expense-entry:past-expense-announcement"
