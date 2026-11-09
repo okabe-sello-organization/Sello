@@ -1,6 +1,7 @@
 package com.software.sello.feature.category
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -27,6 +29,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -133,8 +137,8 @@ fun CategoryManagementRoot(
  * Nueva categoría and Editar categoría (owner-revised 2026-10-26 to match Nueva meta): the
  * icon as a large circle beside the name, opening the icons to choose from; the monthly
  * limit as the big number on the Sello pad, which is always there, with Sin límite in the
- * slip's corner. It opens on the name with the keyboard up; the pad is there again once
- * the keyboard closes.
+ * slip's corner. It opens on the name with the keyboard up, which covers the pad and the
+ * button; the keyboard's Siguiente, the limit, a suggestion or a switch puts it away.
  */
 @Composable
 fun CategoryEditorScreen(
@@ -145,6 +149,12 @@ fun CategoryEditorScreen(
     var choosingIcon by rememberSaveable { mutableStateOf(false) }
     // Kept here, not in the form: reading the form again must not take focus again.
     var nameFocused by rememberSaveable { mutableStateOf(false) }
+    // While the name is typed the keyboard covers the pad: anything else puts it away.
+    val focus = LocalFocusManager.current
+    val elsewhere: (CategoryEditorAction) -> Unit = {
+        focus.clearFocus()
+        onAction(it)
+    }
     SelloScaffold(
         title = stringResource(
             if (state.editing) R.string.category_edit_title else R.string.category_editor_title
@@ -202,12 +212,18 @@ fun CategoryEditorScreen(
             else -> EntryLayout(
                 modifier = Modifier.padding(padding),
                 header = {
-                    Identity(state, onAction, focusName = !nameFocused, { nameFocused = true }) {
+                    Identity(
+                        state,
+                        onAction,
+                        focusName = !nameFocused,
+                        onNameFocused = { nameFocused = true }
+                    ) {
+                        focus.clearFocus()
                         choosingIcon = true
                     }
-                    if (state.archived) Archived(state, onAction)
+                    if (state.archived) Archived(state, elsewhere)
                 },
-                amount = { Limit(state, onAction) },
+                amount = { Limit(state, elsewhere) },
                 choices = {
                     Said(state)
                     // Without the card (a past month), a carry refusal is said here.
@@ -222,7 +238,7 @@ fun CategoryEditorScreen(
                         }
                     }
                 },
-                action = { Action(state, onAction) },
+                action = { Action(state, elsewhere) },
                 keypad = {
                     if (!state.limitLocked) {
                         AmountKeypad(
@@ -397,6 +413,7 @@ private fun Identity(
     // when the form is read again, as archiving does just before the editor closes.
     val nameFocus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
+    val focus = LocalFocusManager.current
     LaunchedEffect(state.editable) {
         if (state.editable && focusName) {
             nameFocus.requestFocus()
@@ -434,10 +451,12 @@ private fun Identity(
                     CategoryName.MAX_CODE_POINTS
                 ),
                 enabled = state.editable,
+                // The pad comes next, so the key says Siguiente and puts the keyboard away.
                 keyboardOptions = KeyboardOptions(
                     capitalization = KeyboardCapitalization.Sentences,
-                    imeAction = ImeAction.Done
-                )
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(onNext = { focus.clearFocus() })
             )
         }
     }
@@ -473,6 +492,7 @@ private fun IconSheet(state: CategoryEditorState, onDismiss: () -> Unit, onPick:
  */
 @Composable
 private fun Limit(state: CategoryEditorState, onAction: (CategoryEditorAction) -> Unit) {
+    val focus = LocalFocusManager.current
     val label = stringResource(R.string.category_editor_limit)
     if (state.limitLocked) {
         Slip(Modifier.fillMaxWidth()) {
@@ -496,7 +516,11 @@ private fun Limit(state: CategoryEditorState, onAction: (CategoryEditorAction) -
     EntryAmountSlip(
         label = label,
         amount = state.limitAmount,
-        modifier = Modifier.testTag(EDITOR_LIMIT_TAG),
+        // A tap on the slip itself, not a control in it, puts the keyboard away. It listens
+        // without becoming a button, so a screen reader still reads each part.
+        modifier = Modifier.testTag(EDITOR_LIMIT_TAG).pointerInput(Unit) {
+            detectTapGestures { focus.clearFocus() }
+        },
         error = state.limitError?.let { stringResource(it.text()) },
         date = {
             SwitchRow(

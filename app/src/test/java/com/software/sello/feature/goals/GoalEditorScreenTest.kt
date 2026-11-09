@@ -9,12 +9,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
@@ -27,6 +31,9 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performImeAction
+import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -205,6 +212,40 @@ class GoalEditorScreenTest {
         show(GoalEditorState(loading = false))
         rule.waitForIdle()
         rule.onNodeWithContentDescription("Nombre").assertIsFocused()
+    }
+
+    // While the keyboard is up it covers the pad and the button: the next move puts it away.
+
+    @Test
+    fun theNamesKeyIsSiguienteAndPutsTheKeyboardAway() {
+        show(GoalEditorState(loading = false))
+        rule.waitForIdle()
+        val name = rule.onNodeWithContentDescription("Nombre")
+        // Typing keeps the keyboard up.
+        name.performTextInput("Viaje")
+        name.assertIsFocused()
+
+        name.assert(SemanticsMatcher.expectValue(SemanticsProperties.ImeAction, ImeAction.Next))
+            .performImeAction()
+
+        name.assertIsNotFocused()
+    }
+
+    @Test
+    fun tappingTheAmountOrTheMonthWhileTypingPutsTheKeyboardAway() {
+        show(GoalEditorState(loading = false))
+        rule.waitForIdle()
+        val name = rule.onNodeWithContentDescription("Nombre")
+
+        rule.onNodeWithText("Cuánto necesitas").performClick()
+        name.assertIsNotFocused()
+        assertEquals(emptyList<GoalEditorAction>(), actions)
+
+        name.performClick()
+        name.assertIsFocused()
+        rule.onNodeWithTag("goal.editor.month").performClick()
+        name.assertIsNotFocused()
+        assertEquals(listOf<GoalEditorAction>(GoalEditorAction.ChooseMonth), actions)
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.software.sello.feature.goals
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -28,6 +30,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -107,6 +111,12 @@ fun GoalEditorScreen(state: GoalEditorState, onAction: (GoalEditorAction) -> Uni
     var choosingIcon by rememberSaveable { mutableStateOf(false) }
     // Kept here, not in the form: reading the form again must not take focus again.
     var nameFocused by rememberSaveable { mutableStateOf(false) }
+    // While the name is typed the keyboard covers the pad: anything else puts it away.
+    val focus = LocalFocusManager.current
+    val elsewhere: (GoalEditorAction) -> Unit = {
+        focus.clearFocus()
+        onAction(it)
+    }
     SelloScaffold(
         title = stringResource(
             if (state.editing) R.string.goal_editor_edit else R.string.goal_editor_new
@@ -166,16 +176,22 @@ fun GoalEditorScreen(state: GoalEditorState, onAction: (GoalEditorAction) -> Uni
             else -> EntryLayout(
                 modifier = Modifier.padding(padding).testTag(GOAL_EDITOR_TAG),
                 header = {
-                    Identity(state, onAction, focusName = !nameFocused, { nameFocused = true }) {
+                    Identity(
+                        state,
+                        onAction,
+                        focusName = !nameFocused,
+                        onNameFocused = { nameFocused = true }
+                    ) {
+                        focus.clearFocus()
                         choosingIcon = true
                     }
                 },
-                amount = { Plan(state, onAction, dates) },
+                amount = { Plan(state, elsewhere, dates) },
                 choices = {
                     Stamps(state, dates)
-                    if (state.editing) DoneAsk(state, onAction)
+                    if (state.editing) DoneAsk(state, elsewhere)
                 },
-                action = { Action(state, onAction) },
+                action = { Action(state, elsewhere) },
                 keypad = {
                     AmountKeypad(
                         onDigit = { onAction(GoalEditorAction.Digit(it)) },
@@ -347,7 +363,7 @@ private fun DoneAsk(state: GoalEditorState, onAction: (GoalEditorAction) -> Unit
 
 /**
  * The icon circle beside the name. A new goal opens on the name with the keyboard up,
- * as Nueva categoría does; the pad is there again once the keyboard closes.
+ * as Nueva categoría does; Siguiente, the amount or the month puts it away for the pad.
  */
 @Composable
 private fun Identity(
@@ -357,6 +373,7 @@ private fun Identity(
     onNameFocused: () -> Unit,
     onChooseIcon: () -> Unit
 ) {
+    val focus = LocalFocusManager.current
     val option = state.iconKey?.let { key -> GoalIcons.options.firstOrNull { it.key == key } }
     val nameFocus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
@@ -413,10 +430,12 @@ private fun Identity(
                     state.nameLength,
                     GoalEditorState.MAX_NAME
                 ),
+                // The pad comes next, so the key says Siguiente and puts the keyboard away.
                 keyboardOptions = KeyboardOptions(
                     capitalization = KeyboardCapitalization.Sentences,
-                    imeAction = ImeAction.Done
-                )
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(onNext = { focus.clearFocus() })
             )
         }
     }
@@ -448,13 +467,17 @@ private fun IconSheet(selected: String?, onDismiss: () -> Unit, onPick: (String)
  */
 @Composable
 private fun Plan(state: GoalEditorState, onAction: (GoalEditorAction) -> Unit, dates: DateLabels) {
+    val focus = LocalFocusManager.current
     val month = state.targetMonth?.let(dates::monthYear)
         ?: stringResource(R.string.goal_editor_no_date)
     val spokenMonth = stringResource(R.string.goal_editor_when, month)
     EntryAmountSlip(
         label = stringResource(R.string.goal_editor_amount),
         amount = state.amount,
-        modifier = Modifier.testTag(GOAL_EDITOR_AMOUNT_TAG),
+        // A tap on the slip itself puts the keyboard away; no button, so it reads as before.
+        modifier = Modifier.testTag(GOAL_EDITOR_AMOUNT_TAG).pointerInput(Unit) {
+            detectTapGestures { focus.clearFocus() }
+        },
         limitPulse = state.amountPulse,
         date = {
             FieldPill(
