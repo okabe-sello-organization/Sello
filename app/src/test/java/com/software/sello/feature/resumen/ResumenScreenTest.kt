@@ -413,7 +413,7 @@ class ResumenScreenTest {
         rule.onNodeWithTag("resumen.spent").performScrollTo()
             .assertTextContains("Total").assertContentDescriptionContains("400.000 pesos")
         rule.onNodeWithTag("resumen.openIncome").performScrollTo()
-            .assertContentDescriptionEquals("Ingresos, Ninguno en octubre")
+            .assertContentDescriptionEquals("Ingresos, Nada en octubre")
     }
 
     // --- Help sheets (SELLO-208) ---
