@@ -4,8 +4,8 @@
 > Project permissions and working rules live in [AGENTS.md](../../AGENTS.md),
 > subject to the user's current instructions.
 
-**Snapshot:** 2026-11-07 · **Product baseline:** `main`; the release candidate is `0.1.0` from `a20ae90f`, and the [candidate checklist](../release/candidate-checklist.md) leaves only the owner's steps (the [MVP checklist](../release/mvp-checklist.md) is the October record).
-Done: E01–E10, E12, E13 and E15–E37. The owner dropped E14 and the
+**Snapshot:** 2026-11-08 · **Product baseline:** `main`; the release candidate is `0.1.0` from `a20ae90f`, and the [candidate checklist](../release/candidate-checklist.md) leaves only the owner's steps (the [MVP checklist](../release/mvp-checklist.md) is the October record).
+Done: E01–E10, E12, E13 and E15–E38. The owner dropped E14 and the
 release tickets SELLO-043 and SELLO-113 on 2026-10-29. Each ticket's
 file under [docs/tickets](../tickets/README.md) and the pull request that closed it carry
 the details, and `python3 scripts/quality/tickets.py status` prints the current board.
@@ -94,6 +94,15 @@ This summary is refreshed when an epic closes and adds no verification claims.
   offered on Android 11, where a restored Sistema shows Cobalto) in Sello's own shades,
   read again each time Sello is on screen. Red and green hues get a note; gain, loss and
   warn never follow the ink. Backups carry the ink and Tuya's hue.
+- Guía dentro de Sello ([E38](../tickets/E38-in-app-guidance/README.md)): guidance
+  inside the real screens, no questionnaire, wizard or overlays. The empty Recibo offers
+  starter categories (name and icon, never an amount). A soft **?** after a card's title
+  and dotted-underlined terms open sheets that explain the code's rules in plain Spanish;
+  each links to the Guía de Sello, the first row of Configuración. Quiet one-line nudges
+  (`NudgeRow`) show once, for one day, at most one a day: the Guía hint, a monthly backup
+  reminder, Anotar varios, pagos fijos, arrastre, undoing a delete, investments and the
+  goal on Recibo. What was seen survives Restablecer and travels in backups (version 11;
+  restore merges it, ADR 0027).
 - Día a día ([E33](../tickets/E33-movements/README.md)): a magnifier on Recibo's and
   Resumen's bars and a third Resumen stub open the shared month's expenses and incomes
   by day, newest first, each day headed by what was spent (incomes never netted in), with

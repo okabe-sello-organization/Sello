@@ -20,7 +20,7 @@ it is, once.
 - **Deleting**: in a category's expense list, the first time it shows an expense. Text
   says a deleted expense can be undone for a few seconds; where Borrar is already shows
   on screen (`category_detail_hint`). Deleting an expense closes it. *Changed on the
-  orchestrator's ruling (2026-11-08), pending the owner's OK.*
+  orchestrator's ruling (2026-11-08), approved by the owner (#466).*
 - **Pagos fijos**: in category detail, when the same amount with the same note was
   recorded in that category in each of the two previous months and there is no fixed
   payment for it. Text says it can become a pago fijo. Creating any fixed payment
