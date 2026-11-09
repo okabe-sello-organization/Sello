@@ -150,7 +150,7 @@ class ReciboViewModelTest {
 
         snapshots.of(october).value = ReadState.Ready(snapshot(october, 0, categories = 0))
 
-        assertEquals(ReciboState.FirstRun, viewModel.state.value)
+        assertEquals(ReciboState.FirstRun(), viewModel.state.value)
     }
 
     @Test
@@ -240,6 +240,27 @@ class ReciboViewModelTest {
     }
 
     @Test
+    fun theFirstRunKnowsTheNamesArchivedCategoriesStillUse() = runTest {
+        categoryReads.categories = listOf(categoryReads.category(1, "Comida", archived = true))
+        val (viewModel) = started()
+
+        snapshots.of(october).value = ReadState.Ready(snapshot(october, 0, categories = 0))
+
+        val taken = setOf(CategoryName.keyOf("Comida"))
+        assertEquals(ReciboState.FirstRun(taken), viewModel.state.value)
+    }
+
+    @Test
+    fun theFirstRunOffersNoStarterWhileTheNamesInUseCannotBeRead() = runTest {
+        categoryReads.failure = StorageFailure.Unavailable("SQLiteException")
+        val (viewModel) = started()
+
+        snapshots.of(october).value = ReadState.Ready(snapshot(october, 0, categories = 0))
+
+        assertEquals(ReciboState.FirstRun(takenNames = null), viewModel.state.value)
+    }
+
+    @Test
     fun retryObservesTheSameMonthAgain() = runTest {
         val (viewModel) = started()
         val failure = SnapshotFailure.Storage(StorageFailure.Unavailable("SQLiteException"))
@@ -249,7 +270,7 @@ class ReciboViewModelTest {
         snapshots.of(october).value = ReadState.Ready(snapshot(october, 0, categories = 0))
 
         assertEquals(listOf(october, october), snapshots.observed)
-        assertEquals(ReciboState.FirstRun, viewModel.state.value)
+        assertEquals(ReciboState.FirstRun(), viewModel.state.value)
     }
 
     @Test
@@ -261,7 +282,7 @@ class ReciboViewModelTest {
         session.select(august)
 
         assertEquals(listOf(october, august), snapshots.observed)
-        assertEquals(ReciboState.FirstRun, viewModel.state.value)
+        assertEquals(ReciboState.FirstRun(), viewModel.state.value)
     }
 
     @Test

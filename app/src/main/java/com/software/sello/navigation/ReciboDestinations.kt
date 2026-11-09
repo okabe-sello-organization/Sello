@@ -146,6 +146,11 @@ internal fun NavGraphBuilder.reciboDestinations(
                     launchSingleTop = true
                 }
             },
+            onStartCategory = { name, icon ->
+                navigation.navigate(CategoryEditorRoute(name = name, icon = icon)) {
+                    launchSingleTop = true
+                }
+            },
             onOpenHelpGuide = { navigation.openGuide(GuidePage.Recibo) }
         ) { navigation.navigate(CategoryEditorRoute()) }
     }
@@ -325,6 +330,7 @@ private fun ReciboDestination(
     onOpenClosedMonth: (YearMonth) -> Unit,
     onOpenYear: (Int) -> Unit,
     onSetMonthLimit: (String, YearMonth) -> Unit,
+    onStartCategory: (name: String, iconKey: String) -> Unit,
     onOpenHelpGuide: () -> Unit,
     onCreateCategory: () -> Unit
 ) {
@@ -409,6 +415,9 @@ private fun ReciboDestination(
                 onAction = { action ->
                     when (action) {
                         ReciboAction.CreateCategory -> onCreateCategory()
+
+                        is ReciboAction.StartCategory ->
+                            onStartCategory(action.name, action.iconKey)
 
                         is ReciboAction.OpenCategory -> onShell(ShellAction.OpenCategory(action.id))
 

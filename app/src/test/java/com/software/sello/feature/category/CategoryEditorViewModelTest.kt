@@ -1001,4 +1001,83 @@ class CategoryEditorViewModelTest {
         assertEquals(full, editor(suggested(full)).state.value.limitText)
         assertEquals("", editor(suggested("1000000000000")).state.value.limitText)
     }
+
+    // --- A starter category from the empty Recibo (SELLO-210) ---
+
+    private fun starter(name: String, icon: String) = SavedStateHandle(
+        mapOf(CategoryEditorViewModel.KEY_NAME to name, CategoryEditorViewModel.KEY_ICON to icon)
+    )
+
+    @Test
+    fun aStarterFillsTheNameAndIconAndLeavesTheLimitToThePerson() {
+        val state = editor(starter("Comida", "restaurant")).state.value
+
+        assertEquals("Comida" to "restaurant", state.name to state.iconKey)
+        // Never an amount: neither a limit nor Sin límite is chosen for the person.
+        assertEquals("", state.limitText)
+        assertNull(state.limitAmount)
+        assertFalse(state.unlimited)
+        assertEquals(emptyList<CreateCategory>(), commands.submitted)
+    }
+
+    @Test
+    fun guardarOnAStarterWithoutALimitAsksForOneAndSendsNothing() {
+        val editor = editor(starter("Comida", "restaurant"))
+
+        editor.submit()
+
+        assertEquals(LimitError.Required, editor.state.value.limitError)
+        assertEquals(emptyList<CreateCategory>(), commands.submitted)
+    }
+
+    @Test
+    fun aStarterIsSavedOnlyWithGuardarAndWithTheLimitThePersonSet() {
+        val editor = editor(starter("Transporte", "directions_bus"))
+        editor.limit("150000")
+        assertEquals(emptyList<CreateCategory>(), commands.submitted)
+
+        editor.submit()
+
+        val sent = commands.submitted.single()
+        assertEquals("Transporte", sent.name.value)
+        assertEquals("directions_bus", sent.icon.value)
+        assertEquals(finite(150_000), sent.limit)
+    }
+
+    @Test
+    fun leavingAnUntouchedStarterSavesNothingAndAsksNothingButChangingItAsks() {
+        val untouched = editor(starter("Casa", "home"))
+        untouched.onAction(CategoryEditorAction.Back)
+
+        val renamed = editor(starter("Casa", "home"))
+        renamed.type("Arriendo")
+        renamed.onAction(CategoryEditorAction.Back)
+
+        assertEquals(EditorResult.Discarded, untouched.state.value.result)
+        assertFalse(untouched.state.value.confirmDiscard)
+        assertTrue(renamed.state.value.confirmDiscard)
+        assertEquals(emptyList<CreateCategory>(), commands.submitted)
+    }
+
+    @Test
+    fun aStarterDraftSurvivesProcessDeathWithWhatThePersonChanged() {
+        val saved = starter("Ocio", "theaters")
+        val first = editor(saved)
+        first.type("Salidas")
+        first.limit("80000")
+
+        val restored = editor(saved.afterProcessDeath()).state.value
+
+        assertEquals("Salidas" to "theaters", restored.name to restored.iconKey)
+        assertEquals("80000", restored.limitText)
+    }
+
+    @Test
+    fun aStarterNameOrIconTheFormWouldRefuseIsLeftOut() {
+        val state = editor(starter("   ", "not_an_icon")).state.value
+
+        assertEquals("", state.name)
+        // The usual first icon nobody uses, as on a blank form.
+        assertEquals("restaurant", state.iconKey)
+    }
 }

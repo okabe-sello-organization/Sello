@@ -10,8 +10,13 @@ import java.time.YearMonth
 sealed interface ReciboState {
     data object Loading : ReciboState
 
-    /** Read successfully and there are no categories yet. */
-    data object FirstRun : ReciboState
+    /**
+     * Read successfully and there are no categories to show. [takenNames] are the
+     * [com.software.sello.domain.model.CategoryName.uniquenessKey]s already used, archived
+     * categories' too, so no starter offers a name the form would refuse; null while they
+     * are not known, when no starter is offered.
+     */
+    data class FirstRun(val takenNames: Set<String>? = emptySet()) : ReciboState
 
     /**
      * A month that was read. With [stale] the latest read failed and this is the last
@@ -247,6 +252,12 @@ sealed interface ReciboAction {
 
     /** Open the new-category form. Navigation is the root's, not the view model's. */
     data object CreateCategory : ReciboAction
+
+    /**
+     * Open the new-category form started from a starter: its [name] and [iconKey], never
+     * an amount. Navigation is the root's.
+     */
+    data class StartCategory(val name: String, val iconKey: String) : ReciboAction
 
     /** Show one category's detail. Which one is shown is the frame's to remember. */
     data class OpenCategory(val id: String) : ReciboAction

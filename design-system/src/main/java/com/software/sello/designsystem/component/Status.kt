@@ -106,7 +106,9 @@ object StatusSlipDefaults {
  * A slip that says what kind of news it brings: nothing yet, a failed read, older
  * figures, a failed action, an unknown outcome or something gone. [kind] decides the
  * icon, ink, layout and button and carries the title; [message] is the sentence and
- * [action] at most one thing to do.
+ * [action] at most one thing to do. [below] is drawn last, inside the slip, such as the
+ * starter categories under an empty Recibo's action; only the centred kinds (Empty,
+ * LoadFailed, Gone) draw it.
  *
  * [StatusKind.Empty], [StatusKind.LoadFailed] and [StatusKind.Gone] are centred under a
  * large decorative icon and stand in for content. [StatusKind.Older],
@@ -118,9 +120,10 @@ fun StatusSlip(
     kind: StatusKind,
     message: String,
     modifier: Modifier = Modifier,
-    action: StatusAction? = null
+    action: StatusAction? = null,
+    below: (@Composable () -> Unit)? = null
 ) {
-    StatusSlip(kind, AnnotatedString(message), modifier, action)
+    StatusSlip(kind, AnnotatedString(message), modifier, action, below)
 }
 
 /**
@@ -133,13 +136,14 @@ fun StatusSlip(
     kind: StatusKind,
     message: AnnotatedString,
     modifier: Modifier = Modifier,
-    action: StatusAction? = null
+    action: StatusAction? = null,
+    below: (@Composable () -> Unit)? = null
 ) {
     val look = kind.look()
     val title = kind.title() ?: look.defaultTitle?.let { stringResource(it) }
     val inKindsInk = message.withoutInk()
     when (look.layout) {
-        StatusLayout.Centred -> CentredStatus(look, title, inKindsInk, action, modifier)
+        StatusLayout.Centred -> CentredStatus(look, title, inKindsInk, action, below, modifier)
         StatusLayout.Inline -> InlineStatus(look, title, inKindsInk, action, modifier)
     }
 }
@@ -287,6 +291,7 @@ private fun CentredStatus(
     title: String?,
     message: AnnotatedString,
     action: StatusAction?,
+    below: (@Composable () -> Unit)?,
     modifier: Modifier
 ) {
     Slip(modifier = modifier.fillMaxWidth()) {
@@ -319,6 +324,10 @@ private fun CentredStatus(
             if (action != null) {
                 Spacer(Modifier.height(SelloTheme.spacing.lg))
                 StatusButton(action, look.button)
+            }
+            if (below != null) {
+                Spacer(Modifier.height(SelloTheme.spacing.lg))
+                below()
             }
         }
     }

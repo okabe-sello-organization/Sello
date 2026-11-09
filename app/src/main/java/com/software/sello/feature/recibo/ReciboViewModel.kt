@@ -210,6 +210,7 @@ class ReciboViewModel(
                         render.recibo(snapshot, preference)
                     }
                     .mapLatest { named(it, month) }
+                    .mapLatest { withTakenNames(it, month) }
             }
             .combine(invitation) { state, invitation ->
                 if (state is ReciboState.Month) state.copy(invitation = invitation) else state
@@ -231,6 +232,18 @@ class ReciboViewModel(
                 SharingStarted.WhileSubscribed(STOP_AFTER_MILLIS),
                 ReciboState.Loading
             )
+
+    /**
+     * The first run with the names categories already use, archived ones too, read as the
+     * category form reads them. A failed read leaves them unknown, so no starter is offered.
+     */
+    private suspend fun withTakenNames(state: ReciboState, month: YearMonth): ReciboState {
+        if (state !is ReciboState.FirstRun) return state
+        val read = categories.monthBudget(month) as? Outcome.Success
+        return ReciboState.FirstRun(
+            read?.value?.categories?.map { it.category.name.uniquenessKey }?.toSet()
+        )
+    }
 
     /**
      * A carry failure with no earlier read to take the name from: the category is named
@@ -279,6 +292,7 @@ class ReciboViewModel(
             // Handled by the root, which owns navigation and the selection.
             ReciboAction.OpenBackup,
             ReciboAction.CreateCategory,
+            is ReciboAction.StartCategory,
             is ReciboAction.OpenCategory,
             is ReciboAction.EditCategory,
             ReciboAction.OpenReserved,

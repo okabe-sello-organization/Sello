@@ -251,7 +251,7 @@ class ReciboNudgeViewModelTest {
         )
 
         assertEquals(ReciboState.Loading, loading)
-        assertEquals(ReciboState.FirstRun, viewModel.state.value)
+        assertEquals(ReciboState.FirstRun(), viewModel.state.value)
         // Nothing showed, so no day was kept for a nudge.
         assertEquals(emptyList<String>(), guidance.writes)
     }

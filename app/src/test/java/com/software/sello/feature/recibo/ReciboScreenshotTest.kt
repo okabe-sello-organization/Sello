@@ -365,9 +365,9 @@ class ReciboScreenshotTest {
 
     @Test fun loadingDark() = shot("loading", ReciboState.Loading, Look(dark = true))
 
-    @Test fun firstRunLight() = shot("first-run", ReciboState.FirstRun, Look())
+    @Test fun firstRunLight() = shot("first-run", ReciboState.FirstRun(), Look())
 
-    @Test fun firstRunDark() = shot("first-run", ReciboState.FirstRun, Look(dark = true))
+    @Test fun firstRunDark() = shot("first-run", ReciboState.FirstRun(), Look(dark = true))
 
     @Test fun failedLight() = shot("failed", ReciboState.Failed, Look())
 

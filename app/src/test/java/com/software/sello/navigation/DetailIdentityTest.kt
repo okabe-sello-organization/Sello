@@ -101,7 +101,7 @@ class DetailIdentityTest {
         for (detail in notReady) {
             assertNull("$detail", detailTitle("b", detail, ReciboState.Loading))
             assertNull("$detail", detailTitle("b", detail, ReciboState.Failed))
-            assertNull("$detail", detailTitle("b", detail, ReciboState.FirstRun))
+            assertNull("$detail", detailTitle("b", detail, ReciboState.FirstRun()))
             assertNull("$detail", detailTitle("zzz", detail, recibo))
         }
         assertNull(detailTitle(null, ready("a", "Alimentación"), recibo))
