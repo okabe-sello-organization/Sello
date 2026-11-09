@@ -164,6 +164,9 @@ class CategoryEditorScreenTest {
     fun theNamesKeyIsSiguienteAndPutsTheKeyboardAway() {
         show(ready)
         rule.waitForIdle()
+        // Typing keeps the keyboard up.
+        name.performTextInput("Mercado")
+        name.assertIsFocused()
 
         name.assert(SemanticsMatcher.expectValue(SemanticsProperties.ImeAction, ImeAction.Next))
             .performImeAction()

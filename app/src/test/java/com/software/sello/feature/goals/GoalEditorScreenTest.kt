@@ -32,6 +32,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
@@ -220,6 +221,9 @@ class GoalEditorScreenTest {
         show(GoalEditorState(loading = false))
         rule.waitForIdle()
         val name = rule.onNodeWithContentDescription("Nombre")
+        // Typing keeps the keyboard up.
+        name.performTextInput("Viaje")
+        name.assertIsFocused()
 
         name.assert(SemanticsMatcher.expectValue(SemanticsProperties.ImeAction, ImeAction.Next))
             .performImeAction()
