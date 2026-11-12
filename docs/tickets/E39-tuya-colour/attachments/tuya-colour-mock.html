@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sello · Tuya con cualquier color (E39)</title>
+<!-- Approved by the owner on 2026-11-12. The script is the reference prototype for
+     SELLO-214 (palette from an exact colour, closeness rule, names). Synthetic data only. -->
+<style>
+body{margin:0;font-family:system-ui,sans-serif;color:#0e1630;background:#f4f5f9;padding:24px}
+main{max-width:1000px;margin:0 auto}
+h1{font-size:26px;margin:0 0 4px}h2{font-size:18px;margin:30px 0 4px}
+p.lede{margin:0 0 14px;font-size:13.5px;line-height:1.5;color:#434e72;max-width:760px}
+.top-row{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap}
+.side{flex:1;min-width:260px;font-size:13px;line-height:1.5}
+.side ul{padding-left:18px;margin:6px 0}.side li{margin-bottom:5px}
+.kv{background:#fff;border:1px solid #d3dcf3;border-radius:10px;padding:12px 14px;margin-bottom:10px}
+.kv h3{margin:0 0 4px;font-size:13.5px}
+button{font-family:inherit;cursor:pointer}
+.phone{width:412px;height:891px;border-radius:26px;overflow:hidden;position:relative;box-shadow:0 0 0 6px #11152a;flex:none;font-size:14px;background:#d9e1f7;margin:6px}
+.cfg-band{background:#1f3be0;color:#fff;height:120px;padding:18px 16px;font-weight:800;font-size:20px;box-sizing:border-box}
+.cfg-slip{background:#fff;margin:-50px 12px 0;border-radius:8px;height:300px;padding:16px;font-weight:700;position:relative}
+.scrim{position:absolute;inset:0;background:#0e163080}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:18px 18px 0 0;padding:12px 12px 14px}
+.sheet h4{margin:2px 2px 10px;font-size:16px;font-weight:800}
+.pvs{display:flex;gap:10px}
+.pv{flex:1;border-radius:10px;overflow:hidden;background:var(--desk);color:var(--ink)}
+.pv-band{background:var(--band);color:var(--onband);display:flex;justify-content:space-between;align-items:center;padding:7px 10px 20px;font-size:12px;font-weight:700}
+.pv-body{padding:0 8px;margin-top:-13px;display:grid;gap:6px}
+.card{background:var(--paper);border-radius:6px;padding:7px 8px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:4px}
+.lbl{font-size:10.5px;color:var(--soft)}
+.fig{font-size:21px;font-weight:900;letter-spacing:-.02em}
+.stamp{font-size:9.5px;font-weight:900;letter-spacing:.06em;border:2px solid currentColor;border-radius:4px;padding:1px 4px;transform:rotate(-4deg);white-space:nowrap}
+.good{color:var(--gain)}.bad{color:var(--loss)}
+.cat{font-size:11.5px;font-weight:700}
+.sub{font-size:10px;font-weight:600;color:var(--loss);margin-top:1px}
+.bar{height:6px;border-radius:3px;background:var(--alt);margin-top:3px;overflow:hidden}.bar i{display:block;height:100%;width:60%;background:var(--goal)}
+.chips{display:flex;gap:5px}.chip{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:99px;border:1px solid var(--rule);color:var(--soft)}
+.chip.on{background:var(--brandsoft);color:var(--onbrandsoft);border-color:transparent}
+.btn{background:var(--brand);color:var(--onbrand);border-radius:6px;height:30px;display:grid;place-items:center;font-size:12px;font-weight:700}
+.pv-lbl{text-align:center;font-size:10.5px;color:var(--soft);padding:6px 0}
+.nm{display:flex;justify-content:center;align-items:center;gap:8px;margin:12px 0 8px;font-weight:800;font-size:19px;min-height:30px}
+.codechip{display:inline-flex;align-items:center;gap:4px;border:1.5px dashed #6975a0;border-radius:6px;padding:0 6px}
+.codechip input{font:600 13px ui-monospace,monospace;border:0;width:74px;padding:4px 0;color:#434e72;text-transform:uppercase;background:none;outline:none}
+.sv{position:relative;height:132px;border-radius:8px;touch-action:none;cursor:crosshair}
+.hue{position:relative;height:26px;border-radius:13px;margin-top:12px;touch-action:none;cursor:pointer;background:linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)}
+.thumb{position:absolute;width:22px;height:22px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px #0006,0 1px 4px #0005;transform:translate(-50%,-50%);pointer-events:none;top:50%}
+.hue .thumb{width:26px;height:26px}
+.ab{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.tile{border:1.5px solid #b9c5e6;border-radius:8px;padding:6px;background:#fff;text-align:left;color:#0e1630}
+.tile .blk{height:34px;border-radius:5px;display:flex;align-items:center;padding:0 9px;color:#fff;font-weight:800;font-size:14px}
+.tile .cap{display:flex;justify-content:space-between;align-items:center;margin-top:5px;font-size:11.5px;font-weight:700;color:#434e72}
+.tile.now{border-color:#0e1630}
+.slot{display:flex;gap:8px;align-items:flex-start;font-size:12px;line-height:1.4;min-height:34px;border-radius:8px;padding:8px 10px;box-sizing:border-box;margin:8px 0 10px}
+.slot.hint{color:#6975a0}
+.slot.warn{background:#fbd9db;color:#5c0b12}
+.slot.warn i{flex:none;width:8px;height:8px;border-radius:50%;background:#b81e2a;margin-top:4px}
+.btns{display:flex;gap:10px}.btns div{height:48px;border-radius:8px;display:grid;place-items:center;font-weight:800;font-size:16px}
+.cancel{flex:1;border:2px solid #1f3be0;color:#1f3be0}.use{flex:2;background:#1f3be0;color:#fff}
+.minis{display:flex;gap:12px;flex-wrap:wrap}
+.mini{width:226px}
+.mini .scale{width:412px;height:700px;transform:scale(.548);transform-origin:0 0}
+.mini .clip{width:226px;height:384px;overflow:hidden;border-radius:12px;box-shadow:0 0 0 4px #11152a}
+.mini .phone{height:700px;box-shadow:none;border-radius:0;background:#fff;margin:0}
+.mini .sheet{position:static;border-radius:0}
+.mini h3{font-size:13px;margin:8px 0 2px}.mini p{font-size:12px;margin:0;line-height:1.4;color:#566287}
+table{border-collapse:collapse;font-size:12.5px;background:#fff;border-radius:10px;overflow:hidden}
+td,th{padding:6px 10px;text-align:left;border-bottom:1px solid #d3dcf3}
+.ch{display:inline-flex;align-items:center;gap:6px;font-family:ui-monospace,monospace;font-size:11.5px}
+.ch i{display:inline-grid;place-items:center;width:46px;height:24px;border-radius:5px;font-style:normal;font-family:system-ui;font-weight:800;font-size:11px}
+</style></head><body><main>
+<h1>Tuya con cualquier color</h1>
+<p class="lede">E39, approved by the owner on 2026-11-12. The person picks any colour; the light theme shows it exactly and Sello makes the dark theme from it. Drag the square or the bar, type a code, or tap Antes.</p>
+
+<h2>1 · Tu tinta</h2>
+<div class="top-row">
+ <div class="phone" id="live"></div>
+ <div class="side">
+  <div class="kv"><h3>From top to bottom</h3><ul>
+   <li><b>Claro / Oscuro previews:</b> the band with white text, a chip in the soft tint, Anotar, Restante with AL DÍA, a category over its limit (EXCEDIDO, “Te pasaste por”) and a goal band.</li>
+   <li><b>Name and code:</b> the code is a field; tapping it lets the person type an exact one.</li>
+   <li><b>Colour square and colour bar.</b></li>
+   <li><b>Antes / Ahora:</b> the ink in use when the sheet opened, and the one being made, each with white “Aa”. Tapping Antes goes back to it.</li>
+   <li><b>One line</b> with either the hint or, near the excess red or the goal green, the note in a soft red box. It never changes height.</li>
+   <li><b>Cancelar / Usar esta tinta:</b> nothing changes until Usar esta tinta.</li>
+  </ul></div>
+  <div class="kv"><h3>Exact or made by Sello</h3><ul>
+   <li><b>Exact:</b> light band and buttons; their text is always white.</li>
+   <li><b>Made from it:</b> dark band (a little deeper, white text) and dark buttons (lighter, dark text); desk, paper, chips and text tints in the colour's hue. A grey gives a grey app.</li>
+   <li><b>Never change:</b> gain, loss, warning, goal band and investment colours.</li>
+   <li><b>Nothing is blocked</b> and there is no contrast warning.</li>
+  </ul></div>
+ </div>
+</div>
+
+<h2>2 · Cases</h2>
+<p class="lede">The same sheet with four picks.</p>
+<div class="minis" id="minis"></div>
+
+<h2>3 · Light to dark</h2>
+<p class="lede">The light colour (outlined) is exact; the dark band and the dark button are made from it.</p>
+<table id="derive"></table>
+</main>
+<script>
+// ---- Reference prototype for SELLO-214 -------------------------------------------
+const toLin=c=>c<=0.04045?c/12.92:((c+0.055)/1.055)**2.4;
+const toGam=c=>c<=0.0031308?12.92*c:1.055*c**(1/2.4)-0.055;
+const hexToRgb=h=>{h=h.replace('#','');return [0,2,4].map(i=>parseInt(h.substr(i,2),16)/255)};
+const rgbToHex=rgb=>'#'+rgb.map(c=>Math.round(Math.min(1,Math.max(0,c))*255).toString(16).padStart(2,'0')).join('');
+function linToLab([r,g,b]){const l=Math.cbrt(.4122214708*r+.5363325363*g+.0514459929*b),m=Math.cbrt(.2119034982*r+.6806995451*g+.1073969566*b),s=Math.cbrt(.0883024619*r+.2817188376*g+.6299787005*b);return[.2104542553*l+.793617785*m-.0040720468*s,1.9779984951*l-2.428592205*m+.4505937099*s,.0259040371*l+.7827717662*m-.808675766*s]}
+function labToLin(L,a,b){const l=(L+.3963377774*a+.2158037573*b)**3,m=(L-.1055613458*a-.0638541728*b)**3,s=(L-.0894841775*a-1.291485548*b)**3;return[4.0767416621*l-3.3077115913*m+.2309699292*s,-1.2684380046*l+2.6097574011*m-.3413193965*s,-.0041960863*l-.7034186147*m+1.707614701*s]}
+const hexToLab=hex=>linToLab(hexToRgb(hex).map(toLin));
+function hexToLch(hex){const[L,a,b]=hexToLab(hex);let h=Math.atan2(b,a)*180/Math.PI;if(h<0)h+=360;return[L,Math.hypot(a,b),h]}
+const inGamut=lin=>lin.every(c=>c>=-1e-4&&c<=1+1e-4);
+// OKLCH to sRGB, reducing chroma until the colour fits.
+function lchToHex(L,C,h){const r=h*Math.PI/180,at=c=>labToLin(L,c*Math.cos(r),c*Math.sin(r));let lin=at(C);if(!inGamut(lin)){let lo=0,hi=C;for(let i=0;i<25;i++){const m=(lo+hi)/2;inGamut(at(m))?lo=m:hi=m}lin=at(lo)}return rgbToHex(lin.map(c=>toGam(Math.min(1,Math.max(0,c)))))}
+const dE=(x,y)=>{const a=hexToLab(x),b=hexToLab(y);return Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2])};
+// Cobalto's non-brand roles; each is turned to the colour's hue at its own lightness.
+const COB={light:{brandsoft:'#dce2ff',onbrandsoft:'#0b1c7a',desk:'#d9e1f7',paper:'#ffffff',alt:'#eef2fc',ink:'#0e1630',soft:'#434e72',rule:'#b9c5e6'},
+ dark:{brandsoft:'#23368f',onbrandsoft:'#dde4ff',desk:'#090d1c',paper:'#151c36',alt:'#1d2646',ink:'#eef1fb',soft:'#a9b3d6',rule:'#2f3b66',onbrand:'#06175c'}};
+const SEM={light:{gain:'#0a6b4a',loss:'#b81e2a',goal:'#0f5c40'},dark:{gain:'#4fd6a0',loss:'#ff8a8a',goal:'#0f5c40'}};
+function tint(hex,hp,ratio){const[L,C]=hexToLch(hex);return C<0.004?hex:lchToHex(L,C*ratio,hp)}
+function palette(P){const[Lp,Cp,hp]=hexToLch(P),ratio=Math.min(1,Cp/0.12); // a muted colour gives muted tints
+ const t=th=>Object.fromEntries(Object.entries(COB[th]).map(([k,v])=>[k,tint(v,hp,ratio)]));
+ return{light:{...t('light'),brand:P,onbrand:'#ffffff',band:P,onband:'#ffffff',...SEM.light},
+  dark:{...t('dark'),band:lchToHex(Lp*0.88,Cp,hp),onband:'#ffffff',brand:lchToHex(Math.max(Lp,0.76),Math.min(Cp,0.16),hp),...SEM.dark}}}
+// Closeness rule (option 1): near the excess red or the goal green, in either theme; greys never.
+const NEAR_LIGHT=0.12,NEAR_DARK=0.065,MIN_CHROMA=0.05;
+function nearMeaning(P){if(hexToLch(P)[1]<MIN_CHROMA)return null;const p=palette(P);
+ const rL=dE(P,SEM.light.loss),gL=Math.min(dE(P,SEM.light.gain),dE(P,SEM.light.goal));
+ const red=rL<NEAR_LIGHT||dE(p.dark.brand,SEM.dark.loss)<NEAR_DARK,green=gL<NEAR_LIGHT||dE(p.dark.brand,SEM.dark.gain)<NEAR_DARK;
+ if(red&&green)return rL<gL?'red':'green';return red?'red':green?'green':null}
+// Names: today's hue names from the OKLCH hue, and Gris / Negro / Blanco for greys.
+const NAMES=[[12,'Rosa'],[45,'Rojo'],[70,'Naranja'],[92,'Ámbar'],[112,'Amarillo'],[135,'Lima'],[168,'Verde'],[200,'Turquesa'],[225,'Petróleo'],[250,'Azul'],[282,'Añil'],[305,'Violeta'],[330,'Morado'],[352,'Fucsia'],[360,'Rosa']];
+function colourName(P){const[L,C,h]=hexToLch(P);if(C<0.03)return L<0.25?'Negro':L>0.95?'Blanco':'Gris';return NAMES.find(([e])=>Math.round(h)%360<e)[1]}
+// ---- Mock UI ---------------------------------------------------------------------
+function rgbToHsv([r,g,b]){const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;let h=0;if(d){h=mx===r?((g-b)/d)%6:mx===g?(b-r)/d+2:(r-g)/d+4;h*=60;if(h<0)h+=360}return[h,mx?d/mx:0,mx]}
+function hsvToHex(h,s,v){const f=n=>{const k=(n+h/60)%6;return v-v*s*Math.max(0,Math.min(k,4-k,1))};return rgbToHex([f(5),f(3),f(1)])}
+const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
+const NOTE={red:'Se parece al rojo que marca los excesos.',green:'Se parece al verde de las metas y de lo que va bien.'};
+const HINT='Arrastra para elegir, o toca el código para escribir uno exacto.';
+const PEN='<svg width="13" height="13" viewBox="0 0 24 24" fill="#6975a0"><path d="M3 17.2V21h3.8l11-11-3.8-3.8-11 11zM20.7 7a1 1 0 0 0 0-1.4l-2.3-2.3a1 1 0 0 0-1.4 0l-1.8 1.8 3.8 3.8L20.7 7z"/></svg>';
+const GEAR='<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1c.5.4 1.1.7 1.7 1L11 21h4l.4-2.6c.6-.3 1.2-.6 1.7-1l2.5 1 2-3.5zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>';
+const vars=p=>Object.entries(p).map(([k,v])=>`--${k}:${v}`).join(';');
+const preview=(p,label)=>`<div class="pv" style="${vars(p)}"><div class="pv-band"><span>Octubre</span>${GEAR}</div><div class="pv-body">
+ <div class="card"><div class="row"><span class="lbl">Restante</span><span class="stamp good">AL DÍA</span></div><div class="fig">350.000</div></div>
+ <div class="card"><div class="row"><span class="cat">Mercado</span><span class="stamp bad">EXCEDIDO</span></div><div class="sub">Te pasaste por 40.000</div>
+ <div class="row" style="margin-top:7px"><span class="cat">Meta · Viaje</span><span class="lbl">60%</span></div><div class="bar"><i></i></div></div>
+ <div class="chips"><span class="chip on">Mes</span><span class="chip">Año</span></div><div class="btn">+ Anotar</div></div><div class="pv-lbl">${label}</div></div>`;
+const START={hex:'#1f3be0',name:'Cobalto'};
+function sheetHtml(s,interactive){const p=palette(s.hex),n=nearMeaning(s.hex),[h,sa,va]=s.hsv;
+ return `${interactive?'<div class="cfg-band">← Configuración</div><div class="cfg-slip">Apariencia</div><div class="scrim"></div>':''}<div class="sheet"><h4>Tu tinta</h4>
+ <div class="pvs">${preview(p.light,'Claro')}${preview(p.dark,'Oscuro')}</div>
+ <div class="nm"><span>${colourName(s.hex)}</span><span class="codechip"><input class="hex" maxlength="7" value="${s.hex.toUpperCase()}" ${interactive?'':'readonly'}>${PEN}</span></div>
+ <div class="sv" style="background:linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,hsl(${h},100%,50%))"><div class="thumb" style="left:${sa*100}%;top:${(1-va)*100}%;background:${s.hex}"></div></div>
+ <div class="hue"><div class="thumb" style="left:${h/3.6}%;background:hsl(${h},100%,50%)"></div></div>
+ <div class="ab"><button class="tile" data-act="antes"><div class="blk" style="background:${START.hex}">Aa</div><div class="cap"><span>Antes · ${START.name}</span><span>↺</span></div></button>
+ <div class="tile now"><div class="blk" style="background:${s.hex}">Aa</div><div class="cap"><span>Ahora · ${colourName(s.hex)}</span></div></div></div>
+ ${n?`<div class="slot warn"><i></i><span>${NOTE[n]}</span></div>`:`<div class="slot hint">${HINT}</div>`}
+ <div class="btns"><div class="cancel">Cancelar</div><div class="use">Usar esta tinta</div></div></div>`}
+const live=document.getElementById('live');
+const S={hex:'#c72842'};S.hsv=rgbToHsv(hexToRgb(S.hex));
+function setHex(hx,keep){S.hex=hx.toLowerCase();if(!keep){const n=rgbToHsv(hexToRgb(S.hex));if(n[1]>0)S.hsv[0]=n[0];S.hsv[1]=n[1];S.hsv[2]=n[2]}update()}
+function update(){const tmp=document.createElement('div');tmp.innerHTML=sheetHtml(S,true);
+ const a=document.activeElement,typing=a&&a.classList.contains('hex')&&live.contains(a);
+ for(const sel of ['.pvs','.ab','.slot'])live.querySelector(sel).replaceWith(tmp.querySelector(sel));
+ live.querySelector('.nm span').textContent=colourName(S.hex);if(!typing)live.querySelector('.hex').value=S.hex.toUpperCase();
+ const sv=live.querySelector('.sv');sv.style.background=tmp.querySelector('.sv').style.background;
+ sv.querySelector('.thumb').style.cssText=tmp.querySelector('.sv .thumb').style.cssText;
+ live.querySelector('.hue .thumb').style.cssText=tmp.querySelector('.hue .thumb').style.cssText}
+function drag(el,fn){el.addEventListener('pointerdown',e=>{el.setPointerCapture(e.pointerId);fn(e);const mv=ev=>fn(ev);el.addEventListener('pointermove',mv);el.addEventListener('pointerup',()=>el.removeEventListener('pointermove',mv),{once:true})})}
+live.innerHTML=sheetHtml(S,true);
+drag(live.querySelector('.sv'),e=>{const r=live.querySelector('.sv').getBoundingClientRect();S.hsv[1]=clamp((e.clientX-r.left)/r.width,0,1);S.hsv[2]=1-clamp((e.clientY-r.top)/r.height,0,1);setHex(hsvToHex(...S.hsv),true)});
+drag(live.querySelector('.hue'),e=>{const r=live.querySelector('.hue').getBoundingClientRect();S.hsv[0]=clamp((e.clientX-r.left)/r.width*360,0,359.9);setHex(hsvToHex(...S.hsv),true)});
+live.addEventListener('click',e=>{if(e.target.closest('[data-act=antes]'))setHex(START.hex)});
+live.querySelector('.hex').addEventListener('input',e=>{let x=e.target.value.trim();if(!x.startsWith('#'))x='#'+x;if(/^#[0-9a-fA-F]{6}$/.test(x))setHex(x)});
+live.querySelector('.hex').addEventListener('blur',e=>{e.target.value=S.hex.toUpperCase()});
+const CASES=[['#c62828','Near the excess red','The note shows; the colour is kept.'],['#2e7d32','Near the goal green','The note names the goal green.'],['#f4c430','Yellow, white text','No warning, no change.'],['#5f6368','Grey','A grey app; meanings stay; the hint shows.']];
+document.getElementById('minis').innerHTML=CASES.map(([h,t,d])=>{const s={hex:h,hsv:rgbToHsv(hexToRgb(h))};return `<div class="mini"><div class="clip"><div class="scale"><div class="phone">${sheetHtml(s,false)}</div></div></div><h3>${t}</h3><p>${d}</p></div>`}).join('');
+const chip=(bg,fg,out)=>`<span class="ch"><i style="background:${bg};color:${fg};${out?'outline:2px solid #0e1630;outline-offset:2px':''}">Aa</i>${bg.toUpperCase()}</span>`;
+let rows='<tr><th>Picked</th><th>Light band and button</th><th>Dark band</th><th>Dark button</th></tr>';
+for(const h of ['#1f3be0','#e0407a','#f4c430','#2b2b2b','#c62828']){const p=palette(h);rows+=`<tr><td>${colourName(h)}</td><td>${chip(h,'#fff',1)}</td><td>${chip(p.dark.band,'#fff')}</td><td>${chip(p.dark.brand,p.dark.onbrand)}</td></tr>`}
+document.getElementById('derive').innerHTML=rows;
+</script></body></html>
