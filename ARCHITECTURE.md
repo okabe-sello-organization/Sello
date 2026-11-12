@@ -282,7 +282,9 @@ deferred beyond MVP. Remaining implementation inputs are listed in the
   from tokens, copy from resources/plurals. Keep exact overrun facts and neutral copy.
 - **MUST** keep full exact amounts on slips/lists and accessible labels; abbreviate
   only chart axes. Keep ≥12sp text, ≥48dp hit targets, contrast, and
-  keyboard/Switch Access/TalkBack support.
+  keyboard/Switch Access/TalkBack support. The one exception is Tuya's exact colour:
+  its brand and band may lack contrast, and its colour square and bar have no TalkBack
+  support yet ([ADR 0028](docs/decisions/0028-tuya-honours-the-exact-colour.md)).
 - **MUST** treat a theme as data: one palette per scheme × light/dark. Today's schemes
   are Cobalto and Violeta (each light/dark) and more are planned, so adding one means
   one palette plus its registration. The stored theme id and backups MUST keep
