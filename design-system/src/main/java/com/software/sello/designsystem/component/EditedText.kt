@@ -24,7 +24,7 @@ import androidx.compose.ui.text.input.TextFieldValue
  * its state does not hold, because the field only follows the state when the state changes.
  */
 @Stable
-internal class EditedText(initial: String) {
+class EditedText(initial: String) {
     var field by mutableStateOf(TextFieldValue(initial, TextRange(initial.length)))
         private set
 
@@ -55,5 +55,5 @@ internal class EditedText(initial: String) {
 }
 
 @Composable
-internal fun rememberEditedText(value: String): EditedText =
+fun rememberEditedText(value: String): EditedText =
     remember { EditedText(value) }.also { it.sync(value) }

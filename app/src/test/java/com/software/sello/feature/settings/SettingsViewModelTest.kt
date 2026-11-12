@@ -1,11 +1,14 @@
 package com.software.sello.feature.settings
 
+import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.SavedStateHandle
+import com.software.sello.designsystem.theme.HueInk
 import com.software.sello.domain.model.AppearancePreference
 import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
 import com.software.sello.domain.model.CategoryOrderingPreference
 import com.software.sello.domain.model.Currency
+import com.software.sello.domain.model.InkColour
 import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.InvestmentOrder
@@ -230,11 +233,30 @@ class SettingsViewModelTest {
         assertTrue(!model.state.value.busy)
     }
 
-    // SELLO-202: Tu tinta.
+    // SELLO-202 and SELLO-216: Tu tinta.
 
     private val red = InkPreference.Tuya(TuyaColour.Hue(InkHue.of(22)!!))
 
+    private fun colour(rgb: Int) = InkColour.of(rgb.toLong())!!
+
+    private fun exact(rgb: Int) = InkPreference.Tuya(TuyaColour.Exact(colour(rgb)))
+
+    /** Cobalto's light band, where the sheet opens with no Tuya yet. */
+    private val cobalto = 0x1F3BE0
+
+    private val crimson = exact(0xC72842)
+
     private fun SettingsViewModel.tuya() = state.value.tuya
+
+    /** The sheet as it opens on [rgb], with Antes [before]. */
+    private fun opened(rgb: Int, before: Int = cobalto) = TuyaDraft(
+        colour = colour(rgb),
+        pick = TuyaPick.of(rgb, 0f),
+        code = codeOf(rgb),
+        before = colour(before)
+    )
+
+    private fun bandOf(hue: Int) = HueInk(hue).swatch.toArgb() and 0xFFFFFF
 
     @Test
     fun tuTintaOpensOnTheInkInUseAndNothingIsSavedUntilUsarEstaTinta() = runTest {
@@ -243,59 +265,180 @@ class SettingsViewModelTest {
 
         model.onAction(SettingsAction.Tuya.Open)
         runCurrent()
-        assertEquals(TuyaDraft(hue = 267), model.tuya())
+        assertEquals(opened(cobalto), model.tuya())
+        assertEquals("#1F3BE0", model.tuya()?.code)
 
-        model.onAction(SettingsAction.Tuya.HueChanged(22))
+        model.onAction(SettingsAction.Tuya.CodeTyped("#C72842"))
         runCurrent()
-        assertEquals(TuyaDraft(hue = 22), model.tuya())
+        assertEquals(colour(0xC72842), model.tuya()?.colour)
         assertEquals(InkPreference.Cobalto, model.state.value.appearance.ink)
         assertEquals(emptyList<InkPreference>(), appearance.inkWrites)
 
         model.onAction(SettingsAction.Tuya.Use)
         runCurrent()
-        assertEquals(listOf<InkPreference>(red), appearance.inkWrites)
-        assertEquals(red, model.state.value.appearance.ink)
+        // The exact colour is stored, never a hue.
+        assertEquals(listOf<InkPreference>(crimson), appearance.inkWrites)
+        assertEquals(crimson, model.state.value.appearance.ink)
         assertNull(model.tuya())
         assertFalse(model.state.value.busy)
     }
 
     @Test
-    fun tuTintaStartsOnVioletaOrOnTuyasOwnHue() = runTest {
+    fun tuTintaOpensOnTuyasKeptColourElseItsKeptHuesColourAndAntesIsTheInkInUse() = runTest {
         val model = settings()
-        appearance.values.value =
-            PreferenceRead.Ready(AppearancePreference(ink = InkPreference.Violeta))
+        val yellow = TuyaColour.Exact(colour(0xF4C430))
+        appearance.values.value = PreferenceRead.Ready(
+            AppearancePreference(ink = InkPreference.Violeta, tuya = yellow)
+        )
         runCurrent()
         model.onAction(SettingsAction.Tuya.Open)
         runCurrent()
-        assertEquals(286, model.tuya()?.hue)
+        // Violeta's light band is Antes.
+        assertEquals(opened(0xF4C430, before = 0x5B2BD6), model.tuya())
         model.onAction(SettingsAction.Tuya.Cancel)
 
+        // A hue saved before E39, in use: the colour it draws, which is also Antes.
         appearance.values.value = PreferenceRead.Ready(AppearancePreference(ink = red))
         runCurrent()
         model.onAction(SettingsAction.Tuya.Open)
         runCurrent()
-        assertEquals(22, model.tuya()?.hue)
+        assertEquals(opened(bandOf(22), before = bandOf(22)), model.tuya())
     }
 
     @Test
-    fun choosingAnotherInkKeepsTuyasHueAndTuTintaReopensOnIt() = runTest {
+    fun choosingAnotherInkKeepsTuyasColourAndTuTintaReopensOnIt() = runTest {
         val model = settings()
-        appearance.values.value = PreferenceRead.Ready(AppearancePreference(ink = red))
+        appearance.values.value = PreferenceRead.Ready(AppearancePreference(ink = crimson))
         runCurrent()
 
         model.onAction(SettingsAction.InkChosen(InkPreference.Violeta))
         runCurrent()
         assertEquals(
-            AppearancePreference(
-                ink = InkPreference.Violeta,
-                tuya = TuyaColour.Hue(InkHue.of(22)!!)
-            ),
+            AppearancePreference(ink = InkPreference.Violeta, tuya = crimson.colour),
             model.state.value.appearance
         )
 
         model.onAction(SettingsAction.Tuya.Open)
         runCurrent()
-        assertEquals(TuyaDraft(hue = 22), model.tuya())
+        assertEquals(opened(0xC72842, before = 0x5B2BD6), model.tuya())
+    }
+
+    @Test
+    fun theSquareAndTheBarMakeTheColourAndABlackKeepsTheBarsHue() = runTest {
+        val model = settings()
+        runCurrent()
+        model.onAction(SettingsAction.Tuya.Open)
+
+        model.onAction(SettingsAction.Tuya.BarMoved(120f))
+        model.onAction(SettingsAction.Tuya.SquareMoved(saturation = 1f, value = 1f))
+        runCurrent()
+        assertEquals(colour(0x00FF00), model.tuya()?.colour)
+        assertEquals(TuyaPick(120f, 1f, 1f), model.tuya()?.pick)
+        assertEquals("#00FF00", model.tuya()?.code)
+
+        model.onAction(SettingsAction.Tuya.SquareMoved(saturation = 0f, value = 0.5f))
+        runCurrent()
+        assertEquals(colour(0x808080), model.tuya()?.colour)
+
+        // Down to black, the bar moved, and up again: the bar's new hue, at full.
+        model.onAction(SettingsAction.Tuya.SquareMoved(saturation = 1f, value = 0f))
+        model.onAction(SettingsAction.Tuya.BarMoved(240f))
+        runCurrent()
+        assertEquals(colour(0x000000), model.tuya()?.colour)
+        assertEquals(TuyaPick(240f, 1f, 0f), model.tuya()?.pick)
+        model.onAction(SettingsAction.Tuya.SquareMoved(saturation = 1f, value = 1f))
+        runCurrent()
+        assertEquals(colour(0x0000FF), model.tuya()?.colour)
+        assertEquals("#0000FF", model.tuya()?.code)
+        assertEquals(colour(cobalto), model.tuya()?.before)
+        assertEquals(emptyList<InkPreference>(), appearance.inkWrites)
+    }
+
+    @Test
+    fun aPlaceOffTheSquareOrTheBarChangesNothing() = runTest {
+        val model = settings()
+        runCurrent()
+        model.onAction(SettingsAction.Tuya.Open)
+        runCurrent()
+        val before = model.tuya()
+
+        model.onAction(SettingsAction.Tuya.SquareMoved(1.5f, 1f))
+        model.onAction(SettingsAction.Tuya.SquareMoved(1f, -0.1f))
+        model.onAction(SettingsAction.Tuya.SquareMoved(Float.NaN, 1f))
+        model.onAction(SettingsAction.Tuya.BarMoved(360f))
+        model.onAction(SettingsAction.Tuya.BarMoved(-1f))
+        model.onAction(SettingsAction.Tuya.BarMoved(Float.NaN))
+        runCurrent()
+
+        assertEquals(before, model.tuya())
+    }
+
+    @Test
+    fun aTypedCodeInAnyCaseMovesTheColourAnythingElseChangesNothing() = runTest {
+        val model = settings()
+        runCurrent()
+        model.onAction(SettingsAction.Tuya.Open)
+
+        // Part of a code: shown as typed, the colour stays.
+        model.onAction(SettingsAction.Tuya.CodeTyped("c7"))
+        runCurrent()
+        assertEquals("c7", model.tuya()?.code)
+        assertEquals(colour(cobalto), model.tuya()?.colour)
+
+        // Without the hash, in lower case.
+        model.onAction(SettingsAction.Tuya.CodeTyped("c72842"))
+        runCurrent()
+        assertEquals("c72842", model.tuya()?.code)
+        assertEquals(colour(0xC72842), model.tuya()?.colour)
+        assertEquals(TuyaPick.of(0xC72842, 0f), model.tuya()?.pick)
+
+        // A seventh digit is no code: the colour stays; an eighth character is not kept.
+        model.onAction(SettingsAction.Tuya.CodeTyped("c728421"))
+        runCurrent()
+        assertEquals("c728421", model.tuya()?.code)
+        assertEquals(colour(0xC72842), model.tuya()?.colour)
+        model.onAction(SettingsAction.Tuya.CodeTyped("c7284211"))
+        runCurrent()
+        assertEquals("c728421", model.tuya()?.code)
+
+        // Leaving the field shows the current code again.
+        model.onAction(SettingsAction.Tuya.CodeLeft)
+        runCurrent()
+        assertEquals("#C72842", model.tuya()?.code)
+        assertEquals(colour(0xC72842), model.tuya()?.colour)
+
+        // With the hash, in capitals.
+        model.onAction(SettingsAction.Tuya.CodeTyped("#00FF00"))
+        runCurrent()
+        assertEquals(colour(0x00FF00), model.tuya()?.colour)
+        assertEquals(TuyaPick(120f, 1f, 1f), model.tuya()?.pick)
+        assertEquals(emptyList<InkPreference>(), appearance.inkWrites)
+    }
+
+    @Test
+    fun aTypedGreyKeepsTheBarsHue() = runTest {
+        val model = settings()
+        runCurrent()
+        model.onAction(SettingsAction.Tuya.Open)
+        model.onAction(SettingsAction.Tuya.BarMoved(200f))
+        model.onAction(SettingsAction.Tuya.CodeTyped("#808080"))
+        runCurrent()
+
+        assertEquals(colour(0x808080), model.tuya()?.colour)
+        assertEquals(TuyaPick(200f, 0f, 128 / 255f), model.tuya()?.pick)
+    }
+
+    @Test
+    fun antesGoesBackToTheInkInUseWhenTheSheetOpened() = runTest {
+        val model = settings()
+        runCurrent()
+        model.onAction(SettingsAction.Tuya.Open)
+        model.onAction(SettingsAction.Tuya.CodeTyped("#C72842"))
+        model.onAction(SettingsAction.Tuya.BeforeTapped)
+        runCurrent()
+
+        assertEquals(opened(cobalto), model.tuya())
+        assertEquals(emptyList<InkPreference>(), appearance.inkWrites)
     }
 
     @Test
@@ -303,20 +446,22 @@ class SettingsViewModelTest {
         val model = settings()
         runCurrent()
         model.onAction(SettingsAction.Tuya.Open)
-        model.onAction(SettingsAction.Tuya.HueChanged(22))
+        model.onAction(SettingsAction.Tuya.CodeTyped("#C72842"))
+        runCurrent()
+        val chosen = model.tuya()!!
         val gate = CompletableDeferred<Unit>()
         appearance.inkGate = gate
 
         model.onAction(SettingsAction.Tuya.Use)
         runCurrent()
-        assertEquals(TuyaDraft(hue = 22, saving = true), model.tuya())
+        assertEquals(chosen.copy(saving = true), model.tuya())
 
         // The write is cancelled under the save: the cancellation goes on up, never caught
         // as a failure or taken for a save.
         gate.completeExceptionally(CancellationException("left the screen"))
         runCurrent()
 
-        assertEquals(TuyaDraft(hue = 22), model.tuya())
+        assertEquals(chosen, model.tuya())
         assertFalse(model.state.value.busy)
         assertEquals(InkPreference.Cobalto, model.state.value.appearance.ink)
         assertNull(model.state.value.failure)
@@ -324,16 +469,16 @@ class SettingsViewModelTest {
         appearance.inkGate = null
         model.onAction(SettingsAction.Tuya.Use)
         runCurrent()
-        assertEquals(red, model.state.value.appearance.ink)
+        assertEquals(crimson, model.state.value.appearance.ink)
         assertNull(model.tuya())
     }
 
     @Test
-    fun cancelingForgetsTheHueAndKeepsTheInk() = runTest {
+    fun cancelingForgetsTheColourAndKeepsTheInk() = runTest {
         val model = settings()
         runCurrent()
         model.onAction(SettingsAction.Tuya.Open)
-        model.onAction(SettingsAction.Tuya.HueChanged(147))
+        model.onAction(SettingsAction.Tuya.CodeTyped("#2E7D32"))
         model.onAction(SettingsAction.Tuya.Cancel)
         runCurrent()
 
@@ -343,21 +488,23 @@ class SettingsViewModelTest {
 
         model.onAction(SettingsAction.Tuya.Open)
         runCurrent()
-        assertEquals(267, model.tuya()?.hue)
+        assertEquals(opened(cobalto), model.tuya())
     }
 
     @Test
-    fun aFailedSaveKeepsTheSheetAndHueAndTheInkInUseThenReintentarSaves() = runTest {
+    fun aFailedSaveKeepsTheSheetAndColourAndTheInkInUseThenReintentarSaves() = runTest {
         val model = settings()
         runCurrent()
         model.onAction(SettingsAction.Tuya.Open)
-        model.onAction(SettingsAction.Tuya.HueChanged(22))
+        model.onAction(SettingsAction.Tuya.CodeTyped("#C72842"))
+        runCurrent()
+        val chosen = model.tuya()!!
         appearance.nextInkWrite = PreferenceWrite.Failed(PreferenceFailure.Unavailable)
 
         model.onAction(SettingsAction.Tuya.Use)
         runCurrent()
 
-        assertEquals(TuyaDraft(hue = 22, failed = true), model.tuya())
+        assertEquals(chosen.copy(failed = true), model.tuya())
         assertEquals(InkPreference.Cobalto, model.state.value.appearance.ink)
         // The sheet says it; the screen behind does not repeat it.
         assertNull(model.state.value.failure)
@@ -365,23 +512,48 @@ class SettingsViewModelTest {
 
         model.onAction(SettingsAction.Tuya.Use)
         runCurrent()
-        assertEquals(listOf<InkPreference>(red, red), appearance.inkWrites)
-        assertEquals(red, model.state.value.appearance.ink)
+        assertEquals(listOf<InkPreference>(crimson, crimson), appearance.inkWrites)
+        assertEquals(crimson, model.state.value.appearance.ink)
         assertNull(model.tuya())
     }
 
     @Test
-    fun movingTheHueAfterAFailureClearsTheMessage() = runTest {
+    fun usarEstaTintaShowsTheColoursCodeOverAPartOfOneTyped() = runTest {
+        val model = settings()
+        runCurrent()
+        model.onAction(SettingsAction.Tuya.Open)
+        model.onAction(SettingsAction.Tuya.CodeTyped("#C72842"))
+        model.onAction(SettingsAction.Tuya.CodeTyped("#C7"))
+        runCurrent()
+        assertEquals("#C7", model.tuya()?.code)
+        appearance.nextInkWrite = PreferenceWrite.Failed(PreferenceFailure.Unavailable)
+
+        model.onAction(SettingsAction.Tuya.Use)
+        runCurrent()
+
+        assertEquals(true, model.tuya()?.failed)
+        assertEquals(colour(0xC72842), model.tuya()?.colour)
+        assertEquals("#C72842", model.tuya()?.code)
+    }
+
+    @Test
+    fun changingTheColourAfterAFailureClearsTheMessage() = runTest {
         val model = settings()
         runCurrent()
         model.onAction(SettingsAction.Tuya.Open)
         appearance.nextInkWrite = PreferenceWrite.Failed(PreferenceFailure.Unavailable)
         model.onAction(SettingsAction.Tuya.Use)
         runCurrent()
+        assertEquals(true, model.tuya()?.failed)
 
-        model.onAction(SettingsAction.Tuya.HueChanged(30))
+        // Typing part of a code changes no colour, so the message stays.
+        model.onAction(SettingsAction.Tuya.CodeTyped("#1"))
         runCurrent()
-        assertEquals(TuyaDraft(hue = 30), model.tuya())
+        assertEquals(true, model.tuya()?.failed)
+
+        model.onAction(SettingsAction.Tuya.BarMoved(30f))
+        runCurrent()
+        assertEquals(false, model.tuya()?.failed)
     }
 
     @Test
@@ -389,36 +561,45 @@ class SettingsViewModelTest {
         val model = settings()
         runCurrent()
         model.onAction(SettingsAction.Tuya.Open)
-        model.onAction(SettingsAction.Tuya.HueChanged(22))
+        model.onAction(SettingsAction.Tuya.CodeTyped("#C72842"))
+        runCurrent()
+        val chosen = model.tuya()!!
         val gate = CompletableDeferred<Unit>()
         appearance.inkGate = gate
 
         model.onAction(SettingsAction.Tuya.Use)
         runCurrent()
         model.onAction(SettingsAction.Tuya.Use)
-        model.onAction(SettingsAction.Tuya.HueChanged(40))
+        model.onAction(SettingsAction.Tuya.SquareMoved(0f, 0f))
+        model.onAction(SettingsAction.Tuya.BarMoved(40f))
+        model.onAction(SettingsAction.Tuya.CodeTyped("#00FF00"))
+        model.onAction(SettingsAction.Tuya.CodeLeft)
+        model.onAction(SettingsAction.Tuya.BeforeTapped)
+        model.onAction(SettingsAction.Tuya.Open)
         model.onAction(SettingsAction.Tuya.Cancel)
         model.onAction(SettingsAction.InkChosen(InkPreference.Violeta))
         runCurrent()
 
-        assertEquals(listOf<InkPreference>(red), appearance.inkWrites)
-        assertEquals(TuyaDraft(hue = 22, saving = true), model.tuya())
+        assertEquals(listOf<InkPreference>(crimson), appearance.inkWrites)
+        assertEquals(chosen.copy(saving = true), model.tuya())
         assertTrue(model.state.value.busy)
 
         gate.complete(Unit)
         runCurrent()
-        assertEquals(red, model.state.value.appearance.ink)
+        assertEquals(crimson, model.state.value.appearance.ink)
         assertNull(model.tuya())
         assertFalse(model.state.value.busy)
     }
 
     @Test
-    fun theHueBeingChosenSurvivesProcessDeath() = runTest {
+    fun theColourBeingMadeAndTheCodeBeingTypedSurviveProcessDeath() = runTest {
         val handle = SavedStateHandle()
         val model = settings(handle)
         runCurrent()
         model.onAction(SettingsAction.Tuya.Open)
-        model.onAction(SettingsAction.Tuya.HueChanged(200))
+        model.onAction(SettingsAction.Tuya.BarMoved(120f))
+        model.onAction(SettingsAction.Tuya.SquareMoved(1f, 1f))
+        model.onAction(SettingsAction.Tuya.CodeTyped("#00f"))
         runCurrent()
 
         // What the system keeps of the handle is all a new process gets.
@@ -426,38 +607,62 @@ class SettingsViewModelTest {
         val again = settings(restored)
         runCurrent()
 
-        assertEquals(TuyaDraft(hue = 200), again.tuya())
+        assertEquals(
+            TuyaDraft(
+                colour = colour(0x00FF00),
+                pick = TuyaPick(120f, 1f, 1f),
+                code = "#00f",
+                before = colour(cobalto)
+            ),
+            again.tuya()
+        )
         assertEquals(InkPreference.Cobalto, again.state.value.appearance.ink)
         assertEquals(emptyList<InkPreference>(), appearance.inkWrites)
+
+        again.onAction(SettingsAction.Tuya.Use)
+        runCurrent()
+        assertEquals(listOf(exact(0x00FF00)), appearance.inkWrites)
     }
 
     @Test
-    fun aHueOutsideTheCircleIsNeverTakenOrSaved() = runTest {
+    fun aKeptSheetSelloCouldNotHaveWrittenOpensNothingAndSavesNothing() = runTest {
         val handle = SavedStateHandle()
         val model = settings(handle)
         runCurrent()
         model.onAction(SettingsAction.Tuya.Open)
-        model.onAction(SettingsAction.Tuya.HueChanged(359))
-        model.onAction(SettingsAction.Tuya.HueChanged(360))
-        model.onAction(SettingsAction.Tuya.HueChanged(-1))
         runCurrent()
-        assertEquals(359, model.tuya()?.hue)
+        val kept = handle.keys().associateWith { handle.get<Any>(it) }
 
-        // A kept hue Sello could not have written opens no sheet and saves nothing.
-        val damaged = SavedStateHandle(handle.keys().associateWith { 360 })
-        val again = settings(damaged)
-        runCurrent()
-        assertNull(again.tuya())
-        again.onAction(SettingsAction.Tuya.Use)
-        runCurrent()
+        // Each piece damaged in turn, in its own type: out of range or too long.
+        for (key in kept.keys) {
+            val damaged = when (val value = kept[key]) {
+                is Int -> listOf(0x1000000, -1)
+                is FloatArray -> listOf(floatArrayOf(360f, 1f, 1f), floatArrayOf(0f, 1f))
+                is String -> listOf("#C7284211")
+                else -> error("Unexpected $value under $key")
+            }
+            for (bad in damaged) {
+                val again = settings(SavedStateHandle(kept + (key to bad)))
+                runCurrent()
+                assertNull("$key = $bad", again.tuya())
+                again.onAction(SettingsAction.Tuya.Use)
+                again.onAction(SettingsAction.Tuya.BeforeTapped)
+                runCurrent()
+                assertNull("$key = $bad", again.tuya())
+            }
+        }
         assertEquals(emptyList<InkPreference>(), appearance.inkWrites)
     }
 
     @Test
-    fun aHueChangeWithTheSheetClosedOpensNothing() = runTest {
+    fun sheetActionsWithTheSheetClosedOpenNothing() = runTest {
         val model = settings()
         runCurrent()
-        model.onAction(SettingsAction.Tuya.HueChanged(22))
+        model.onAction(SettingsAction.Tuya.BarMoved(22f))
+        model.onAction(SettingsAction.Tuya.SquareMoved(1f, 1f))
+        model.onAction(SettingsAction.Tuya.CodeTyped("#C72842"))
+        model.onAction(SettingsAction.Tuya.CodeLeft)
+        model.onAction(SettingsAction.Tuya.BeforeTapped)
         model.onAction(SettingsAction.Tuya.Use)
         runCurrent()
 
@@ -561,7 +766,7 @@ class SettingsViewModelTest {
 
         model.onAction(SettingsAction.Tuya.Open)
         runCurrent()
-        assertEquals(TuyaDraft(hue = 267), model.tuya())
+        assertEquals(opened(cobalto), model.tuya())
     }
 
     @Test
@@ -580,7 +785,7 @@ class SettingsViewModelTest {
 
         model.onAction(SettingsAction.Tuya.Open)
         runCurrent()
-        assertEquals(TuyaDraft(hue = 267), model.tuya())
+        assertEquals(opened(cobalto), model.tuya())
     }
 
     @Test
@@ -593,7 +798,7 @@ class SettingsViewModelTest {
         model.onAction(SettingsAction.Tuya.Open)
         runCurrent()
 
-        assertEquals(TuyaDraft(hue = 140), model.tuya())
+        assertEquals(opened(bandOf(140), before = bandOf(140)), model.tuya())
     }
 
     @Test
@@ -611,7 +816,7 @@ class SettingsViewModelTest {
         assertEquals(InkPreference.Sistema, model.state.value.appearance.ink)
         model.onAction(SettingsAction.Tuya.Open)
         runCurrent()
-        assertEquals(TuyaDraft(hue = 22), model.tuya())
+        assertEquals(opened(bandOf(22), before = bandOf(140)), model.tuya())
     }
 }
 

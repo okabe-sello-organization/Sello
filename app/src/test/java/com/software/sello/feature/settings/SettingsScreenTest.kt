@@ -6,19 +6,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.semantics.ProgressBarRangeInfo
-import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
-import androidx.compose.ui.test.SemanticsMatcher
-import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
-import androidx.compose.ui.test.assertRangeInfoEquals
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
@@ -29,10 +24,12 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.performImeAction
+import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.domain.model.AppearancePreference
+import com.software.sello.domain.model.InkColour
 import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.TuyaColour
@@ -220,67 +217,119 @@ class SettingsScreenTest {
     }
 
     @Test
-    fun theSliderIsReadAsTheColoursNameAndTalkBackCanMoveIt() {
-        val actions = mutableListOf<SettingsAction>()
-        showSettings(SettingsState(loading = false, tuya = TuyaDraft(hue = 200)), actions)
-
-        rule.onNodeWithTag(TUYA_SLIDER_TAG)
-            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Petróleo"))
-            .assertContentDescriptionEquals("Tono de tu tinta")
-            .assertRangeInfoEquals(ProgressBarRangeInfo(200f, 0f..359f))
-            .performSemanticsAction(SemanticsActions.SetProgress) { it(218f) }
-        // A step past an end stops at it.
-        rule.onNodeWithTag(TUYA_SLIDER_TAG)
-            .performSemanticsAction(SemanticsActions.SetProgress) { it(380f) }
-
-        assertEquals(
-            listOf<SettingsAction>(
-                SettingsAction.Tuya.HueChanged(218),
-                SettingsAction.Tuya.HueChanged(359)
-            ),
-            actions
+    fun chosenExactTuyaNamesItsColour() {
+        val grey = AppearancePreference(
+            ink = InkPreference.Tuya(TuyaColour.Exact(InkColour.of(0x5F6368)!!))
         )
-        rule.onNodeWithTag(TUYA_NOTE_TAG).assertDoesNotExist()
+        showSettings(SettingsState(loading = false, appearance = grey), mutableListOf())
+
+        rule.onNodeWithText("Tuya").assertIsSelected()
+        rule.onNodeWithTag(SETTINGS_INK_NOTE_TAG)
+            .assertTextEquals("Gris. Toca Tuya para cambiarla.")
+    }
+
+    // SELLO-216: Tu tinta with any colour.
+
+    /** The sheet on [rgb], opened from Cobalto. */
+    private fun draft(
+        rgb: Int,
+        code: String = codeOf(rgb),
+        saving: Boolean = false,
+        failed: Boolean = false
+    ) = TuyaDraft(
+        colour = InkColour.of(rgb.toLong())!!,
+        pick = TuyaPick.of(rgb, 0f),
+        code = code,
+        before = InkColour.of(0x1F3BE0)!!,
+        saving = saving,
+        failed = failed
+    )
+
+    @Test
+    fun theSheetNamesTheColourShowsItsCodeAndAntesAndAhora() {
+        showSettings(SettingsState(loading = false, tuya = draft(0x5F6368)), mutableListOf())
+
+        rule.onNodeWithTag(TUYA_NAME_TAG).assertTextEquals("Gris")
+        rule.onNodeWithTag(TUYA_CODE_TAG)
+            .assertTextEquals("#5F6368")
+            .assertContentDescriptionEquals("Código del color")
+        rule.onNodeWithText("Antes · Cobalto").assertIsDisplayed()
+        rule.onNodeWithText("Ahora · Gris").assertIsDisplayed()
     }
 
     @Test
-    fun dragingTheSliderToItsEndsGivesTheFirstAndLastHue() {
+    fun typingACodeSendsItAsTypedAndListoLeavesTheField() {
         val actions = mutableListOf<SettingsAction>()
-        showSettings(SettingsState(loading = false, tuya = TuyaDraft(hue = 200)), actions)
+        showSettings(SettingsState(loading = false, tuya = draft(0x5F6368)), actions)
 
-        rule.onNodeWithTag(TUYA_SLIDER_TAG).performTouchInput { click(centerLeft) }
-        rule.onNodeWithTag(TUYA_SLIDER_TAG).performTouchInput { click(centerRight) }
+        rule.onNodeWithTag(TUYA_CODE_TAG).performClick().performTextReplacement("c72842")
+        rule.onNodeWithTag(TUYA_CODE_TAG).performImeAction()
 
         assertEquals(
-            listOf<SettingsAction>(
-                SettingsAction.Tuya.HueChanged(0),
-                SettingsAction.Tuya.HueChanged(359)
+            listOf(SettingsAction.Tuya.CodeTyped("c72842"), SettingsAction.Tuya.CodeLeft),
+            actions
+        )
+    }
+
+    @Test
+    fun theSquareAndTheBarSendWhereTheyAreTouchedAndAntesGoesBack() {
+        val actions = mutableListOf<SettingsAction>()
+        showSettings(SettingsState(loading = false, tuya = draft(0x5F6368)), actions)
+
+        rule.onNodeWithTag(TUYA_SQUARE_TAG).revealed().performTouchInput { click(topLeft) }
+        rule.onNodeWithTag(TUYA_SQUARE_TAG).performTouchInput { click(center) }
+        rule.onNodeWithTag(TUYA_BAR_TAG).revealed().performTouchInput { click(centerLeft) }
+        rule.onNodeWithTag(TUYA_BAR_TAG).performTouchInput { click(center) }
+        rule.onNodeWithTag(TUYA_BEFORE_TAG).revealed().performClick()
+
+        assertEquals(
+            listOf(
+                SettingsAction.Tuya.SquareMoved(saturation = 0f, value = 1f),
+                SettingsAction.Tuya.SquareMoved(saturation = 0.5f, value = 0.5f),
+                SettingsAction.Tuya.BarMoved(0f),
+                SettingsAction.Tuya.BarMoved(180f),
+                SettingsAction.Tuya.BeforeTapped
             ),
             actions
         )
     }
 
     @Test
-    fun aRedOrGreenHueAddsTheNoteAndCanStillBeUsed() {
+    fun theLineHoldsTheHintOrTheNoteAtOneHeightAndEveryColourCanBeUsed() {
         val actions = mutableListOf<SettingsAction>()
-        var hue by mutableIntStateOf(0)
+        var rgb by mutableIntStateOf(0x5F6368)
         rule.showSello {
-            TuyaSheet(TuyaDraft(hue), InkPreference.Cobalto) { actions += it }
+            TuyaSheet(draft(rgb), InkPreference.Cobalto) { actions += it }
         }
-        for (each in listOf(0, 22, 49, 50, 121, 122, 147, 195, 196, 267)) {
-            hue = each
+        val hint = "Arrastra para elegir, o toca el código para escribir uno exacto."
+        val heights = mutableSetOf<Float>()
+        // Grey, yellow and blue get the hint; the mock's red and green get their notes.
+        for ((each, line) in listOf(
+            0x5F6368 to hint,
+            0xF4C430 to hint,
+            0x1F3BE0 to hint,
+            0xC62828 to "Se parece al rojo que marca los excesos.",
+            0x2E7D32 to "Se parece al verde de las metas y de lo que va bien."
+        )) {
+            rgb = each
             rule.waitForIdle()
             actions.clear()
-
-            if (each in 0..49 || each in 122..195) {
-                rule.onNodeWithTag(TUYA_NOTE_TAG)
-                    .assertTextEquals("El rojo y el verde también marcan excesos y metas.")
-            } else {
-                rule.onNodeWithTag(TUYA_NOTE_TAG).assertDoesNotExist()
-            }
-            rule.onNodeWithTag(TUYA_USE_TAG).assertIsEnabled().performClick()
-            assertEquals("$each", listOf<SettingsAction>(SettingsAction.Tuya.Use), actions)
+            val tag = if (line == hint) TUYA_HINT_TAG else TUYA_NOTE_TAG
+            rule.onNodeWithTag(tag).revealed().assertTextEquals(line)
+            rule.onNodeWithTag(if (line == hint) TUYA_NOTE_TAG else TUYA_HINT_TAG)
+                .assertDoesNotExist()
+            heights +=
+                rule.onNodeWithTag(TUYA_LINE_TAG).getUnclippedBoundsInRoot().run {
+                    bottom - top
+                }.value
+            rule.onNodeWithTag(TUYA_USE_TAG).revealed().assertIsEnabled().performClick()
+            assertEquals(
+                "%06X".format(each),
+                listOf<SettingsAction>(SettingsAction.Tuya.Use),
+                actions
+            )
         }
+        assertEquals(1, heights.size)
     }
 
     @Test
@@ -290,14 +339,16 @@ class SettingsScreenTest {
             SettingsState(
                 loading = false,
                 appearance = AppearancePreference(ink = InkPreference.Violeta),
-                tuya = TuyaDraft(hue = 22, failed = true)
+                tuya = draft(0xC72842, failed = true)
             ),
             actions
         )
 
-        rule.onNodeWithText("No se pudo guardar. Sigues con Violeta.").assertIsDisplayed()
-        rule.onNodeWithText("Reintentar").performClick()
-        rule.onNodeWithText("Cancelar").performClick()
+        rule.onNodeWithText(
+            "No se pudo guardar. Sigues con Violeta."
+        ).revealed().assertIsDisplayed()
+        rule.onNodeWithText("Reintentar").revealed().performClick()
+        rule.onNodeWithText("Cancelar").revealed().performClick()
 
         assertEquals(
             listOf<SettingsAction>(SettingsAction.Tuya.Use, SettingsAction.Tuya.Cancel),
@@ -308,25 +359,29 @@ class SettingsScreenTest {
     @Test
     fun aFailedSaveOverTuyaNamesTheTuyaStillInUse() {
         showSettings(
-            SettingsState(loading = false, appearance = red, tuya = TuyaDraft(147, failed = true)),
+            SettingsState(loading = false, appearance = red, tuya = draft(0x2E7D32, failed = true)),
             mutableListOf()
         )
 
-        rule.onNodeWithText("No se pudo guardar. Sigues con Tuya (Rojo).").assertIsDisplayed()
+        rule.onNodeWithText("No se pudo guardar. Sigues con Tuya (Rojo).").revealed()
+            .assertIsDisplayed()
+        rule.onNodeWithText("Antes · Tuya (Rojo)").assertExists()
     }
 
     @Test
     fun whileSavingOnlyTheBusyButtonShowsAndNothingCanBeChanged() {
         val actions = mutableListOf<SettingsAction>()
         showSettings(
-            SettingsState(loading = false, busy = true, tuya = TuyaDraft(22, saving = true)),
+            SettingsState(loading = false, busy = true, tuya = draft(0xC72842, saving = true)),
             actions
         )
 
-        rule.onNodeWithTag(TUYA_CANCEL_TAG).assertIsNotEnabled()
-        rule.onNodeWithTag(TUYA_SLIDER_TAG).assertIsNotEnabled()
-        rule.onNodeWithTag(TUYA_SLIDER_TAG).performTouchInput { click(centerLeft) }
-        rule.onNodeWithTag(TUYA_USE_TAG).performClick()
+        rule.onNodeWithTag(TUYA_CANCEL_TAG).revealed().assertIsNotEnabled()
+        rule.onNodeWithTag(TUYA_CODE_TAG).assertIsNotEnabled()
+        rule.onNodeWithTag(TUYA_SQUARE_TAG).revealed().performTouchInput { click(center) }
+        rule.onNodeWithTag(TUYA_BAR_TAG).revealed().performTouchInput { click(center) }
+        rule.onNodeWithTag(TUYA_BEFORE_TAG).revealed().performClick()
+        rule.onNodeWithTag(TUYA_USE_TAG).revealed().performClick()
 
         assertEquals(emptyList<SettingsAction>(), actions)
     }

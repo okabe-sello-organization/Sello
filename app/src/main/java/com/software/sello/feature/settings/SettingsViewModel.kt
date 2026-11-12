@@ -8,7 +8,7 @@ import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
 import com.software.sello.domain.model.CategoryOrderingPreference
 import com.software.sello.domain.model.Currency
-import com.software.sello.domain.model.InkHue
+import com.software.sello.domain.model.InkColour
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.InvestmentPreference
@@ -30,7 +30,8 @@ import com.software.sello.domain.port.ScheduleReads
 import com.software.sello.domain.port.SmallExpensePreferences
 import com.software.sello.platform.PhoneColor
 import com.software.sello.platform.SystemColor
-import com.software.sello.presentation.appearance.startingHue
+import com.software.sello.presentation.appearance.colour
+import com.software.sello.presentation.appearance.startingColour
 import com.software.sello.presentation.money.MoneyFormatter
 import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
@@ -48,7 +49,7 @@ import kotlinx.coroutines.launch
 /**
  * Coordinates the appearance, Recibo-order, Gastos hormiga and Inversiones controls, how many payments and
  * incomes repeat and the current USD rate. [systemColor] is the phone's colour, for Sistema. The backup card reads the backup's own state.
- * The hue chosen in Tu tinta is kept in [handle] while the sheet is open, so it survives
+ * The colour being made in Tu tinta is kept in [handle] while the sheet is open, so it survives
  * rotation and process death; nothing is saved until Usar esta tinta.
  */
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -69,13 +70,16 @@ class SettingsViewModel(
     private val tuyaSaving = MutableStateFlow(false)
     private val tuyaFailed = MutableStateFlow(false)
 
-    private val tuya = combine(
-        handle.getStateFlow<Int?>(KEY_TUYA_HUE, null),
-        tuyaSaving,
-        tuyaFailed
-    ) { hue, saving, failed ->
-        // A hue only this screen wrote; anything else is no open sheet.
-        hue?.takeIf { it in InkHue.RANGE }?.let { TuyaDraft(it, saving, failed) }
+    private val tuyaKept = combine(
+        handle.getStateFlow<Int?>(KEY_TUYA_COLOUR, null),
+        handle.getStateFlow<FloatArray?>(KEY_TUYA_PICK, null),
+        handle.getStateFlow<String?>(KEY_TUYA_CODE, null),
+        handle.getStateFlow<Int?>(KEY_TUYA_BEFORE, null),
+        ::keptDraft
+    )
+
+    private val tuya = combine(tuyaKept, tuyaSaving, tuyaFailed) { kept, saving, failed ->
+        kept?.copy(saving = saving, failed = failed)
     }
 
     private val reads: Flow<SettingsRead> = retry.flatMapLatest {
@@ -242,29 +246,52 @@ class SettingsViewModel(
     /** Tu tinta: nothing is written until [SettingsAction.Tuya.Use]; one save at a time. */
     private fun onTuya(action: SettingsAction.Tuya) {
         if (tuyaSaving.value) return
+        if (action == SettingsAction.Tuya.Open) return open()
+        // Every other action needs the sheet open, as this screen wrote it.
+        val draft = openDraft() ?: return
         when (action) {
-            SettingsAction.Tuya.Open -> {
+            SettingsAction.Tuya.Open -> Unit
+
+            is SettingsAction.Tuya.SquareMoved -> move(
+                draft.pick.copy(saturation = action.saturation, value = action.value)
+            )
+
+            is SettingsAction.Tuya.BarMoved -> move(draft.pick.copy(hue = action.hue))
+
+            is SettingsAction.Tuya.CodeTyped -> {
+                // Kept as typed, so the field shows it; only a whole code moves the colour.
+                val typed = action.text.take(CODE_LENGTH)
+                handle[KEY_TUYA_CODE] = typed
+                val rgb = colourOfCode(typed) ?: return
                 tuyaFailed.value = false
-                handle[KEY_TUYA_HUE] = state.value.run { appearance.startingHue(phone) }
+                handle[KEY_TUYA_PICK] = TuyaPick.of(rgb, draft.pick.hue).toArray()
+                handle[KEY_TUYA_COLOUR] = rgb
             }
 
-            is SettingsAction.Tuya.HueChanged -> {
-                if (action.hue !in InkHue.RANGE || handle.get<Int>(KEY_TUYA_HUE) == null) return
+            SettingsAction.Tuya.CodeLeft -> handle[KEY_TUYA_CODE] = codeOf(draft.colour.rgb)
+
+            SettingsAction.Tuya.BeforeTapped -> {
                 tuyaFailed.value = false
-                handle[KEY_TUYA_HUE] = action.hue
+                val rgb = draft.before.rgb
+                handle[KEY_TUYA_PICK] = TuyaPick.of(rgb, draft.pick.hue).toArray()
+                handle[KEY_TUYA_CODE] = codeOf(rgb)
+                handle[KEY_TUYA_COLOUR] = rgb
             }
 
             SettingsAction.Tuya.Cancel -> close()
 
             SettingsAction.Tuya.Use -> {
-                val hue = handle.get<Int>(KEY_TUYA_HUE)?.toLong()?.let(InkHue::of) ?: return
                 if (busy.value) return
+                // Nothing can be typed while it saves, so the field shows the colour saved.
+                handle[KEY_TUYA_CODE] = codeOf(draft.colour.rgb)
                 tuyaSaving.value = true
                 busy.value = true
                 tuyaFailed.value = false
                 viewModelScope.launch {
                     val result = try {
-                        appearancePreferences.setInk(InkPreference.Tuya(TuyaColour.Hue(hue)))
+                        appearancePreferences.setInk(
+                            InkPreference.Tuya(TuyaColour.Exact(draft.colour))
+                        )
                     } finally {
                         busy.value = false
                         tuyaSaving.value = false
@@ -275,16 +302,69 @@ class SettingsViewModel(
         }
     }
 
+    /**
+     * Opens on Tuya's kept colour, else its kept hue's colour, else the ink in use's; Antes is
+     * the ink in use. The colour goes last: it is what opens the sheet.
+     */
+    private fun open() {
+        tuyaFailed.value = false
+        val (start, before) = state.value.run {
+            appearance.startingColour(phone) to appearance.ink.colour(phone)
+        }
+        handle[KEY_TUYA_BEFORE] = before
+        handle[KEY_TUYA_PICK] = TuyaPick.of(start, 0f).toArray()
+        handle[KEY_TUYA_CODE] = codeOf(start)
+        handle[KEY_TUYA_COLOUR] = start
+    }
+
+    /** The square or the bar moved to [pick]; a place they can't stand changes nothing. */
+    private fun move(pick: TuyaPick) {
+        if (!pick.isValid) return
+        tuyaFailed.value = false
+        val rgb = pick.rgb()
+        handle[KEY_TUYA_PICK] = pick.toArray()
+        handle[KEY_TUYA_CODE] = codeOf(rgb)
+        handle[KEY_TUYA_COLOUR] = rgb
+    }
+
     private fun close() {
         tuyaFailed.value = false
         // Not remove(): that would cut the sheet's flow off from later changes.
-        handle[KEY_TUYA_HUE] = null
+        handle[KEY_TUYA_COLOUR] = null
     }
 
+    private fun openDraft(): TuyaDraft? = keptDraft(
+        handle[KEY_TUYA_COLOUR],
+        handle[KEY_TUYA_PICK],
+        handle[KEY_TUYA_CODE],
+        handle[KEY_TUYA_BEFORE]
+    )
+
     private companion object {
-        const val KEY_TUYA_HUE = "settings.tuya.hue"
+        const val KEY_TUYA_COLOUR = "settings.tuya.colour"
+        const val KEY_TUYA_PICK = "settings.tuya.pick"
+        const val KEY_TUYA_CODE = "settings.tuya.code"
+        const val KEY_TUYA_BEFORE = "settings.tuya.before"
     }
 }
+
+/**
+ * The open sheet as kept in the handle, or null when it is closed. Only what this screen
+ * wrote opens it: a colour, Antes or a place out of range, or a missing piece, is no sheet.
+ */
+private fun keptDraft(colour: Int?, pick: FloatArray?, code: String?, before: Int?): TuyaDraft? {
+    val chosen = colour?.toLong()?.let(InkColour::of) ?: return null
+    val antes = before?.toLong()?.let(InkColour::of) ?: return null
+    val place = pick?.takeIf { it.size == PICK_SIZE }
+        ?.let { TuyaPick(it[0], it[1], it[2]) }
+        ?.takeIf { it.isValid } ?: return null
+    if (code == null || code.length > CODE_LENGTH) return null
+    return TuyaDraft(colour = chosen, pick = place, code = code, before = antes)
+}
+
+private fun TuyaPick.toArray() = floatArrayOf(hue, saturation, value)
+
+private const val PICK_SIZE = 3
 
 sealed interface SettingsAction {
     data class ThemeChosen(val theme: ThemePreference) : SettingsAction
@@ -297,10 +377,23 @@ sealed interface SettingsAction {
 
     /** The Tu tinta sheet's actions. */
     sealed interface Tuya : SettingsAction {
-        /** Tuya was tapped: the sheet opens on the hue of the ink in use. */
+        /** Tuya was tapped: the sheet opens on Tuya's colour or the ink in use's. */
         data object Open : Tuya
 
-        data class HueChanged(val hue: Int) : Tuya
+        /** The colour square, at [saturation] (left to right) and [value] (bottom to top). */
+        data class SquareMoved(val saturation: Float, val value: Float) : Tuya
+
+        /** The colour bar, at [hue] degrees, from 0 up to 360. */
+        data class BarMoved(val hue: Float) : Tuya
+
+        /** The code field's text; a whole code moves the colour, anything else nothing. */
+        data class CodeTyped(val text: String) : Tuya
+
+        /** The code field lost focus: it shows the current colour's code again. */
+        data object CodeLeft : Tuya
+
+        /** Antes: back to the ink in use when the sheet opened. */
+        data object BeforeTapped : Tuya
 
         /** Cancelar, Cerrar, back or the scrim: the ink stays as it is. */
         data object Cancel : Tuya
@@ -340,10 +433,19 @@ data class SettingsState(
 }
 
 /**
- * The hue being chosen in Tu tinta, a whole degree from 0 to 359; whether it is being saved;
- * and whether the last save failed, which leaves the app's ink as it was.
+ * Tu tinta while it is open: the [colour] being made; where the bar and the square stand
+ * ([pick]); the code field's text ([code]), as typed or the colour's; Antes ([before]), the
+ * colour of the ink in use when it opened; whether it is being saved; and whether the last
+ * save failed, which leaves the app's ink as it was.
  */
-data class TuyaDraft(val hue: Int, val saving: Boolean = false, val failed: Boolean = false)
+data class TuyaDraft(
+    val colour: InkColour,
+    val pick: TuyaPick,
+    val code: String,
+    val before: InkColour,
+    val saving: Boolean = false,
+    val failed: Boolean = false
+)
 
 /** The rate is written to the centavo: "4.150,25" (investment rule 11). */
 private const val RATE_SCALE = 2

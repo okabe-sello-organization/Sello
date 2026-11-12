@@ -2,6 +2,8 @@ package com.software.sello.presentation.appearance
 
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
 import com.software.sello.R
 import com.software.sello.designsystem.theme.ColourInk
@@ -65,15 +67,16 @@ fun TuyaColour.name(): Int = when (this) {
 }
 
 /**
- * Where Tu tinta's slider starts: the hue of Tuya's colour or hue, in use or kept, or else
- * the hue of the ink the app is drawn in, the [phone]'s for Sistema.
+ * Where Tu tinta starts, 24-bit sRGB: Tuya's kept colour, else the colour Tuya's kept hue
+ * gives, else the colour of the ink in use, the [phone]'s for Sistema.
  */
-fun AppearancePreference.startingHue(phone: PhoneColor): Int =
-    when (val drawn = tuya?.themeInk() ?: ink.themeInk(phone)) {
-        is SelloInk -> drawn.hue
-        is HueInk -> drawn.hue
-        is ColourInk -> drawn.hue
-    }
+fun AppearancePreference.startingColour(phone: PhoneColor): Int =
+    (tuya?.themeInk() ?: ink.themeInk(phone)).swatch.rgb()
+
+/** The light band of the ink this preference draws, 24-bit sRGB: Tu tinta's Antes. */
+fun InkPreference.colour(phone: PhoneColor): Int = themeInk(phone).swatch.rgb()
+
+private fun Color.rgb(): Int = toArgb() and 0xFFFFFF
 
 /**
  * The ink's name as a person reads it: "Cobalto", "Sistema", or Tuya with its colour,

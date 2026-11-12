@@ -19,9 +19,6 @@ import kotlin.math.sin
  */
 internal const val COBALTO_HUE = 267
 
-/** Violeta's brand hue as a whole OKLCH degree (its exact hue is 285.9°). */
-internal const val VIOLETA_HUE = 286
-
 /**
  * The palette a hue of 0 to 359 OKLCH degrees gives (Tuya, Sistema): Cobalto's, turned.
  * Each role keeps the luminance of Cobalto's colour for it, so every contrast ratio stays

@@ -1005,7 +1005,7 @@
     <string name="settings_ink_sistema">Sistema</string>
     <!-- Under the swatches while Sistema is chosen; %1$s is the phone's colour in lower case: "azul". -->
     <string name="settings_ink_sistema_note">Toma el color de tu fondo de pantalla: %1$s. Cambia cuando lo cambies.</string>
-    <!-- As settings_ink_sistema_note, on a red or green hue, with tuya_meaning_note's line. -->
+    <!-- As settings_ink_sistema_note, on a red or green hue, adding that red and green also mark excesses and goals. -->
     <string name="settings_ink_sistema_note_meaning">Toma el color de tu fondo de pantalla: %1$s. Cambia cuando lo cambies. El rojo y el verde también marcan excesos y metas.</string>
     <!-- Under the swatches while Sistema is chosen and the phone's accent is grey (a monochrome style). -->
     <string name="settings_ink_sistema_grey">Tu teléfono no tiene un color de acento: Sello usa Cobalto mientras tanto.</string>
@@ -1015,18 +1015,35 @@
     <!-- Under the swatches while Tuya is chosen: "Rojo. Toca Tuya para cambiarla." -->
     <string name="settings_ink_tuya_note">%1$s. Toca Tuya para cambiarla.</string>
     <string name="tuya_title">Tu tinta</string>
-    <string name="tuya_slider">Tono de tu tinta</string>
-    <string name="tuya_meaning_note">El rojo y el verde también marcan excesos y metas.</string>
+    <!-- The code field beside the colour's name, for screen readers. -->
+    <string name="tuya_code">Código del color</string>
+    <!-- Tu tinta's one line: the hint, or a note when the colour is close to a meaning colour. -->
+    <string name="tuya_hint">Arrastra para elegir, o toca el código para escribir uno exacto.</string>
+    <string name="tuya_near_red">Se parece al rojo que marca los excesos.</string>
+    <string name="tuya_near_green">Se parece al verde de las metas y de lo que va bien.</string>
+    <!-- The sample on the Antes and Ahora tiles, white on the colour. -->
+    <string name="tuya_sample">Aa</string>
+    <!-- %1$s is the ink in use when the sheet opened, as settings_ink_* or settings_ink_tuya_named name it. -->
+    <string name="tuya_before">Antes · %1$s</string>
+    <!-- %1$s is the name of the colour being made: "Rojo". -->
+    <string name="tuya_now">Ahora · %1$s</string>
     <!-- %1$s is the ink still in use, as settings_ink_* or settings_ink_tuya_named name it. -->
     <string name="tuya_failed">No se pudo guardar. Sigues con %1$s.</string>
     <string name="tuya_use">Usar esta tinta</string>
     <string name="tuya_retry">Reintentar</string>
     <string name="tuya_cancel">Cancelar</string>
-    <!-- The sample screen in Tu tinta's two previews: a month, its remaining figure and the dock. -->
+    <!-- The sample screen in Tu tinta's two previews: a month, its remaining figure, a category over its limit, a goal, the period chips and the dock. -->
     <string name="tuya_preview_month">Octubre</string>
     <string name="tuya_preview_label">Restante</string>
     <string name="tuya_preview_stamp">Al día</string>
     <string name="tuya_preview_amount">350.000</string>
+    <string name="tuya_preview_category">Mercado</string>
+    <string name="tuya_preview_over">Excedido</string>
+    <string name="tuya_preview_over_by">Te pasaste por 40.000</string>
+    <string name="tuya_preview_goal">Meta · Viaje</string>
+    <string name="tuya_preview_goal_share" formatted="false">60 %</string>
+    <string name="tuya_preview_month_chip">Mes</string>
+    <string name="tuya_preview_year_chip">Año</string>
     <string name="tuya_preview_dock">Anotar</string>
     <string name="settings_recibo">Recibo</string>
     <string name="settings_order">Orden de las categorías</string>

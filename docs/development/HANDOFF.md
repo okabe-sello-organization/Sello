@@ -4,8 +4,8 @@
 > Project permissions and working rules live in [AGENTS.md](../../AGENTS.md),
 > subject to the user's current instructions.
 
-**Snapshot:** 2026-11-08 · **Product baseline:** `main`; the release candidate is `0.1.0` from `a20ae90f`, and the [candidate checklist](../release/candidate-checklist.md) leaves only the owner's steps (the [MVP checklist](../release/mvp-checklist.md) is the October record).
-Done: E01–E10, E12, E13 and E15–E38. The owner dropped E14 and the
+**Snapshot:** 2026-11-12 · **Product baseline:** `main`; the release candidate is `0.1.0` from `a20ae90f`, and the [candidate checklist](../release/candidate-checklist.md) leaves only the owner's steps (the [MVP checklist](../release/mvp-checklist.md) is the October record).
+Done: E01–E10, E12, E13 and E15–E39. The owner dropped E14 and the
 release tickets SELLO-043 and SELLO-113 on 2026-10-29. Each ticket's
 file under [docs/tickets](../tickets/README.md) and the pull request that closed it carry
 the details, and `python3 scripts/quality/tickets.py status` prints the current board.
@@ -94,6 +94,14 @@ This summary is refreshed when an epic closes and adds no verification claims.
   offered on Android 11, where a restored Sistema shows Cobalto) in Sello's own shades,
   read again each time Sello is on screen. Red and green hues get a note; gain, loss and
   warn never follow the ink. Backups carry the ink and Tuya's hue.
+- Tuya con cualquier color ([E39](../tickets/E39-tuya-colour/README.md), ADR 0028): Tuya
+  takes any exact colour. Tu tinta shows light and dark previews (band, Anotar, Restante,
+  a category over its limit, a goal band, a chip), a colour square and bar, an editable
+  `#RRGGBB` code, Antes / Ahora tiles and one line: a hint, or a note near the excess red
+  or the goal green. Nothing is blocked: the light band and buttons are the colour exactly
+  with white text, the dark theme is made from it, and the meanings never follow. Tuya
+  hues saved before E39 keep their look and are never converted; Sistema is unchanged.
+  TalkBack does not reach the square and bar. Backups carry the colour (version 12).
 - Guía dentro de Sello ([E38](../tickets/E38-in-app-guidance/README.md)): guidance
   inside the real screens, no questionnaire, wizard or overlays. The empty Recibo offers
   starter categories (name and icon, never an amount). A soft **?** after a card's title
@@ -127,8 +135,8 @@ This summary is refreshed when an epic closes and adds no verification claims.
 - Room schema 9 for finances (goals since 4, recurring schedules since 5, investments
   since 6, carryover since 7, up to five starred goals since 8, indexes for long
   histories and an accent-blind expense search key since 9); DataStore for
-  nonfinancial preferences; backup format version 10 (8 added Tuya's hue, 9 the ink
-  Sistema, 10 the Gastos hormiga line), unchanged by schema 9, which only adds derived data
+  nonfinancial preferences; backup format version 12 (8 added Tuya's hue, 9 the ink
+  Sistema, 10 the Gastos hormiga line, 11 the guidance seen, 12 Tuya's exact colour), unchanged by schema 9, which only adds derived data
   ([format](../data/backup-format.md)).
 - Backups save and restore through the system file picker, also from the start-up
   failure screen; retry and confirmed start-over preserve an unreadable database privately.

@@ -169,14 +169,6 @@ class HuePaletteTest {
         }
     }
 
-    @Test
-    fun eachHandMadeInkStartsAHuePickerAtItsOwnBrandHue() {
-        // Cobalto's brand #1F3BE0 is 266.6° and Violeta's #5B2BD6 285.9° in OKLCH.
-        assertEquals(267, SelloInk.Cobalto.hue)
-        assertEquals(286, SelloInk.Violeta.hue)
-        assertEquals(SelloInk.Cobalto.swatch, HueInk(SelloInk.Cobalto.hue).swatch)
-    }
-
     /**
      * brand, onBrand, brandSoft, onBrandSoft, desk, paper, paperAlt, paperDim, ink, inkSoft,
      * outline, rule, band, onBand, investmentBand, pastBar, onPastBar, pastBarSoft,

@@ -1,5 +1,6 @@
 package com.software.sello.presentation.appearance
 
+import androidx.compose.ui.graphics.toArgb
 import com.software.sello.R
 import com.software.sello.designsystem.theme.ColourInk
 import com.software.sello.designsystem.theme.HueInk
@@ -69,32 +70,54 @@ class InkChoicesTest {
         }
     }
 
+    /** The 24-bit colour a hue's palette draws its light band in: E37's generator. */
+    private fun bandOf(hue: Int) = HueInk(hue).swatch.toArgb() and 0xFFFFFF
+
     @Test
-    fun tuTintaStartsOnTuyasHueOrElseTheHueOfTheInkInUse() {
-        assertEquals(267, AppearancePreference(ink = InkPreference.Cobalto).startingHue(blue))
-        assertEquals(286, AppearancePreference(ink = InkPreference.Violeta).startingHue(blue))
+    fun tuTintaStartsOnTuyasColourElseItsHuesColourElseTheInkInUse() {
+        // Cobalto's and Violeta's light bands.
+        assertEquals(
+            0x1F3BE0,
+            AppearancePreference(ink = InkPreference.Cobalto).startingColour(blue)
+        )
+        assertEquals(
+            0x5B2BD6,
+            AppearancePreference(ink = InkPreference.Violeta).startingColour(blue)
+        )
+        // Tuya's kept colour, exactly, in use or kept while another ink is.
+        val yellow = TuyaColour.Exact(InkColour.of(0xF4C430)!!)
+        assertEquals(
+            0xF4C430,
+            AppearancePreference(ink = InkPreference.Tuya(yellow)).startingColour(blue)
+        )
+        assertEquals(
+            0xF4C430,
+            AppearancePreference(ink = InkPreference.Sistema, tuya = yellow).startingColour(blue)
+        )
+        // A hue saved before E39: the colour its palette draws, not converted.
         val green = TuyaColour.Hue(InkHue.of(147)!!)
-        assertEquals(147, AppearancePreference(ink = InkPreference.Tuya(green)).startingHue(blue))
-        // Kept while another ink is in use.
         assertEquals(
-            147,
-            AppearancePreference(ink = InkPreference.Violeta, tuya = green).startingHue(blue)
+            bandOf(147),
+            AppearancePreference(ink = InkPreference.Tuya(green)).startingColour(blue)
         )
         assertEquals(
-            147,
-            AppearancePreference(ink = InkPreference.Sistema, tuya = green).startingHue(blue)
+            bandOf(147),
+            AppearancePreference(ink = InkPreference.Violeta, tuya = green).startingColour(blue)
         )
-        // A colour, until Tu tinta picks colours (SELLO-216): its OKLCH hue, sRGB red's 29.2.
-        val red = TuyaColour.Exact(InkColour.of(0xFF0000)!!)
-        assertEquals(29, AppearancePreference(ink = InkPreference.Tuya(red)).startingHue(blue))
-        assertEquals(
-            29,
-            AppearancePreference(ink = InkPreference.Cobalto, tuya = red).startingHue(blue)
-        )
-        // Sistema with no Tuya yet: the phone's hue, or Cobalto's where it has none to give.
+        // Sistema with no Tuya yet: the phone's colour, or Cobalto's where it has none to give.
         val sistema = AppearancePreference(ink = InkPreference.Sistema)
-        assertEquals(140, sistema.startingHue(blue))
-        assertEquals(267, sistema.startingHue(PhoneColor.Grey))
-        assertEquals(267, sistema.startingHue(PhoneColor.None))
+        assertEquals(bandOf(140), sistema.startingColour(blue))
+        assertEquals(0x1F3BE0, sistema.startingColour(PhoneColor.Grey))
+        assertEquals(0x1F3BE0, sistema.startingColour(PhoneColor.None))
+    }
+
+    @Test
+    fun antesIsTheColourOfTheInkInUseNotTuyasKeptOne() {
+        assertEquals(0x1F3BE0, InkPreference.Cobalto.colour(blue))
+        assertEquals(0x5B2BD6, InkPreference.Violeta.colour(blue))
+        assertEquals(bandOf(140), InkPreference.Sistema.colour(blue))
+        assertEquals(0x1F3BE0, InkPreference.Sistema.colour(PhoneColor.None))
+        assertEquals(0x000000, exact(0x000000).colour(blue))
+        assertEquals(bandOf(22), hue(22).colour(blue))
     }
 }
