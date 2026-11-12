@@ -69,6 +69,15 @@
           is still offered and chosen, and the app is drawn in Cobalto until the phone has a colour
           again. Android 11 has no accent at all: Sistema is not offered there and is drawn in
           Cobalto. <code>PhoneColor</code> (None, Grey or a Hue) tells the three apart.</p>
+        <p>A second generator builds a palette from any exact colour (SELLO-214, ADR 0028):
+          <code>colourColors(rgb, isDark)</code> (<code>ColourPalette.kt</code>). The light brand and band
+          are the colour exactly with white on them, however it reads; the dark band is it a little deeper
+          and the dark brand a lighter version with dark text. Every other role takes the colour's OKLCH hue
+          at Cobalto's OKLab lightness for it, with less chroma for a muted colour, and meanings stay. Across
+          the sRGB cube every <code>SelloPaletteTest</code> pair but the brand's and the band's passes
+          (<code>ColourPaletteTest</code>). <code>colourName</code> adds Negro, Gris and Blanco to the hue
+          names; <code>colourMeaning</code> says whether the colour is close to the excess red or the goal
+          green.</p>
         <figure data-shot="settings-tuya" data-module="app" data-files="settings-tuya-tuya22-light-font1.0.png, settings-tuya-tuya22-dark-font1.0.png" data-caption="Configuración drawn in Tuya at 22° (Rojo), light and dark: the generator's palette; the stamp keeps its own green"></figure>
         <figure data-shot="settings-sistema" data-module="app" data-files="settings-sistema-tuya240-light-font1.0.png, settings-sistema-tuya240-dark-font1.0.png" data-caption="Configuración drawn in Sistema on a phone with a blue wallpaper (240°), light and dark: the generator's shades of the phone's hue, not Material's"></figure>
         <figure data-shot="settings-tu-tinta" data-module="app" data-caption="Tu tinta: two previews in the hue being chosen, inside their own SelloTheme(HueInk(hue)), and the slider's track in the light band of every hue"></figure>

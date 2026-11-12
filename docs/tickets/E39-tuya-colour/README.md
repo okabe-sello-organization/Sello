@@ -1,6 +1,6 @@
 # SELLO-E39 — Tuya con cualquier color
 
-- **Status:** Backlog
+- **Status:** In Progress
 - **Increment:** Post-MVP
 - **Goal:** The person can give Tuya any colour they like, see it in the important parts of Sello while they pick it, and the light theme shows exactly that colour.
 - **Exit:** SELLO-214 to SELLO-216 are Done: one generator builds a palette from an exact colour; Tuya stores, backs up and restores that colour while hues saved before keep working; the Tu tinta sheet picks any colour as the mock shows; the design pages show the result.

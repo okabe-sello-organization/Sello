@@ -1,5 +1,6 @@
 package com.software.sello.designsystem.theme
 
+import androidx.compose.ui.graphics.Color
 import com.software.sello.designsystem.component.bandTrough
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -111,30 +112,36 @@ internal fun investmentNeighbourFailures(c: SelloColors): List<String> = (0..5).
     "${c.family} dark=${c.isDark}: inks $rank and ${rank + 1}".takeIf { contrast(here, next) < 1.7 }
 }
 
-/** Every reference pair of [c] that misses its contrast need, as readable lines. */
-internal fun contrastFailures(c: SelloColors): List<String> {
+/**
+ * Every reference pair of [c] that misses its contrast need, as readable lines. With
+ * [exemptBrandAndBand], pairs that draw on or with the brand or the band are left out: a
+ * Tuya colour is honoured exactly, however it reads (ADR 0028).
+ */
+internal fun contrastFailures(c: SelloColors, exemptBrandAndBand: Boolean = false): List<String> {
     val s = c.semantic
     val text = 4.5
     val mark = 3.0
+    val brandOrBand = mutableListOf<Triple<Color, Color, Double>>()
     val pairs = buildList {
         listOf(c.desk, c.paper, c.paperAlt, c.paperDim).forEach {
             add(Triple(c.ink, it, text))
         }
         listOf(c.desk, c.paper, c.paperAlt).forEach {
             add(Triple(c.inkSoft, it, text))
-            add(Triple(c.brand, it, text))
+            brandOrBand += Triple(c.brand, it, text)
         }
-        add(Triple(c.onBrand, c.brand, text))
+        brandOrBand += Triple(c.onBrand, c.brand, text)
         add(Triple(c.onBrandSoft, c.brandSoft, text))
-        add(Triple(c.onBand, c.band, text))
+        brandOrBand += Triple(c.onBand, c.band, text)
         // The entry forms' bands carry the same title, close and switch as the band.
         add(Triple(c.onBand, c.goalBand, text))
         add(Triple(c.onBand, c.investmentBand, text))
-        add(Triple(c.band, c.onBand, text))
+        brandOrBand += Triple(c.band, c.onBand, text)
         add(Triple(c.goalBand, c.onBand, text))
         add(Triple(c.investmentBand, c.onBand, text))
         // The side of a band's switch not chosen: white on the lighter trough.
-        listOf(c.band, c.goalBand, c.investmentBand).forEach {
+        brandOrBand += Triple(c.onBand, bandTrough(c.band, c.onBand), text)
+        listOf(c.goalBand, c.investmentBand).forEach {
             add(Triple(c.onBand, bandTrough(it, c.onBand), text))
         }
         listOf(c.desk, c.paper).forEach {
@@ -155,15 +162,18 @@ internal fun contrastFailures(c: SelloColors): List<String> {
         add(Triple(s.loss, s.lossSoft, text))
         add(Triple(s.warn, s.warnSoft, text))
         add(Triple(c.inkSoft, c.paperDim, text))
-        add(Triple(c.brand, c.paperDim, text))
+        brandOrBand += Triple(c.brand, c.paperDim, text)
         listOf(c.brandSoft, c.pastBarSoft, s.gainSoft, s.lossSoft, s.warnSoft).forEach {
             add(Triple(c.ink, it, text))
         }
-        // Investment inks are drawn on a slip: the percent is written on each fill.
-        (0..5).map(c::investmentInk).forEach { ink ->
-            add(Triple(ink.on, ink.fill, text))
-            listOf(c.paper, c.paperAlt).forEach { add(Triple(ink.fill, it, mark)) }
+        // Investment inks are drawn on a slip: the percent is written on each fill. The
+        // first is the brand.
+        (0..5).map(c::investmentInk).forEachIndexed { rank, ink ->
+            val into = if (rank == 0) brandOrBand else this
+            into += Triple(ink.on, ink.fill, text)
+            listOf(c.paper, c.paperAlt).forEach { into += Triple(ink.fill, it, mark) }
         }
+        if (!exemptBrandAndBand) addAll(brandOrBand)
     }
     return pairs.filter { (fg, bg, need) -> contrast(fg, bg) < need }
         .map { (fg, bg, need) -> "${c.family} dark=${c.isDark}: $fg on $bg needs $need" }
