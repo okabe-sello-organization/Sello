@@ -56,11 +56,12 @@ class StarredGoalBackupTest {
     )
 
     /**
-     * [version7] as version 6 wrote it: no ink hue, no Gastos hormiga line, no guidance and
-     * the one star as the chosen goal.
+     * [version7] as version 6 wrote it: no ink hue or colour, no Gastos hormiga line, no
+     * guidance and the one star as the chosen goal.
      */
-    private fun asVersion6(text: String) = text.once("\"version\": 11,", "\"version\": 6,")
+    private fun asVersion6(text: String) = text.once("\"version\": 12,", "\"version\": 6,")
         .once("\n    \"inkHue\": null,", "")
+        .once("\n    \"inkColour\": null,", "")
         .once(",\n    \"smallExpenseLine\": 20000,\n    \"guidance\": null", "")
         .once(starred, "\"featuredGoal\": \"${viaje.value}\"")
 

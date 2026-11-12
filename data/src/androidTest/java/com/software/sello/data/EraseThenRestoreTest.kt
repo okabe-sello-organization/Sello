@@ -12,12 +12,12 @@ import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
 import com.software.sello.domain.model.CategoryOrderingPreference
 import com.software.sello.domain.model.Currency
-import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.InvestmentPreference
 import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.ThemePreference
+import com.software.sello.domain.model.TuyaColour
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.BackupSummary
 import com.software.sello.domain.port.CategoryOrderingPreferences
@@ -106,12 +106,12 @@ class EraseThenRestoreTest {
         }
 
         override suspend fun setInk(ink: InkPreference) = saved(failAppearance) {
-            val hue = (ink as? InkPreference.Tuya)?.hue ?: appearance.tuyaHue
-            appearance = appearance.copy(ink = ink, tuyaHue = hue)
+            val tuya = (ink as? InkPreference.Tuya)?.colour ?: appearance.tuya
+            appearance = appearance.copy(ink = ink, tuya = tuya)
         }
 
-        override suspend fun restoreInk(ink: InkPreference, tuyaHue: InkHue?) =
-            saved(failAppearance) { appearance = appearance.copy(ink = ink, tuyaHue = tuyaHue) }
+        override suspend fun restoreInk(ink: InkPreference, tuya: TuyaColour?) =
+            saved(failAppearance) { appearance = appearance.copy(ink = ink, tuya = tuya) }
 
         override fun observeCategoryOrdering(): Flow<PreferenceRead<CategoryOrderingPreference>> =
             flowOf(PreferenceRead.Ready(ordering))

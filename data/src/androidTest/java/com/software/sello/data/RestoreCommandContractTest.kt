@@ -21,6 +21,7 @@ import com.software.sello.domain.model.ExpenseId
 import com.software.sello.domain.model.Guidance
 import com.software.sello.domain.model.GuidanceMemory
 import com.software.sello.domain.model.IncomeSource
+import com.software.sello.domain.model.InkColour
 import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.InvestmentOrder
@@ -31,6 +32,7 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ShownNudge
 import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.ThemePreference
+import com.software.sello.domain.model.TuyaColour
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.BackupSummary
 import com.software.sello.domain.port.CategoryCommandOutcome
@@ -126,12 +128,12 @@ class RestoreCommandContractTest {
 
         override suspend fun setInk(ink: InkPreference) = write(ink, failAppearance)
 
-        /** Tuya's hue each restore wrote beside its ink, which [written] holds. */
-        val tuyaHues = mutableListOf<InkHue?>()
+        /** Tuya's colour or hue each restore wrote beside its ink, which [written] holds. */
+        val tuyas = mutableListOf<TuyaColour?>()
 
-        override suspend fun restoreInk(ink: InkPreference, tuyaHue: InkHue?) =
+        override suspend fun restoreInk(ink: InkPreference, tuya: TuyaColour?) =
             write(ink, failAppearance).also {
-                if (it is PreferenceWrite.Saved) tuyaHues += tuyaHue
+                if (it is PreferenceWrite.Saved) tuyas += tuya
             }
 
         override fun observeCategoryOrdering(): Flow<PreferenceRead<CategoryOrderingPreference>> =
@@ -369,11 +371,14 @@ class RestoreCommandContractTest {
         assertEquals(emptyList<String>(), stagingFiles())
     }
 
-    /** [ink] and Tuya's kept [tuyaHue] restored from a file that holds them (SELLO-202). */
-    private suspend fun restoreAppearance(ink: InkPreference, tuyaHue: InkHue?) {
+    /**
+     * [ink] and Tuya's kept [tuya] colour or hue restored from a file that holds them
+     * (SELLO-202, SELLO-215).
+     */
+    private suspend fun restoreAppearance(ink: InkPreference, tuya: TuyaColour?) {
         currentHistory()
         val brought = wanted.copy(
-            appearance = AppearancePreference(ThemePreference.Dark, ink, tuyaHue)
+            appearance = AppearancePreference(ThemePreference.Dark, ink, tuya)
         )
 
         val outcome = restores().replace(stage(g01(brought)))
@@ -391,18 +396,29 @@ class RestoreCommandContractTest {
             ),
             preferences.written
         )
-        assertEquals(listOf(tuyaHue), preferences.tuyaHues)
+        assertEquals(listOf(tuya), preferences.tuyas)
     }
 
     @Test
     fun aTuyaBackupRestoresTuyaWithItsHue() = runBlocking {
-        val red = InkHue.of(22)!!
+        val red = TuyaColour.Hue(InkHue.of(22)!!)
         restoreAppearance(InkPreference.Tuya(red), red)
     }
 
     @Test
     fun aCobaltoBackupRestoresTuyasKeptHueBesideIt() = runBlocking {
-        restoreAppearance(InkPreference.Cobalto, InkHue.of(147)!!)
+        restoreAppearance(InkPreference.Cobalto, TuyaColour.Hue(InkHue.of(147)!!))
+    }
+
+    @Test
+    fun aTuyaBackupRestoresTuyaWithItsExactColour() = runBlocking {
+        val yellow = TuyaColour.Exact(InkColour.of(0xF2C200)!!)
+        restoreAppearance(InkPreference.Tuya(yellow), yellow)
+    }
+
+    @Test
+    fun aSistemaBackupRestoresTuyasKeptColourBesideIt() = runBlocking {
+        restoreAppearance(InkPreference.Sistema, TuyaColour.Exact(InkColour.of(0x808080)!!))
     }
 
     @Test
@@ -456,9 +472,9 @@ class RestoreCommandContractTest {
 
         val truncated = restores().stage(bytes.copyOf(bytes.size / 2))
         val text = String(bytes)
-        check(text.contains("\"version\": 11,"))
+        check(text.contains("\"version\": 12,"))
         val newer = restores().stage(
-            text.replaceFirst("\"version\": 11,", "\"version\": 12,").toByteArray()
+            text.replaceFirst("\"version\": 12,", "\"version\": 13,").toByteArray()
         )
 
         assertEquals(Outcome.Failure(StageFailure.Rejected(RestoreRejection.Damaged)), truncated)

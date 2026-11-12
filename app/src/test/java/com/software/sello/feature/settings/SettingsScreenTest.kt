@@ -35,6 +35,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.domain.model.AppearancePreference
 import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
+import com.software.sello.domain.model.TuyaColour
 import com.software.sello.platform.PhoneColor
 import com.software.sello.revealed
 import com.software.sello.showSello
@@ -154,7 +155,8 @@ class SettingsScreenTest {
         assertEquals(0, values.size)
     }
 
-    private val red = AppearancePreference(ink = InkPreference.Tuya(InkHue.of(22)!!))
+    private val red =
+        AppearancePreference(ink = InkPreference.Tuya(TuyaColour.Hue(InkHue.of(22)!!)))
 
     private fun showSettings(state: SettingsState, actions: MutableList<SettingsAction>) {
         rule.showSello {
@@ -204,7 +206,11 @@ class SettingsScreenTest {
     @Test
     fun aKeptTuyaHueStaysOnItsSwatchUnchosenWhileAnotherInkIsInUse() {
         val actions = mutableListOf<SettingsAction>()
-        val kept = AppearancePreference(ink = InkPreference.Cobalto, tuyaHue = InkHue.of(22)!!)
+        val kept =
+            AppearancePreference(
+                ink = InkPreference.Cobalto,
+                tuya = TuyaColour.Hue(InkHue.of(22)!!)
+            )
         showSettings(SettingsState(loading = false, appearance = kept), actions)
 
         rule.onNodeWithText("Cobalto").assertIsSelected()

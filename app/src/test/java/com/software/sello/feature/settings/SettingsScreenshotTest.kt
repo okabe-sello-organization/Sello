@@ -11,6 +11,7 @@ import com.software.sello.designsystem.theme.HueInk
 import com.software.sello.domain.model.AppearancePreference
 import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
+import com.software.sello.domain.model.TuyaColour
 import com.software.sello.domain.port.BackupSummary
 import com.software.sello.domain.port.LastBackup
 import com.software.sello.domain.port.PreferenceFailure
@@ -244,7 +245,7 @@ class SettingsScreenshotTest {
 
     // SELLO-202: Tuya and Tu tinta.
 
-    private val red = InkPreference.Tuya(InkHue.of(22)!!)
+    private val red = InkPreference.Tuya(TuyaColour.Hue(InkHue.of(22)!!))
 
     private val tuyaChosen = loaded.copy(appearance = AppearancePreference(ink = red))
 
@@ -261,7 +262,7 @@ class SettingsScreenshotTest {
     )
 
     private val tuyaKept =
-        loaded.copy(appearance = AppearancePreference(tuyaHue = InkHue.of(22)!!))
+        loaded.copy(appearance = AppearancePreference(tuya = TuyaColour.Hue(InkHue.of(22)!!)))
 
     @Test
     fun tuyaKeptLight() = capture("tuya-kept", Look(), tuyaKept, reveal = SETTINGS_INK_TAG)

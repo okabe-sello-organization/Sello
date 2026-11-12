@@ -62,11 +62,13 @@ class GoalBackupTest {
         val plan = codec.read(goals.toByteArray()).value()
 
         assertEquals(
-            version10AsVersion11(
-                version9AsVersion10(
-                    version8AsVersion9(
-                        version7AsVersion8(
-                            writtenAsVersion7(String(resource("valid-goals-v3.json")))
+            version11AsVersion12(
+                version10AsVersion11(
+                    version9AsVersion10(
+                        version8AsVersion9(
+                            version7AsVersion8(
+                                writtenAsVersion7(String(resource("valid-goals-v3.json")))
+                            )
                         )
                     )
                 )

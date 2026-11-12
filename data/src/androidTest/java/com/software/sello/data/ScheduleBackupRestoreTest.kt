@@ -12,7 +12,6 @@ import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
 import com.software.sello.domain.model.CategoryOrderingPreference
 import com.software.sello.domain.model.IncomeSource
-import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.Outcome
@@ -20,6 +19,7 @@ import com.software.sello.domain.model.RepeatRule
 import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.ThemePreference
+import com.software.sello.domain.model.TuyaColour
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.CatchUpBatch
 import com.software.sello.domain.port.CategoryOrderingPreferences
@@ -85,7 +85,7 @@ class ScheduleBackupRestoreTest {
 
         override suspend fun setInk(ink: InkPreference) = PreferenceWrite.Saved
 
-        override suspend fun restoreInk(ink: InkPreference, tuyaHue: InkHue?) = setInk(ink)
+        override suspend fun restoreInk(ink: InkPreference, tuya: TuyaColour?) = setInk(ink)
 
         override fun observeCategoryOrdering(): Flow<PreferenceRead<CategoryOrderingPreference>> =
             flowOf(

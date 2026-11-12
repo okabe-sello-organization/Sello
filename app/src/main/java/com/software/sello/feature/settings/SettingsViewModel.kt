@@ -15,6 +15,7 @@ import com.software.sello.domain.model.InvestmentPreference
 import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.ThemePreference
+import com.software.sello.domain.model.TuyaColour
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.InvestmentBoardState
@@ -263,7 +264,7 @@ class SettingsViewModel(
                 tuyaFailed.value = false
                 viewModelScope.launch {
                     val result = try {
-                        appearancePreferences.setInk(InkPreference.Tuya(hue))
+                        appearancePreferences.setInk(InkPreference.Tuya(TuyaColour.Hue(hue)))
                     } finally {
                         busy.value = false
                         tuyaSaving.value = false

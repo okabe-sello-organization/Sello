@@ -30,6 +30,7 @@ import com.software.sello.domain.model.IconKey
 import com.software.sello.domain.model.Income
 import com.software.sello.domain.model.IncomeId
 import com.software.sello.domain.model.IncomeSource
+import com.software.sello.domain.model.InkColour
 import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.Investment
@@ -65,6 +66,7 @@ import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.model.TransactionAmountError
+import com.software.sello.domain.model.TuyaColour
 import com.software.sello.domain.model.UsdRate
 import com.software.sello.domain.model.UsdRateEntry
 import com.software.sello.domain.model.UsdRateId
@@ -103,6 +105,9 @@ internal object WireNames {
     const val TWICE_MONTHLY = "twice_monthly"
     const val EVERY_DAYS = "every_days"
     const val EVERY_WEEKS = "every_weeks"
+
+    /** Tuya's colour as `"#RRGGBB"`: six uppercase hexadecimal digits, one spelling each. */
+    fun colour(colour: InkColour): String = "#%06X".format(colour.rgb)
 
     val themes = mapOf(
         ThemePreference.System to "system",
@@ -193,16 +198,16 @@ private fun flag(element: JsonElement, path: String): Boolean {
 }
 
 /**
- * Checks a decoded file completely, older versions read as version 11 included; the
+ * Checks a decoded file completely, older versions read as version 12 included; the
  * first problem rejects all of it.
  */
-internal fun validate(file: BackupFileV11): Outcome<BackupContents, BackupRejection> = try {
+internal fun validate(file: BackupFileV12): Outcome<BackupContents, BackupRejection> = try {
     Outcome.Success(contentsOf(file))
 } catch (rejected: Rejected) {
     Outcome.Failure(rejected.rejection)
 }
 
-private fun contentsOf(file: BackupFileV11): BackupContents {
+private fun contentsOf(file: BackupFileV12): BackupContents {
     val financial = file.financial
     val version = whole(file.version, "version")
     val revision = whole(financial.sourceRevision, "financial.sourceRevision")
@@ -266,6 +271,9 @@ private const val STARS_VERSION = 7L
 
 /** The first version whose ink may be `sistema`. */
 private const val SISTEMA_VERSION = 9L
+
+/** The first version with Tuya's exact colour, `preferences.inkColour`. */
+private const val COLOUR_VERSION = 12L
 
 /**
  * Up to [GoalPolicy.MAX_STARRED] goals of the file, each active and named once. A file of
@@ -1016,7 +1024,7 @@ private fun carryChains(
 private fun <T> Map<T, String>.decode(text: String, path: String): T =
     entries.firstOrNull { it.value == text }?.key ?: invalid(path)
 
-private fun preferences(wire: PreferencesV11, version: Long) = PortablePreferences(
+private fun preferences(wire: PreferencesV12, version: Long) = PortablePreferences(
     appearance = appearance(
         wire,
         WireNames.themes.decode(wire.theme, "preferences.theme"),
@@ -1074,24 +1082,41 @@ private fun guidance(wire: GuidanceV11): GuidanceMemory {
 }
 
 /**
- * The ink and Tuya's hue: a bare whole degree from 0 to 359, required with Tuya and kept,
- * if the file has one, beside another ink. A hue outside it is refused, never wrapped or
- * clipped. Sistema came with version 9: an older file that says it is refused.
+ * The ink and Tuya's colour or hue. A colour is `"#RRGGBB"` in uppercase; a hue a bare whole
+ * degree from 0 to 359. Tuya needs exactly one, and another ink keeps at most one, the one
+ * Tuya has. Anything else, both together included, is refused, never repaired, clipped or
+ * picked between. Sistema came with version 9: an older file that says it is refused.
  */
 private fun appearance(
-    wire: PreferencesV11,
+    wire: PreferencesV12,
     theme: ThemePreference,
     version: Long
 ): AppearancePreference {
     val hue = optionalWhole(wire.inkHue, "preferences.inkHue")?.let {
         InkHue.of(it) ?: invalid("preferences.inkHue")
     }
-    val ink = InkPreference.of(wire.ink, hue) ?: when {
-        // Tuya without its hue.
-        InkPreference.of(wire.ink, InkHue.of(0)) != null -> invalid("preferences.inkHue")
+    val colour = optionalColour(wire.inkColour, "preferences.inkColour")
+    if (hue != null && colour != null) invalid("preferences.inkColour")
+    val tuya = colour?.let(TuyaColour::Exact) ?: hue?.let(TuyaColour::Hue)
+    val ink = InkPreference.of(wire.ink, tuya) ?: when {
+        // Tuya without its colour or hue: before version 12 only a hue could be there.
+        InkPreference.of(wire.ink, TuyaColour.Hue(InkHue.of(0)!!)) != null ->
+            invalid(if (version < COLOUR_VERSION) "preferences.inkHue" else "preferences.inkColour")
 
         else -> invalid("preferences.ink")
     }
     if (ink == InkPreference.Sistema && version < SISTEMA_VERSION) invalid("preferences.ink")
-    return AppearancePreference(theme, ink, hue)
+    return AppearancePreference(theme, ink, tuya)
+}
+
+private val colourText = Regex("#[0-9A-F]{6}")
+
+/** A `"#RRGGBB"` colour, or an explicit `null`; any other spelling is refused. */
+private fun optionalColour(element: JsonElement, path: String): InkColour? {
+    if (element is JsonNull) return null
+    val primitive = element as? JsonPrimitive
+    if (primitive == null || !primitive.isString || !colourText.matches(primitive.content)) {
+        invalid(path)
+    }
+    return InkColour.of(primitive.content.substring(1).toLong(radix = 16)) ?: invalid(path)
 }

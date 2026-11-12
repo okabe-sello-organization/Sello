@@ -12,6 +12,7 @@ import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpSize
+import com.software.sello.designsystem.theme.ColourInk
 import com.software.sello.designsystem.theme.HueInk
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
@@ -40,6 +41,7 @@ data class Look(
             val name = when (ink) {
                 is SelloInk -> ink.name.lowercase()
                 is HueInk -> "tuya${ink.hue}"
+                is ColourInk -> "tuya${"%06x".format(ink.rgb)}"
             }
             return "$name-${if (dark) "dark" else "light"}-font$fontScale"
         }

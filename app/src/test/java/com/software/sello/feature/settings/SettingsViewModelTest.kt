@@ -13,6 +13,7 @@ import com.software.sello.domain.model.InvestmentPreference
 import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.ThemePreference
+import com.software.sello.domain.model.TuyaColour
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.InvestmentBoardState
@@ -231,7 +232,7 @@ class SettingsViewModelTest {
 
     // SELLO-202: Tu tinta.
 
-    private val red = InkPreference.Tuya(InkHue.of(22)!!)
+    private val red = InkPreference.Tuya(TuyaColour.Hue(InkHue.of(22)!!))
 
     private fun SettingsViewModel.tuya() = state.value.tuya
 
@@ -285,7 +286,10 @@ class SettingsViewModelTest {
         model.onAction(SettingsAction.InkChosen(InkPreference.Violeta))
         runCurrent()
         assertEquals(
-            AppearancePreference(ink = InkPreference.Violeta, tuyaHue = InkHue.of(22)!!),
+            AppearancePreference(
+                ink = InkPreference.Violeta,
+                tuya = TuyaColour.Hue(InkHue.of(22)!!)
+            ),
             model.state.value.appearance
         )
 
@@ -474,7 +478,10 @@ class SettingsViewModelTest {
 
         assertEquals(listOf<InkPreference>(InkPreference.Sistema), appearance.inkWrites)
         assertEquals(
-            AppearancePreference(ink = InkPreference.Sistema, tuyaHue = InkHue.of(22)!!),
+            AppearancePreference(
+                ink = InkPreference.Sistema,
+                tuya = TuyaColour.Hue(InkHue.of(22)!!)
+            ),
             model.state.value.appearance
         )
         assertNull(model.tuya())
@@ -592,7 +599,10 @@ class SettingsViewModelTest {
     @Test
     fun sistemaSurvivesARestartWithTheHueTheTuyaSheetKept() = runTest {
         appearance.values.value = PreferenceRead.Ready(
-            AppearancePreference(ink = InkPreference.Sistema, tuyaHue = InkHue.of(22)!!)
+            AppearancePreference(
+                ink = InkPreference.Sistema,
+                tuya = TuyaColour.Hue(InkHue.of(22)!!)
+            )
         )
         // A new view model on the same storage, as after process death.
         val model = settings()
@@ -630,15 +640,15 @@ private class HandAppearancePreferences : AppearancePreferences {
         inkGate?.await()
         val result = nextInkWrite.also { nextInkWrite = PreferenceWrite.Saved }
         if (result is PreferenceWrite.Saved) {
-            // As storage does: Tuya brings its hue, another ink keeps Tuya's.
+            // As storage does: Tuya brings its colour, another ink keeps Tuya's.
             val current = (values.value as PreferenceRead.Ready).value
-            val hue = (ink as? InkPreference.Tuya)?.hue ?: current.tuyaHue
-            values.value = PreferenceRead.Ready(current.copy(ink = ink, tuyaHue = hue))
+            val tuya = (ink as? InkPreference.Tuya)?.colour ?: current.tuya
+            values.value = PreferenceRead.Ready(current.copy(ink = ink, tuya = tuya))
         }
         return result
     }
 
-    override suspend fun restoreInk(ink: InkPreference, tuyaHue: InkHue?): PreferenceWrite =
+    override suspend fun restoreInk(ink: InkPreference, tuya: TuyaColour?): PreferenceWrite =
         error("Configuración never restores")
 }
 

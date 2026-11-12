@@ -9,13 +9,13 @@ import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.DismissedSuggestion
 import com.software.sello.domain.model.Guidance
 import com.software.sello.domain.model.GuidanceMemory
-import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.InvestmentPreference
 import com.software.sello.domain.model.Nudge
 import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.ThemePreference
+import com.software.sello.domain.model.TuyaColour
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
@@ -42,15 +42,19 @@ interface AppearancePreferences {
     fun observeAppearance(): Flow<PreferenceRead<AppearancePreference>>
     suspend fun setTheme(theme: ThemePreference): PreferenceWrite
 
-    /** The ink picked in Configuración. Tuya's hue is kept when another ink is chosen. */
+    /**
+     * The ink picked in Configuración. Tuya is stored with its colour or hue in one write,
+     * which drops the other, so Tuya never holds both. Tuya's colour or hue is kept when
+     * another ink is chosen.
+     */
     suspend fun setInk(ink: InkPreference): PreferenceWrite
 
     /**
-     * A restore's ink and Tuya's kept hue, exactly as the backup has them, in one write: a
-     * null [tuyaHue] forgets it. Refused with [PreferenceFailure.InvalidValue] when Tuya is
-     * [ink] and [tuyaHue] is not its hue.
+     * A restore's ink and Tuya's kept colour or hue, exactly as the backup has them, in one
+     * write: a null [tuya] forgets both. Refused with [PreferenceFailure.InvalidValue] when
+     * Tuya is [ink] and [tuya] is not its own.
      */
-    suspend fun restoreInk(ink: InkPreference, tuyaHue: InkHue?): PreferenceWrite
+    suspend fun restoreInk(ink: InkPreference, tuya: TuyaColour?): PreferenceWrite
 }
 
 /** The two persisted controls that affect Recibo's presentation order. */

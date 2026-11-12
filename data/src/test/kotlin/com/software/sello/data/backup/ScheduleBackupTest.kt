@@ -136,8 +136,12 @@ class ScheduleBackupTest {
         val plan = codec.read(file.toByteArray()).value()
 
         assertEquals(
-            version10AsVersion11(
-                version9AsVersion10(version8AsVersion9(version7AsVersion8(writtenAsVersion7(file))))
+            version11AsVersion12(
+                version10AsVersion11(
+                    version9AsVersion10(
+                        version8AsVersion9(version7AsVersion8(writtenAsVersion7(file)))
+                    )
+                )
             ),
             String(codec.encode(plan.contents).value())
         )

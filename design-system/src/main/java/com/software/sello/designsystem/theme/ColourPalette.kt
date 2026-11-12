@@ -122,6 +122,9 @@ fun colourName(rgb: Int): Int {
     }
 }
 
+/** [rgb]'s OKLCH hue as a whole degree from 0 to 359; a grey's is whatever its tint gives. */
+internal fun colourHue(rgb: Int): Int = Oklch.of(checkColour(rgb)).hue.roundToInt().mod(FULL_TURN)
+
 private fun checkColour(rgb: Int): Color {
     require(rgb in 0..0xFFFFFF) { "A colour is 24-bit sRGB, 0x000000 to 0xFFFFFF, not $rgb" }
     return Color(0xFF000000.toInt() or rgb)
