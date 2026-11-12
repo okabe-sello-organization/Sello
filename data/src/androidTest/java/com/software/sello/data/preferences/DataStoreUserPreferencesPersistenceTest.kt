@@ -1,6 +1,7 @@
 package com.software.sello.data.preferences
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.software.sello.domain.model.AppearancePreference
@@ -8,8 +9,11 @@ import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
 import com.software.sello.domain.model.CategoryOrderingPreference
 import com.software.sello.domain.model.CorrectionAnnouncementPreference
+import com.software.sello.domain.model.InkColour
+import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.ThemePreference
+import com.software.sello.domain.model.TuyaColour
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
 import java.io.File
@@ -76,6 +80,42 @@ class DataStoreUserPreferencesPersistenceTest {
                 PreferenceRead.Ready(CorrectionAnnouncementPreference(true, true)),
                 reopened.observeCorrectionAnnouncements().first()
             )
+        } finally {
+            reopenedScope.coroutineContext.job.cancelAndJoin()
+            file.delete()
+        }
+    }
+
+    @Test
+    fun tuyasExactColourSurvivesReopeningTheActualFileWithoutItsOldHue() = runBlocking {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val file = File(context.cacheDir, "sello-preferences-${UUID.randomUUID()}.preferences_pb")
+        val yellow = InkPreference.Tuya(TuyaColour.Exact(InkColour.of(0xF2C200)!!))
+        val firstScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        try {
+            val first = DataStoreUserPreferences(
+                PreferenceDataStoreFactory.create(scope = firstScope, produceFile = { file })
+            )
+            val red = InkPreference.Tuya(TuyaColour.Hue(InkHue.of(22)!!))
+            assertEquals(PreferenceWrite.Saved, first.setInk(red))
+            assertEquals(PreferenceWrite.Saved, first.setInk(yellow))
+        } finally {
+            firstScope.coroutineContext.job.cancelAndJoin()
+        }
+
+        val reopenedScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        try {
+            val store = PreferenceDataStoreFactory.create(
+                scope = reopenedScope,
+                produceFile = { file }
+            )
+            assertEquals(
+                PreferenceRead.Ready(AppearancePreference(ink = yellow)),
+                DataStoreUserPreferences(store).observeAppearance().first()
+            )
+            val stored = store.data.first()
+            assertEquals(0xF2C200, stored[intPreferencesKey("appearance_ink_colour_v1")])
+            assertEquals(null, stored[intPreferencesKey("appearance_ink_hue_v1")])
         } finally {
             reopenedScope.coroutineContext.job.cancelAndJoin()
             file.delete()

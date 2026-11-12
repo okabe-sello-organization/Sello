@@ -35,6 +35,7 @@ the approved design is the [mock](attachments/tuya-colour-mock.html). It replace
 - Orchestrated run ([orchestration](../../development/orchestration.md)): the owner made
   the orchestrator responsible for the epic and approved subagents and adversarial
   reviewers; merges are delegated except a release.
+- **A damaged Tuya is erased when another ink is picked** (owner, 2026-11-12, on SELLO-215's review): if Tuya's stored colour or hue is damaged, or both are stored together, picking Cobalto, Violeta or Sistema erases both, and Tuya starts empty. Only the appearance setting is lost.
 
 **Orchestrator's calls (2026-11-12), open to the owner:**
 

@@ -133,12 +133,13 @@ version 5, `investmentCurrency` (`COP`, `USD`) and `investmentOrder` (`largest_v
 `return`, `alphabetical`, `newest`, `latest_update`), from version 10, `smallExpenseLine`,
 from version 11, `guidance` and, from version 12, `inkColour`.
 
-`inkHue` is Tuya's hue: a bare whole OKLCH degree from `0` to `359`. It is required when
-`ink` is `tuya`, and may also be given beside `cobalto`, `violeta` or `sistema`: the hue the person
-set for Tuya, kept while another ink is in use, so Tuya keeps its colour after a restore.
-`null` means Tuya has no hue yet. A hue outside `0` to `359`, written as text or with a
-fraction, or missing for `tuya`, is refused, never wrapped or clipped; a restore writes the
-ink and the hue exactly as the file has them, and a reset forgets the hue.
+`inkHue` is Tuya's hue: a bare whole OKLCH degree from `0` to `359`. When `ink` is `tuya`
+it is required before version 12, and from version 12 unless `inkColour` is given. It may
+also be given beside `cobalto`, `violeta` or `sistema`: the hue the person set for Tuya,
+kept while another ink is in use, so Tuya keeps its colour after a restore. `null` means
+Tuya has no hue. A hue outside `0` to `359`, written as text or with a fraction, or missing
+where it is required, is refused, never wrapped or clipped; a restore writes the ink and
+the hue exactly as the file has them, and a reset forgets both Tuya's colour and its hue.
 A file before version 8 that says `tuya` is refused, and one before version 9 that says
 `sistema`.
 
