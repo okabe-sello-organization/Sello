@@ -95,7 +95,7 @@ fun colourMeaning(rgb: Int): HueMeaning? {
     val colour = Color(0xFF000000.toInt() or rgb)
     val darkBrand = colourColors(rgb, isDark = true).brand
     val toRed = distance(colour, LightSemantic.loss)
-    val toGoal = distance(colour, CobaltoDark.goalBand)
+    val toGoal = distance(colour, GoalGreen)
     val toGreen = minOf(distance(colour, LightSemantic.gain), toGoal)
     val red = toRed < NEAR_IN_LIGHT || distance(darkBrand, DarkSemantic.loss) < NEAR_IN_DARK
     val green = toGreen < NEAR_IN_LIGHT || distance(darkBrand, DarkSemantic.gain) < NEAR_IN_DARK
@@ -128,6 +128,9 @@ private fun checkColour(rgb: Int): Color {
 }
 
 private val White = Color(0xFFFFFFFF)
+
+/** The goal green a colour is checked against in light, as the mock's `SEM.light.goal`. */
+private val GoalGreen = Color(0xFF0F5C40)
 
 private const val FULL_TURN = 360
 
