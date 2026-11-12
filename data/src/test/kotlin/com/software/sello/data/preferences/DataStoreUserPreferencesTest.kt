@@ -927,7 +927,10 @@ class DataStoreUserPreferencesTest {
         for (raw in listOf(
             mutablePreferencesOf(INK to "cobalto", INK_COLOUR to 0x1000000),
             mutablePreferencesOf(INK to "cobalto", stringPreferencesKey(COLOUR_KEY) to "#F2C200"),
-            mutablePreferencesOf(INK to "tuya", INK_COLOUR to 0xF2C200, INK_HUE to 22)
+            mutablePreferencesOf(INK to "tuya", INK_COLOUR to 0xF2C200, INK_HUE to 22),
+            // One half still good: the owner ruled both go (E39 Decisions, 2026-11-12).
+            mutablePreferencesOf(INK to "cobalto", INK_COLOUR to 0x1000000, INK_HUE to 22),
+            mutablePreferencesOf(INK to "cobalto", INK_COLOUR to 0xF2C200, INK_HUE to 400)
         )) {
             for (pick in listOf(InkPreference.Violeta, InkPreference.Sistema)) {
                 val data = HandDataStore(raw)
