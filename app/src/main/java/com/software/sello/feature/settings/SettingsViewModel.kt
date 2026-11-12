@@ -282,6 +282,8 @@ class SettingsViewModel(
 
             SettingsAction.Tuya.Use -> {
                 if (busy.value) return
+                // Nothing can be typed while it saves, so the field shows the colour saved.
+                handle[KEY_TUYA_CODE] = codeOf(draft.colour.rgb)
                 tuyaSaving.value = true
                 busy.value = true
                 tuyaFailed.value = false

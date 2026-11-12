@@ -518,6 +518,25 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun usarEstaTintaShowsTheColoursCodeOverAPartOfOneTyped() = runTest {
+        val model = settings()
+        runCurrent()
+        model.onAction(SettingsAction.Tuya.Open)
+        model.onAction(SettingsAction.Tuya.CodeTyped("#C72842"))
+        model.onAction(SettingsAction.Tuya.CodeTyped("#C7"))
+        runCurrent()
+        assertEquals("#C7", model.tuya()?.code)
+        appearance.nextInkWrite = PreferenceWrite.Failed(PreferenceFailure.Unavailable)
+
+        model.onAction(SettingsAction.Tuya.Use)
+        runCurrent()
+
+        assertEquals(true, model.tuya()?.failed)
+        assertEquals(colour(0xC72842), model.tuya()?.colour)
+        assertEquals("#C72842", model.tuya()?.code)
+    }
+
+    @Test
     fun changingTheColourAfterAFailureClearsTheMessage() = runTest {
         val model = settings()
         runCurrent()
