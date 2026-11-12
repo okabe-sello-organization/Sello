@@ -5,8 +5,9 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
 /**
- * What a [SelloTheme] is drawn in: one of Sello's hand-made inks ([SelloInk]) or a palette
- * built from a hue ([HueInk]). An ink never changes what gain, loss or warn mean.
+ * What a [SelloTheme] is drawn in: one of Sello's hand-made inks ([SelloInk]), a palette
+ * built from a hue ([HueInk]) or one built from an exact colour ([ColourInk]). An ink never
+ * changes what gain, loss or warn mean.
  */
 @Immutable
 sealed interface ThemeInk {
@@ -44,6 +45,22 @@ data class HueInk(val hue: Int) : ThemeInk {
     }
 
     override val swatch: Color get() = hueSwatch(hue)
+}
+
+/**
+ * The palette [colourColors] builds from [rgb], 24-bit sRGB (`0xRRGGBB`). Its swatch is the
+ * colour exactly, as its light band is. [hue] is the colour's whole OKLCH degree, where a hue
+ * picker starts from it.
+ */
+@Immutable
+data class ColourInk(val rgb: Int) : ThemeInk {
+    init {
+        require(rgb in 0..0xFFFFFF) { "A colour is 24-bit sRGB, 0x000000 to 0xFFFFFF, not $rgb" }
+    }
+
+    override val swatch: Color get() = Color(0xFF000000.toInt() or rgb)
+
+    val hue: Int get() = colourHue(rgb)
 }
 
 /**
@@ -114,6 +131,7 @@ data class SelloSemanticColors(
 fun selloColors(ink: ThemeInk, isDark: Boolean): SelloColors = when (ink) {
     is SelloInk -> ink.colors(isDark)
     is HueInk -> hueColors(ink.hue, isDark)
+    is ColourInk -> colourColors(ink.rgb, isDark)
 }
 
 internal val LightSemantic = SelloSemanticColors(

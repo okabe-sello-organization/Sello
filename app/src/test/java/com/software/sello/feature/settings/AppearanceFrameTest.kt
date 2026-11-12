@@ -24,9 +24,9 @@ import com.software.sello.designsystem.theme.HueInk
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.designsystem.theme.selloColors
 import com.software.sello.domain.model.AppearancePreference
-import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.ThemePreference
+import com.software.sello.domain.model.TuyaColour
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
@@ -61,7 +61,7 @@ class AppearanceFrameTest {
         override fun observeAppearance(): Flow<PreferenceRead<AppearancePreference>> = stored
         override suspend fun setTheme(theme: ThemePreference) = error("Not written here")
         override suspend fun setInk(ink: InkPreference): PreferenceWrite = error("Not written here")
-        override suspend fun restoreInk(ink: InkPreference, tuyaHue: InkHue?): PreferenceWrite =
+        override suspend fun restoreInk(ink: InkPreference, tuya: TuyaColour?): PreferenceWrite =
             error("Not written here")
     }
 

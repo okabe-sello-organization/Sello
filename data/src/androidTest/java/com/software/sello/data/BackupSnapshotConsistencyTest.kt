@@ -14,13 +14,13 @@ import com.software.sello.domain.model.CategoryOrderDirection
 import com.software.sello.domain.model.CategoryOrderingPreference
 import com.software.sello.domain.model.DefaultLimit
 import com.software.sello.domain.model.IncomeSource
-import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.MonthLimit
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.model.TransactionAmount
+import com.software.sello.domain.model.TuyaColour
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.ArchiveCategory
 import com.software.sello.domain.port.CategoryOrderingPreferences
@@ -75,7 +75,7 @@ class BackupSnapshotConsistencyTest {
 
         override suspend fun setInk(ink: InkPreference): PreferenceWrite = error("read only")
 
-        override suspend fun restoreInk(ink: InkPreference, tuyaHue: InkHue?) = setInk(ink)
+        override suspend fun restoreInk(ink: InkPreference, tuya: TuyaColour?) = setInk(ink)
 
         override fun observeCategoryOrdering(): Flow<PreferenceRead<CategoryOrderingPreference>> =
             flowOf(ordering)

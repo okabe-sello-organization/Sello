@@ -279,6 +279,20 @@ fun version10AsVersion11(version10: String): String {
     return newer.replace(line) { "${it.groupValues[1]},\n    \"guidance\": null\n" }
 }
 
+/**
+ * A version 11 file as Sello now writes the same contents: version 12, with
+ * `"inkColour": null` after the hue when it has preferences at all. Before version 12 no
+ * Tuya has an exact colour.
+ */
+fun version11AsVersion12(version11: String): String {
+    check(version11.contains("\"version\": 11,"))
+    val newer = version11.replace("\"version\": 11,", "\"version\": 12,")
+    if (newer.endsWith("\"preferences\": null\n}\n")) return newer
+    val hue = Regex("(\n    \"inkHue\": (null|[0-9]+),)\n")
+    check(hue.findAll(newer).count() == 1)
+    return newer.replace(hue) { "${it.groupValues[1]}\n    \"inkColour\": null,\n" }
+}
+
 fun resource(name: String): ByteArray =
     requireNotNull(BackupFixtures::class.java.getResourceAsStream("/backup/$name")) {
         "missing test resource backup/$name"

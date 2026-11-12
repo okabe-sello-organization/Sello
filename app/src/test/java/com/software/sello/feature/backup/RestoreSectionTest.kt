@@ -16,12 +16,14 @@ import com.software.sello.designsystem.theme.selloColors
 import com.software.sello.domain.model.AppearancePreference
 import com.software.sello.domain.model.CategoryOrderingPreference
 import com.software.sello.domain.model.GuidanceMemory
+import com.software.sello.domain.model.InkColour
 import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.ThemePreference
+import com.software.sello.domain.model.TuyaColour
 import com.software.sello.domain.port.BackupSummary
 import com.software.sello.domain.port.PendingPreferences
 import com.software.sello.domain.port.RestoreOutcome
@@ -98,7 +100,7 @@ class RestoreSectionTest {
                     PendingPreferences(
                         AppearancePreference(
                             ThemePreference.Dark,
-                            InkPreference.Tuya(InkHue.of(22)!!)
+                            InkPreference.Tuya(TuyaColour.Hue(InkHue.of(22)!!))
                         ),
                         null
                     )
@@ -107,6 +109,26 @@ class RestoreSectionTest {
         )
 
         rule.onNodeWithText("Apariencia: tema Oscuro, tinta Tuya (Rojo)").assertIsDisplayed()
+    }
+
+    @Test
+    fun anAppearanceStillToApplyNamesTuyasExactColourByItsName() {
+        show(
+            RestoreStep.Restored(
+                RestoreOutcome.Restored(
+                    BackupSummary(2, 3, 1, 0, 0),
+                    PendingPreferences(
+                        AppearancePreference(
+                            ThemePreference.Light,
+                            InkPreference.Tuya(TuyaColour.Exact(InkColour.of(0x808080)!!))
+                        ),
+                        null
+                    )
+                )
+            )
+        )
+
+        rule.onNodeWithText("Apariencia: tema Claro, tinta Tuya (Gris)").assertIsDisplayed()
     }
 
     @Test

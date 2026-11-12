@@ -15,6 +15,7 @@ import com.software.sello.domain.model.InvestmentMovementKind
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.RepeatRule
 import com.software.sello.domain.model.ScheduledEntry
+import com.software.sello.domain.model.TuyaColour
 import com.software.sello.domain.policy.EffectiveDates
 import com.software.sello.domain.port.StoredSchedule
 import java.io.ByteArrayOutputStream
@@ -35,14 +36,14 @@ object BackupFormat {
     const val FORMAT = "sello-backup"
 
     /** What this app writes. */
-    const val VERSION = 11L
+    const val VERSION = 12L
 
     /**
      * What it reads: version 1 (no goals), version 2 (no schedules), version 3 (no
      * investments), version 4 (no investment settings), version 5 (no carry chains),
      * version 6 (one chosen goal, not up to five starred), version 7 (no ink of one's own),
      * version 8 (no Sistema), version 9 (no Gastos hormiga line), version 10 (no guidance
-     * seen) and its own.
+     * seen), version 11 (no exact colour for Tuya) and its own.
      */
     val READABLE = 1L..VERSION
     const val MIME_TYPE = "application/json"
@@ -55,7 +56,7 @@ object BackupFormat {
 }
 
 /**
- * Writes version 11 backups and reads versions 1 to 11. Reading never touches storage:
+ * Writes version 12 backups and reads versions 1 to 12. Reading never touches storage:
  * a file either becomes a [BackupPlan] or is rejected whole with the first problem found.
  */
 class BackupCodec(private val bounds: BackupBounds = BackupBounds()) {
@@ -64,7 +65,7 @@ class BackupCodec(private val bounds: BackupBounds = BackupBounds()) {
      * out a backup it would itself refuse to restore.
      */
     fun encode(contents: BackupContents): Outcome<ByteArray, BackupRejection> {
-        val text = writer.encodeToString(BackupFileV11.serializer(), contents.toWire())
+        val text = writer.encodeToString(BackupFileV12.serializer(), contents.toWire())
         val bytes = "$text\n".toByteArray(Charsets.UTF_8)
         return when (val check = read(bytes)) {
             is Outcome.Success -> Outcome.Success(bytes)
@@ -101,36 +102,40 @@ class BackupCodec(private val bounds: BackupBounds = BackupBounds()) {
             when (version) {
                 1L -> reader.decodeFromString(BackupFileV1.serializer(), text)
                     .asVersion2().asVersion3().asVersion4().asVersion5().asVersion6().asVersion7()
-                    .asVersion8().asVersion10().asVersion11()
+                    .asVersion8().asVersion10().asVersion11().asVersion12()
 
                 2L -> reader.decodeFromString(BackupFileV2.serializer(), text)
                     .asVersion3().asVersion4().asVersion5().asVersion6().asVersion7().asVersion8()
-                    .asVersion10().asVersion11()
+                    .asVersion10().asVersion11().asVersion12()
 
                 3L -> reader.decodeFromString(BackupFileV3.serializer(), text)
                     .asVersion4().asVersion5().asVersion6().asVersion7().asVersion8().asVersion10()
-                    .asVersion11()
+                    .asVersion11().asVersion12()
 
                 4L -> reader.decodeFromString(BackupFileV4.serializer(), text)
                     .asVersion5().asVersion6().asVersion7().asVersion8().asVersion10()
-                    .asVersion11()
+                    .asVersion11().asVersion12()
 
                 5L -> reader.decodeFromString(BackupFileV5.serializer(), text)
                     .asVersion6().asVersion7().asVersion8().asVersion10().asVersion11()
+                    .asVersion12()
 
                 6L -> reader.decodeFromString(BackupFileV6.serializer(), text)
-                    .asVersion7().asVersion8().asVersion10().asVersion11()
+                    .asVersion7().asVersion8().asVersion10().asVersion11().asVersion12()
 
                 7L -> reader.decodeFromString(BackupFileV7.serializer(), text)
-                    .asVersion8().asVersion10().asVersion11()
+                    .asVersion8().asVersion10().asVersion11().asVersion12()
 
                 // Version 9 has version 8's shape: it only adds the ink `sistema`.
                 8L, 9L -> reader.decodeFromString(BackupFileV8.serializer(), text)
-                    .asVersion10().asVersion11()
+                    .asVersion10().asVersion11().asVersion12()
 
-                10L -> reader.decodeFromString(BackupFileV10.serializer(), text).asVersion11()
+                10L -> reader.decodeFromString(BackupFileV10.serializer(), text)
+                    .asVersion11().asVersion12()
 
-                else -> reader.decodeFromString(BackupFileV11.serializer(), text)
+                11L -> reader.decodeFromString(BackupFileV11.serializer(), text).asVersion12()
+
+                else -> reader.decodeFromString(BackupFileV12.serializer(), text)
             }
         } catch (failure: SerializationException) {
             return Outcome.Failure(BackupRejection.Malformed(pathOf(failure)))
@@ -210,7 +215,7 @@ private fun BudgetLimit.kind() = when (this) {
  * rates by the order they were entered, carry chains by category then start month, and
  * starred goals by identifier.
  */
-internal fun BackupContents.toWire(): BackupFileV11 = BackupFileV11(
+internal fun BackupContents.toWire(): BackupFileV12 = BackupFileV12(
     format = BackupFormat.FORMAT,
     version = JsonPrimitive(BackupFormat.VERSION),
     exportedAt = exportedAt.toString(),
@@ -323,10 +328,12 @@ internal fun BackupContents.toWire(): BackupFileV11 = BackupFileV11(
             }
     ),
     preferences = preferences?.let {
-        PreferencesV11(
+        val tuya = it.appearance.tuya
+        PreferencesV12(
             theme = WireNames.themes.getValue(it.appearance.theme),
             ink = it.appearance.ink.id,
-            inkHue = JsonPrimitive(it.appearance.tuyaHue?.degrees),
+            inkHue = JsonPrimitive((tuya as? TuyaColour.Hue)?.hue?.degrees),
+            inkColour = JsonPrimitive((tuya as? TuyaColour.Exact)?.colour?.let(WireNames::colour)),
             categoryOrder = WireNames.orders.getValue(it.ordering.order),
             categoryDirection = WireNames.directions.getValue(it.ordering.direction),
             investmentCurrency = WireNames.newCurrencies.getValue(it.investments.newCurrency),

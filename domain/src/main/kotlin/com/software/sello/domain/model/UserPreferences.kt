@@ -7,9 +7,9 @@ enum class ThemePreference { System, Light, Dark }
 
 /**
  * The ink a person picked, in picker order: one of Sello's hand-made inks, [Sistema], the
- * phone's colour, or [Tuya], their own hue. This is deliberately not a design-system type. [id] is what preferences and
- * backups write: never change or reuse one, since both MUST keep accepting every id ever
- * written.
+ * phone's colour, or [Tuya], their own colour. This is deliberately not a design-system type.
+ * [id] is what preferences and backups write: never change or reuse one, since both MUST
+ * keep accepting every id ever written.
  */
 sealed interface InkPreference {
     val id: String
@@ -30,8 +30,8 @@ sealed interface InkPreference {
         override val id = "sistema"
     }
 
-    /** The person's own ink: Sello's palette turned to [hue]. */
-    data class Tuya(val hue: InkHue) : InkPreference {
+    /** The person's own ink, drawn from [colour]: an exact colour, or a hue saved before. */
+    data class Tuya(val colour: TuyaColour) : InkPreference {
         override val id get() = TUYA_ID
     }
 
@@ -39,16 +39,45 @@ sealed interface InkPreference {
         private const val TUYA_ID = "tuya"
 
         /**
-         * The ink written as [id], with Tuya's kept [hue] if there is one, or null when they
-         * don't make one: an id Sello never wrote, or Tuya without a hue. Any other ink
-         * ignores the hue, which stays Tuya's.
+         * The ink written as [id], with Tuya's kept [tuya] colour if there is one, or null
+         * when they don't make one: an id Sello never wrote, or Tuya without a colour. Any
+         * other ink ignores the colour, which stays Tuya's.
          */
-        fun of(id: String, hue: InkHue?): InkPreference? = when (id) {
+        fun of(id: String, tuya: TuyaColour?): InkPreference? = when (id) {
             Cobalto.id -> Cobalto
             Violeta.id -> Violeta
             Sistema.id -> Sistema
-            TUYA_ID -> hue?.let(::Tuya)
+            TUYA_ID -> tuya?.let(::Tuya)
             else -> null
+        }
+    }
+}
+
+/**
+ * What Tuya is drawn from: exactly one of an [Exact] colour (E39) or a [Hue] saved before
+ * it, which keeps its look and is never converted (ADR 0028). Never both and never neither.
+ */
+sealed interface TuyaColour {
+    /** Drawn with this colour exactly in the light theme. */
+    data class Exact(val colour: InkColour) : TuyaColour
+
+    /** A Tuya hue saved before E39, drawn as E37 draws it. */
+    data class Hue(val hue: InkHue) : TuyaColour
+}
+
+/** A Tuya ink's exact colour: 24-bit sRGB, `0xRRGGBB`, [RANGE]. Made only through [of]. */
+@JvmInline
+value class InkColour private constructor(val rgb: Int) {
+    companion object {
+        val RANGE = 0x000000..0xFFFFFF
+
+        /** [rgb] as a colour, or null outside [RANGE]: never masked or clipped. */
+        fun of(rgb: Long): InkColour? = if (rgb in
+            RANGE.first.toLong()..RANGE.last.toLong()
+        ) {
+            InkColour(rgb.toInt())
+        } else {
+            null
         }
     }
 }
@@ -95,17 +124,18 @@ data class InvestmentPreference(
 )
 
 /**
- * The theme, the ink in use and [tuyaHue], Tuya's hue: kept while another ink is in use, so
- * Tuya keeps its colour, and null until Tuya is first set. With Tuya in use it is Tuya's own.
+ * The theme, the ink in use and [tuya], Tuya's colour or hue: kept while another ink is in
+ * use, so Tuya keeps its look, and null until Tuya is first set. With Tuya in use it is
+ * Tuya's own.
  */
 data class AppearancePreference(
     val theme: ThemePreference = ThemePreference.System,
     val ink: InkPreference = InkPreference.Cobalto,
-    val tuyaHue: InkHue? = (ink as? InkPreference.Tuya)?.hue
+    val tuya: TuyaColour? = (ink as? InkPreference.Tuya)?.colour
 ) {
     init {
-        require(ink !is InkPreference.Tuya || ink.hue == tuyaHue) {
-            "Tuya in use keeps its own hue"
+        require(ink !is InkPreference.Tuya || ink.colour == tuya) {
+            "Tuya in use keeps its own colour"
         }
     }
 }

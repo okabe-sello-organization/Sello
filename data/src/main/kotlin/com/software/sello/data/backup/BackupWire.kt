@@ -10,7 +10,7 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 
 /*
- * The wire shapes of versions 1 to 11, documented in docs/data/backup-format.md.
+ * The wire shapes of versions 1 to 12, documented in docs/data/backup-format.md.
  * Version 2 is version 1 plus `financial.goals` and `financial.featuredGoal`; version 3
  * is version 2 plus `financial.schedules` and each expense's and income's `origin`;
  * version 4 is version 3 plus `financial.investments` and `financial.usdRates`; version 5 adds
@@ -18,7 +18,7 @@ import kotlinx.serialization.json.JsonPrimitive
  * replaces `financial.featuredGoal` with `financial.starredGoals`; version 8 adds Tuya's hue
  * to `preferences`; version 9 has version 8's shape and adds the ink `sistema`; version 10
  * adds Gastos hormiga's line to `preferences`; version 11 adds the guidance seen to
- * `preferences`. These classes
+ * `preferences`; version 12 adds Tuya's exact colour to `preferences`. These classes
  * are the file and nothing else: they never become Room entities or domain values
  * without going through BackupValidation. Every property is required, including the
  * nullable ones, and the JSON configuration refuses unknown keys. Numbers and flags
@@ -727,6 +727,59 @@ internal fun BackupFileV10.asVersion11() = BackupFileV11(
             investmentOrder = it.investmentOrder,
             smallExpenseLine = it.smallExpenseLine,
             guidance = null
+        )
+    }
+)
+
+/**
+ * Version 12: version 11 with Tuya's exact colour in `preferences.inkColour` (SELLO-215).
+ * A Tuya hue saved before keeps `inkHue`, never converted.
+ */
+@Serializable
+internal data class BackupFileV12(
+    val format: String,
+    val version: JsonElement,
+    val exportedAt: String,
+    val financial: FinancialV7,
+    val preferences: PreferencesV12?
+)
+
+/**
+ * `inkColour` is `"#RRGGBB"`, six uppercase hexadecimal digits, or `null`. Tuya has exactly
+ * one of `inkColour` and `inkHue`; another ink has at most one, the one Tuya keeps.
+ */
+@Serializable
+internal data class PreferencesV12(
+    val theme: String,
+    val ink: String,
+    val inkHue: JsonElement,
+    val inkColour: JsonElement,
+    val categoryOrder: String,
+    val categoryDirection: String,
+    val investmentCurrency: String,
+    val investmentOrder: String,
+    val smallExpenseLine: JsonElement,
+    val guidance: GuidanceV11?
+)
+
+/** A version 11 file, or an older one already read as version 11: no ink has a colour. */
+internal fun BackupFileV11.asVersion12() = BackupFileV12(
+    format = format,
+    version = version,
+    exportedAt = exportedAt,
+    financial = financial,
+    preferences = preferences?.let {
+        PreferencesV12(
+            theme = it.theme,
+            ink = it.ink,
+            inkHue = it.inkHue,
+            inkColour = JsonNull,
+            categoryOrder = it.categoryOrder,
+            categoryDirection = it.categoryDirection,
+            investmentCurrency = it.investmentCurrency,
+            investmentOrder = it.investmentOrder,
+            smallExpenseLine = it.smallExpenseLine,
+            guidance = it.guidance
         )
     }
 )

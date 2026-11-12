@@ -13,10 +13,10 @@ import com.software.sello.domain.model.GoalId
 import com.software.sello.domain.model.GoalMovementKind
 import com.software.sello.domain.model.GoalName
 import com.software.sello.domain.model.IconKey
-import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.ThemePreference
+import com.software.sello.domain.model.TuyaColour
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.CommandOutcome
@@ -77,7 +77,7 @@ class GoalBackupRestoreTest {
 
         override suspend fun setInk(ink: InkPreference) = PreferenceWrite.Saved
 
-        override suspend fun restoreInk(ink: InkPreference, tuyaHue: InkHue?) = setInk(ink)
+        override suspend fun restoreInk(ink: InkPreference, tuya: TuyaColour?) = setInk(ink)
 
         override fun observeCategoryOrdering(): Flow<PreferenceRead<CategoryOrderingPreference>> =
             flowOf(
@@ -253,15 +253,16 @@ class GoalBackupRestoreTest {
     }
 
     /**
-     * [bytes] as version 6 wrote them: no ink hue, no Gastos hormiga line, no guidance, and
-     * [chosen] as the one chosen goal.
+     * [bytes] as version 6 wrote them: no ink hue or colour, no Gastos hormiga line, no
+     * guidance, and [chosen] as the one chosen goal.
      */
     private fun asVersion6(bytes: ByteArray, chosen: GoalId): ByteArray {
         val text = String(bytes)
         val stars = Regex("\"starredGoals\": \\[[^]]*]")
-        check(stars.findAll(text).count() == 1 && text.contains("\"version\": 11,"))
-        return text.replace("\"version\": 11,", "\"version\": 6,")
+        check(stars.findAll(text).count() == 1 && text.contains("\"version\": 12,"))
+        return text.replace("\"version\": 12,", "\"version\": 6,")
             .replace(Regex("\\s+\"inkHue\": null,"), "")
+            .replace(Regex("\\s+\"inkColour\": null,"), "")
             .replace(Regex(",\\s+\"smallExpenseLine\": [0-9]+"), "")
             .replace(Regex(",\\s+\"guidance\": (null|\\{[^{}]*\\})"), "")
             .replace(stars, "\"featuredGoal\": \"${chosen.value}\"")

@@ -1,4 +1,4 @@
-# Backup file format, version 11
+# Backup file format, version 12
 
 Rules: [architecture](../../ARCHITECTURE.md) §7, [D05, D08 and D09](../decisions/0001-mvp-contract.md#d08--privacy-and-portable-files),
 [ADR 0003](../decisions/0003-mvp-transaction-amount-range.md). Code: `data/.../backup`.
@@ -14,7 +14,7 @@ its financial zone (`BackupFormat.fileName`). MIME type: `application/json`.
 
 ## Shape
 
-Sello writes version 11 (SELLO-205) and reads versions 1 to 11. Version 2 is version 1
+Sello writes version 12 (SELLO-215) and reads versions 1 to 12. Version 2 is version 1
 plus `financial.goals` and `financial.featuredGoal` (SELLO-088); version 3 is version 2
 plus `financial.schedules` and each expense's and income's `origin` (SELLO-099);
 version 4 is version 3 plus `financial.investments` and `financial.usdRates` (SELLO-108);
@@ -25,21 +25,23 @@ version 7 is version 6 with `financial.starredGoals` in place of `financial.feat
 (SELLO-143); version 8 is version 7 plus `preferences.inkHue` (SELLO-202); version 9 has version 8's keys
 and adds the ink `sistema` (SELLO-203); version 10 is version 9 plus
 `preferences.smallExpenseLine` (SELLO-194); version 11 is version 10 plus
-`preferences.guidance` (SELLO-205). A version 1 file
+`preferences.guidance` (SELLO-205); version 12 is version 11 plus `preferences.inkColour`
+(SELLO-215). A version 1 file
 reads as having no goals, versions 1 and 2 as having no schedules and no origins, versions
 1 to 3 as having no investments and no rates, versions 1 to 4 as starting investments in
 `COP`, largest value first, and versions 1 to 5 as having no carry chains: **every category
 is off and no starting deficit or surplus is guessed**; versions 2 to 6 read with their
 `featuredGoal` as the one starred goal, or none when that goal is completed, and versions
 1 to 7 as having no hue: their ink is Cobalto or Violeta, versions 1 to 9 with the
-Gastos hormiga line at `20000`, and versions 1 to 10 with no guidance (see `guidance`
-below for what a restore does then). A backup with none of them is still version 11, so an app that reads only
-version 10 cannot read it.
+Gastos hormiga line at `20000`, versions 1 to 10 with no guidance (see `guidance`
+below for what a restore does then), and versions 1 to 11 with no exact colour for Tuya: a
+Tuya hue in them stays a hue. A backup with none of them is still version 12, so an app
+that reads only version 11 cannot read it.
 
 ```json
 {
   "format": "sello-backup",
-  "version": 11,
+  "version": 12,
   "exportedAt": "2026-10-22T14:30:00Z",
   "financial": {
     "sourceRevision": 9,
@@ -73,10 +75,12 @@ same data in versions 5 and 6, and
 [`valid-g01-v7.json`](../../data/src/test/resources/backup/valid-g01-v7.json),
 [`valid-g01-v8.json`](../../data/src/test/resources/backup/valid-g01-v8.json),
 [`valid-g01-v9.json`](../../data/src/test/resources/backup/valid-g01-v9.json),
-[`valid-g01-v10.json`](../../data/src/test/resources/backup/valid-g01-v10.json) and
-[`valid-g01-v11.json`](../../data/src/test/resources/backup/valid-g01-v11.json) the same data
-in versions 7 to 11, the last as Sello writes it now, with its investments starting in
-dollars, no carry chains, no starred goal and two nudges seen;
+[`valid-g01-v10.json`](../../data/src/test/resources/backup/valid-g01-v10.json),
+[`valid-g01-v11.json`](../../data/src/test/resources/backup/valid-g01-v11.json) and
+[`valid-g01-v12.json`](../../data/src/test/resources/backup/valid-g01-v12.json) the same data
+in versions 7 to 12, the last as Sello writes it now, with its investments starting in
+dollars, no carry chains, no starred goal, two nudges seen and, in version 12, Tuya's
+colour `#F2C200` kept beside Violeta;
 [`valid-goals-v2.json`](../../data/src/test/resources/backup/valid-goals-v2.json) adds one
 goal (approved example MT07), and
 [`valid-schedules-v3.json`](../../data/src/test/resources/backup/valid-schedules-v3.json)
@@ -93,7 +97,7 @@ SC43 and SC22). The `invalid-*.json` files beside them each break one rule.
 | Key | Value |
 | --- | --- |
 | `format` | Always `"sello-backup"`. |
-| `version` | `1` to `11`. Any other number is refused as a version this app cannot read. |
+| `version` | `1` to `12`. Any other number is refused as a version this app cannot read. |
 | `exportedAt` | When the backup was made, UTC. |
 | `financial.sourceRevision` | The revision all financial rows were read at: one transaction, one revision. Informative; a restore does not reuse it. |
 | `financial.zone` | The financial zone, an IANA identifier such as `America/Bogota`. |
@@ -126,17 +130,28 @@ SC43 and SC22). The `invalid-*.json` files beside them each break one rule.
 version 8 `tuya` and from version 9 `sistema`), from version 8 `inkHue`, `categoryOrder` (`most_used`, `alphabetical`, `amount_spent`, `limit`,
 `latest_expense_added`), `categoryDirection` (`descending`, `ascending`) and, from
 version 5, `investmentCurrency` (`COP`, `USD`) and `investmentOrder` (`largest_value`,
-`return`, `alphabetical`, `newest`, `latest_update`), from version 10, `smallExpenseLine` and,
-from version 11, `guidance`.
+`return`, `alphabetical`, `newest`, `latest_update`), from version 10, `smallExpenseLine`,
+from version 11, `guidance` and, from version 12, `inkColour`.
 
-`inkHue` is Tuya's hue: a bare whole OKLCH degree from `0` to `359`. It is required when
-`ink` is `tuya`, and may also be given beside `cobalto`, `violeta` or `sistema`: the hue the person
-set for Tuya, kept while another ink is in use, so Tuya keeps its colour after a restore.
-`null` means Tuya has no hue yet. A hue outside `0` to `359`, written as text or with a
-fraction, or missing for `tuya`, is refused, never wrapped or clipped; a restore writes the
-ink and the hue exactly as the file has them, and a reset forgets the hue.
+`inkHue` is Tuya's hue: a bare whole OKLCH degree from `0` to `359`. When `ink` is `tuya`
+it is required before version 12, and from version 12 unless `inkColour` is given. It may
+also be given beside `cobalto`, `violeta` or `sistema`: the hue the person set for Tuya,
+kept while another ink is in use, so Tuya keeps its colour after a restore. `null` means
+Tuya has no hue. A hue outside `0` to `359`, written as text or with a fraction, or missing
+where it is required, is refused, never wrapped or clipped; a restore writes the ink and
+the hue exactly as the file has them, and a reset forgets both Tuya's colour and its hue.
 A file before version 8 that says `tuya` is refused, and one before version 9 that says
 `sistema`.
+
+`inkColour` is Tuya's exact colour (E39, [ADR 0028](../decisions/0028-tuya-honours-the-exact-colour.md)):
+24-bit sRGB written `"#RRGGBB"`, `#` and six uppercase hexadecimal digits, such as
+`"#F2C200"`, or `null`. From version 12 Tuya has **exactly one** of `inkColour` and
+`inkHue`: a hue saved before E39 stays a hue and is never converted, and a colour saved
+since drops the hue. Beside another ink at most one of them is given, the one Tuya keeps.
+A colour spelled any other way (lowercase, without `#`, other than six digits, a number),
+both keys given, or neither for `tuya`, is refused, never repaired or picked between. A
+restore writes the ink and Tuya's colour or hue exactly as the file has them, dropping the
+other, and a reset forgets both. A file before version 12 with the key is refused.
 
 `sistema` is the phone's accent colour, read on the phone Sello runs on whenever it is
 shown; the file holds no colour or hue for it. A phone without one (Android 11) draws
@@ -178,7 +193,7 @@ says so, and the later of each day wins (on the same day the phone's last nudge 
 file with no guidance, or `null`, whose history has any expense, income, goal or investment
 merges the six new-user nudges as seen (its person was already using Sello); the Guía hint
 and the backup reminder stay as the phone has them. Without such a history it keeps the
-phone's. A FinanceTracker translation, written as a version 11 file, merges nothing: the
+phone's. A FinanceTracker translation, written as a version 12 file, merges nothing: the
 phone's stays as it is. Whether the person was already using Sello when guidance arrived
 stays on the phone.
 
@@ -385,6 +400,6 @@ there as above.
 
 ## Changing the format
 
-Any change to keys, meanings or rules is a new `version`. Versions 1 to 11 stay
+Any change to keys, meanings or rules is a new `version`. Versions 1 to 12 stay
 readable for as long as the app supports restoring them; nothing translates older Sello
 databases or other apps' files.

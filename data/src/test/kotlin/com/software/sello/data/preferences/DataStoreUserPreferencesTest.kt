@@ -15,6 +15,7 @@ import com.software.sello.domain.model.CategoryOrderingPreference
 import com.software.sello.domain.model.CorrectionAnnouncementPreference
 import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.DismissedSuggestion
+import com.software.sello.domain.model.InkColour
 import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.InvestmentOrder
@@ -22,6 +23,7 @@ import com.software.sello.domain.model.InvestmentPreference
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.ThemePreference
+import com.software.sello.domain.model.TuyaColour
 import com.software.sello.domain.port.BackupRecord
 import com.software.sello.domain.port.BackupSummary
 import com.software.sello.domain.port.LastBackup
@@ -458,7 +460,7 @@ class DataStoreUserPreferencesTest {
     fun sistemaIsStoredWithoutAHueAndKeepsTuyasAcrossARestart() = runTest {
         val data = HandDataStore()
         val preferences = DataStoreUserPreferences(data)
-        val red = InkPreference.Tuya(InkHue.of(22)!!)
+        val red = InkPreference.Tuya(TuyaColour.Hue(InkHue.of(22)!!))
         preferences.setInk(red)
 
         assertEquals(PreferenceWrite.Saved, preferences.setInk(InkPreference.Sistema))
@@ -467,7 +469,10 @@ class DataStoreUserPreferencesTest {
         // A new adapter on the same store, as after a restart or process death.
         assertEquals(
             PreferenceRead.Ready(
-                AppearancePreference(ink = InkPreference.Sistema, tuyaHue = InkHue.of(22)!!)
+                AppearancePreference(
+                    ink = InkPreference.Sistema,
+                    tuya = TuyaColour.Hue(InkHue.of(22)!!)
+                )
             ),
             DataStoreUserPreferences(data).observeAppearance().first()
         )
@@ -507,7 +512,10 @@ class DataStoreUserPreferencesTest {
         )
         assertEquals(
             PreferenceRead.Ready(
-                AppearancePreference(ink = InkPreference.Violeta, tuyaHue = InkHue.of(22)!!)
+                AppearancePreference(
+                    ink = InkPreference.Violeta,
+                    tuya = TuyaColour.Hue(InkHue.of(22)!!)
+                )
             ),
             preferences.observeAppearance().first()
         )
@@ -517,15 +525,18 @@ class DataStoreUserPreferencesTest {
     fun aRestoredSistemaIsWrittenWithTheBackupsHueOrNone() = runTest {
         val data = HandDataStore()
         val preferences = DataStoreUserPreferences(data)
-        preferences.setInk(InkPreference.Tuya(InkHue.of(22)!!))
+        preferences.setInk(InkPreference.Tuya(TuyaColour.Hue(InkHue.of(22)!!)))
 
         assertEquals(
             PreferenceWrite.Saved,
-            preferences.restoreInk(InkPreference.Sistema, InkHue.of(147)!!)
+            preferences.restoreInk(InkPreference.Sistema, TuyaColour.Hue(InkHue.of(147)!!))
         )
         assertEquals(
             PreferenceRead.Ready(
-                AppearancePreference(ink = InkPreference.Sistema, tuyaHue = InkHue.of(147)!!)
+                AppearancePreference(
+                    ink = InkPreference.Sistema,
+                    tuya = TuyaColour.Hue(InkHue.of(147)!!)
+                )
             ),
             DataStoreUserPreferences(data).observeAppearance().first()
         )
@@ -539,7 +550,7 @@ class DataStoreUserPreferencesTest {
     fun tuyaIsStoredWithItsHueInOneWriteAndAHandMadeInkKeepsTheHue() = runTest {
         val data = HandDataStore()
         val preferences = DataStoreUserPreferences(data)
-        val red = InkPreference.Tuya(InkHue.of(22)!!)
+        val red = InkPreference.Tuya(TuyaColour.Hue(InkHue.of(22)!!))
 
         assertEquals(PreferenceWrite.Saved, preferences.setInk(red))
         assertEquals("tuya", data.data.first()[INK])
@@ -555,7 +566,10 @@ class DataStoreUserPreferencesTest {
         assertEquals(22, data.data.first()[INK_HUE])
         assertEquals(
             PreferenceRead.Ready(
-                AppearancePreference(ink = InkPreference.Violeta, tuyaHue = InkHue.of(22)!!)
+                AppearancePreference(
+                    ink = InkPreference.Violeta,
+                    tuya = TuyaColour.Hue(InkHue.of(22)!!)
+                )
             ),
             DataStoreUserPreferences(data).observeAppearance().first()
         )
@@ -630,15 +644,18 @@ class DataStoreUserPreferencesTest {
     fun aRestoreWritesTheInkAndTuyasHueExactlyAndCanForgetTheHue() = runTest {
         val data = HandDataStore()
         val preferences = DataStoreUserPreferences(data)
-        preferences.setInk(InkPreference.Tuya(InkHue.of(22)!!))
+        preferences.setInk(InkPreference.Tuya(TuyaColour.Hue(InkHue.of(22)!!)))
 
         assertEquals(
             PreferenceWrite.Saved,
-            preferences.restoreInk(InkPreference.Cobalto, InkHue.of(147)!!)
+            preferences.restoreInk(InkPreference.Cobalto, TuyaColour.Hue(InkHue.of(147)!!))
         )
         assertEquals(
             PreferenceRead.Ready(
-                AppearancePreference(ink = InkPreference.Cobalto, tuyaHue = InkHue.of(147)!!)
+                AppearancePreference(
+                    ink = InkPreference.Cobalto,
+                    tuya = TuyaColour.Hue(InkHue.of(147)!!)
+                )
             ),
             preferences.observeAppearance().first()
         )
@@ -650,8 +667,11 @@ class DataStoreUserPreferencesTest {
             preferences.observeAppearance().first()
         )
 
-        val blue = InkPreference.Tuya(InkHue.of(200)!!)
-        assertEquals(PreferenceWrite.Saved, preferences.restoreInk(blue, InkHue.of(200)!!))
+        val blue = InkPreference.Tuya(TuyaColour.Hue(InkHue.of(200)!!))
+        assertEquals(
+            PreferenceWrite.Saved,
+            preferences.restoreInk(blue, TuyaColour.Hue(InkHue.of(200)!!))
+        )
         assertEquals(
             PreferenceRead.Ready(AppearancePreference(ink = blue)),
             preferences.observeAppearance().first()
@@ -662,9 +682,9 @@ class DataStoreUserPreferencesTest {
     fun aRestoredTuyaWhoseHueIsNotItsOwnIsRefusedAndNothingIsWritten() = runTest {
         val data = HandDataStore()
         val preferences = DataStoreUserPreferences(data)
-        val red = InkPreference.Tuya(InkHue.of(22)!!)
+        val red = InkPreference.Tuya(TuyaColour.Hue(InkHue.of(22)!!))
 
-        for (hue in listOf(null, InkHue.of(40)!!)) {
+        for (hue in listOf(null, TuyaColour.Hue(InkHue.of(40)!!))) {
             assertEquals(
                 PreferenceWrite.Failed(PreferenceFailure.InvalidValue),
                 preferences.restoreInk(red, hue)
@@ -679,7 +699,10 @@ class DataStoreUserPreferencesTest {
 
         assertEquals(
             PreferenceRead.Ready(
-                AppearancePreference(ink = InkPreference.Cobalto, tuyaHue = InkHue.of(0)!!)
+                AppearancePreference(
+                    ink = InkPreference.Cobalto,
+                    tuya = TuyaColour.Hue(InkHue.of(0)!!)
+                )
             ),
             DataStoreUserPreferences(HandDataStore(written)).observeAppearance().first()
         )
@@ -691,7 +714,7 @@ class DataStoreUserPreferencesTest {
             val written = mutablePreferencesOf(INK to "tuya", INK_HUE to hue.toInt())
             assertEquals(
                 PreferenceRead.Ready(
-                    AppearancePreference(ink = InkPreference.Tuya(InkHue.of(hue)!!))
+                    AppearancePreference(ink = InkPreference.Tuya(TuyaColour.Hue(InkHue.of(hue)!!)))
                 ),
                 DataStoreUserPreferences(HandDataStore(written)).observeAppearance().first()
             )
@@ -741,7 +764,7 @@ class DataStoreUserPreferencesTest {
 
         assertEquals(
             PreferenceWrite.Failed(PreferenceFailure.Unavailable),
-            preferences.setInk(InkPreference.Tuya(InkHue.of(22)!!))
+            preferences.setInk(InkPreference.Tuya(TuyaColour.Hue(InkHue.of(22)!!)))
         )
     }
 
@@ -749,7 +772,7 @@ class DataStoreUserPreferencesTest {
     fun resetReturnsTuyaToCobaltoAndForgetsItsHue() = runTest {
         val data = HandDataStore()
         val preferences = DataStoreUserPreferences(data)
-        preferences.setInk(InkPreference.Tuya(InkHue.of(147)!!))
+        preferences.setInk(InkPreference.Tuya(TuyaColour.Hue(InkHue.of(147)!!)))
         // The hue is kept beside Violeta, and reset forgets it all the same.
         preferences.setInk(InkPreference.Violeta)
 
@@ -759,6 +782,256 @@ class DataStoreUserPreferencesTest {
         assertEquals(
             PreferenceRead.Ready(AppearancePreference()),
             preferences.observeAppearance().first()
+        )
+    }
+
+    // --- Tuya's exact colour (SELLO-215) ---
+
+    private fun exact(rgb: Long) = TuyaColour.Exact(InkColour.of(rgb)!!)
+    private fun hue(degrees: Long) = TuyaColour.Hue(InkHue.of(degrees)!!)
+
+    @Test
+    fun aTuyaColourIsStoredAsItsRgbAndDropsTuyasOldHueInTheSameWrite() = runTest {
+        val data = HandDataStore()
+        val preferences = DataStoreUserPreferences(data)
+        preferences.setInk(InkPreference.Tuya(hue(22)))
+        val yellow = InkPreference.Tuya(exact(0xF2C200))
+
+        assertEquals(PreferenceWrite.Saved, preferences.setInk(yellow))
+
+        assertEquals(
+            mutablePreferencesOf(INK to "tuya", INK_COLOUR to 15_909_376),
+            data.data.first()
+        )
+        // A new adapter on the same store, as after a restart or process death.
+        assertEquals(
+            PreferenceRead.Ready(AppearancePreference(ink = yellow)),
+            DataStoreUserPreferences(data).observeAppearance().first()
+        )
+    }
+
+    @Test
+    fun anotherInkKeepsTuyasColourAcrossARestartAndTuyaComesBackInIt() = runTest {
+        val data = HandDataStore()
+        val preferences = DataStoreUserPreferences(data)
+        val grey = InkPreference.Tuya(exact(0x808080))
+        preferences.setInk(grey)
+
+        for (other in listOf(InkPreference.Cobalto, InkPreference.Violeta, InkPreference.Sistema)) {
+            assertEquals(PreferenceWrite.Saved, preferences.setInk(other))
+            assertEquals("$other", 0x808080, data.data.first()[INK_COLOUR])
+            assertEquals(
+                PreferenceRead.Ready(AppearancePreference(ink = other, tuya = exact(0x808080))),
+                DataStoreUserPreferences(data).observeAppearance().first()
+            )
+        }
+        assertEquals(PreferenceWrite.Saved, preferences.setInk(grey))
+        assertEquals(
+            PreferenceRead.Ready(AppearancePreference(ink = grey)),
+            DataStoreUserPreferences(data).observeAppearance().first()
+        )
+    }
+
+    @Test
+    fun aTuyaHueSavedOverAColourDropsTheColour() = runTest {
+        // Tu tinta still saves a hue until SELLO-216.
+        val data = HandDataStore(mutablePreferencesOf(INK to "tuya", INK_COLOUR to 0xF2C200))
+        val preferences = DataStoreUserPreferences(data)
+
+        assertEquals(PreferenceWrite.Saved, preferences.setInk(InkPreference.Tuya(hue(40))))
+
+        assertEquals(mutablePreferencesOf(INK to "tuya", INK_HUE to 40), data.data.first())
+    }
+
+    @Test
+    fun aHueSavedBeforeIsReadAsAHueNeverConverted() = runTest {
+        val written = mutablePreferencesOf(INK to "tuya", INK_HUE to 22)
+        val data = HandDataStore(written)
+
+        assertEquals(
+            PreferenceRead.Ready(AppearancePreference(ink = InkPreference.Tuya(hue(22)))),
+            DataStoreUserPreferences(data).observeAppearance().first()
+        )
+        assertEquals(written, data.data.first())
+    }
+
+    @Test
+    fun theEdgeColoursAreStoredAsTheyAre() = runTest {
+        for (rgb in listOf(0x000000, 0xFFFFFF)) {
+            val written = mutablePreferencesOf(INK to "tuya", INK_COLOUR to rgb)
+            assertEquals(
+                PreferenceRead.Ready(
+                    AppearancePreference(ink = InkPreference.Tuya(exact(rgb.toLong())))
+                ),
+                DataStoreUserPreferences(HandDataStore(written)).observeAppearance().first()
+            )
+        }
+    }
+
+    @Test
+    fun aDamagedColourOrAColourWithAHueIsInvalidNotClippedPickedOrRewritten() = runTest {
+        val damaged = listOf(
+            mutablePreferencesOf(INK to "tuya", INK_COLOUR to 0x1000000),
+            mutablePreferencesOf(INK to "tuya", INK_COLOUR to -1),
+            // An opaque ARGB colour is not its 24 bits.
+            mutablePreferencesOf(INK to "tuya", INK_COLOUR to 0xFFF2C200.toInt()),
+            mutablePreferencesOf(INK to "tuya", stringPreferencesKey(COLOUR_KEY) to "#F2C200"),
+            mutablePreferencesOf(INK to "cobalto", INK_COLOUR to 0x1000000),
+            mutablePreferencesOf(INK to "sistema", INK_COLOUR to -1),
+            // Both, beside Tuya or another ink: never one picked over the other.
+            mutablePreferencesOf(INK to "tuya", INK_COLOUR to 0xF2C200, INK_HUE to 22),
+            mutablePreferencesOf(INK to "violeta", INK_COLOUR to 0xF2C200, INK_HUE to 22),
+            mutablePreferencesOf(INK_COLOUR to 0, INK_HUE to 0)
+        )
+        for (raw in damaged) {
+            val data = HandDataStore(raw)
+            assertEquals(
+                "$raw",
+                PreferenceRead.Failed<AppearancePreference>(PreferenceFailure.InvalidValue, null),
+                DataStoreUserPreferences(data).observeAppearance().first()
+            )
+            assertEquals(raw, data.data.first())
+        }
+    }
+
+    @Test
+    fun aColourDamagedAfterAGoodReadKeepsTheLastGoodAppearance() = runTest {
+        val data = HandDataStore()
+        val preferences = DataStoreUserPreferences(data)
+        val yellow = InkPreference.Tuya(exact(0xF2C200))
+        preferences.setInk(yellow)
+        val reads = mutableListOf<PreferenceRead<AppearancePreference>>()
+        val collecting = launch(UnconfinedTestDispatcher(testScheduler)) {
+            preferences.observeAppearance().take(2).toList(reads)
+        }
+        runCurrent()
+
+        data.updateData { it.toMutablePreferences().apply { this[INK_HUE] = 22 } }
+        runCurrent()
+        collecting.join()
+
+        assertEquals(
+            listOf(
+                PreferenceRead.Ready(AppearancePreference(ink = yellow)),
+                PreferenceRead.Failed(
+                    PreferenceFailure.InvalidValue,
+                    AppearancePreference(ink = yellow)
+                )
+            ),
+            reads
+        )
+    }
+
+    @Test
+    fun pickingAnotherInkOverADamagedColourOrBothDropsThemSoThePickReadsBack() = runTest {
+        for (raw in listOf(
+            mutablePreferencesOf(INK to "cobalto", INK_COLOUR to 0x1000000),
+            mutablePreferencesOf(INK to "cobalto", stringPreferencesKey(COLOUR_KEY) to "#F2C200"),
+            mutablePreferencesOf(INK to "tuya", INK_COLOUR to 0xF2C200, INK_HUE to 22),
+            // One half still good: the owner ruled both go (E39 Decisions, 2026-11-12).
+            mutablePreferencesOf(INK to "cobalto", INK_COLOUR to 0x1000000, INK_HUE to 22),
+            mutablePreferencesOf(INK to "cobalto", INK_COLOUR to 0xF2C200, INK_HUE to 400)
+        )) {
+            for (pick in listOf(InkPreference.Violeta, InkPreference.Sistema)) {
+                val data = HandDataStore(raw)
+                val preferences = DataStoreUserPreferences(data)
+
+                assertEquals(PreferenceWrite.Saved, preferences.setInk(pick))
+
+                assertEquals("$raw $pick", mutablePreferencesOf(INK to pick.id), data.data.first())
+                assertEquals(
+                    PreferenceRead.Ready(AppearancePreference(ink = pick)),
+                    preferences.observeAppearance().first()
+                )
+            }
+        }
+    }
+
+    @Test
+    fun aTuyaColourThatCannotBeSavedLeavesTheStoredInkAndHue() = runTest {
+        val raw = mutablePreferencesOf(INK to "tuya", INK_HUE to 22)
+        val preferences = DataStoreUserPreferences(UnwritableDataStore(raw))
+
+        assertEquals(
+            PreferenceWrite.Failed(PreferenceFailure.Unavailable),
+            preferences.setInk(InkPreference.Tuya(exact(0xF2C200)))
+        )
+        assertEquals(
+            PreferenceRead.Ready(AppearancePreference(ink = InkPreference.Tuya(hue(22)))),
+            preferences.observeAppearance().first()
+        )
+    }
+
+    @Test
+    fun aColourThatCannotBeReadIsUnavailableNotCobalto() = runTest {
+        assertEquals(
+            PreferenceRead.Failed<AppearancePreference>(PreferenceFailure.Unavailable, null),
+            DataStoreUserPreferences(UnavailableDataStore()).observeAppearance().first()
+        )
+    }
+
+    @Test
+    fun aRestoreWritesTuyasColourOrHueExactlyAndDropsTheOther() = runTest {
+        val data = HandDataStore()
+        val preferences = DataStoreUserPreferences(data)
+        preferences.setInk(InkPreference.Tuya(hue(22)))
+
+        assertEquals(
+            PreferenceWrite.Saved,
+            preferences.restoreInk(InkPreference.Cobalto, exact(0x0A6B4A))
+        )
+        assertEquals(
+            mutablePreferencesOf(INK to "cobalto", INK_COLOUR to 0x0A6B4A),
+            data.data.first()
+        )
+
+        val yellow = InkPreference.Tuya(exact(0xF2C200))
+        assertEquals(PreferenceWrite.Saved, preferences.restoreInk(yellow, exact(0xF2C200)))
+        assertEquals(
+            PreferenceRead.Ready(AppearancePreference(ink = yellow)),
+            DataStoreUserPreferences(data).observeAppearance().first()
+        )
+
+        // A backup from before E39 brings a hue, which replaces the colour.
+        assertEquals(PreferenceWrite.Saved, preferences.restoreInk(InkPreference.Violeta, hue(147)))
+        assertEquals(mutablePreferencesOf(INK to "violeta", INK_HUE to 147), data.data.first())
+
+        assertEquals(PreferenceWrite.Saved, preferences.restoreInk(yellow, exact(0xF2C200)))
+        assertEquals(PreferenceWrite.Saved, preferences.restoreInk(InkPreference.Sistema, null))
+        assertEquals(mutablePreferencesOf(INK to "sistema"), data.data.first())
+    }
+
+    @Test
+    fun aRestoredTuyaWhoseColourIsNotItsOwnIsRefusedAndNothingIsWritten() = runTest {
+        val raw = mutablePreferencesOf(INK to "tuya", INK_HUE to 22)
+        val data = HandDataStore(raw)
+        val preferences = DataStoreUserPreferences(data)
+        val yellow = InkPreference.Tuya(exact(0xF2C200))
+
+        for (other in listOf(null, exact(0xF2C201), hue(22))) {
+            assertEquals(
+                "$other",
+                PreferenceWrite.Failed(PreferenceFailure.InvalidValue),
+                preferences.restoreInk(yellow, other)
+            )
+        }
+        assertEquals(raw, data.data.first())
+    }
+
+    @Test
+    fun resetReturnsToCobaltoAndForgetsTuyasColour() = runTest {
+        val data = HandDataStore()
+        val preferences = DataStoreUserPreferences(data)
+        preferences.setInk(InkPreference.Tuya(exact(0xF2C200)))
+        // The colour is kept beside Sistema, and reset forgets it all the same.
+        preferences.setInk(InkPreference.Sistema)
+
+        assertEquals(PreferenceWrite.Saved, preferences.resetAll())
+
+        assertEquals(null, data.data.first()[INK_COLOUR])
+        assertEquals(
+            PreferenceRead.Ready(AppearancePreference()),
+            DataStoreUserPreferences(data).observeAppearance().first()
         )
     }
 
@@ -1015,4 +1288,6 @@ class DataStoreUserPreferencesTest {
 
 private val INK = stringPreferencesKey("appearance_ink_v1")
 private val INK_HUE = intPreferencesKey("appearance_ink_hue_v1")
+private const val COLOUR_KEY = "appearance_ink_colour_v1"
+private val INK_COLOUR = intPreferencesKey(COLOUR_KEY)
 private val SMALL_LINE = longPreferencesKey("resumen_small_expense_line_v1")

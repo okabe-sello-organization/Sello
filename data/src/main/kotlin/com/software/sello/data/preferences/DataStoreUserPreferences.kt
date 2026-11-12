@@ -22,6 +22,7 @@ import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.DismissedSuggestion
 import com.software.sello.domain.model.Guidance
 import com.software.sello.domain.model.GuidanceMemory
+import com.software.sello.domain.model.InkColour
 import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.InvestmentOrder
@@ -31,6 +32,7 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ShownNudge
 import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.ThemePreference
+import com.software.sello.domain.model.TuyaColour
 import com.software.sello.domain.policy.EffectiveDates
 import com.software.sello.domain.policy.NudgePolicy
 import com.software.sello.domain.port.AppearancePreferences
@@ -107,32 +109,44 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
         write { this[THEME] = theme.stored }
 
     /**
-     * Tuya and its hue go in one edit, so Tuya is never stored without one. A hand-made ink
-     * or Sistema, which stores no hue of its own, leaves Tuya's hue where it is, unless the
-     * stored one is damaged (not a whole degree from 0 to 359): then it goes in the same edit,
-     * so the pick reads back.
+     * Tuya and its colour or hue go in one edit that drops the other, so Tuya is never
+     * stored with neither or both. A hand-made ink or Sistema, which stores none of its own,
+     * leaves Tuya's where it is, unless what is stored is damaged (a colour outside 24-bit
+     * sRGB, a hue that is not a whole degree from 0 to 359, a value of another type, or a
+     * colour and a hue together): then both go in the same edit, so the pick reads back.
      */
     override suspend fun setInk(ink: InkPreference): PreferenceWrite = write {
         this[INK] = ink.id
         when (ink) {
-            is InkPreference.Tuya -> this[INK_HUE] = ink.hue.degrees
+            is InkPreference.Tuya -> keepTuya(ink.colour)
 
-            InkPreference.Cobalto, InkPreference.Violeta, InkPreference.Sistema -> {
-                val kept = asMap()[INK_HUE]
-                if (kept != null && (kept as? Int)?.toLong()?.let(InkHue::of) == null) {
-                    remove(INK_HUE)
-                }
-            }
+            InkPreference.Cobalto, InkPreference.Violeta, InkPreference.Sistema ->
+                if (keptTuya(asMap()) is Decoded.Invalid) keepTuya(null)
         }
     }
 
-    override suspend fun restoreInk(ink: InkPreference, tuyaHue: InkHue?): PreferenceWrite {
-        if (ink is InkPreference.Tuya && ink.hue != tuyaHue) {
+    override suspend fun restoreInk(ink: InkPreference, tuya: TuyaColour?): PreferenceWrite {
+        if (ink is InkPreference.Tuya && ink.colour != tuya) {
             return PreferenceWrite.Failed(PreferenceFailure.InvalidValue)
         }
         return write {
             this[INK] = ink.id
-            if (tuyaHue == null) remove(INK_HUE) else this[INK_HUE] = tuyaHue.degrees
+            keepTuya(tuya)
+        }
+    }
+
+    /**
+     * Writes [tuya] as Tuya's one colour or hue, removing the other; null removes both. Each
+     * removal is a statement of its own: `remove` returns the old value cast to the key's
+     * type, which a damaged value of another type would fail.
+     */
+    private fun MutablePreferences.keepTuya(tuya: TuyaColour?) {
+        remove(INK_COLOUR)
+        remove(INK_HUE)
+        when (tuya) {
+            is TuyaColour.Exact -> this[INK_COLOUR] = tuya.colour.rgb
+            is TuyaColour.Hue -> this[INK_HUE] = tuya.hue.degrees
+            null -> Unit
         }
     }
 
@@ -405,12 +419,39 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
             "dark" -> ThemePreference.Dark
             else -> return Decoded.Invalid
         }
-        // A hue outside 0 to 359, beside any ink, or Tuya without one is damage: refused,
-        // never clipped or dropped.
-        val hue = stored[INK_HUE]?.let { InkHue.of(it.toLong()) ?: return Decoded.Invalid }
-        val ink = InkPreference.of(stored[INK] ?: InkPreference.Cobalto.id, hue)
+        val tuya = when (val kept = keptTuya(stored.asMap())) {
+            is Decoded.Value -> kept.value
+            Decoded.Invalid -> return Decoded.Invalid
+        }
+        // Tuya without a colour or hue is damage too.
+        val ink = InkPreference.of(stored[INK] ?: InkPreference.Cobalto.id, tuya)
             ?: return Decoded.Invalid
-        return Decoded.Value(AppearancePreference(theme, ink, hue))
+        return Decoded.Value(AppearancePreference(theme, ink, tuya))
+    }
+
+    /**
+     * Tuya's colour or hue, beside any ink, or null when there is neither. A colour outside
+     * 24-bit sRGB, a hue outside 0 to 359, a value of another type, or both a colour and a
+     * hue is damage: refused, never clipped, dropped or picked between. Read from the raw
+     * map, so a write can check it without throwing.
+     */
+    private fun keptTuya(values: Map<Preferences.Key<*>, Any>): Decoded<TuyaColour?> {
+        val colour = when (val raw = values[INK_COLOUR]) {
+            null -> null
+            is Int -> InkColour.of(raw.toLong()) ?: return Decoded.Invalid
+            else -> return Decoded.Invalid
+        }
+        val hue = when (val raw = values[INK_HUE]) {
+            null -> null
+            is Int -> InkHue.of(raw.toLong()) ?: return Decoded.Invalid
+            else -> return Decoded.Invalid
+        }
+        return when {
+            colour != null && hue != null -> Decoded.Invalid
+            colour != null -> Decoded.Value(TuyaColour.Exact(colour))
+            hue != null -> Decoded.Value(TuyaColour.Hue(hue))
+            else -> Decoded.Value(null)
+        }
     }
 
     private fun categoryOrdering(stored: Preferences): Decoded<CategoryOrderingPreference> {
@@ -528,8 +569,13 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
         val THEME = stringPreferencesKey("appearance_theme_v1")
         val INK = stringPreferencesKey("appearance_ink_v1")
 
-        /** Tuya's hue, a whole degree: always there with Tuya, and kept when another ink is. */
+        /**
+         * Tuya's hue, a whole degree, saved before E39; or Tuya's exact colour, 24-bit sRGB
+         * as `0xRRGGBB` (SELLO-215). Exactly one is there with Tuya, kept when another ink
+         * is, and never both.
+         */
         val INK_HUE = intPreferencesKey("appearance_ink_hue_v1")
+        val INK_COLOUR = intPreferencesKey("appearance_ink_colour_v1")
         val CATEGORY_ORDER = stringPreferencesKey("recibo_category_order_v1")
         val CATEGORY_DIRECTION = stringPreferencesKey("recibo_category_direction_v1")
         val INVESTMENT_CURRENCY = stringPreferencesKey("investment_new_currency_v1")

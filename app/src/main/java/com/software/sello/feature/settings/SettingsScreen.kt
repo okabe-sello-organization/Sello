@@ -40,7 +40,6 @@ import com.software.sello.designsystem.component.StatusKind
 import com.software.sello.designsystem.component.StatusSlip
 import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.icon.SelloIcon
-import com.software.sello.designsystem.theme.HueInk
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.designsystem.theme.hueMeaning
 import com.software.sello.designsystem.theme.hueName
@@ -53,6 +52,7 @@ import com.software.sello.domain.model.ThemePreference
 import com.software.sello.platform.PhoneColor
 import com.software.sello.platform.hue
 import com.software.sello.presentation.appearance.InkChoices
+import com.software.sello.presentation.appearance.name
 import com.software.sello.presentation.appearance.shown
 import com.software.sello.presentation.appearance.themeInk
 import com.software.sello.presentation.date.dateLabels
@@ -289,8 +289,9 @@ private fun AppearanceControls(state: SettingsState, onAction: (SettingsAction) 
         val phone = state.phone
         val ink = state.appearance.ink.shown(phone)
         val tuya = ink as? InkPreference.Tuya
-        // Tuya keeps its hue while another ink is in use: its colour and badge, not chosen.
-        val tuyaHue = state.appearance.tuyaHue
+        // Tuya keeps its colour or hue while another ink is in use: its swatch and badge, not
+        // chosen.
+        val kept = state.appearance.tuya
         val sistema = if (phone == PhoneColor.None) {
             null
         } else {
@@ -313,9 +314,9 @@ private fun AppearanceControls(state: SettingsState, onAction: (SettingsAction) 
                 )
             } + listOfNotNull(sistema) + InkSwatch(
                 label = stringResource(R.string.settings_ink_tuya),
-                fill = tuyaHue?.let { HueInk(it.degrees).swatch },
+                fill = kept?.themeInk()?.swatch,
                 chosen = tuya != null,
-                badge = SelloIcon.Edit.takeIf { tuyaHue != null },
+                badge = SelloIcon.Edit.takeIf { kept != null },
                 onClick = { onAction(SettingsAction.Tuya.Open) }
             ),
             enabled = !state.busy,
@@ -324,7 +325,7 @@ private fun AppearanceControls(state: SettingsState, onAction: (SettingsAction) 
         val note = when {
             tuya != null -> stringResource(
                 R.string.settings_ink_tuya_note,
-                stringResource(hueName(tuya.hue.degrees))
+                stringResource(tuya.colour.name())
             )
 
             ink == InkPreference.Sistema -> sistemaNote(phone)

@@ -7,6 +7,7 @@ import com.software.sello.domain.model.DefaultLimit
 import com.software.sello.domain.model.ExactTotal
 import com.software.sello.domain.model.GuidanceMemory
 import com.software.sello.domain.model.IncomeSource
+import com.software.sello.domain.model.InkColour
 import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.InvestmentOrder
@@ -18,6 +19,7 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ShownNudge
 import com.software.sello.domain.model.SmallExpenseLine
 import com.software.sello.domain.model.SourceName
+import com.software.sello.domain.model.TuyaColour
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
@@ -76,10 +78,10 @@ class BackupRoundTripTest {
 
     /**
      * The file Sello writes now for contents with no guidance, as when the phone's could not
-     * be read: version 11 with `"guidance": null`.
+     * be read, and no colour for Tuya: version 12 with `"guidance": null`.
      */
     private fun currentWithoutGuidance() =
-        version10AsVersion11(String(resource("valid-g01-v10.json")))
+        version11AsVersion12(version10AsVersion11(String(resource("valid-g01-v10.json"))))
 
     /** What `valid-g01-v11.json` says was seen. */
     private val guidanceSample = GuidanceMemory(
@@ -92,17 +94,41 @@ class BackupRoundTripTest {
     private fun g01WithGuidance(guidance: GuidanceMemory? = guidanceSample) =
         g01InDollars().let { it.copy(preferences = it.preferences!!.copy(guidance = guidance)) }
 
-    @Test
-    fun `G01 is written byte for byte as the documented version 11 file`() {
-        assertEquals(
-            String(resource("valid-g01-v11.json")),
-            String(codec.encode(g01WithGuidance()).value())
+    /** What `valid-g01-v12.json` holds: G01 in Violeta, Tuya's kept colour #F2C200. */
+    private fun g01WithColour() = g01WithGuidance().let {
+        it.copy(
+            preferences = it.preferences!!.copy(
+                appearance = it.preferences.appearance.copy(tuya = exact(0xF2C200))
+            )
         )
+    }
+
+    private fun exact(rgb: Long) = TuyaColour.Exact(InkColour.of(rgb)!!)
+
+    @Test
+    fun `G01 is written byte for byte as the documented version 12 file`() {
+        assertEquals(
+            String(resource("valid-g01-v12.json")),
+            String(codec.encode(g01WithColour()).value())
+        )
+    }
+
+    @Test
+    fun `the version 12 file reads back with the same colour and guidance`() {
+        assertEquals(g01WithColour(), codec.read(resource("valid-g01-v12.json")).value().contents)
     }
 
     @Test
     fun `the version 11 file reads back with the same guidance`() {
         assertEquals(g01WithGuidance(), codec.read(resource("valid-g01-v11.json")).value().contents)
+    }
+
+    @Test
+    fun `the version 11 file is written now as version 12 with no colour`() {
+        val v11 = String(resource("valid-g01-v11.json"))
+        val contents = codec.read(v11.toByteArray()).value().contents
+
+        assertEquals(version11AsVersion12(v11), String(codec.encode(contents).value()))
     }
 
     @Test
@@ -202,7 +228,7 @@ class BackupRoundTripTest {
             preferences = it.preferences!!.copy(
                 appearance = it.preferences.appearance.copy(
                     ink = ink,
-                    tuyaHue = (ink as? InkPreference.Tuya)?.hue
+                    tuya = (ink as? InkPreference.Tuya)?.colour
                 )
             )
         )
@@ -212,7 +238,7 @@ class BackupRoundTripTest {
     fun `Tuya is written with its hue and reads back the same, at every edge`() {
         val file = currentWithoutGuidance()
         for (hue in listOf(0L, 22L, 359L)) {
-            val contents = g01In(InkPreference.Tuya(InkHue.of(hue)!!))
+            val contents = g01In(InkPreference.Tuya(TuyaColour.Hue(InkHue.of(hue)!!)))
             val written = String(codec.encode(contents).value())
             assertEquals(
                 file.replace(
@@ -240,7 +266,6 @@ class BackupRoundTripTest {
             "\"ink\": \"violeta\",\n    \"inkHue\": null" to "${tuya}\"22\"",
             "\"ink\": \"violeta\",\n    \"inkHue\": null" to "${tuya}022",
             "\"ink\": \"violeta\",\n    \"inkHue\": null" to "${tuya}99999999999999999999",
-            "\"ink\": \"violeta\",\n    \"inkHue\": null" to "${tuya}null",
             "\"ink\": \"violeta\",\n    \"inkHue\": null" to "${tuya}true"
         )) {
             val changed = file.replace(from, to)
@@ -260,7 +285,9 @@ class BackupRoundTripTest {
             val contents = g01InDollars().let {
                 it.copy(
                     preferences = it.preferences!!.copy(
-                        appearance = it.preferences.appearance.copy(tuyaHue = InkHue.of(hue)!!)
+                        appearance = it.preferences.appearance.copy(
+                            tuya = TuyaColour.Hue(InkHue.of(hue)!!)
+                        )
                     )
                 )
             }
@@ -268,6 +295,174 @@ class BackupRoundTripTest {
             assertEquals(file.replace("\"inkHue\": null", "\"inkHue\": $hue"), written)
             assertEquals(contents, codec.read(written.toByteArray()).value().contents)
         }
+    }
+
+    /** The current file's Violeta with no Tuya, as [currentWithoutGuidance] writes it. */
+    private val violetaAlone =
+        "\"ink\": \"violeta\",\n    \"inkHue\": null,\n    \"inkColour\": null"
+
+    @Test
+    fun `Tuya is written with its colour as #RRGGBB and reads back the same, at every edge`() {
+        val file = currentWithoutGuidance()
+        for ((rgb, text) in listOf(
+            0x000000L to "#000000",
+            0x0A0B0CL to "#0A0B0C",
+            0xF2C200L to "#F2C200",
+            0xFFFFFFL to "#FFFFFF"
+        )) {
+            val contents = g01In(InkPreference.Tuya(exact(rgb)))
+            val written = String(codec.encode(contents).value())
+            assertEquals(
+                text,
+                file.replace(
+                    violetaAlone,
+                    "\"ink\": \"tuya\",\n    \"inkHue\": null,\n    \"inkColour\": \"$text\""
+                ),
+                written
+            )
+            assertEquals(contents, codec.read(written.toByteArray()).value().contents)
+        }
+    }
+
+    @Test
+    fun `Tuya's colour kept beside another ink is written and reads back`() {
+        val file = currentWithoutGuidance()
+        for ((ink, id) in listOf(
+            InkPreference.Cobalto to "cobalto",
+            InkPreference.Violeta to "violeta",
+            InkPreference.Sistema to "sistema"
+        )) {
+            val contents = g01InDollars().let {
+                it.copy(
+                    preferences = it.preferences!!.copy(
+                        appearance = it.preferences.appearance.copy(
+                            ink = ink,
+                            tuya = exact(0x808080)
+                        )
+                    )
+                )
+            }
+            val written = String(codec.encode(contents).value())
+            assertEquals(
+                file.replace(
+                    violetaAlone,
+                    "\"ink\": \"$id\",\n    \"inkHue\": null,\n    \"inkColour\": \"#808080\""
+                ),
+                written
+            )
+            assertEquals(contents, codec.read(written.toByteArray()).value().contents)
+        }
+    }
+
+    @Test
+    fun `a colour spelled any other way, beside any ink, rejects the whole file`() {
+        val file = currentWithoutGuidance()
+        for (ink in listOf("violeta", "tuya")) {
+            for (colour in listOf(
+                "\"#f2c200\"",
+                "\"#F2c200\"",
+                "\"F2C200\"",
+                "\"#F2C20\"",
+                "\"#F2C2000\"",
+                "\"#FF2C2000\"",
+                "\"#GGGGGG\"",
+                "\"# F2C200\"",
+                "\"#F2C200 \"",
+                "\"#-12345\"",
+                "\"#+12345\"",
+                "\"\"",
+                "15909376",
+                "true",
+                "[]"
+            )) {
+                val changed = file.replace(
+                    violetaAlone,
+                    "\"ink\": \"$ink\",\n    \"inkHue\": null,\n    \"inkColour\": $colour"
+                )
+                check(changed != file)
+                assertEquals(
+                    "$ink $colour",
+                    BackupRejection.InvalidValue("preferences.inkColour"),
+                    (codec.read(changed.toByteArray()) as Outcome.Failure).error
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `a colour and a hue together, beside any ink, reject the whole file, neither is picked`() {
+        val file = currentWithoutGuidance()
+        for (ink in listOf("tuya", "cobalto", "violeta", "sistema")) {
+            val changed = file.replace(
+                violetaAlone,
+                "\"ink\": \"$ink\",\n    \"inkHue\": 22,\n    \"inkColour\": \"#F2C200\""
+            )
+            check(changed != file)
+            assertEquals(
+                ink,
+                BackupRejection.InvalidValue("preferences.inkColour"),
+                (codec.read(changed.toByteArray()) as Outcome.Failure).error
+            )
+        }
+    }
+
+    @Test
+    fun `Tuya with neither a colour nor a hue rejects the whole file`() {
+        val v12 = currentWithoutGuidance().replace("\"ink\": \"violeta\"", "\"ink\": \"tuya\"")
+        assertEquals(
+            BackupRejection.InvalidValue("preferences.inkColour"),
+            (codec.read(v12.toByteArray()) as Outcome.Failure).error
+        )
+        // Before version 12 only a hue could be there.
+        val v11 = String(resource("valid-g01-v11.json"))
+            .replace("\"ink\": \"violeta\"", "\"ink\": \"tuya\"")
+        assertEquals(
+            BackupRejection.InvalidValue("preferences.inkHue"),
+            (codec.read(v11.toByteArray()) as Outcome.Failure).error
+        )
+    }
+
+    @Test
+    fun `a Tuya hue in every version from 8 reads as that hue, never converted to a colour`() {
+        for (name in listOf(
+            "valid-g01-v8.json",
+            "valid-g01-v9.json",
+            "valid-g01-v10.json",
+            "valid-g01-v11.json"
+        )) {
+            val file = String(resource(name)).replace(
+                "\"ink\": \"violeta\",\n    \"inkHue\": null",
+                "\"ink\": \"tuya\",\n    \"inkHue\": 22"
+            )
+            check(file.contains("\"inkHue\": 22"))
+            val read = codec.read(file.toByteArray()).value().contents
+            val red = TuyaColour.Hue(InkHue.of(22)!!)
+
+            assertEquals(name, InkPreference.Tuya(red), read.preferences!!.appearance.ink)
+            assertEquals(name, red, read.preferences.appearance.tuya)
+        }
+    }
+
+    @Test
+    fun `a version 11 file cannot carry a colour, and a version 12 file must say it`() {
+        val v11 = String(resource("valid-g01-v11.json"))
+        val colour = v11.replace(
+            "\"inkHue\": null,",
+            "\"inkHue\": null,\n    \"inkColour\": \"#F2C200\","
+        )
+        check(colour != v11)
+        assertTrue(
+            (codec.read(colour.toByteArray()) as Outcome.Failure).error
+                is BackupRejection.Malformed
+        )
+
+        val v12 = String(resource("valid-g01-v12.json"))
+        val missing = v12.replace("\n    \"inkColour\": \"#F2C200\",", "")
+        check(missing != v12)
+        assertTrue(
+            (codec.read(missing.toByteArray()) as Outcome.Failure).error
+                is BackupRejection.Malformed
+        )
     }
 
     @Test
@@ -291,7 +486,7 @@ class BackupRoundTripTest {
                     preferences = it.preferences!!.copy(
                         appearance = it.preferences.appearance.copy(
                             ink = InkPreference.Sistema,
-                            tuyaHue = hue?.let(InkHue::of)
+                            tuya = hue?.let { TuyaColour.Hue(InkHue.of(it)!!) }
                         )
                     )
                 )
@@ -796,6 +991,7 @@ class BackupRoundTripTest {
                 "theme",
                 "ink",
                 "inkHue",
+                "inkColour",
                 "categoryOrder",
                 "categoryDirection",
                 "investmentCurrency",
