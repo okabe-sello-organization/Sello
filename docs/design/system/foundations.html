@@ -42,8 +42,9 @@
       <p><code>SelloTheme(ink, darkTheme, reducedMotion)</code> (<code>Theme.kt:16</code>) is the only theme.
         The ink is the user's choice, a <code>ThemeInk</code> (<code>SelloColors.kt:12</code>): one of the
         hand-made <code>SelloInk</code>s, <strong>Cobalto</strong>, the first-run default, and
-        <strong>Violeta</strong> (<code>SelloColors.kt:26</code>), or <code>HueInk(hue)</code>, the palette
-        the generator builds for <strong>Tuya</strong> and <strong>Sistema</strong> (<code>SelloColors.kt:41</code>); light or dark and reduced motion follow
+        <strong>Violeta</strong> (<code>SelloColors.kt:26</code>), <code>HueInk(hue)</code>, the palette
+        the generator builds for <strong>Sistema</strong> and for Tuya hues saved before E39 (<code>SelloColors.kt:41</code>),
+        or <code>ColourInk(rgb)</code>, the palette of <strong>Tuya</strong>'s exact colour (<code>SelloColors.kt:55</code>); light or dark and reduced motion follow
         the system unless the caller says otherwise. Wallpaper-derived (dynamic) Material colours are never
         applied: Sistema takes only the wallpaper's hue, and the generator gives Sello's own shades of it.</p>
       <div class="note dynamic" id="dynamic-colours">
@@ -58,10 +59,8 @@
           <code>SelloPaletteTest</code> checks (<code>HuePaletteTest</code>). Cobalto and Violeta keep
           their hand-made palettes. <code>hueName</code> gives the hue's Spanish name (Rosa to Fucsia)
           and <code>hueMeaning</code> says whether it is red (0–49°) or green (122–195°), the hues
-          gain and loss also use. <strong>Tuya</strong> uses it (SELLO-202): the person picks a hue in
-          Configuración › Apariencia › Tinta, and <code>SelloTheme(ink = HueInk(hue))</code> draws the whole
-          app in it; a picker starts from <code>SelloInk.hue</code>, each hand-made ink's own brand hue
-          (Cobalto 267°, Violeta 286°). <strong>Sistema</strong> uses it too (SELLO-203), on Android 12
+          gain and loss also use. <strong>Tuya</strong> used it from SELLO-202 to E39: a Tuya hue
+          saved then still draws as <code>HueInk(hue)</code>, never converted. <strong>Sistema</strong> uses it too (SELLO-203), on Android 12
           and later: <code>hueOf(argb)</code> (<code>HuePalette.kt:96</code>) turns the phone's accent
           (<code>system_accent1_500</code>) into its whole OKLCH degree, rounded to the nearest, 359.5° and
           above to 0°, and the app is drawn in <code>HueInk</code> of it, the hue as it is, none moved or
@@ -77,10 +76,15 @@
           a 16-step sweep of the sRGB cube every <code>SelloPaletteTest</code> pair but the brand's and
           the band's passes, and the dark button's text keeps 4.5:1 (<code>ColourPaletteTest</code>). <code>colourName</code> adds Negro, Gris and Blanco to the hue
           names; <code>colourMeaning</code> says whether the colour is close to the excess red or the goal
-          green.</p>
-        <figure data-shot="settings-tuya" data-module="app" data-files="settings-tuya-tuya22-light-font1.0.png, settings-tuya-tuya22-dark-font1.0.png" data-caption="Configuración drawn in Tuya at 22° (Rojo), light and dark: the generator's palette; the stamp keeps its own green"></figure>
+          green. <strong>Tuya</strong> uses it (SELLO-216): in Configuración › Apariencia › Tinta, Tu tinta
+          lets the person drag a colour square and bar, or type a code, while two previews draw the
+          colour inside their own <code>SelloTheme(ColourInk(rgb))</code>; Usar esta tinta draws the whole
+          app in it.</p>
+        <figure data-shot="settings-tuya-exact" data-module="app" data-files="settings-tuya-exact-tuyaf4c430-light-font1.0.png, settings-tuya-exact-tuyaf4c430-dark-font1.0.png" data-caption="Configuración drawn in Tuya as #F4C430, light and dark: the light band and buttons are the colour exactly with white on them; the dark ones are made from it; the stamp keeps its own green"></figure>
+        <figure data-shot="settings-tuya" data-module="app" data-files="settings-tuya-tuya22-light-font1.0.png, settings-tuya-tuya22-dark-font1.0.png" data-caption="Configuración drawn in a Tuya hue saved before E39, 22° (Rojo), light and dark: the hue generator's palette"></figure>
         <figure data-shot="settings-sistema" data-module="app" data-files="settings-sistema-tuya240-light-font1.0.png, settings-sistema-tuya240-dark-font1.0.png" data-caption="Configuración drawn in Sistema on a phone with a blue wallpaper (240°), light and dark: the generator's shades of the phone's hue, not Material's"></figure>
-        <figure data-shot="settings-tu-tinta" data-module="app" data-caption="Tu tinta: two previews in the hue being chosen, inside their own SelloTheme(HueInk(hue)), and the slider's track in the light band of every hue"></figure>
+        <figure data-shot="settings-tu-tinta" data-module="app" data-caption="Tu tinta: two previews in the colour being made, inside their own SelloTheme(ColourInk(rgb)), its name and code, the colour square and bar, Antes and Ahora"></figure>
+        <figure data-shot="settings-tu-tinta-red" data-module="app" data-caption="Tu tinta on #C62828: close to the excess red, the line holds the note; the meanings in the previews keep their own colours"></figure>
         <p>Every colour a screen or resource draws comes from the theme (SELLO-190): no
           <code>Color(0x…)</code> or <code>Color.White</code> outside the palette files, copied roles set
           from the role they copy, a <code>scrim</code> role, and a start-up window that is the desk. A
@@ -103,8 +107,8 @@
           <li>The window before the first frame (<code>@color/sello_start_window</code>, Cobalto's desk,
             light or dark as the phone): it is drawn before any Kotlin runs, so it can't know the ink.</li>
           <li>The Settings ink swatches (<code>ThemeInk.swatch</code>, the ink's light band): each previews
-            its own ink, not the active one. Tuya's is its hue's band (<code>HueInk.swatch</code>), or before
-            it has a hue, a sweep of every generated band with a +; Sistema's is the band of the phone's hue.</li>
+            its own ink, not the active one. Tuya's is its colour exactly (<code>ColourInk.swatch</code>), or a
+            hue's band for a hue saved before E39 (<code>HueInk.swatch</code>), or before it has either, a sweep of every generated band with a +; Sistema's is the band of the phone's hue.</li>
           <li>The launcher icon; Android 13+ themed icons already follow the wallpaper.</li>
         </ul>
       </div>

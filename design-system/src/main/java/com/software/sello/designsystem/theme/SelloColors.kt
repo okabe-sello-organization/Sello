@@ -22,15 +22,12 @@ sealed interface ThemeInk {
 /**
  * The hand-made inks, in picker order: the one list of Sello's own themes. Each registers
  * its light and dark palette. A palette names its ink, so it is read when used rather than
- * built here. [hue] is the whole OKLCH degree of its brand, where a hue picker starts from it.
+ * built here.
  */
-enum class SelloInk(
-    private val light: () -> SelloColors,
-    private val dark: () -> SelloColors,
-    val hue: Int
-) : ThemeInk {
-    Cobalto({ CobaltoLight }, { CobaltoDark }, COBALTO_HUE),
-    Violeta({ VioletaLight }, { VioletaDark }, VIOLETA_HUE);
+enum class SelloInk(private val light: () -> SelloColors, private val dark: () -> SelloColors) :
+    ThemeInk {
+    Cobalto({ CobaltoLight }, { CobaltoDark }),
+    Violeta({ VioletaLight }, { VioletaDark });
 
     internal fun colors(isDark: Boolean): SelloColors = if (isDark) dark() else light()
 
@@ -49,8 +46,7 @@ data class HueInk(val hue: Int) : ThemeInk {
 
 /**
  * The palette [colourColors] builds from [rgb], 24-bit sRGB (`0xRRGGBB`). Its swatch is the
- * colour exactly, as its light band is. [hue] is the colour's whole OKLCH degree, where a hue
- * picker starts from it.
+ * colour exactly, as its light band is.
  */
 @Immutable
 data class ColourInk(val rgb: Int) : ThemeInk {
@@ -59,8 +55,6 @@ data class ColourInk(val rgb: Int) : ThemeInk {
     }
 
     override val swatch: Color get() = Color(0xFF000000.toInt() or rgb)
-
-    val hue: Int get() = colourHue(rgb)
 }
 
 /**

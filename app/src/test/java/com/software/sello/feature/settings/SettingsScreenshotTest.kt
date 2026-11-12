@@ -7,8 +7,10 @@ import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
 import com.software.sello.captureStill
+import com.software.sello.designsystem.theme.ColourInk
 import com.software.sello.designsystem.theme.HueInk
 import com.software.sello.domain.model.AppearancePreference
+import com.software.sello.domain.model.InkColour
 import com.software.sello.domain.model.InkHue
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.TuyaColour
@@ -271,25 +273,63 @@ class SettingsScreenshotTest {
     fun tuyaKeptDark() =
         capture("tuya-kept", Look(dark = true), tuyaKept, reveal = SETTINGS_INK_TAG)
 
-    private val sheet = loaded.copy(tuya = TuyaDraft(hue = 200))
+    // SELLO-216: Tuya with any colour.
+
+    private val yellow = InkPreference.Tuya(TuyaColour.Exact(InkColour.of(0xF4C430)!!))
+
+    private val yellowChosen = loaded.copy(appearance = AppearancePreference(ink = yellow))
+
+    @Test
+    fun tuyaExactLight() = capture(
+        "tuya-exact",
+        Look(ink = ColourInk(0xF4C430)),
+        yellowChosen,
+        reveal = SETTINGS_INK_NOTE_TAG
+    )
+
+    @Test
+    fun tuyaExactDark() = capture(
+        "tuya-exact",
+        Look(ink = ColourInk(0xF4C430), dark = true),
+        yellowChosen,
+        reveal = SETTINGS_INK_NOTE_TAG
+    )
+
+    /** Tu tinta opened from Cobalto and moved to [rgb]. */
+    private fun sheetOn(rgb: Int, saving: Boolean = false, failed: Boolean = false) = loaded.copy(
+        busy = saving,
+        tuya = TuyaDraft(
+            colour = InkColour.of(rgb.toLong())!!,
+            pick = TuyaPick.of(rgb, 0f),
+            code = codeOf(rgb),
+            before = InkColour.of(0x1F3BE0)!!,
+            saving = saving,
+            failed = failed
+        )
+    )
+
+    // Yellow, with white on it as the person chose: the hint.
+    private val sheet = sheetOn(0xF4C430)
 
     @Test fun tuTintaLight() = capture("tu-tinta", Look(), sheet)
 
     @Test fun tuTintaDark() = capture("tu-tinta", Look(dark = true), sheet)
 
-    private val redSheet = loaded.copy(tuya = TuyaDraft(hue = 22))
+    // Close to the excess red: the note.
+    private val redSheet = sheetOn(0xC62828)
 
     @Test fun tuTintaRedLight() = capture("tu-tinta-red", Look(), redSheet)
 
     @Test fun tuTintaRedDark() = capture("tu-tinta-red", Look(dark = true), redSheet)
 
-    private val failedSheet = loaded.copy(tuya = TuyaDraft(hue = 200, failed = true))
+    // Close to the goal green, and the save failed.
+    private val failedSheet = sheetOn(0x2E7D32, failed = true)
 
     @Test fun tuTintaFailedLight() = capture("tu-tinta-failed", Look(), failedSheet)
 
     @Test fun tuTintaFailedDark() = capture("tu-tinta-failed", Look(dark = true), failedSheet)
 
-    private val savingSheet = loaded.copy(busy = true, tuya = TuyaDraft(hue = 200, saving = true))
+    private val savingSheet = sheetOn(0x5F6368, saving = true)
 
     @Test fun tuTintaSavingLight() = capture("tu-tinta-saving", Look(), savingSheet)
 

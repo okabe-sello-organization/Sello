@@ -159,9 +159,6 @@ class ColourPaletteTest {
                 assertEquals(colourColors(value, dark), selloColors(ColourInk(value), dark))
             }
         }
-        // sRGB red and blue sit at OKLCH hues 29.2 and 264.1.
-        assertEquals(29, ColourInk(0xFF0000).hue)
-        assertEquals(264, ColourInk(0x0000FF).hue)
         listOf(-1, 0x1000000, 0xFFC72842.toInt()).forEach { value ->
             assertThrows(IllegalArgumentException::class.java) { ColourInk(value) }
         }
