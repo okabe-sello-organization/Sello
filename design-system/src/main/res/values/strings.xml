@@ -37,4 +37,8 @@
     <string name="sello_hue_violeta">Violeta</string>
     <string name="sello_hue_morado">Morado</string>
     <string name="sello_hue_fucsia">Fucsia</string>
+    <!-- The name of a grey colour (ColourPalette.kt), by its lightness. -->
+    <string name="sello_colour_negro">Negro</string>
+    <string name="sello_colour_gris">Gris</string>
+    <string name="sello_colour_blanco">Blanco</string>
 </resources>
